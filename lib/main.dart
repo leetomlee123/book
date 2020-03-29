@@ -1,21 +1,22 @@
 import 'dart:io';
 
-import 'package:flustars/flustars.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:get_it/get_it.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/BookShelf.dart';
 import 'package:book/view/Me.dart';
 import 'package:book/view/Search.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
 
 GetIt locator = GetIt.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SpUtil.getInstance();
+
   locator.registerSingleton(TelAndSmsService());
   runApp(Store.init(child: MyApp()));
   await DirectoryUtil.getInstance();

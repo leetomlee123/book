@@ -1,11 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
@@ -16,6 +11,11 @@ import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ReadPage.dart';
+import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 class ReadModel with ChangeNotifier {
   BookInfo bookInfo;
@@ -65,8 +65,8 @@ class ReadModel with ChangeNotifier {
   getBookRecord() async {
     showMenu = false;
     if (SpUtil.haveKey(bookInfo.Id)) {
-      getChapters();
       bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(bookInfo.Id)));
+      getChapters();
       //书的最后一章
       if (bookInfo.CId == "-1") {
         bookTag.cur = bookTag.chapters.length - 1;
@@ -122,13 +122,15 @@ class ReadModel with ChangeNotifier {
   }
 
   changeChapter(int idx) async {
-    bookTag.index = idx;
-
     int preLen = prePage == null ? 0 : prePage.pageOffsets.length;
     int curLen = curPage == null ? 0 : curPage.pageOffsets.length;
     if ((idx + 1 - preLen) > (curLen)) {
       int temp = bookTag.cur + 1;
       if (temp >= bookTag.chapters.length) {
+        print("has more ?");
+        Toast.show("已经是最后一页");
+        pageController.previousPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
         return;
       } else {
         bookTag.cur += 1;
@@ -137,6 +139,7 @@ class ReadModel with ChangeNotifier {
         nextPage = await loadChapter(bookTag.cur + 1);
         print("next chapter");
         fillAllContent();
+
         print("jump 2");
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
       }
@@ -160,6 +163,7 @@ class ReadModel with ChangeNotifier {
 //        notifyListeners();
       }
     }
+    bookTag.index = pageController.page.toInt();
   }
 
   switchBgColor(i) {
@@ -171,7 +175,7 @@ class ReadModel with ChangeNotifier {
     var url = Common.chaptersUrl +
         '/${bookInfo.Id}/${bookTag?.chapters?.length ?? 0}';
     var ctx;
-    if ((bookTag?.chapters?.length??0) == 0 && context != null) {
+    if ((bookTag?.chapters?.length ?? 0) == 0 && context != null) {
       ctx = context;
       Toast.show('加载目录...');
     }
@@ -213,7 +217,7 @@ class ReadModel with ChangeNotifier {
 
       Response v = await Util(null).http().get(url);
 
-      r.chapterContent = v.data['data']['content'].toString().trim();
+      r.chapterContent = v.data['data']['content'].toString();
       //缓存章节
       SpUtil.putString(id, r.chapterContent);
       //缓存章节分页

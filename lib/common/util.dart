@@ -1,8 +1,7 @@
+import 'package:book/common/toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
 
 import 'LoadDialog.dart';
 
@@ -14,10 +13,10 @@ class Util {
 
   Dio http() {
     _dio = new Dio();
+
     var dic = DirectoryUtil.getAppDocPath();
     _dio.interceptors
         .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
-
       // Do something before request is sent
       if (_buildContext != null) {
 //        showDialog(
@@ -63,7 +62,7 @@ class Util {
    * error统一处理
    */
   void formatError(DioError e) {
-    if(_buildContext!=null){
+    if (_buildContext != null) {
       Navigator.pop(_buildContext);
     }
 

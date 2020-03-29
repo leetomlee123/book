@@ -1,9 +1,3 @@
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:flutter/rendering.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
@@ -15,6 +9,12 @@ import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/ChapterView.dart';
 import 'package:book/view/myBottomSheet.dart';
+import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
+import 'package:flutter/rendering.dart';
 
 import 'BookDetail.dart';
 
@@ -57,7 +57,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
