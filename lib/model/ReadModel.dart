@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
@@ -11,6 +12,8 @@ import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ReadPage.dart';
+import 'package:book/model/ColorModel.dart';
+import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -83,13 +86,14 @@ class ReadModel with ChangeNotifier {
         List v = jsonDecode(string);
         bookTag.chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
-      pageController = PageController(initialPage: 1);
+      pageController = PageController(initialPage: 0);
       getChapters().then((_) {
         if (bookInfo.CId == "-1") {
           bookTag.cur = bookTag.chapters.length - 1;
         }
         intiPageContent(bookTag.cur, false);
       });
+      saveData();
     }
   }
 
@@ -122,8 +126,11 @@ class ReadModel with ChangeNotifier {
   }
 
   changeChapter(int idx) async {
+    bookTag.index = idx;
+    print("${bookTag.index}bbbbb");
     int preLen = prePage == null ? 0 : prePage.pageOffsets.length;
     int curLen = curPage == null ? 0 : curPage.pageOffsets.length;
+
     if ((idx + 1 - preLen) > (curLen)) {
       int temp = bookTag.cur + 1;
       if (temp >= bookTag.chapters.length) {
@@ -131,11 +138,25 @@ class ReadModel with ChangeNotifier {
         Toast.show("已经是最后一页");
         pageController.previousPage(
             duration: Duration(microseconds: 1), curve: Curves.ease);
-        return;
       } else {
         bookTag.cur += 1;
         prePage = curPage;
-        curPage = nextPage;
+        if (nextPage.chapterName == "-1") {
+          showGeneralDialog(
+            context: context,
+            barrierLabel: "",
+            barrierDismissible: true,
+            transitionDuration: Duration(milliseconds: 300),
+            pageBuilder: (BuildContext context, Animation animation,
+                Animation secondaryAnimation) {
+              return LoadingDialog();
+            },
+          );
+          curPage = await loadChapter(bookTag.cur);
+          Navigator.pop(context);
+        } else {
+          curPage = nextPage;
+        }
         nextPage = await loadChapter(bookTag.cur + 1);
         print("next chapter");
         fillAllContent();
@@ -163,7 +184,6 @@ class ReadModel with ChangeNotifier {
 //        notifyListeners();
       }
     }
-    bookTag.index = pageController.page.toInt();
   }
 
   switchBgColor(i) {
@@ -193,6 +213,7 @@ class ReadModel with ChangeNotifier {
       bookTag.cur = bookTag.chapters.length - 1;
       value = bookTag.cur.toDouble();
     }
+    notifyListeners();
   }
 
   Future<ReadPage> loadChapter(int idx) async {
@@ -256,43 +277,26 @@ class ReadModel with ChangeNotifier {
   }
 
   Widget readView() {
-    return PageView.builder(
-      controller: pageController,
-      physics: AlwaysScrollableScrollPhysics(),
-      itemBuilder: (BuildContext context, int index) {
-        return allContent[index];
-      },
-      //条目个数
-      itemCount: (prePage == null ? 0 : prePage.pageOffsets.length) +
-          (curPage == null ? 0 : curPage.pageOffsets.length) +
-          (nextPage == null ? 0 : nextPage.pageOffsets.length),
-      onPageChanged: (idx) => changeChapter(idx),
+    return Theme(
+      child: Scaffold(
+        backgroundColor: Store.value<ColorModel>(context).dark
+            ? Color.fromRGBO(102, 102, 102, 1)
+            : Color.fromRGBO(bgs[bgIdx][0], bgs[bgIdx][1], bgs[bgIdx][2], 1),
+        body: PageView.builder(
+          controller: pageController,
+          physics: AlwaysScrollableScrollPhysics(),
+          itemBuilder: (BuildContext context, int index) {
+            return allContent[index];
+          },
+          //条目个数
+          itemCount: (prePage == null ? 0 : prePage.pageOffsets.length) +
+              (curPage == null ? 0 : curPage.pageOffsets.length) +
+              (nextPage == null ? 0 : nextPage.pageOffsets.length),
+          onPageChanged: (idx) => changeChapter(idx),
+        ),
+      ),
+      data: Store.value<ColorModel>(context).theme,
     );
-  }
-
-  justDown(start, end) async {
-    for (var i = start; i < end;) {
-      if (i == bookTag.chapters.length || i < 0) {
-        break;
-      }
-      String id = bookTag.chapters[i].id;
-      if (!SpUtil.haveKey(id)) {
-        var url = Common.bookContentUrl + '/$id';
-        Response response = await Util(null).http().get(url);
-        String content = response.data['data']['content'].toString().trim();
-        print('dark cache success');
-        //缓存章节
-        SpUtil.putString(id, content);
-        //缓存章节分页
-        SpUtil.putString(
-            'pages' + id,
-            ReaderPageAgent.getPageOffsets(
-                    content, contentH, contentW, fontSize)
-                .join('-'));
-        bookTag.chapters[i].hasContent = 2;
-      }
-      i++;
-    }
   }
 
   modifyFont() {
@@ -342,12 +346,42 @@ class ReadModel with ChangeNotifier {
   downloadAll() async {
     if (bookTag?.chapters?.isEmpty ?? 0 == 0) {
       await getChapters();
+      saveData();
     }
+    List<String> ids = [];
+    if (SpUtil.haveKey(Common.downloadlist)) {
+      ids = SpUtil.getStringList(Common.downloadlist);
+    }
+    if (!ids.contains(bookInfo.Id)) {
+      ids.add(bookInfo.Id);
+    }
+    SpUtil.putStringList(Common.downloadlist, ids);
     for (var chapter in bookTag.chapters) {
-      chapter.hasContent = 2;
+      String id = chapter.id;
+      if (!SpUtil.haveKey(id)) {
+        String content = await compute(requestDataWithCompute, id);
+        SpUtil.putString(chapter.id, content);
+        chapter.hasContent = 2;
+      }
+      print("download ${chapter.name} ok");
     }
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
     saveData();
+  }
+
+  static Future<String> requestDataWithCompute(String id) async {
+    try {
+      var url = Common.bookContentUrl + '/$id';
+      var client = new HttpClient();
+      var request = await client.getUrl(Uri.parse(url));
+      var response = await request.close();
+      var responseBody = await response.transform(utf8.decoder).join();
+      var dataList = jsonDecode(responseBody);
+      sleep(Duration(seconds: 3));
+      return dataList['data']['content'].toString().trim();
+    } catch (e) {
+      print(e);
+    }
   }
 
   @override

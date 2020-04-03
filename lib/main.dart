@@ -1,11 +1,12 @@
 import 'dart:io';
 
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/BookShelf.dart';
 import 'package:book/view/Me.dart';
-import 'package:book/view/Search.dart';
+import 'package:book/view/PersonCenter.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -45,7 +46,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _tabIndex = 0;
-
+  static final GlobalKey<ScaffoldState> q = new GlobalKey();
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
     BottomNavigationBarItem(
@@ -55,13 +56,13 @@ class _MainPageState extends State<MainPage> {
         title: Text(
           '书架',
         )),
-    BottomNavigationBarItem(
-        icon: ImageIcon(
-          AssetImage("images/search.png"),
-        ),
-        title: Text(
-          '搜索',
-        )),
+//    BottomNavigationBarItem(
+//        icon: ImageIcon(
+//          AssetImage("images/book_city.png"),
+//        ),
+//        title: Text(
+//          '书城',
+//        )),
     BottomNavigationBarItem(
         icon: ImageIcon(
           AssetImage("images/account.png"),
@@ -74,13 +75,54 @@ class _MainPageState extends State<MainPage> {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), Search(), Me()];
+  var _pages = [BookShelf(), Me()];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    eventBus.on<OpenEvent>().listen((_) {
+      q.currentState.openDrawer();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     var value = Store.value<ColorModel>(context);
     return Theme(
       child: Scaffold(
+        drawer: Drawer(
+          child: Container(
+            child: Column(
+              children: <Widget>[
+                UserAccountsDrawerHeader(
+                  accountEmail: Text(
+                    SpUtil.haveKey('email')
+                        ? SpUtil.getString('email')
+                        : '登陆/注册',
+                  ),
+                  accountName: Text(SpUtil.getString("username") ?? ""),
+                  onDetailsPressed: () {
+                    if (!SpUtil.haveKey('email')) {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (BuildContext context) => Login()));
+                    }
+                  },
+                  currentAccountPicture: CircleAvatar(
+                    backgroundImage: AssetImage('images/fu.png'),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    color: value.theme.scaffoldBackgroundColor,
+                  ),
+                )
+              ],
+            ),
+            color: Store.value<ColorModel>(context).theme.primaryColor,
+          ),
+        ),
+        key: q,
         body: PageView.builder(
             //要点1
             physics: NeverScrollableScrollPhysics(),

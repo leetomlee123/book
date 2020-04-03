@@ -1,14 +1,14 @@
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'BookDetail.dart';
 
@@ -20,25 +20,29 @@ class Search extends StatefulWidget {
   }
 }
 
-class _SearchState extends State<Search> with AutomaticKeepAliveClientMixin {
+class _SearchState extends State<Search> {
   SearchModel searchModel;
   Widget body;
   TextEditingController controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     // TODO: implement build
-    return Scaffold(
-      appBar: AppBar(
-        title: buildSearchWidget(),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-      ),
-      body: Store.connect<SearchModel>(
-          builder: (context, SearchModel data, child) =>
-              data.showResult ? resultWidget() : suggestionWidget(data)),
-    );
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel data, child) => Theme(
+          child:  Scaffold(
+            appBar: AppBar(
+              title: buildSearchWidget(),
+              elevation: 0,
+              automaticallyImplyLeading: false,
+            ),
+            body: Store.connect<SearchModel>(
+                builder: (context, SearchModel data, child) =>
+                data.showResult ? resultWidget() : suggestionWidget(data)),
+          ),
+          data: data.theme,
+        ));
+
   }
 
   @override
@@ -247,8 +251,4 @@ class _SearchState extends State<Search> with AutomaticKeepAliveClientMixin {
       ),
     );
   }
-
-  @override
-  // TODO: implement wantKeepAlive
-  bool get wantKeepAlive => true;
 }

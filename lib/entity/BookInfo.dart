@@ -30,6 +30,7 @@ class BookInfo {
   BookInfo.id(this.Id, this.Name, this.Img);
 
   BookInfo.name(this.CId, this.Name);
+  BookInfo.x(this.Id);
 
   BookInfo(
       this.Count,

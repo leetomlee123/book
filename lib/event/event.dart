@@ -1,15 +1,9 @@
-import 'package:event_bus/event_bus.dart';
 import 'package:book/entity/Book.dart';
+import 'package:event_bus/event_bus.dart';
 
 EventBus eventBus = new EventBus();
 
 class AddEvent {}
-
-class book {
-  String name;
-
-  book(this.name);
-}
 
 class OpenEvent {
   String name;

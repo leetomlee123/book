@@ -1,6 +1,3 @@
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
-import 'package:flutter/material.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
@@ -10,9 +7,9 @@ import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/Forgetpass.dart';
 import 'package:book/view/Register.dart';
-
-import '../main.dart';
-import 'Me.dart';
+import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/material.dart';
 
 class PersonCenter extends StatefulWidget {
   @override
@@ -96,8 +93,7 @@ class Login extends StatelessWidget {
             }
           }
         }
-        Navigator.of(context).push(
-            MaterialPageRoute(builder: (BuildContext context) => MainPage()));
+        Navigator.pop(context);
       }
     }
 
@@ -181,10 +177,13 @@ class Login extends StatelessWidget {
     );
     // TODO: implement build
 
-    return Theme(child: Material(
-      child: Container(
-        child: loginBody,
+    return Theme(
+      child: Material(
+        child: Container(
+          child: loginBody,
+        ),
       ),
-    ),data: Store.value<ColorModel>(context).theme,);
+      data: Store.value<ColorModel>(context).theme,
+    );
   }
 }

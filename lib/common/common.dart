@@ -13,8 +13,10 @@ class Common {
   static String modifypassword = domain + "/password";
   static String listbookname = "booklist";
   static String toplist = "toplist";
+  static String downloadlist = "downloadlist";
   static String bookInfo = domain + "/info/";
   static String chaptersUrl = domain + "/book/chapters";
   static String bookContentUrl = domain + '/book/chapter';
   static String bookAction = domain + '/book/action';
+  static String rank = domain + '/book/rank';
 }

@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 
 class ColorModel with ChangeNotifier {
   bool dark = false;
+  
   List<Color> skins = Colors.accents;
+  
+
   int idx = SpUtil.getInt('skin');
   ThemeData _theme;
 

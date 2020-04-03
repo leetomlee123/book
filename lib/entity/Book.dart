@@ -8,6 +8,7 @@ class Book {
   String ChapterName;
   int NewChapterCount;
   String Id;
+  String CName;
   String Name;
   String Author;
   String Img;
@@ -27,6 +28,7 @@ class Book {
       this.NewChapterCount,
       this.Id,
       this.Name,
+      this.CName,
       this.Author,
       this.Img,
       this.LastChapterId,

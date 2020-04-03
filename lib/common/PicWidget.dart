@@ -4,15 +4,17 @@ import 'package:flutter/widgets.dart';
 
 class PicWidget extends StatelessWidget {
   String url;
+  double height;
+  double width;
 
-  PicWidget(this.url);
+  PicWidget(this.url, this.height, this.width);
 
   @override
   Widget build(BuildContext context) {
     return ExtendedImage.network(
       url,
-      height: 100,
-      width: 80,
+      height: height ?? 100,
+      width: width ?? 80,
       fit: BoxFit.fill,
       cache: true,
       retries: 1,
@@ -26,7 +28,11 @@ class PicWidget extends StatelessWidget {
             return null;
             break;
           case LoadState.failed:
-            return Image.asset("images/nocover.jpg",width: 80,height: 100,);
+            return Image.asset(
+              "images/nocover.jpg",
+              width: 80,
+              height: 100,
+            );
             break;
         }
       },

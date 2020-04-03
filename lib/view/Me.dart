@@ -1,11 +1,17 @@
-import 'package:flustars/flustars.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:convert';
+
+import 'package:book/common/common.dart';
+import 'package:book/entity/BookInfo.dart';
+import 'package:book/entity/BookTag.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../main.dart';
 import 'PersonCenter.dart';
@@ -198,6 +204,14 @@ class Me extends StatelessWidget {
                 },
               ),
               getItem(
+                ImageIcon(AssetImage("images/cache_manager.png")),
+                '缓存管理',
+                () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (BuildContext context) => CacheManager()));
+                },
+              ),
+              getItem(
                 ImageIcon(AssetImage("images/fe.png")),
                 '意见反馈',
                 () {
@@ -230,22 +244,105 @@ class Me extends StatelessWidget {
                 },
               ),
               SpUtil.haveKey("login")
-                  ?  GestureDetector(
-                        child: Card(child: Container(
+                  ? GestureDetector(
+                      child: Card(
+                        child: Container(
                           height: 50,
                           child: Text("退出登录"),
                           alignment: Alignment.center,
-                        ),),
-                        onTap: () {
-                          Store.value<ShelfModel>(context).dropAccountOut();
-                          eventBus.fire(new BooksEvent([]));
-                        },
-                      )
-
+                        ),
+                      ),
+                      onTap: () {
+                        Store.value<ShelfModel>(context).dropAccountOut();
+                        eventBus.fire(new BooksEvent([]));
+                      },
+                    )
                   : Container(),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class CacheManager extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    // TODO: implement createState
+    return _CacheManager();
+  }
+}
+
+class _CacheManager extends State<CacheManager> {
+  @override
+  Widget build(BuildContext context) {
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel data, child) => Theme(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text("缓存管理"),
+                  centerTitle: true,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                ),
+                body: ListView(
+                  children: managers(data.theme.primaryColor),
+                ),
+              ),
+              data: data.theme,
+            ));
+  }
+
+  List<Widget> managers(Color color) {
+    List<Widget> wds = [];
+    if (SpUtil.haveKey(Common.downloadlist)) {
+      List<String> ids = SpUtil.getStringList(Common.downloadlist);
+      ids.forEach((f) {
+        wds.add(item(f, color));
+      });
+    }
+    return wds;
+  }
+
+  Widget item(id, Color color) {
+    BookTag bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(id)));
+    int all = bookTag.chapters.length;
+    int sub = 0;
+    bookTag.chapters.forEach((f) {
+      if (f.hasContent == 2) {
+        sub += 1;
+      }
+    });
+    return Card(
+      child: Column(
+        children: <Widget>[
+          Text(bookTag.bookName),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Container(
+                  child: Slider(
+                    activeColor: color,
+                    inactiveColor: Colors.white,
+                    value: sub.toDouble(),
+                    max: all.toDouble(),
+                    min: 0.0,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.arrow_downward),
+                onPressed: () {
+                  var value = Store.value<ReadModel>(context);
+                  value.bookTag = bookTag;
+                  value.bookInfo = BookInfo.x(id);
+                  value.downloadAll();
+                },
+              )
+            ],
+          )
+        ],
       ),
     );
   }
@@ -256,23 +353,26 @@ class Skin extends StatelessWidget {
   Widget build(BuildContext context) {
     // TODO: implement build
     return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(child: Scaffold(
-          body: Padding(
-            padding: EdgeInsets.only(
-                left: 15,
-                right: 15,
-                top: ScreenUtil.getStatusBarH(context) + 10),
-            child: Wrap(
-              spacing: 10.0,
-              runSpacing: 12.0,
-              children: data.getSkins(
-                  ((ScreenUtil.getScreenW(context) - 40) / 2).toDouble(),
-                  (ScreenUtil.getScreenW(context) - 40) /
-                      2 /
-                      5 *
-                      2.toDouble()),
-            ),
-          ),
-        ),data: data.theme,));
+        builder: (context, ColorModel data, child) => Theme(
+              child: Scaffold(
+                body: Padding(
+                  padding: EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: ScreenUtil.getStatusBarH(context) + 10),
+                  child: Wrap(
+                    spacing: 10.0,
+                    runSpacing: 12.0,
+                    children: data.getSkins(
+                        ((ScreenUtil.getScreenW(context) - 40) / 2).toDouble(),
+                        (ScreenUtil.getScreenW(context) - 40) /
+                            2 /
+                            5 *
+                            2.toDouble()),
+                  ),
+                ),
+              ),
+              data: data.theme,
+            ));
   }
 }

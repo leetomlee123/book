@@ -1,6 +1,5 @@
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
-import 'package:flutter/material.dart';
+import 'dart:convert';
+
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/common.dart';
@@ -14,6 +13,9 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/ReadBook.dart';
+import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/material.dart';
 
 import '../main.dart';
 
@@ -55,7 +57,7 @@ class _BookDetailState extends State<BookDetail> {
                 child: Text('书架'),
               ),
               onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
+                Navigator.of(context).pushReplacement(MaterialPageRoute(
                     builder: (BuildContext context) => MainPage()));
               },
             ),
@@ -77,9 +79,7 @@ class _BookDetailState extends State<BookDetail> {
                           Container(
                             padding: const EdgeInsets.only(
                                 left: 10.0, top: 5.0, bottom: 10.0),
-                            child: PicWidget(
-                              _bookInfo.Img,
-                            ),
+                            child: PicWidget(_bookInfo.Img, null, null),
                           )
                         ],
                       ),
@@ -282,8 +282,9 @@ class _BookDetailState extends State<BookDetail> {
                                           padding: const EdgeInsets.only(
                                               left: 10.0, top: 10.0),
                                           child: PicWidget(
-                                            _bookInfo.SameAuthorBooks[i].Img,
-                                          ),
+                                              _bookInfo.SameAuthorBooks[i].Img,
+                                              null,
+                                              null),
                                         )
                                       ],
                                     ),
@@ -409,6 +410,7 @@ class _BookDetailState extends State<BookDetail> {
                       0,
                       _bookInfo.Id,
                       _bookInfo.Name,
+                      "",
                       _bookInfo.Author,
                       _bookInfo.Img,
                       _bookInfo.LastChapterId,

@@ -1,9 +1,5 @@
 import 'dart:convert';
 
-import 'package:flustars/flustars.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
@@ -12,10 +8,13 @@ import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/ReadBook.dart';
+import 'package:book/view/Search.dart';
+import 'package:flustars/flustars.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class BookShelf extends StatefulWidget {
-  BookShelf();
-
   @override
   State<StatefulWidget> createState() {
     // TODO: implement createState
@@ -35,7 +34,12 @@ class _BookShelfState extends State<BookShelf>
     // TODO: implement build
     return Scaffold(
         appBar: AppBar(
-          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: Icon(Icons.person),
+            onPressed: () {
+              eventBus.fire(OpenEvent(""));
+            },
+          ),
           elevation: 0,
           title: Text(
             '书架',
@@ -44,6 +48,15 @@ class _BookShelfState extends State<BookShelf>
             ),
           ),
           centerTitle: true,
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (BuildContext context) => Search()));
+              },
+            )
+          ],
         ),
         body: Store.connect<ShelfModel>(
             builder: (context, ShelfModel model, child) => SmartRefresher(
@@ -107,9 +120,7 @@ class _BookShelfState extends State<BookShelf>
                   padding: const EdgeInsets.only(left: 10.0, top: 10.0),
                   child: Stack(
                     children: <Widget>[
-                      PicWidget(
-                        item.Img,
-                      ),
+                      PicWidget(item.Img, null, null),
                       item.NewChapterCount == 1
                           ? Container(
                               height: 100,

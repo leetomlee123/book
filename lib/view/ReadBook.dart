@@ -44,20 +44,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
 
   @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    readModel.saveData();
-    WidgetsBinding.instance.removeObserver(this);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    readModel.saveData();
-  }
-
-  @override
-  Future<void> initState() async {
+  void initState() {
+    // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
@@ -78,6 +66,19 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           60;
       readModel.contentW = ScreenUtil.getScreenW(context) - 25;
     });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    readModel.saveData();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    readModel.saveData();
   }
 
   Widget _createDialog(
@@ -115,6 +116,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                 0,
                                 readModel.bookInfo.Id,
                                 readModel.bookInfo.Name,
+                                "",
                                 readModel.bookInfo.Author,
                                 readModel.bookInfo.Img,
                                 readModel.bookInfo.LastChapterId,
@@ -136,10 +138,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       child: readModel != null
           ? Scaffold(
               key: _globalKey,
-              backgroundColor: Store.value<ColorModel>(context).dark
-                  ? Color.fromRGBO(102, 102, 102, 1)
-                  : Color.fromRGBO(bgs[readModel.bgIdx][0],
-                      bgs[readModel.bgIdx][1], bgs[readModel.bgIdx][2], 1),
               drawer: Drawer(
                 child: ChapterView(),
               ),
@@ -153,6 +151,10 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             children: <Widget>[
                               Container(
                                 child: AppBar(
+                                  backgroundColor:
+                                      Store.value<ColorModel>(context)
+                                          .theme
+                                          .primaryColor,
                                   title: Text(
                                       '${readModel.bookTag.bookName ?? ""}'),
                                   centerTitle: true,
@@ -196,81 +198,84 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                   ),
                                   onTap: () {
                                     readModel.toggleShowMenu();
-
                                     if (readModel.font) {
                                       readModel.reCalcPages();
                                     }
                                   },
                                 ),
                               ),
-                              Container(
-                                color: Theme.of(context).primaryColor,
-                                height: 120,
-                                width: double.infinity,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: <Widget>[
-                                        GestureDetector(
-                                          child: Container(
-                                            child: Icon(Icons.arrow_back_ios),
-                                            width: 70,
+                              Theme(
+                                child: Container(
+                                  color: Store.value<ColorModel>(context)
+                                      .theme
+                                      .primaryColor,
+                                  height: 120,
+                                  width: double.infinity,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: <Widget>[
+                                          GestureDetector(
+                                            child: Container(
+                                              child: Icon(Icons.arrow_back_ios),
+                                              width: 70,
+                                            ),
+                                            onTap: () {
+                                              readModel.bookTag.cur -= 1;
+                                              readModel.intiPageContent(
+                                                  readModel.bookTag.cur, true);
+                                            },
                                           ),
-                                          onTap: () {
-                                            readModel.bookTag.cur -= 1;
-                                            readModel.intiPageContent(
-                                                readModel.bookTag.cur, true);
-                                          },
-                                        ),
-                                        Expanded(
-                                          child: Container(
-                                            child: Slider(
-                                              activeColor: Colors.black38,
-                                              inactiveColor: Colors.white30,
-                                              value: readModel.value,
-                                              max: (readModel.bookTag.chapters
-                                                          .length -
-                                                      1)
-                                                  .toDouble(),
-                                              min: 0.0,
-                                              onChanged: (newValue) {
-                                                int temp = newValue.round();
-                                                readModel.bookTag.cur = temp;
-                                                readModel.value =
-                                                    temp.toDouble();
-                                                readModel.intiPageContent(
-                                                    readModel.bookTag.cur,
-                                                    true);
-                                              },
-                                              label:
-                                                  '${readModel.bookTag.chapters[readModel.bookTag.cur].name} ',
-                                              semanticFormatterCallback:
-                                                  (newValue) {
-                                                return '${newValue.round()} dollars';
-                                              },
+                                          Expanded(
+                                            child: Container(
+                                              child: Slider(
+                                                activeColor: Colors.white,
+                                                value: readModel.value,
+                                                max: (readModel.bookTag.chapters
+                                                            .length -
+                                                        1)
+                                                    .toDouble(),
+                                                min: 0.0,
+                                                onChanged: (newValue) {
+                                                  int temp = newValue.round();
+                                                  readModel.bookTag.cur = temp;
+                                                  readModel.value =
+                                                      temp.toDouble();
+                                                  readModel.intiPageContent(
+                                                      readModel.bookTag.cur,
+                                                      true);
+                                                },
+                                                label:
+                                                    '${readModel.bookTag.chapters[readModel.bookTag.cur].name} ',
+                                                semanticFormatterCallback:
+                                                    (newValue) {
+                                                  return '${newValue.round()} dollars';
+                                                },
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        GestureDetector(
-                                          child: Container(
-                                            child:
-                                                Icon(Icons.arrow_forward_ios),
-                                            width: 70,
+                                          GestureDetector(
+                                            child: Container(
+                                              child:
+                                                  Icon(Icons.arrow_forward_ios),
+                                              width: 70,
+                                            ),
+                                            onTap: () {
+                                              readModel.bookTag.cur += 1;
+                                              readModel.intiPageContent(
+                                                  readModel.bookTag.cur, true);
+                                            },
                                           ),
-                                          onTap: () {
-                                            readModel.bookTag.cur += 1;
-                                            readModel.intiPageContent(
-                                                readModel.bookTag.cur, true);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                    buildBottomMenus()
-                                  ],
+                                        ],
+                                      ),
+                                      buildBottomMenus()
+                                    ],
+                                  ),
                                 ),
+                                data: Store.value<ColorModel>(context).theme,
                               )
                             ],
                           ),
@@ -284,35 +289,35 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   buildBottomMenus() {
     return Store.connect<ColorModel>(
-        builder: (BuildContext context, ColorModel data, chile) => Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                buildBottomItem('目录', Icons.menu),
-                GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: ScreenUtil.getScreenW(context) / 4,
-                      padding: EdgeInsets.symmetric(vertical: 7),
-                      child: Column(
-                        children: <Widget>[
-                          ImageIcon(data.dark
-                              ? AssetImage("images/moon.png")
-                              : AssetImage("images/sun.png")),
-                          SizedBox(height: 5),
-                          Text(data.dark ? '夜间' : '日间',
-                              style: TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    onTap: () {
-                      Store.value<ColorModel>(context).switchModel();
-                      setState(() {});
-                      readModel.toggleShowMenu();
-                    }),
-                buildBottomItem('缓存', Icons.cloud_download),
-                buildBottomItem('设置', Icons.settings),
-              ],
-            ));
+        builder: (BuildContext context, ColorModel data, chile) => Theme(child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: <Widget>[
+            buildBottomItem('目录', Icons.menu),
+            GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: ScreenUtil.getScreenW(context) / 4,
+                  padding: EdgeInsets.symmetric(vertical: 7),
+                  child: Column(
+                    children: <Widget>[
+                      ImageIcon(data.dark
+                          ? AssetImage("images/moon.png")
+                          : AssetImage("images/sun.png")),
+                      SizedBox(height: 5),
+                      Text(data.dark ? '夜间' : '日间',
+                          style: TextStyle(fontSize: 12,color: Store.value<ColorModel>(context).dark?Colors.white70:Colors.black)),
+                    ],
+                  ),
+                ),
+                onTap: () {
+                  Store.value<ColorModel>(context).switchModel();
+//                      setState(() {});
+                  readModel.toggleShowMenu();
+                }),
+            buildBottomItem('缓存', Icons.cloud_download),
+            buildBottomItem('设置', Icons.settings),
+          ],
+        ),data: data.theme,));
   }
 
   buildBottomItem(String title, IconData iconData) {
@@ -325,7 +330,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           children: <Widget>[
             Icon(iconData),
             SizedBox(height: 5),
-            Text(title, style: TextStyle(fontSize: 12)),
+            Text(title, style: TextStyle(fontSize: 12,color: Store.value<ColorModel>(context).dark?Colors.white70:Colors.black)),
           ],
         ),
       ),
@@ -361,6 +366,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   buildSetting(state) {
     return Container(
+      color: Store.value<ColorModel>(context).theme.primaryColor,
       height: 150,
       child: Padding(
         child: Column(
@@ -458,10 +464,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         ),
         padding: EdgeInsets.only(left: 10, right: 10),
       ),
-      color: Store.value<ColorModel>(context).dark
-          ? Color.fromRGBO(38, 38, 38, 1)
-          : Color.fromRGBO(bgs[readModel.bgIdx][0], bgs[readModel.bgIdx][1],
-              bgs[readModel.bgIdx][2], 1),
     );
   }
 
