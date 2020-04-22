@@ -46,7 +46,7 @@ class ReadModel with ChangeNotifier {
   ];
 
   //页面字体大小
-  double fontSize = 27.0;
+  double fontSize = 28.0;
 
   //显示上层 设置
   bool showMenu = false;
@@ -280,7 +280,7 @@ class ReadModel with ChangeNotifier {
     return Theme(
       child: Scaffold(
         backgroundColor: Store.value<ColorModel>(context).dark
-            ? Color.fromRGBO(102, 102, 102, 1)
+            ? null
             : Color.fromRGBO(bgs[bgIdx][0], bgs[bgIdx][1], bgs[bgIdx][2], 1),
         body: PageView.builder(
           controller: pageController,
@@ -417,9 +417,6 @@ class ReadModel with ChangeNotifier {
                             r.chapterName,
                             style: TextStyle(
                               fontSize: 16,
-//                        color: Store.value<ColorModel>(context).dark
-//                            ? Color.fromRGBO(225, 225, 225, 1)
-//                            : Colors.black,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -433,9 +430,6 @@ class ReadModel with ChangeNotifier {
                               child: Text(
                                 content,
                                 style: TextStyle(
-//                            color: Store.value<ColorModel>(context).dark
-//                                ? Color.fromRGBO(225, 225, 225, 1)
-//                                : Colors.black,
                                   fontSize: fontSize / Screen.textScaleFactor,
                                 ),
                               )),
@@ -450,9 +444,6 @@ class ReadModel with ChangeNotifier {
                                 '第${i + 1}/${r.pageOffsets.length}页',
                                 style: TextStyle(
                                   fontSize: 13,
-//                            color: Store.value<ColorModel>(context).dark
-//                                ? Color.fromRGBO(225, 225, 225, 1)
-//                                : Colors.black,
                                 ),
                                 textAlign: TextAlign.center,
                               ),

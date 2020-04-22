@@ -18,7 +18,6 @@ class ReaderPageAgent {
       tempStr = tempStr.substring(end, tempStr.length);
       pageConfig.add( last + end);
       last = last + end;
-
     }
     return pageConfig;
   }

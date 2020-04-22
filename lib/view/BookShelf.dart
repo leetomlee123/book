@@ -91,7 +91,7 @@ class _BookShelfState extends State<BookShelf>
                           Book temp = model.shelf[i];
                           model.upTotop(temp);
                           Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => ReadBook(
+                              builder: (BuildContext context) => new ReadBook(
                                   BookInfo.id(temp.Id, temp.Name, temp.Img))));
                         },
                         child: getBookItemView(model.shelf[i]),

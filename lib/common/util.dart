@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:book/common/toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -65,7 +67,6 @@ class Util {
     if (_buildContext != null) {
       Navigator.pop(_buildContext);
     }
-
     if (e.type == DioErrorType.CONNECT_TIMEOUT) {
       // It occurs when url is opened timeout.
       Toast.show("连接超时");
@@ -83,6 +84,7 @@ class Util {
       Toast.show("请求取消");
     } else {
       //DEFAULT Default error type, Some other Error. In this case, you can read the DioError.error if it is not null.
+      log(e.message);
       Toast.show("未知错误");
     }
   }

@@ -233,6 +233,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                             child: Container(
                                               child: Slider(
                                                 activeColor: Colors.white,
+                                                inactiveColor: Colors.white70,
                                                 value: readModel.value,
                                                 max: (readModel.bookTag.chapters
                                                             .length -
@@ -289,35 +290,42 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   buildBottomMenus() {
     return Store.connect<ColorModel>(
-        builder: (BuildContext context, ColorModel data, chile) => Theme(child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            buildBottomItem('目录', Icons.menu),
-            GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  width: ScreenUtil.getScreenW(context) / 4,
-                  padding: EdgeInsets.symmetric(vertical: 7),
-                  child: Column(
-                    children: <Widget>[
-                      ImageIcon(data.dark
-                          ? AssetImage("images/moon.png")
-                          : AssetImage("images/sun.png")),
-                      SizedBox(height: 5),
-                      Text(data.dark ? '夜间' : '日间',
-                          style: TextStyle(fontSize: 12,color: Store.value<ColorModel>(context).dark?Colors.white70:Colors.black)),
-                    ],
-                  ),
-                ),
-                onTap: () {
-                  Store.value<ColorModel>(context).switchModel();
+        builder: (BuildContext context, ColorModel data, chile) => Theme(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  buildBottomItem('目录', Icons.menu),
+                  GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        width: ScreenUtil.getScreenW(context) / 4,
+                        padding: EdgeInsets.symmetric(vertical: 7),
+                        child: Column(
+                          children: <Widget>[
+                            ImageIcon(data.dark
+                                ? AssetImage("images/moon.png")
+                                : AssetImage("images/sun.png")),
+                            SizedBox(height: 5),
+                            Text(data.dark ? '夜间' : '日间',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Store.value<ColorModel>(context).dark
+                                        ? Colors.white70
+                                        : Colors.black)),
+                          ],
+                        ),
+                      ),
+                      onTap: () {
+                        Store.value<ColorModel>(context).switchModel();
 //                      setState(() {});
-                  readModel.toggleShowMenu();
-                }),
-            buildBottomItem('缓存', Icons.cloud_download),
-            buildBottomItem('设置', Icons.settings),
-          ],
-        ),data: data.theme,));
+                        readModel.toggleShowMenu();
+                      }),
+                  buildBottomItem('缓存', Icons.cloud_download),
+                  buildBottomItem('设置', Icons.settings),
+                ],
+              ),
+              data: data.theme,
+            ));
   }
 
   buildBottomItem(String title, IconData iconData) {
@@ -330,7 +338,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           children: <Widget>[
             Icon(iconData),
             SizedBox(height: 5),
-            Text(title, style: TextStyle(fontSize: 12,color: Store.value<ColorModel>(context).dark?Colors.white70:Colors.black)),
+            Text(title,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Store.value<ColorModel>(context).dark
+                        ? Colors.white70
+                        : Colors.black)),
           ],
         ),
       ),
@@ -373,12 +386,19 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Text('亮度'),
+                Text(
+                  '亮度',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Store.value<ColorModel>(context).dark
+                          ? Colors.white70
+                          : Colors.black),
+                ),
                 Expanded(
                   child: Container(
                     child: Slider(
-                      activeColor: Colors.black38,
-                      inactiveColor: Colors.white30,
+                      activeColor: Colors.white,
+                      inactiveColor: Colors.white70,
                       value: 50,
                       max: 100,
                       min: 0.0,
@@ -390,7 +410,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                   width: 130,
                   child: Row(
                     children: <Widget>[
-                      Text('跟随系统'),
+                      Text(
+                        '跟随系统',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Store.value<ColorModel>(context).dark
+                                ? Colors.white70
+                                : Colors.black),
+                      ),
                       Checkbox(
                         value: false,
                         activeColor: Colors.blue,
@@ -403,20 +430,31 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             ),
             Row(
               children: <Widget>[
-                Text('字号'),
+                Text(
+                  '字号',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Store.value<ColorModel>(context).dark
+                          ? Colors.white70
+                          : Colors.black),
+                ),
                 SizedBox(
                   width: 10,
                 ),
                 Expanded(
                   child: Container(
                     child: FlatButton(
-                      color: Colors.black38,
+                      color: Store.value<ColorModel>(context).dark
+                          ? Colors.white70
+                          : Colors.black,
                       onPressed: () {
                         readModel.fontSize -= 1.0;
                         readModel.modifyFont();
                       },
                       child: ImageIcon(
                         AssetImage("images/fontsmall.png"),
+                        color: Colors.white,
+
                       ),
                       shape: RoundedRectangleBorder(
                           borderRadius:
@@ -430,13 +468,16 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                 Expanded(
                   child: Container(
                     child: FlatButton(
-                      color: Colors.black38,
+                      color: Store.value<ColorModel>(context).dark
+                          ? Colors.white70
+                          : Colors.black,
                       onPressed: () {
                         readModel.fontSize += 1.0;
                         readModel.modifyFont();
                       },
                       child: ImageIcon(
                         AssetImage("images/fontbig.png"),
+                        color: Colors.white,
                       ),
                       shape: RoundedRectangleBorder(
                           borderRadius:
@@ -448,7 +489,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             ),
             Row(
               children: <Widget>[
-                Text('背景'),
+                Text(
+                  '背景',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Store.value<ColorModel>(context).dark
+                          ? Colors.white70
+                          : Colors.black),
+                ),
                 SizedBox(
                   width: 10,
                 ),

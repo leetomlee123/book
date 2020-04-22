@@ -30,19 +30,20 @@ class _SearchState extends State<Search> {
     // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel data, child) => Theme(
-          child:  Scaffold(
-            appBar: AppBar(
-              title: buildSearchWidget(),
-              elevation: 0,
-              automaticallyImplyLeading: false,
-            ),
-            body: Store.connect<SearchModel>(
-                builder: (context, SearchModel data, child) =>
-                data.showResult ? resultWidget() : suggestionWidget(data)),
-          ),
-          data: data.theme,
-        ));
-
+              child: Scaffold(
+                appBar: AppBar(
+                  title: buildSearchWidget(),
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                ),
+                body: Store.connect<SearchModel>(
+                    builder: (context, SearchModel data, child) =>
+                        data.showResult
+                            ? resultWidget()
+                            : suggestionWidget(data)),
+              ),
+              data: data.theme,
+            ));
   }
 
   @override
@@ -56,6 +57,7 @@ class _SearchState extends State<Search> {
       searchModel.context = context;
       searchModel.controller = controller;
       searchModel.initHistory();
+      searchModel.initHot();
     });
   }
 
@@ -206,7 +208,6 @@ class _SearchState extends State<Search> {
             onTap: () async {
               String url = Common.detail + '/${searchModel.bks[i].Id}';
               Response future = await Util(context).http().get(url);
-
               var d = future.data['data'];
               BookInfo b = BookInfo.fromJson(d);
               Navigator.of(context).push(MaterialPageRoute(
@@ -220,19 +221,25 @@ class _SearchState extends State<Search> {
   }
 
   Widget suggestionWidget(data) {
-    return Container(
+    return SingleChildScrollView(child: Container(
       padding: EdgeInsets.only(left: 15, right: 15, top: 10),
       child: Column(
         children: <Widget>[
           Row(
             children: <Widget>[
-              Text('搜索历史'),
+              Text(
+                '搜索历史',
+                style: TextStyle(fontSize: 16),
+              ),
               Expanded(
                 child: Container(),
               ),
-              GestureDetector(
-                child: Text('清空历史'),
-                onTap: () {
+              IconButton(
+                icon: ImageIcon(
+                  AssetImage("images/clear.png"),
+                  size: 18,
+                ),
+                onPressed: () {
                   searchModel.clearHistory();
                 },
               )
@@ -246,9 +253,18 @@ class _SearchState extends State<Search> {
             children: data.getHistory(),
             spacing: 3, //主轴上子控件的间距
             runSpacing: 5, //交叉轴上子控件之间的间距
-          )
+          ),
+          Row(
+            children: <Widget>[
+              Text(
+                '热门书籍',
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+          Column(children: searchModel.hot,)
         ],
       ),
-    );
+    ),);
   }
 }

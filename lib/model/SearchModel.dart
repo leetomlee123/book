@@ -1,18 +1,22 @@
 import 'dart:math';
 
+import 'package:book/common/common.dart';
+import 'package:book/common/util.dart';
+import 'package:book/entity/BookInfo.dart';
+import 'package:book/entity/HotBook.dart';
+import 'package:book/entity/SearchItem.dart';
+import 'package:book/view/BookDetail.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
-import 'package:book/entity/SearchItem.dart';
 
 class SearchModel with ChangeNotifier {
   List<String> searchHistory = new List();
   BuildContext context;
   bool showResult = false;
   List<SearchItem> bks = [];
+  List<Widget> hot = [];
   int page = 1;
   int size = 10;
   var word = "";
@@ -187,6 +191,31 @@ class SearchModel with ChangeNotifier {
     word = w;
     await getSearchData();
     setHistory(w);
+    notifyListeners();
+  }
+
+  Future<void> initHot() async {
+    hot = [];
+    Response res = await Util(null).http().get(Common.hot);
+    List data = res.data['data'];
+    List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
+    for (var i = 0; i < hbs.length; i++) {
+      hot.add(GestureDetector(
+        child: ListTile(
+          leading: Text((i + 1).toString()),
+          title: Text(hbs[i].Name,overflow: TextOverflow.ellipsis,),
+          trailing: Text(hbs[i].Hot.toString(),overflow: TextOverflow.ellipsis,),
+        ),
+        onTap: () async {
+          String url = Common.detail + '/${hbs[i].Id}';
+          Response future = await Util(context).http().get(url);
+          var d = future.data['data'];
+          BookInfo b = BookInfo.fromJson(d);
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (BuildContext context) => BookDetail(b)));
+        },
+      ));
+    }
     notifyListeners();
   }
 }
