@@ -7,7 +7,7 @@ class PicWidget extends StatelessWidget {
   double height;
   double width;
 
-  PicWidget(this.url, this.height, this.width);
+  PicWidget(this.url, {this.height, this.width});
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class PicWidget extends StatelessWidget {
       url,
       height: height ?? 100,
       width: width ?? 80,
-      fit: BoxFit.fill,
+      fit: BoxFit.cover,
       cache: true,
       retries: 1,
       loadStateChanged: (ExtendedImageState state) {

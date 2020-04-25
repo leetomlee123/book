@@ -5,6 +5,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/BookShelf.dart';
+import 'package:book/view/GoodBook.dart';
 import 'package:book/view/Me.dart';
 import 'package:book/view/PersonCenter.dart';
 import 'package:flustars/flustars.dart';
@@ -56,13 +57,13 @@ class _MainPageState extends State<MainPage> {
         title: Text(
           '书架',
         )),
-//    BottomNavigationBarItem(
-//        icon: ImageIcon(
-//          AssetImage("images/book_city.png"),
-//        ),
-//        title: Text(
-//          '书城',
-//        )),
+    BottomNavigationBarItem(
+        icon: ImageIcon(
+          AssetImage("images/good.png"),
+        ),
+        title: Text(
+          '精选',
+        )),
     BottomNavigationBarItem(
         icon: ImageIcon(
           AssetImage("images/account.png"),
@@ -75,7 +76,7 @@ class _MainPageState extends State<MainPage> {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), Me()];
+  var _pages = [BookShelf(),GoodBook(), Me()];
 
   @override
   void initState() {

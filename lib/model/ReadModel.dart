@@ -232,6 +232,9 @@ class ReadModel with ChangeNotifier {
 
     r.chapterName = bookTag.chapters[idx].name;
     String id = bookTag.chapters[idx].id;
+    //    String content, double height
+//    , double width, double fontSize
+
     if (!SpUtil.haveKey(id)) {
       String url = Common.bookContentUrl + '/$id';
       print(id);
@@ -242,8 +245,7 @@ class ReadModel with ChangeNotifier {
       //缓存章节
       SpUtil.putString(id, r.chapterContent);
       //缓存章节分页
-      r.pageOffsets = ReaderPageAgent.getPageOffsets(
-          r.chapterContent, contentH, contentW, fontSize);
+      r.pageOffsets = ReaderPageAgent.getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
       SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
       bookTag.chapters[idx].hasContent = 2;
     } else {
@@ -254,8 +256,8 @@ class ReadModel with ChangeNotifier {
             .map((f) => int.parse(f))
             .toList();
       } else {
-        r.pageOffsets = ReaderPageAgent.getPageOffsets(
-            r.chapterContent, contentH, contentW, fontSize);
+
+        r.pageOffsets = ReaderPageAgent.getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
       }
     }
     print('white cache success');
@@ -368,6 +370,8 @@ class ReadModel with ChangeNotifier {
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
     saveData();
   }
+
+
 
   static Future<String> requestDataWithCompute(String id) async {
     try {

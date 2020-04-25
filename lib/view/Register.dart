@@ -124,7 +124,7 @@ class _RegisterState extends State<Register> {
       Response response;
       try {
         response = await Util(context).http().post(
-              Common.domain + '/register?name=$name&password=$pwd&email=$email',
+              Common.register + '?name=$name&password=$pwd&email=$email',
             );
         var data = response.data;
         if (data["code"] == 200) {

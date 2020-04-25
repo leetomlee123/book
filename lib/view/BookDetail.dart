@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/common.dart';
@@ -79,7 +77,7 @@ class _BookDetailState extends State<BookDetail> {
                           Container(
                             padding: const EdgeInsets.only(
                                 left: 10.0, top: 5.0, bottom: 10.0),
-                            child: PicWidget(_bookInfo.Img, null, null),
+                            child: PicWidget(_bookInfo.Img),
                           )
                         ],
                       ),
@@ -165,7 +163,7 @@ class _BookDetailState extends State<BookDetail> {
                       Padding(
                         padding: const EdgeInsets.only(left: 17.0, top: 5.0),
                         child: Text(
-                          _bookInfo.Desc.trim(),
+                          _bookInfo.Desc??"".trim(),
                           style: TextStyle(fontSize: 12),
                         ),
                       ),
@@ -282,9 +280,8 @@ class _BookDetailState extends State<BookDetail> {
                                           padding: const EdgeInsets.only(
                                               left: 10.0, top: 10.0),
                                           child: PicWidget(
-                                              _bookInfo.SameAuthorBooks[i].Img,
-                                              null,
-                                              null),
+                                            _bookInfo.SameAuthorBooks[i].Img,
+                                          ),
                                         )
                                       ],
                                     ),
