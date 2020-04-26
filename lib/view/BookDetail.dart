@@ -6,6 +6,7 @@ import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -32,12 +33,12 @@ class BookDetail extends StatefulWidget {
 class _BookDetailState extends State<BookDetail> {
   BookInfo _bookInfo;
   bool inShelf = false;
-  bool down = false;
 
   _BookDetailState(this._bookInfo);
 
   @override
   Widget build(BuildContext context) {
+    ColorModel value = Store.value<ColorModel>(context);
     // TODO: implement build
     return Theme(
       child: Scaffold(
@@ -55,6 +56,7 @@ class _BookDetailState extends State<BookDetail> {
                 child: Text('书架'),
               ),
               onTap: () {
+                eventBus.fire(new NavEvent(0));
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                     builder: (BuildContext context) => MainPage()));
               },
@@ -163,7 +165,7 @@ class _BookDetailState extends State<BookDetail> {
                       Padding(
                         padding: const EdgeInsets.only(left: 17.0, top: 5.0),
                         child: Text(
-                          _bookInfo.Desc??"".trim(),
+                          _bookInfo.Desc ?? "".trim(),
                           style: TextStyle(fontSize: 12),
                         ),
                       ),
@@ -359,6 +361,7 @@ class _BookDetailState extends State<BookDetail> {
         ),
         bottomNavigationBar: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
+          unselectedItemColor: value.dark ? Colors.white : null,
           //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
           items: [
             !Store.value<ShelfModel>(context)
@@ -390,7 +393,6 @@ class _BookDetailState extends State<BookDetail> {
             BottomNavigationBarItem(
                 icon: Icon(
                   Icons.cloud_download,
-                  color: down ? Colors.lightBlue : Colors.black,
                 ),
                 title: new Text(
                   '全本缓存',

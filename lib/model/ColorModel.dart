@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 
 class ColorModel with ChangeNotifier {
   bool dark = false;
-  
+
   List<Color> skins = Colors.accents;
-  
 
   int idx = SpUtil.getInt('skin');
   ThemeData _theme;
@@ -16,7 +15,9 @@ class ColorModel with ChangeNotifier {
       dark = SpUtil.getBool("dark");
     }
     _theme = dark
-        ? ThemeData.dark()
+        ? ThemeData.dark().copyWith(
+
+            textTheme: TextTheme(body1: TextStyle(color: Color(0xFFB8B8B8))))
         : ThemeData.light().copyWith(primaryColor: skins[idx]);
     return _theme;
   }

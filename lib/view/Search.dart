@@ -229,7 +229,7 @@ class _SearchState extends State<Search> {
             children: <Widget>[
               Text(
                 '搜索历史',
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
               ),
               Expanded(
                 child: Container(),
@@ -258,7 +258,7 @@ class _SearchState extends State<Search> {
             children: <Widget>[
               Text(
                 '热门书籍',
-                style: TextStyle(fontSize: 16),
+                style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
               ),
             ],
           ),

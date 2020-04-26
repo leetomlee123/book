@@ -5,6 +5,8 @@ import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/HotBook.dart';
 import 'package:book/entity/SearchItem.dart';
+import 'package:book/model/ColorModel.dart';
+import 'package:book/store/Store.dart';
 import 'package:book/view/BookDetail.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -201,10 +203,21 @@ class SearchModel with ChangeNotifier {
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
       hot.add(GestureDetector(
-        child: ListTile(
-          leading: Text((i + 1).toString()),
-          title: Text(hbs[i].Name,overflow: TextOverflow.ellipsis,),
-          trailing: Text(hbs[i].Hot.toString(),overflow: TextOverflow.ellipsis,),
+        child: Card(
+          child: ListTile(
+            title: Text(
+              hbs[i].Name,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: Container(
+              width: 80,
+              height: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: showFire(hbs[i].Hot),
+              ),
+            ),
+          ),
         ),
         onTap: () async {
           String url = Common.detail + '/${hbs[i].Id}';
@@ -217,5 +230,27 @@ class SearchModel with ChangeNotifier {
       ));
     }
     notifyListeners();
+  }
+
+  List<Widget> showFire(int hot) {
+    var value = Store.value<ColorModel>(context);
+    List<Widget> wds = [];
+    int i = 1;
+    if (hot > 500) {
+      i = 3;
+    } else if (hot > 100 && hot < 500) {
+      i = 2;
+    }
+    for (int i1 = 0; i1 < i; i1++) {
+
+      wds.add(ImageIcon(
+        AssetImage(
+          "images/hot.png",
+        ),
+        size: 20.0,
+        color: value.dark ? Colors.white : value.theme.primaryColor,
+      ));
+    }
+    return wds;
   }
 }

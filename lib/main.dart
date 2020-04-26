@@ -76,7 +76,7 @@ class _MainPageState extends State<MainPage> {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(),GoodBook(), Me()];
+  var _pages = [BookShelf(), GoodBook(), Me()];
 
   @override
   void initState() {
@@ -85,11 +85,14 @@ class _MainPageState extends State<MainPage> {
     eventBus.on<OpenEvent>().listen((_) {
       q.currentState.openDrawer();
     });
+    eventBus.on<NavEvent>().listen((_) {
+      _pageController.jumpToPage(0);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var value = Store.value<ColorModel>(context);
+    ColorModel value = Store.value<ColorModel>(context);
     return Theme(
       child: Scaffold(
         drawer: Drawer(
@@ -120,7 +123,7 @@ class _MainPageState extends State<MainPage> {
                 )
               ],
             ),
-            color: Store.value<ColorModel>(context).theme.primaryColor,
+            color: value.theme.primaryColor,
           ),
         ),
         key: q,
@@ -134,6 +137,7 @@ class _MainPageState extends State<MainPage> {
             itemCount: _pages.length,
             itemBuilder: (context, index) => _pages[index]),
         bottomNavigationBar: BottomNavigationBar(
+          unselectedItemColor: value.dark ? Colors.white : null,
           elevation: 0,
           items: bottoms,
           type: BottomNavigationBarType.fixed,

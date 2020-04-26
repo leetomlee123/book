@@ -10,7 +10,11 @@ class OpenEvent {
 
   OpenEvent(this.name);
 }
+class NavEvent {
+ int idx;
 
+ NavEvent(this.idx);
+}
 class PageEvent {
   int page;
 

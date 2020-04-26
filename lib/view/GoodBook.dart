@@ -1,3 +1,4 @@
+import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
@@ -5,6 +6,7 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
 import 'BookDetail.dart';
@@ -28,10 +30,10 @@ class StateGoodBook extends State<GoodBook>
     super.initState();
     tabs = <Tab>[
       Tab(
-        text: "男",
+        text: "男生",
       ),
       Tab(
-        text: "女",
+        text: "女生",
       ),
     ];
 
@@ -68,7 +70,7 @@ class StateGoodBook extends State<GoodBook>
           body: TabBarView(
             controller: controller,
             children:
-                tabs.map((f) => TabItem(f.text == "男" ? "1" : "2")).toList(),
+                tabs.map((f) => TabItem(f.text == "男生" ? "1" : "2")).toList(),
           )),
     );
   }
@@ -94,9 +96,12 @@ class StateTabItem extends State<TabItem>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   List<List<GBook>> values = [];
   List<String> keys = [];
+  ColorModel value;
 
   @override
   void initState() {
+
+
     // TODO: implement initState
     super.initState();
     getData();
@@ -117,7 +122,7 @@ class StateTabItem extends State<TabItem>
                 child: Container(
                   width: 4,
                   height: 20,
-                  color: Colors.redAccent,
+                  color: value.dark ? value.theme.textTheme.body1.color : value.theme.primaryColor,
                 ),
                 padding: EdgeInsets.only(left: 5.0, right: 3.0),
               ),
@@ -171,9 +176,9 @@ class StateTabItem extends State<TabItem>
       child: Column(
         children: <Widget>[
           GestureDetector(
-            child: Image.network(
+            child: PicWidget(
               gbk.cover,
-              fit: BoxFit.cover,
+              fitOk: true,
             ),
             onTap: () async {
               String url = Common.detail + '/${gbk.id}';
@@ -195,9 +200,23 @@ class StateTabItem extends State<TabItem>
   }
 
   getData() async {
+    Map d;
+    var key = Common.toplist + this.widget.type;
+    var haveKey = SpUtil.haveKey(key);
+    if (haveKey) {
+      d = SpUtil.getObject(key);
+      formatData(d);
+    }
     String url = Common.rank + "/${this.widget.type}";
-    Response future = await Util(context).http().get(url);
-    Map d = future.data['data'];
+    Response future = await Util(haveKey ? null : context).http().get(url);
+    d = future.data['data'];
+    if (d != null) {
+      SpUtil.putObject(key, d);
+    }
+    formatData(d);
+  }
+
+  void formatData(Map d) {
     var iterator2 = d.keys.iterator;
     while (iterator2.moveNext()) {
       keys.add(iterator2.current.toString());
@@ -207,7 +226,6 @@ class StateTabItem extends State<TabItem>
       List temp = iterator3.current;
       values.add(temp.map((f) => GBook.fromJson(f)).toList());
     }
-
     if (mounted) {
       setState(() {});
     }
@@ -216,6 +234,7 @@ class StateTabItem extends State<TabItem>
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
+    value = Store.value<ColorModel>(context);
     super.build(context);
     return Scaffold(
       body: values.length == 0
@@ -247,9 +266,9 @@ class FullGoodBook extends StatelessWidget {
         child: Column(
           children: <Widget>[
             GestureDetector(
-              child: Image.network(
+              child: PicWidget(
                 gbk.cover,
-                fit: BoxFit.cover,
+                fitOk: true,
               ),
               onTap: () async {
                 String url = Common.detail + '/${gbk.id}';

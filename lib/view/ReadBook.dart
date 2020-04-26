@@ -444,16 +444,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                 Expanded(
                   child: Container(
                     child: FlatButton(
-                      color: Store.value<ColorModel>(context).dark
-                          ? Colors.white70
-                          : Colors.black,
+                      color: Colors.white,
                       onPressed: () {
                         readModel.fontSize -= 1.0;
                         readModel.modifyFont();
                       },
                       child: ImageIcon(
                         AssetImage("images/fontsmall.png"),
-                        color: Colors.white,
+                        color: Colors.black,
 
                       ),
                       shape: RoundedRectangleBorder(
@@ -468,16 +466,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                 Expanded(
                   child: Container(
                     child: FlatButton(
-                      color: Store.value<ColorModel>(context).dark
-                          ? Colors.white70
-                          : Colors.black,
+                      color: Colors.white,
                       onPressed: () {
                         readModel.fontSize += 1.0;
                         readModel.modifyFont();
                       },
                       child: ImageIcon(
                         AssetImage("images/fontbig.png"),
-                        color: Colors.white,
+                        color: Colors.black,
                       ),
                       shape: RoundedRectangleBorder(
                           borderRadius:
@@ -522,6 +518,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       wds.add(RawMaterialButton(
         onPressed: () {
           readModel.switchBgColor(i);
+          readModel.saveData();
           state(() {});
         },
         constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),

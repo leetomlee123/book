@@ -1,6 +1,7 @@
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class ChapterView extends StatefulWidget {
@@ -63,58 +64,73 @@ class _ChapterViewItem extends State<ChapterView> {
   Widget build(BuildContext context) {
     // TODO: implement build
 
-    return Store.connect<ReadModel>(
-        builder: (context, ReadModel data, child) => Theme(
-              child: Scaffold(
-                appBar: AppBar(
+    return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
+      var value = Store.value<ColorModel>(context);
+      return Theme(
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(
+              data.bookTag.bookName ?? '',
+              style: TextStyle(fontSize: 16.0),
+            ),
+            centerTitle: true,
+            automaticallyImplyLeading: false,
+            elevation: 0,
+          ),
+          body: Scrollbar(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemExtent: ITEM_HEIGH,
+              itemBuilder: (context, index) {
+                var title = data.bookTag.chapters[index].name;
+                var has = data.bookTag.chapters[index].hasContent;
+                return ListTile(
                   title: Text(
-                    data.bookTag.bookName ?? '',
-                    style: TextStyle(fontSize: 16.0),
+                    title,
+                    style: TextStyle(fontSize: 13),
                   ),
-                  centerTitle: true,
-                  automaticallyImplyLeading: false,
-                  elevation: 0,
-                ),
-                body: Scrollbar(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemExtent: ITEM_HEIGH,
-                    itemBuilder: (context, index) {
-                      var title = data.bookTag.chapters[index].name;
-                      var has = data.bookTag.chapters[index].hasContent;
-                      return ListTile(
-                        title: Text(
-                          title,
-                          style: TextStyle(fontSize: 13),
-                        ),
-                        trailing: Text(
-                          has == 2 ? "已缓存" : "",
-                          style: TextStyle(fontSize: 8),
-                        ),
-                        selected: index == data.bookTag.cur,
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          //不是卷目录
-                          data.bookTag.cur = index;
-                          data.intiPageContent(index, true);
-                          print(
-                              "chapters len ${data.bookTag.chapters.length} and curIdx $index and name $title}");
-                        },
-                      );
-                    },
-                    itemCount: data.bookTag.chapters.length,
+                  trailing: Text(
+                    has == 2 ? "已缓存" : "",
+                    style: TextStyle(fontSize: 8),
                   ),
-                ),
-                floatingActionButton: FloatingActionButton(
-                    backgroundColor:
-                        Store.value<ColorModel>(context).theme.primaryColor,
-                    onPressed: topOrBottom,
-                    child: Icon(
-                      showToTopBtn ? Icons.arrow_upward : Icons.arrow_downward,
-                    )),
+                  selected: index == data.bookTag.cur,
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    //不是卷目录
+                    data.bookTag.cur = index;
+                    data.intiPageContent(index, true);
+                    print(
+                        "chapters len ${data.bookTag.chapters.length} and curIdx $index and name $title}");
+                  },
+                );
+              },
+              itemCount: data.bookTag.chapters.length,
+            ),
+          ),
+          floatingActionButton: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: <Widget>[
+              FloatingActionButton(
+                  backgroundColor:
+                      value.dark ? Colors.white : value.theme.primaryColor,
+                  onPressed: refresh,
+                  child: Icon(Icons.refresh)),
+              SizedBox(
+                height: 10.0,
               ),
-              data: Store.value<ColorModel>(context).theme,
-            ));
+              FloatingActionButton(
+                  backgroundColor:
+                      value.dark ? Colors.white : value.theme.primaryColor,
+                  onPressed: topOrBottom,
+                  child: Icon(
+                    showToTopBtn ? Icons.arrow_upward : Icons.arrow_downward,
+                  ))
+            ],
+          ),
+        ),
+        data: value.theme,
+      );
+    });
   }
 
   topOrBottom() async {
@@ -126,4 +142,15 @@ class _ChapterViewItem extends State<ChapterView> {
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }
   }
+
+  Future<void> refresh() async {
+    Store.value<ReadModel>(context).getChapters();
+    if (_scrollController.hasClients) {
+      int temp =  Store.value<ReadModel>(context).bookTag.chapters.length - 8;
+      await _scrollController.animateTo(temp * ITEM_HEIGH,
+          duration: Duration(microseconds: 1), curve: Curves.ease);
+    }
+  }
 }
+
+
