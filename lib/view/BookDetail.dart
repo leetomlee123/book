@@ -56,9 +56,10 @@ class _BookDetailState extends State<BookDetail> {
                 child: Text('书架'),
               ),
               onTap: () {
-                eventBus.fire(new NavEvent(0));
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
                     builder: (BuildContext context) => MainPage()));
+
+                eventBus.fire(new NavEvent(0));
               },
             ),
             SizedBox(

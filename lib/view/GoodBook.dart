@@ -147,10 +147,14 @@ class StateTabItem extends State<TabItem>
                   ],
                 ),
                 onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => FullGoodBook(title, bks)));
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    new MaterialPageRoute(builder: (context) => FullGoodBook(title, bks)),
+                        (route) => route == null,
+                  );
+
+
                 },
               )
             ],
@@ -185,8 +189,13 @@ class StateTabItem extends State<TabItem>
               Response future = await Util(context).http().get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => BookDetail(bookInfo)));
+
+              Navigator.pushAndRemoveUntil(
+                context,
+                new MaterialPageRoute(builder: (context) => new BookDetail(bookInfo)),
+                    (route) => route == null,
+              );
+
             },
           ),
           Text(
@@ -275,8 +284,11 @@ class FullGoodBook extends StatelessWidget {
                 Response future = await Util(context).http().get(url);
                 var d = future.data['data'];
                 BookInfo bookInfo = BookInfo.fromJson(d);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => BookDetail(bookInfo)));
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  new MaterialPageRoute(builder: (context) => new BookDetail(bookInfo)),
+                      (route) => route == null,
+                );
               },
             ),
             Text(
