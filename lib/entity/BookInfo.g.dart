@@ -6,10 +6,13 @@ part of 'BookInfo.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 double td(String s) {
-  if (!s.contains('.')) {
-    s = s + '.0';
+  if(s=="null"){
+    s="0.0";
   }
-  return double.parse(s);
+  if (!s.contains('.')) {
+    s = s??"0" + '.0';
+  }
+  return double.parse(s??"0.0");
 }
 
 BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {

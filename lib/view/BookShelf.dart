@@ -94,16 +94,17 @@ class _BookShelfState extends State<BookShelf>
                         onTap: () {
                           model.shelf[i].NewChapterCount = 0;
                           Book temp = model.shelf[i];
-                          model.upTotop(temp);
-
                           Routes.navigateTo(
                             context,
                             Routes.read,
                             params: {
-                              'read': jsonEncode(ReadBook(
-                                  BookInfo.id(temp.Id, temp.Name, temp.Img))),
+                              'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
                             },
                           );
+
+                          model.upTotop(temp);
+
+
                         },
                         child: getBookItemView(model.shelf[i]),
                       );
