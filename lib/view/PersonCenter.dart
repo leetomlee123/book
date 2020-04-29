@@ -4,9 +4,8 @@ import 'package:book/common/util.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/Forgetpass.dart';
-import 'package:book/view/Register.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -41,8 +40,7 @@ class _PersonCenter extends State<PersonCenter>
           ),
           onTap: () {
             if (!SpUtil.haveKey('email')) {
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (BuildContext context) => Login()));
+              Routes.navigateTo(context, Routes.login);
             }
           },
         ),
@@ -93,7 +91,7 @@ class Login extends StatelessWidget {
             }
           }
         }
-        Navigator.pop(context);
+        Navigator.of(context).popUntil(ModalRoute.withName('/'));
       }
     }
 
@@ -142,8 +140,7 @@ class Login extends StatelessWidget {
         '忘记密码',
       ),
       onPressed: () {
-        Navigator.of(context).push(new MaterialPageRoute(
-            builder: (BuildContext context) => new ForgetPass()));
+        Routes.navigateTo(context, Routes.modifyPassword);
       },
     );
     final loginUpLabel = FlatButton(
@@ -151,8 +148,7 @@ class Login extends StatelessWidget {
         '注册',
       ),
       onPressed: () {
-        Navigator.of(context).push(new MaterialPageRoute(
-            builder: (BuildContext context) => new Register()));
+        Routes.navigateTo(context, Routes.register);
       },
     );
     final loginBody = Center(

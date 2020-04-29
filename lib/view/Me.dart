@@ -9,6 +9,7 @@ import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
@@ -63,8 +64,7 @@ class Me extends StatelessWidget {
                     if (SpUtil.haveKey("login")) {
                       return;
                     } else {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) => Login()));
+                      Routes.navigateTo(context, Routes.login);
                     }
                   },
                 ),
@@ -89,8 +89,7 @@ class Me extends StatelessWidget {
             ),
             onTap: () {
               if (!SpUtil.haveKey('email')) {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (BuildContext context) => Login()));
+                Routes.navigateTo(context, Routes.login);
               }
             },
           ),
@@ -434,13 +433,19 @@ class InfoState extends State<InfoPage> {
                           textAlign: TextAlign.start,
                         ),
                       ),
-                      Row(children: <Widget>[
-                        Expanded(child: Container(),),
-                        Text(
-                          ifs.length == 0 ? DateUtil.getNowDateStr() : ifs[0].Date,
-                          textAlign: TextAlign.start,
-                        )
-                      ],)
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Container(),
+                          ),
+                          Text(
+                            ifs.length == 0
+                                ? DateUtil.getNowDateStr()
+                                : ifs[0].Date,
+                            textAlign: TextAlign.start,
+                          )
+                        ],
+                      )
                     ],
                   ),
                   padding: EdgeInsets.all(15),
@@ -451,7 +456,6 @@ class InfoState extends State<InfoPage> {
   }
 
   Future<void> getInfo() async {
-
     Response res = await Util(null).http().get(Common.info);
     List data = res.data['data'];
     if (data == null) {

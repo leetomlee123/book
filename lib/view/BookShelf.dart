@@ -6,6 +6,7 @@ import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/ReadBook.dart';
 import 'package:book/view/Search.dart';
@@ -52,8 +53,12 @@ class _BookShelfState extends State<BookShelf>
             IconButton(
               icon: Icon(Icons.search),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (BuildContext context) => Search()));
+
+
+                Routes.navigateTo(
+                  context,
+                  Routes.search,
+                );
               },
             )
           ],
@@ -90,9 +95,15 @@ class _BookShelfState extends State<BookShelf>
                           model.shelf[i].NewChapterCount = 0;
                           Book temp = model.shelf[i];
                           model.upTotop(temp);
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) => new ReadBook(
-                                  BookInfo.id(temp.Id, temp.Name, temp.Img))));
+
+                          Routes.navigateTo(
+                            context,
+                            Routes.read,
+                            params: {
+                              'read': jsonEncode(ReadBook(
+                                  BookInfo.id(temp.Id, temp.Name, temp.Img))),
+                            },
+                          );
                         },
                         child: getBookItemView(model.shelf[i]),
                       );

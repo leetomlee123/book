@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/common.dart';
@@ -10,13 +12,12 @@ import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/ReadBook.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-
-import '../main.dart';
 
 class BookDetail extends StatefulWidget {
   BookInfo _bookInfo;
@@ -46,7 +47,7 @@ class _BookDetailState extends State<BookDetail> {
           leading: IconButton(
             icon: Icon(Icons.arrow_back),
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(context).pop();
             },
           ),
           elevation: 0,
@@ -56,9 +57,7 @@ class _BookDetailState extends State<BookDetail> {
                 child: Text('书架'),
               ),
               onTap: () {
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                    builder: (BuildContext context) => MainPage()));
-
+                Navigator.of(context).popUntil(ModalRoute.withName('/'));
                 eventBus.fire(new NavEvent(0));
               },
             ),
@@ -212,9 +211,16 @@ class _BookDetailState extends State<BookDetail> {
                         onTap: () {
                           //标志是从书的最后一章开始看
                           _bookInfo.CId = "-1";
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  ReadBook(_bookInfo)));
+
+
+
+                          Routes.navigateTo(
+                            context,
+                            Routes.read,
+                            params: {
+                              'read': jsonEncode(_bookInfo),
+                            },
+                          );
                         },
                       ),
                       ListTile(
@@ -240,9 +246,13 @@ class _BookDetailState extends State<BookDetail> {
                         onTap: () {
                           //标志是从书的最后一章开始看
                           _bookInfo.CId = "-1";
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (BuildContext context) =>
-                                  ReadBook(_bookInfo)));
+                          Routes.navigateTo(
+                            context,
+                            Routes.read,
+                            params: {
+                              'read': jsonEncode(_bookInfo),
+                            },
+                          );
                         },
                       ),
                     ],
@@ -421,8 +431,13 @@ class _BookDetailState extends State<BookDetail> {
                 break;
               case 1:
                 {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) => ReadBook(_bookInfo)));
+                  Routes.navigateTo(
+                    context,
+                    Routes.read,
+                    params: {
+                      'read': jsonEncode(_bookInfo),
+                    },
+                  );
                 }
                 break;
               case 2:

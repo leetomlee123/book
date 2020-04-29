@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/SearchModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -210,8 +213,8 @@ class _SearchState extends State<Search> {
               Response future = await Util(context).http().get(url);
               var d = future.data['data'];
               BookInfo b = BookInfo.fromJson(d);
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (BuildContext context) => BookDetail(b)));
+              Routes.navigateTo(context, Routes.detail,
+                  params: {"detail": jsonEncode(b)});
             },
           );
         },
@@ -221,50 +224,54 @@ class _SearchState extends State<Search> {
   }
 
   Widget suggestionWidget(data) {
-    return SingleChildScrollView(child: Container(
-      padding: EdgeInsets.only(left: 15, right: 15, top: 10),
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Text(
-                '搜索历史',
-                style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
-              ),
-              Expanded(
-                child: Container(),
-              ),
-              IconButton(
-                icon: ImageIcon(
-                  AssetImage("images/clear.png"),
-                  size: 18,
+    return SingleChildScrollView(
+      child: Container(
+        padding: EdgeInsets.only(left: 15, right: 15, top: 10),
+        child: Column(
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Text(
+                  '搜索历史',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                onPressed: () {
-                  searchModel.clearHistory();
-                },
-              )
-            ],
-          ),
+                Expanded(
+                  child: Container(),
+                ),
+                IconButton(
+                  icon: ImageIcon(
+                    AssetImage("images/clear.png"),
+                    size: 18,
+                  ),
+                  onPressed: () {
+                    searchModel.clearHistory();
+                  },
+                )
+              ],
+            ),
 //          ListView(
 //            shrinkWrap: true,
 //            children: data.getHistory(),
 //          ),
-          Wrap(
-            children: data.getHistory(),
-            spacing: 3, //主轴上子控件的间距
-            runSpacing: 5, //交叉轴上子控件之间的间距
-          ),
-          Row(
-            children: <Widget>[
-              Text(
-                '热门书籍',
-                style: TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          Column(children: searchModel.hot,)
-        ],
+            Wrap(
+              children: data.getHistory(),
+              spacing: 3, //主轴上子控件的间距
+              runSpacing: 5, //交叉轴上子控件之间的间距
+            ),
+            Row(
+              children: <Widget>[
+                Text(
+                  '热门书籍',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            Column(
+              children: searchModel.hot,
+            )
+          ],
+        ),
       ),
-    ),);
+    );
   }
 }

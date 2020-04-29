@@ -1,15 +1,16 @@
+import 'dart:convert';
+
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-
-import 'BookDetail.dart';
 
 class GoodBook extends StatefulWidget {
   @override
@@ -100,8 +101,6 @@ class StateTabItem extends State<TabItem>
 
   @override
   void initState() {
-
-
     // TODO: implement initState
     super.initState();
     getData();
@@ -122,7 +121,9 @@ class StateTabItem extends State<TabItem>
                 child: Container(
                   width: 4,
                   height: 20,
-                  color: value.dark ? value.theme.textTheme.body1.color : value.theme.primaryColor,
+                  color: value.dark
+                      ? value.theme.textTheme.body1.color
+                      : value.theme.primaryColor,
                 ),
                 padding: EdgeInsets.only(left: 5.0, right: 3.0),
               ),
@@ -147,14 +148,8 @@ class StateTabItem extends State<TabItem>
                   ],
                 ),
                 onTap: () {
-
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    new MaterialPageRoute(builder: (context) => FullGoodBook(title, bks)),
-                        (route) => route == null,
-                  );
-
-
+                  Routes.navigateTo(context, Routes.allTagBook,
+                      params: {"title": title, "bks": jsonEncode(bks)});
                 },
               )
             ],
@@ -189,13 +184,8 @@ class StateTabItem extends State<TabItem>
               Response future = await Util(context).http().get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                new MaterialPageRoute(builder: (context) => new BookDetail(bookInfo)),
-                    (route) => route == null,
-              );
-
+              Routes.navigateTo(context, Routes.detail,
+                  params: {"detail": jsonEncode(bookInfo)});
             },
           ),
           Text(
@@ -260,73 +250,4 @@ class StateTabItem extends State<TabItem>
   @override
   // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
-}
-
-class FullGoodBook extends StatelessWidget {
-  String title;
-  List<GBook> bks;
-
-  FullGoodBook(this.title, this.bks);
-
-  @override
-  Widget build(BuildContext context) {
-    Widget img(GBook gbk) {
-      return Container(
-        child: Column(
-          children: <Widget>[
-            GestureDetector(
-              child: PicWidget(
-                gbk.cover,
-                fitOk: true,
-              ),
-              onTap: () async {
-                String url = Common.detail + '/${gbk.id}';
-                Response future = await Util(context).http().get(url);
-                var d = future.data['data'];
-                BookInfo bookInfo = BookInfo.fromJson(d);
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  new MaterialPageRoute(builder: (context) => new BookDetail(bookInfo)),
-                      (route) => route == null,
-                );
-              },
-            ),
-            Text(
-              gbk.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          ],
-        ),
-      );
-    }
-
-    // TODO: implement build
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-              data: data.theme,
-              child: Scaffold(
-                  appBar: AppBar(
-                    title: Text(title),
-                    centerTitle: true,
-                    elevation: 0,
-                    automaticallyImplyLeading: false,
-                  ),
-                  body: ListView(
-                    children: <Widget>[
-                      GridView(
-                        shrinkWrap: true,
-                        physics: new NeverScrollableScrollPhysics(),
-                        padding: EdgeInsets.all(5.0),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: 1.0,
-                            crossAxisSpacing: 10.0,
-                            childAspectRatio: 0.6),
-                        children: bks.map((item) => img(item)).toList(),
-                      )
-                    ],
-                  )),
-            ));
-  }
 }

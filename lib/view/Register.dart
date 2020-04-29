@@ -2,6 +2,7 @@ import 'package:book/common/common.dart';
 import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/PersonCenter.dart';
 import 'package:dio/dio.dart';
@@ -129,8 +130,7 @@ class _RegisterState extends State<Register> {
         var data = response.data;
         if (data["code"] == 200) {
           Toast.show(data['msg']);
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (BuildContext context) => Login()));
+        Routes.navigateTo(context, Routes.login);
         } else {
           Toast.show(data['msg']);
         }

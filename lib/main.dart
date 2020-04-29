@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/BookShelf.dart';
 import 'package:book/view/GoodBook.dart';
 import 'package:book/view/Me.dart';
-import 'package:book/view/PersonCenter.dart';
+import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +21,9 @@ void main() async {
   await SpUtil.getInstance();
 
   locator.registerSingleton(TelAndSmsService());
+  final router = Router();
+  Routes.configureRoutes(router);
+  Routes.router = router;
   runApp(Store.init(child: MyApp()));
   await DirectoryUtil.getInstance();
 
@@ -36,6 +40,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '清阅',
       home: MainPage(),
+      onGenerateRoute: Routes.router.generator, // 配置route generate
     );
   }
 }
@@ -108,8 +113,10 @@ class _MainPageState extends State<MainPage> {
                   accountName: Text(SpUtil.getString("username") ?? ""),
                   onDetailsPressed: () {
                     if (!SpUtil.haveKey('email')) {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext context) => Login()));
+                      Routes.navigateTo(
+                        context,
+                        Routes.login,
+                      );
                     }
                   },
                   currentAccountPicture: CircleAvatar(
