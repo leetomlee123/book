@@ -15,6 +15,9 @@ class Routes {
   static String modifyPassword = '/modifyPassword';
   static String detail = '/detail';
   static String allTagBook = '/allTagBook';
+  static String vDetail = '/vDetail';
+  static String lookVideo = '/lookVideo';
+  static String tagVideo = '/tagVideo';
 
   // 配置route
   static void configureRoutes(Router router) {
@@ -32,6 +35,10 @@ class Routes {
     router.define(modifyPassword, handler: modifyPasswordHandler);
     router.define(detail, handler: detailHandler);
     router.define(allTagBook, handler: allTagBookHandler);
+    router.define(vDetail, handler: vDetailHandler);
+    router.define(lookVideo, handler: lookVideoHandler);
+    router.define(tagVideo, handler: tagVideoHandler);
+
 
   }
 

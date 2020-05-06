@@ -1,11 +1,14 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
+import 'package:book/entity/GBook.dart';
 import 'package:book/entity/HotBook.dart';
 import 'package:book/entity/SearchItem.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/BookDetail.dart';
 import 'package:dio/dio.dart';
@@ -15,10 +18,15 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class SearchModel with ChangeNotifier {
   List<String> searchHistory = new List();
+  bool isBookSearch = false;
   BuildContext context;
   bool showResult = false;
   List<SearchItem> bks = [];
+  List<GBook> mks = [];
   List<Widget> hot = [];
+
+  // ignore: non_constant_identifier_names
+  String store_word = "";
   int page = 1;
   int size = 10;
   var word = "";
@@ -43,21 +51,37 @@ class SearchModel with ChangeNotifier {
     if (bks.length == 0) {
       ctx = context;
     }
-    var url = '${Common.search}?key=$word&page=$page&size=$size';
+    if (isBookSearch) {
+      var url = '${Common.search}?key=$word&page=$page&size=$size';
 
-    Response res = await Util(ctx).http().get(url);
-    List data = res.data['data'];
-    if (data == null) {
-      refreshController.loadNoData();
+      Response res = await Util(ctx).http().get(url);
+      List data = res.data['data'];
+      if (data == null) {
+        refreshController.loadNoData();
+      } else {
+        data.forEach((f) {
+          bks.add(SearchItem.fromJson(f));
+        });
+      }
     } else {
-      data.forEach((f) {
-        bks.add(SearchItem.fromJson(f));
-      });
+//    /movies
+      var url = '${Common.movie_search}/$word/search/$page/tv';
+
+      Response res = await Util(ctx).http().get(url);
+      List data = res.data;
+      if (data == null) {
+        refreshController.loadNoData();
+      } else {
+        data.forEach((f) {
+          mks.add(GBook.fromJson(f));
+        });
+      }
     }
   }
 
   void onRefresh() async {
     bks = [];
+    mks = [];
     page = 1;
     getSearchData();
     refreshController.refreshCompleted();
@@ -155,21 +179,22 @@ class SearchModel with ChangeNotifier {
       }
     }
     searchHistory.insert(0, value);
-    if (SpUtil.haveKey('history')) {
-      SpUtil.remove('history');
+    if (SpUtil.haveKey(store_word)) {
+      SpUtil.remove(store_word);
     }
-    SpUtil.putStringList('history', searchHistory);
+    SpUtil.putStringList(store_word, searchHistory);
   }
 
   initHistory() {
-    if (SpUtil.haveKey('history')) {
-      searchHistory = SpUtil.getStringList('history');
+    print(store_word);
+    if (SpUtil.haveKey(store_word)) {
+      searchHistory = SpUtil.getStringList(store_word);
     }
     notifyListeners();
   }
 
   clearHistory() {
-    SpUtil.remove('history');
+    SpUtil.remove(store_word);
     searchHistory = [];
     notifyListeners();
   }
@@ -189,6 +214,7 @@ class SearchModel with ChangeNotifier {
       return;
     }
     bks = [];
+    mks = [];
     showResult = true;
     word = w;
     await getSearchData();
@@ -196,7 +222,7 @@ class SearchModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> initHot() async {
+  Future<void> initBookHot() async {
     hot = [];
     Response res = await Util(null).http().get(Common.hot);
     List data = res.data['data'];
@@ -242,7 +268,6 @@ class SearchModel with ChangeNotifier {
       i = 2;
     }
     for (int i1 = 0; i1 < i; i1++) {
-
       wds.add(ImageIcon(
         AssetImage(
           "images/hot.png",
@@ -252,5 +277,29 @@ class SearchModel with ChangeNotifier {
       ));
     }
     return wds;
+  }
+
+  Future<void> initMovieHot() async {
+    hot = [];
+    Response res = await Util(null).http().get(Common.movie_hot);
+    List data = res.data;
+    List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
+    for (var i = 0; i < hbs.length; i++) {
+      hot.add(GestureDetector(
+        child: Card(
+          child: ListTile(
+            title: Text(
+              hbs[i].name,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        onTap: () async {
+          Routes.navigateTo(context, Routes.vDetail,
+              params: {"gbook": jsonEncode(hbs[i])});
+        },
+      ));
+    }
+    notifyListeners();
   }
 }

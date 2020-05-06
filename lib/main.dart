@@ -8,6 +8,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/BookShelf.dart';
 import 'package:book/view/GoodBook.dart';
 import 'package:book/view/Me.dart';
+import 'package:book/view/Video.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +72,13 @@ class _MainPageState extends State<MainPage> {
         )),
     BottomNavigationBarItem(
         icon: ImageIcon(
+          AssetImage("images/video.png"),
+        ),
+        title: Text(
+          '美剧',
+        )),
+    BottomNavigationBarItem(
+        icon: ImageIcon(
           AssetImage("images/account.png"),
         ),
         title: Text(
@@ -81,7 +89,7 @@ class _MainPageState extends State<MainPage> {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Me()];
+  var _pages = [BookShelf(), GoodBook(), Video(), Me()];
 
   @override
   void initState() {
@@ -90,8 +98,8 @@ class _MainPageState extends State<MainPage> {
     eventBus.on<OpenEvent>().listen((_) {
       q.currentState.openDrawer();
     });
-    eventBus.on<NavEvent>().listen((_) {
-      _pageController.jumpToPage(0);
+    eventBus.on<NavEvent>().listen((navEvent) {
+      _pageController.jumpToPage(navEvent.idx);
     });
   }
 

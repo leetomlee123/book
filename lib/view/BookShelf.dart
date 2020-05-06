@@ -8,8 +8,6 @@ import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/ReadBook.dart';
-import 'package:book/view/Search.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -53,12 +51,8 @@ class _BookShelfState extends State<BookShelf>
             IconButton(
               icon: Icon(Icons.search),
               onPressed: () {
-
-
-                Routes.navigateTo(
-                  context,
-                  Routes.search,
-                );
+                Routes.navigateTo(context, Routes.search,
+                    params: {"type": "book"});
               },
             )
           ],
@@ -98,13 +92,12 @@ class _BookShelfState extends State<BookShelf>
                             context,
                             Routes.read,
                             params: {
-                              'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
+                              'read': jsonEncode(
+                                  BookInfo.id(temp.Id, temp.Name, temp.Img)),
                             },
                           );
 
                           model.upTotop(temp);
-
-
                         },
                         child: getBookItemView(model.shelf[i]),
                       );

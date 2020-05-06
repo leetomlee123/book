@@ -36,6 +36,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.1.2"
+  chewie:
+    dependency: "direct main"
+    description:
+      name: chewie
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.9.10"
   collection:
     dependency: transitive
     description:
@@ -85,6 +92,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "3.0.9"
+  dio_http2_adapter:
+    dependency: "direct main"
+    description:
+      name: dio_http2_adapter
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.0"
   event_bus:
     dependency: "direct main"
     description:
@@ -125,6 +139,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_page_indicator:
+    dependency: transitive
+    description:
+      name: flutter_page_indicator
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.0.3"
   flutter_spinkit:
     dependency: "direct main"
     description:
@@ -132,6 +153,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "4.1.2"
+  flutter_swiper:
+    dependency: "direct main"
+    description:
+      name: flutter_swiper
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.1.6"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -163,6 +191,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.12.0+4"
+  http2:
+    dependency: transitive
+    description:
+      name: http2
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.0"
   http_client_helper:
     dependency: transitive
     description:
@@ -205,6 +240,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.1.8"
+  open_iconic_flutter:
+    dependency: transitive
+    description:
+      name: open_iconic_flutter
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.3.0"
   path:
     dependency: transitive
     description:
@@ -364,6 +406,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.2.11"
+  transformer_page_view:
+    dependency: transitive
+    description:
+      name: transformer_page_view
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.1.6"
   typed_data:
     dependency: transitive
     description:
@@ -406,6 +455,34 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.8"
+  video_player:
+    dependency: "direct main"
+    description:
+      name: video_player
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.10.9+1"
+  video_player_platform_interface:
+    dependency: transitive
+    description:
+      name: video_player_platform_interface
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.5"
+  video_player_web:
+    dependency: transitive
+    description:
+      name: video_player_web
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.1.2+1"
+  wakelock:
+    dependency: transitive
+    description:
+      name: wakelock
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.1.4+1"
   xml:
     dependency: transitive
     description:
@@ -414,5 +491,5 @@ packages:
     source: hosted
     version: "3.5.0"
 sdks:
-  dart: ">=2.6.0 <3.0.0"
-  flutter: ">=1.12.8 <2.0.0"
+  dart: ">=2.7.0 <3.0.0"
+  flutter: ">=1.12.13+hotfix.5 <2.0.0"

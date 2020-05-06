@@ -6,6 +6,7 @@ class Common {
 //  static String domain = "http://192.168.3.9:8081";
   static String domain = "https://book.leetomlee.xyz";
 
+
 //  static String domain = "http://192.168.3.56:8081";
   static String search = domain + "/book/search";
   static String login = domain + "/login";
@@ -23,4 +24,19 @@ class Common {
   static String bookAction = domain + '/book/action';
   static String hot = domain + '/book/hot';
   static String info = domain + '/info';
+
+//  static String video_domain = "http://192.168.3.56:8082";
+  static String video_domain = "https://movie.leetomlee.xyz";
+
+  static String index = video_domain + '/index';
+  static String m_detail = video_domain + '/movies';
+  static String look_m = video_domain + '/movies/tv';
+  static String cache_index = "movie_cache_index";
+  static String tag_movies=video_domain+"/movies/category";
+  static String movie_hot=video_domain+"/hot";
+  static String movie_search=video_domain+"/movies";
+
+
+  static String book_search_history="book_search_history";
+  static String movie_search_history="movie_search_history";
 }

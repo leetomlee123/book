@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
+import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/route/Routes.dart';
@@ -13,9 +15,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-import 'BookDetail.dart';
-
 class Search extends StatefulWidget {
+  final String type;
+
+  Search(this.type);
+
   @override
   State<StatefulWidget> createState() {
     // TODO: implement createState
@@ -24,6 +28,7 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
+  bool isBookSearch = false;
   SearchModel searchModel;
   Widget body;
   TextEditingController controller = TextEditingController();
@@ -53,14 +58,22 @@ class _SearchState extends State<Search> {
   void initState() {
     // TODO: implement initState
     super.initState();
-
+    isBookSearch = this.widget.type == "book";
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
       searchModel = Store.value<SearchModel>(context);
       searchModel.context = context;
       searchModel.controller = controller;
+      searchModel.isBookSearch = this.isBookSearch;
+      searchModel.store_word = isBookSearch
+          ? Common.book_search_history
+          : Common.movie_search_history;
       searchModel.initHistory();
-      searchModel.initHot();
+      if (isBookSearch) {
+        searchModel.initBookHot();
+      } else {
+        searchModel.initMovieHot();
+      }
     });
   }
 
@@ -95,7 +108,7 @@ class _SearchState extends State<Search> {
                             searchModel.reset();
                           },
                         ),
-                        hintText: "书籍/作者名",
+                        hintText: isBookSearch ? "书籍/作者名" : "美剧/作者",
                       ),
                     ),
                   ))),
@@ -147,7 +160,7 @@ class _SearchState extends State<Search> {
       controller: searchModel.refreshController,
       onRefresh: searchModel.onRefresh,
       onLoading: searchModel.onLoading,
-      child: ListView.builder(
+      child: isBookSearch?ListView.builder(
         itemBuilder: (context, i) {
           var auth = searchModel.bks[i].Author;
           var cate = searchModel.bks[i].CName;
@@ -219,10 +232,44 @@ class _SearchState extends State<Search> {
           );
         },
         itemCount: searchModel.bks.length,
+      ):GridView(
+        shrinkWrap: true,
+
+        padding: EdgeInsets.all(5.0),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 1.0,
+            crossAxisSpacing: 10.0,
+            childAspectRatio: 0.7),
+        children: searchModel.mks.map((i) => img(i)).toList(),
       ),
     );
   }
-
+  Widget img(GBook gbk) {
+    return GestureDetector(
+      child: Column(
+        children: <Widget>[
+          PicWidget(
+            gbk.cover,
+            width: (ScreenUtil.getScreenW(context) - 40) / 3,
+            height: ((ScreenUtil.getScreenW(context) - 40) / 3) * 1.2,
+          ),
+          Expanded(
+            child: Container(),
+          ),
+          Text(
+            gbk.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          )
+        ],
+      ),
+      onTap: () async {
+        Routes.navigateTo(context, Routes.vDetail,
+            params: {"gbook": jsonEncode(gbk)});
+      },
+    );
+  }
   Widget suggestionWidget(data) {
     return SingleChildScrollView(
       child: Container(
@@ -261,13 +308,13 @@ class _SearchState extends State<Search> {
             Row(
               children: <Widget>[
                 Text(
-                  '热门书籍',
+                  '热门${this.widget.type == "book" ? "书籍" : "美剧"}',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             Column(
-              children: searchModel.hot,
+              children: searchModel?.hot ?? [],
             )
           ],
         ),

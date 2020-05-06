@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:book/common/toast.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_http2_adapter/dio_http2_adapter.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +18,13 @@ class Util {
     _dio = new Dio();
 
     var dic = DirectoryUtil.getAppDocPath();
+//    _dio.httpClientAdapter = Http2Adapter(
+//      ConnectionManager(
+//        idleTimeout: 10000,
+//        /// Ignore bad certificate
+//        onClientCreate: (_, clientSetting) => clientSetting.onBadCertificate = (_) => true,
+//      ),
+//    );
     _dio.interceptors
         .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
       // Do something before request is sent

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
@@ -245,6 +246,12 @@ class ReadModel with ChangeNotifier {
       //缓存章节
       SpUtil.putString(id, r.chapterContent);
       //缓存章节分页
+//      Map map = new Map();
+//      map["content"] = r.chapterContent;
+//      map["height"] = contentH;
+//      map["width"] = contentW;
+//      map["fontSize"] = fontSize;
+//      r.pageOffsets = await compute(getPageOffsets, map);
       r.pageOffsets = ReaderPageAgent.getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
       SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
       bookTag.chapters[idx].hasContent = 2;
@@ -256,13 +263,44 @@ class ReadModel with ChangeNotifier {
             .map((f) => int.parse(f))
             .toList();
       } else {
-
         r.pageOffsets = ReaderPageAgent.getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
+//        Map map = new Map();
+//        map["content"] = r.chapterContent;
+//        map["height"] = contentH;
+//        map["width"] = contentW;
+//        map["fontSize"] = fontSize;
+//        r.pageOffsets = await compute(getPageOffsets, map);
       }
     }
     print('white cache success');
     return r;
   }
+
+//  static Future<List<int>> getPageOffsets(Map map) async {
+//    String content = map["content"];
+//    double height = map["height"];
+//    double width = map["width"];
+//    double fontSize = map["fontSize"];
+//
+//    String tempStr = content;
+//    List<int> pageConfig = [];
+//    int last = 0;
+//    while (true) {
+//      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+//      textPainter.text =
+//          TextSpan(text: tempStr, style: TextStyle(fontSize: fontSize));
+//      textPainter.layout(maxWidth: width);
+//      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
+//
+//      if (end == 0) {
+//        break;
+//      }
+//      tempStr = tempStr.substring(end, tempStr.length);
+//      pageConfig.add(last + end);
+//      last = last + end;
+//    }
+//    return pageConfig;
+//  }
 
   fillAllContent() {
     allContent = [];
@@ -371,8 +409,6 @@ class ReadModel with ChangeNotifier {
     saveData();
   }
 
-
-
   static Future<String> requestDataWithCompute(String id) async {
     try {
       var url = Common.bookContentUrl + '/$id';
@@ -381,7 +417,7 @@ class ReadModel with ChangeNotifier {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = jsonDecode(responseBody);
-      sleep(Duration(seconds: 3));
+     
       return dataList['data']['content'].toString().trim();
     } catch (e) {
       print(e);

@@ -6,10 +6,13 @@ import 'package:book/main.dart';
 import 'package:book/view/AllTagBook.dart';
 import 'package:book/view/BookDetail.dart';
 import 'package:book/view/Forgetpass.dart';
+import 'package:book/view/LookVideo.dart';
 import 'package:book/view/PersonCenter.dart';
 import 'package:book/view/ReadBook.dart';
 import 'package:book/view/Register.dart';
 import 'package:book/view/Search.dart';
+import 'package:book/view/TagVideo.dart';
+import 'package:book/view/VideoDetail.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
@@ -22,7 +25,8 @@ var rootHandler =
 // 设置页 - 示例：不传参数
 var searchHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  return Search();
+      String type = (params['type'][0]);
+  return Search(type);
 });
 var loginHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
@@ -42,6 +46,25 @@ var allTagBookHandler =
   List list = convert.jsonDecode(params["bks"][0]);
   List<GBook> list2 = list.map((f) => GBook.fromJson(f)).toList();
   return AllTagBook(title, list2);
+});
+var vDetailHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  String gbook = (params['gbook'][0]);
+
+  return VideoDetail(GBook.fromJson(convert.jsonDecode(gbook)));
+});
+var lookVideoHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  String id = (params['id'][0]);
+
+  return LookVideo(id);
+});
+var tagVideoHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  String category = (params['category'][0]);
+  String name = (params['name'][0]);
+
+  return TagVideo(category, name);
 });
 
 //// 网页加载 - 示例：传多个字符串参数
