@@ -19,8 +19,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
 
-import 'BookDetail.dart';
-
 class ReadBook extends StatefulWidget {
   BookInfo _bookInfo;
 
@@ -98,116 +96,117 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return WillPopScope(
-      onWillPop: () async {
-        if (!Store.value<ShelfModel>(context)
-            .shelf
-            .map((f) => f.Id)
-            .toList()
-            .contains(readModel.bookInfo.Id)) {
-          var showDialog2 = await showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                    content: Text('是否加入本书'),
-                    actions: <Widget>[
-                      FlatButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Book book = new Book(
-                                "",
-                                "",
-                                0,
-                                readModel.bookInfo.Id,
-                                readModel.bookInfo.Name,
-                                "",
-                                readModel.bookInfo.Author,
-                                readModel.bookInfo.Img,
-                                readModel.bookInfo.LastChapterId,
-                                readModel.bookInfo.LastChapter,
-                                readModel.bookInfo.LastTime);
-                            Store.value<ShelfModel>(context).modifyShelf(book);
-                          },
-                          child: Text('确定')),
-                      FlatButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: Text('取消')),
-                    ],
-                  ));
-        }
-        return true;
-      },
-      child: readModel != null
-          ? Scaffold(
-              key: _globalKey,
-              drawer: Drawer(
-                child: ChapterView(),
-              ),
-              body: Stack(
-                children: <Widget>[
-                  readModel.readView(),
-                  readModel.showMenu
-                      ? Container(
-                          color: Colors.transparent,
-                          child: Column(
-                            children: <Widget>[
-                              Container(
-                                child: AppBar(
-                                  backgroundColor:
-                                      Store.value<ColorModel>(context)
-                                          .theme
-                                          .primaryColor,
-                                  title: Text(
-                                      '${readModel.bookTag.bookName ?? ""}'),
-                                  centerTitle: true,
-                                  leading: IconButton(
-                                    icon: Icon(Icons.arrow_back),
-                                    onPressed: () {
-                                      readModel.toggleShowMenu();
-                                    },
-                                  ),
-                                  elevation: 0,
-                                  actions: <Widget>[
-                                    IconButton(
-                                      icon: Icon(Icons.info),
-                                      onPressed: () async {
-                                        String url = Common.detail +
-                                            '/${readModel.bookInfo.Id}';
-                                        Response future =
-                                            await Util(context).http().get(url);
-                                        var d = future.data['data'];
-                                        BookInfo bookInfo =
-                                            BookInfo.fromJson(d);
-Routes.navigateTo(context, Routes.detail,params: {"detail":jsonEncode(bookInfo)});
-
-                                      },
-                                    )
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  child: Opacity(
-                                    opacity: 1,
-                                    child: Container(
-                                      width: double.infinity,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    readModel.toggleShowMenu();
-                                    if (readModel.font) {
-                                      readModel.reCalcPages();
-                                    }
+    return Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
+      return WillPopScope(
+        onWillPop: () async {
+          if (!Store.value<ShelfModel>(context)
+              .shelf
+              .map((f) => f.Id)
+              .toList()
+              .contains(readModel.bookInfo.Id)) {
+            var showDialog2 = await showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                      content: Text('是否加入本书'),
+                      actions: <Widget>[
+                        FlatButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Book book = new Book(
+                                  "",
+                                  "",
+                                  0,
+                                  readModel.bookInfo.Id,
+                                  readModel.bookInfo.Name,
+                                  "",
+                                  readModel.bookInfo.Author,
+                                  readModel.bookInfo.Img,
+                                  readModel.bookInfo.LastChapterId,
+                                  readModel.bookInfo.LastChapter,
+                                  readModel.bookInfo.LastTime);
+                              Store.value<ShelfModel>(context)
+                                  .modifyShelf(book);
+                            },
+                            child: Text('确定')),
+                        FlatButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text('取消')),
+                      ],
+                    ));
+          }
+          return true;
+        },
+        child: Scaffold(
+            key: _globalKey,
+            drawer: Drawer(
+              child: ChapterView(),
+            ),
+            body: Stack(
+              children: <Widget>[
+                model.readView(),
+                model.showMenu
+                    ? Container(
+                        color: Colors.transparent,
+                        child: Column(
+                          children: <Widget>[
+                            Container(
+                              child: AppBar(
+                                backgroundColor:
+                                    Store.value<ColorModel>(context)
+                                        .theme
+                                        .primaryColor,
+                                title: Text('${model.bookTag.bookName ?? ""}'),
+                                centerTitle: true,
+                                leading: IconButton(
+                                  icon: Icon(Icons.arrow_back),
+                                  onPressed: () {
+                                    model.toggleShowMenu();
                                   },
                                 ),
+                                elevation: 0,
+                                actions: <Widget>[
+                                  IconButton(
+                                    icon: Icon(Icons.info),
+                                    onPressed: () async {
+                                      String url = Common.detail +
+                                          '/${model.bookInfo.Id}';
+                                      Response future =
+                                          await Util(context).http().get(url);
+                                      var d = future.data['data'];
+                                      BookInfo bookInfo = BookInfo.fromJson(d);
+                                      Routes.navigateTo(context, Routes.detail,
+                                          params: {
+                                            "detail": jsonEncode(bookInfo)
+                                          });
+                                    },
+                                  )
+                                ],
                               ),
-                              Theme(
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                child: Opacity(
+                                  opacity: 1,
+                                  child: Container(
+                                    width: double.infinity,
+                                  ),
+                                ),
+                                onTap: () {
+                                  model.toggleShowMenu();
+                                  if (model.font) {
+                                    model.reCalcPages();
+                                  }
+                                },
+                              ),
+                            ),
+                            Store.connect<ColorModel>(builder:
+                                (context, ColorModel colorModel, child) {
+                              return Theme(
                                 child: Container(
-                                  color: Store.value<ColorModel>(context)
-                                      .theme
-                                      .primaryColor,
+                                  color: colorModel.theme.primaryColor,
                                   height: 120,
                                   width: double.infinity,
                                   child: Column(
@@ -223,9 +222,9 @@ Routes.navigateTo(context, Routes.detail,params: {"detail":jsonEncode(bookInfo)}
                                               width: 70,
                                             ),
                                             onTap: () {
-                                              readModel.bookTag.cur -= 1;
-                                              readModel.intiPageContent(
-                                                  readModel.bookTag.cur, true);
+                                              model.bookTag.cur -= 1;
+                                              model.intiPageContent(
+                                                  model.bookTag.cur, true);
                                             },
                                           ),
                                           Expanded(
@@ -233,23 +232,21 @@ Routes.navigateTo(context, Routes.detail,params: {"detail":jsonEncode(bookInfo)}
                                               child: Slider(
                                                 activeColor: Colors.white,
                                                 inactiveColor: Colors.white70,
-                                                value: readModel.value,
-                                                max: (readModel.bookTag.chapters
+                                                value: model.value,
+                                                max: (model.bookTag.chapters
                                                             .length -
                                                         1)
                                                     .toDouble(),
                                                 min: 0.0,
                                                 onChanged: (newValue) {
                                                   int temp = newValue.round();
-                                                  readModel.bookTag.cur = temp;
-                                                  readModel.value =
-                                                      temp.toDouble();
-                                                  readModel.intiPageContent(
-                                                      readModel.bookTag.cur,
-                                                      true);
+                                                  model.bookTag.cur = temp;
+                                                  model.value = temp.toDouble();
+                                                  model.intiPageContent(
+                                                      model.bookTag.cur, true);
                                                 },
                                                 label:
-                                                    '${readModel.bookTag.chapters[readModel.bookTag.cur].name} ',
+                                                    '${model.bookTag.chapters[model.bookTag.cur].name} ',
                                                 semanticFormatterCallback:
                                                     (newValue) {
                                                   return '${newValue.round()} dollars';
@@ -264,67 +261,67 @@ Routes.navigateTo(context, Routes.detail,params: {"detail":jsonEncode(bookInfo)}
                                               width: 70,
                                             ),
                                             onTap: () {
-                                              readModel.bookTag.cur += 1;
-                                              readModel.intiPageContent(
-                                                  readModel.bookTag.cur, true);
+                                              model.bookTag.cur += 1;
+                                              model.intiPageContent(
+                                                  model.bookTag.cur, true);
                                             },
                                           ),
                                         ],
                                       ),
-                                      buildBottomMenus()
+                                      buildBottomMenus(colorModel, model)
                                     ],
                                   ),
                                 ),
-                                data: Store.value<ColorModel>(context).theme,
-                              )
-                            ],
-                          ),
-                        )
-                      : Container()
-                ],
-              ))
-          : Scaffold(),
-    );
-  }
-
-  buildBottomMenus() {
-    return Store.connect<ColorModel>(
-        builder: (BuildContext context, ColorModel data, chile) => Theme(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  buildBottomItem('目录', Icons.menu),
-                  GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        width: ScreenUtil.getScreenW(context) / 4,
-                        padding: EdgeInsets.symmetric(vertical: 7),
-                        child: Column(
-                          children: <Widget>[
-                            ImageIcon(data.dark
-                                ? AssetImage("images/moon.png")
-                                : AssetImage("images/sun.png")),
-                            SizedBox(height: 5),
-                            Text(data.dark ? '夜间' : '日间',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Store.value<ColorModel>(context).dark
-                                        ? Colors.white70
-                                        : Colors.black)),
+                                data: colorModel.theme,
+                              );
+                            })
                           ],
                         ),
-                      ),
-                      onTap: () {
-                        Store.value<ColorModel>(context).switchModel();
-//                      setState(() {});
-                        readModel.toggleShowMenu();
-                      }),
-                  buildBottomItem('缓存', Icons.cloud_download),
-                  buildBottomItem('设置', Icons.settings),
-                ],
+                      )
+                    : Container()
+              ],
+            )),
+      );
+    });
+  }
+
+  buildBottomMenus(ColorModel colorModel, ReadModel readModel) {
+    return Theme(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: <Widget>[
+          buildBottomItem('目录', Icons.menu),
+          GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: ScreenUtil.getScreenW(context) / 4,
+                padding: EdgeInsets.symmetric(vertical: 7),
+                child: Column(
+                  children: <Widget>[
+                    ImageIcon(colorModel.dark
+                        ? AssetImage("images/sun.png")
+                        : AssetImage("images/moon.png")),
+                    SizedBox(height: 5),
+                    Text(colorModel.dark ? '日间' : '夜间',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Store.value<ColorModel>(context).dark
+                                ? Colors.white70
+                                : Colors.black)),
+                  ],
+                ),
               ),
-              data: data.theme,
-            ));
+              onTap: () {
+                colorModel.switchModel();
+//                      setState(() {});
+                readModel.toggleShowMenu();
+              }),
+          buildBottomItem('缓存', Icons.cloud_download),
+          buildBottomItem('设置', Icons.settings),
+        ],
+      ),
+      data: colorModel.theme,
+    );
   }
 
   buildBottomItem(String title, IconData iconData) {
@@ -377,137 +374,139 @@ Routes.navigateTo(context, Routes.detail,params: {"detail":jsonEncode(bookInfo)}
   }
 
   buildSetting(state) {
-    return Container(
-      color: Store.value<ColorModel>(context).theme.primaryColor,
-      height: 150,
-      child: Padding(
-        child: Column(
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Text(
-                  '亮度',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Store.value<ColorModel>(context).dark
-                          ? Colors.white70
-                          : Colors.black),
-                ),
-                Expanded(
-                  child: Container(
-                    child: Slider(
-                      activeColor: Colors.white,
-                      inactiveColor: Colors.white70,
-                      value: 50,
-                      max: 100,
-                      min: 0.0,
-                      onChanged: (newValue) {},
+    return Store.connect<ColorModel>(builder: (context,ColorModel colorModel,child){
+      return Container(
+        color: colorModel.theme.primaryColor,
+        height: 150,
+        child: Padding(
+          child: Column(
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Text(
+                    '亮度',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: colorModel.dark
+                            ? Colors.white70
+                            : Colors.black),
+                  ),
+                  Expanded(
+                    child: Container(
+                      child: Slider(
+                        activeColor: Colors.white,
+                        inactiveColor: Colors.white70,
+                        value: 50,
+                        max: 100,
+                        min: 0.0,
+                        onChanged: (newValue) {},
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  width: 130,
-                  child: Row(
-                    children: <Widget>[
-                      Text(
-                        '跟随系统',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Store.value<ColorModel>(context).dark
-                                ? Colors.white70
-                                : Colors.black),
-                      ),
-                      Checkbox(
-                        value: false,
-                        activeColor: Colors.blue,
-                        onChanged: (bool val) {},
-                      )
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: <Widget>[
-                Text(
-                  '字号',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Store.value<ColorModel>(context).dark
-                          ? Colors.white70
-                          : Colors.black),
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Container(
-                    child: FlatButton(
-                      color: Colors.white,
-                      onPressed: () {
-                        readModel.fontSize -= 1.0;
-                        readModel.modifyFont();
-                      },
-                      child: ImageIcon(
-                        AssetImage("images/fontsmall.png"),
-                        color: Colors.black,
-
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
+                  Container(
+                    width: 130,
+                    child: Row(
+                      children: <Widget>[
+                        Text(
+                          '跟随系统',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: colorModel.dark
+                                  ? Colors.white70
+                                  : Colors.black),
+                        ),
+                        Checkbox(
+                          value: false,
+                          activeColor: Colors.blue,
+                          onChanged: (bool val) {},
+                        )
+                      ],
                     ),
                   ),
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Container(
-                    child: FlatButton(
-                      color: Colors.white,
-                      onPressed: () {
-                        readModel.fontSize += 1.0;
-                        readModel.modifyFont();
-                      },
-                      child: ImageIcon(
-                        AssetImage("images/fontbig.png"),
-                        color: Colors.black,
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Text(
+                    '字号',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:colorModel.dark
+                            ? Colors.white70
+                            : Colors.black),
+                  ),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: Container(
+                      child: FlatButton(
+                        color: Colors.white,
+                        onPressed: () {
+                          readModel.fontSize -= 1.0;
+                          readModel.modifyFont();
+                        },
+                        child: ImageIcon(
+                          AssetImage("images/fontsmall.png"),
+                          color: Colors.black,
+                        ),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.all(Radius.circular(20.0))),
                       ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
                     ),
                   ),
-                ),
-              ],
-            ),
-            Row(
-              children: <Widget>[
-                Text(
-                  '背景',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Store.value<ColorModel>(context).dark
-                          ? Colors.white70
-                          : Colors.black),
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: readThemes(state),
+                  SizedBox(
+                    width: 10,
                   ),
-                )
-              ],
-            ),
-          ],
+                  Expanded(
+                    child: Container(
+                      child: FlatButton(
+                        color: Colors.white,
+                        onPressed: () {
+                          readModel.fontSize += 1.0;
+                          readModel.modifyFont();
+                        },
+                        child: ImageIcon(
+                          AssetImage("images/fontbig.png"),
+                          color: Colors.black,
+                        ),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.all(Radius.circular(20.0))),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: <Widget>[
+                  Text(
+                    '背景',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:colorModel.dark
+                            ? Colors.white70
+                            : Colors.black),
+                  ),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: readThemes(state),
+                    ),
+                  )
+                ],
+              ),
+            ],
+          ),
+          padding: EdgeInsets.only(left: 10, right: 10),
         ),
-        padding: EdgeInsets.only(left: 10, right: 10),
-      ),
-    );
+      );
+    });
+
   }
 
   List<Widget> readThemes(state) {

@@ -38,4 +38,5 @@ class Common {
   static String movies_record = "movies_record";
   static String book_search_history = "book_search_history";
   static String movie_search_history = "movie_search_history";
+  static String notice_info = "notice_info";
 }

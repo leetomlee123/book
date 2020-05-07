@@ -19,7 +19,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../main.dart';
-import 'PersonCenter.dart';
 
 class Me extends StatelessWidget {
   Widget getItem(imagIcon, text, func) {
@@ -114,9 +113,9 @@ class Me extends StatelessWidget {
               Store.connect<ColorModel>(
                   builder: (context, ColorModel data, child) => getItem(
                         ImageIcon(data.dark
-                            ? AssetImage("images/moon.png")
-                            : AssetImage("images/sun.png")),
-                        data.dark ? '夜间模式' : '日间模式',
+                            ? AssetImage("images/sun.png")
+                            : AssetImage("images/moon.png")),
+                        data.dark ? '日间模式' : '夜间模式',
                         () {
                           data.switchModel();
                         },

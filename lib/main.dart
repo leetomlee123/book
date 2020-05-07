@@ -44,11 +44,16 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '清阅',
-      home: MainPage(),
-      onGenerateRoute: Routes.router.generator, // 配置route generate
-    );
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) {
+          return MaterialApp(
+            title: '清阅',
+            home: MainPage(),
+            onGenerateRoute: Routes.router.generator,
+            theme: model.theme,// 配置route generate
+          );
+        });
+
   }
 }
 
@@ -60,7 +65,6 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _tabIndex = 0;
   bool isMovie = false;
-  ColorModel value;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
@@ -121,35 +125,48 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    value = Store.value<ColorModel>(context);
-    return Theme(
-      child: Scaffold(
-        drawer: Drawer(
-          child: ListView(children: isMovie ? mList() : pDre()),
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) {
+      return Theme(
+        child: Scaffold(
+          drawer: Drawer(
+            child: Theme(
+              child: Scaffold(
+                body: ListView(children: isMovie ? mList() : pDre()),
+                appBar: AppBar(
+                  title: Text("观剧记录"),
+                  elevation: 0,
+                  centerTitle: true,
+                  automaticallyImplyLeading: false,
+                ),
+              ),
+              data: model.theme,
+            ),
+          ),
+          key: q,
+          body: PageView.builder(
+              //要点1
+              physics: NeverScrollableScrollPhysics(),
+              //禁止页面左右滑动切换
+              controller: _pageController,
+              onPageChanged: _pageChanged,
+              //回调函数
+              itemCount: _pages.length,
+              itemBuilder: (context, index) => _pages[index]),
+          bottomNavigationBar: BottomNavigationBar(
+            unselectedItemColor: model.dark ? Colors.white : Colors.black,
+            elevation: 0,
+            items: bottoms,
+            type: BottomNavigationBarType.fixed,
+            currentIndex: _tabIndex,
+            onTap: (index) {
+              _pageController.jumpToPage(index);
+            },
+          ),
         ),
-        key: q,
-        body: PageView.builder(
-            //要点1
-            physics: NeverScrollableScrollPhysics(),
-            //禁止页面左右滑动切换
-            controller: _pageController,
-            onPageChanged: _pageChanged,
-            //回调函数
-            itemCount: _pages.length,
-            itemBuilder: (context, index) => _pages[index]),
-        bottomNavigationBar: BottomNavigationBar(
-          unselectedItemColor: value.dark ? Colors.white : null,
-          elevation: 0,
-          items: bottoms,
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _tabIndex,
-          onTap: (index) {
-            _pageController.jumpToPage(index);
-          },
-        ),
-      ),
-      data: value.theme,
-    );
+        data: model.theme,
+      );
+    });
   }
 
   void _pageChanged(int index) {
@@ -203,14 +220,12 @@ class _MainPageState extends State<MainPage> {
       List stringList = jsonDecode(SpUtil.getString(Common.movies_record));
 
       mrds = stringList.map((f) => MRecords.fromJson(f)).toList();
-      for (var i = mrds.length-1; i >= 0; i--) {
+      for (var i = mrds.length - 1; i >= 0; i--) {
         MRecords value = mrds[i];
         wds.add(GestureDetector(
           child: ListTile(
             leading: PicWidget(
               value.cover,
-              width: 100,
-              height: 100,
             ),
             title: Text(
               value.name,
@@ -219,14 +234,22 @@ class _MainPageState extends State<MainPage> {
             subtitle: Text(value.cname),
           ),
           onTap: () {
-            Routes.navigateTo(context, Routes.lookVideo,
-                params: {"id": value.cid, "mcids": value.mcids ?? [],"cover":value.cover,"name":value.name});
+            Routes.navigateTo(context, Routes.lookVideo, params: {
+              "id": value.cid,
+              "mcids": value.mcids ?? [],
+              "cover": value.cover,
+              "name": value.name
+            });
           },
         ));
         wds.add(Divider());
       }
     }
-
+    if (wds.isEmpty) {
+      wds.add(Center(
+        child: Text("暂无观看记录"),
+      ));
+    }
     return wds;
   }
 }

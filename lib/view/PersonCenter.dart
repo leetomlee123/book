@@ -92,6 +92,7 @@ class Login extends StatelessWidget {
           }
         }
         Navigator.of(context).popUntil(ModalRoute.withName('/'));
+        eventBus.fire(new NavEvent(0));
       }
     }
 

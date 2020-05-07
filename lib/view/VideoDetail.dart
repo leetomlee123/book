@@ -35,7 +35,6 @@ class VideoDetailState extends State<VideoDetail> {
         child: Scaffold(
             appBar: AppBar(
               title: Text(this.widget.gBook.name),
-              automaticallyImplyLeading: false,
               elevation: 0,
               centerTitle: true,
               actions: <Widget>[
@@ -188,17 +187,13 @@ class VideoDetailState extends State<VideoDetail> {
     List<Widget> wds = [];
     for (var value in list) {
       Map map = Map.castFrom(value);
-      wds.add(GestureDetector(
-        child: Container(
-          width: (ScreenUtil.getScreenW(context) - 20) / 3,
-          color: Store.value<ColorModel>(context).theme.primaryColor,
-          child: Text(
-            map.values.elementAt(0),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-          ),
+      wds.add(RaisedButton(
+        child: Text(
+          map.values.elementAt(0),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
         ),
-        onTap: () {
+        onPressed: () {
           var jsonEncode2 = jsonEncode(list);
           FunUtil.saveMoviesRecord(
               this.widget.gBook.cover,
@@ -214,6 +209,7 @@ class VideoDetailState extends State<VideoDetail> {
             "mcids": jsonEncode2
           });
         },
+        color: Store.value<ColorModel>(context).theme.primaryColor,
       ));
     }
     return wds;

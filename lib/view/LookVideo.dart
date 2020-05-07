@@ -74,19 +74,20 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    colorModel=Store.value<ColorModel>(context);
     // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
-              child: chewieController != null
+              child: wds.isNotEmpty
                   ? Scaffold(
-                      body: SingleChildScrollView(
-                        child: Container(
-                          child: Column(
-                            children: wds,
-                          ),
-                        ),
-                      ),
-                    )
+                body: SingleChildScrollView(
+                  child: Container(
+                    child: Column(
+                      children: wds,
+                    ),
+                  ),
+                ),
+              )
                   : Material(child: LoadingDialog()),
               data: model.theme,
             ));
@@ -141,19 +142,13 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     List<Widget> wds = [];
     for (var value in list) {
       Map map = Map.castFrom(value);
-      wds.add(GestureDetector(
-        child: Container(
-          width: (ScreenUtil.getScreenW(context) - 20) / 3,
-          color: this.widget.id == map.keys.elementAt(0)
-              ? Colors.white
-              : Store.value<ColorModel>(context).theme.primaryColor,
-          child: Text(
-            map.values.elementAt(0),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-          ),
+      wds.add(RaisedButton(
+        child: Text(
+          map.values.elementAt(0),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
         ),
-        onTap: () {
+        onPressed: () {
           Navigator.pop(context);
           FunUtil.saveMoviesRecord(
               this.widget.cover,
@@ -168,6 +163,9 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
             "name": this.widget.name
           });
         },
+        color: map.keys.elementAt(0) == this.widget.id
+            ? colorModel.dark?Colors.black:Colors.white
+            : colorModel.theme.primaryColor,
       ));
     }
     return wds;
