@@ -14,17 +14,20 @@ class PicWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return CachedNetworkImage(
       imageUrl: url,
-      imageBuilder: (context, imageProvider) => Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: imageProvider,
-            fit: BoxFit.cover,
+      imageBuilder: (context, imageProvider) => ClipRRect(
+        borderRadius: BorderRadius.circular(5),
+        child: Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: imageProvider,
+              fit: BoxFit.cover,
+            ),
           ),
+
         ),
       ),
-
       errorWidget: (context, url, error) => Image.asset(
         "images/nocover.jpg",
         width: width,
