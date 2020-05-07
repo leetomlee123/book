@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:book/common/FunUtil.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
@@ -196,8 +199,20 @@ class VideoDetailState extends State<VideoDetail> {
           ),
         ),
         onTap: () {
-          Routes.navigateTo(context, Routes.lookVideo,
-              params: {"id": map.keys.elementAt(0)});
+          var jsonEncode2 = jsonEncode(list);
+          FunUtil.saveMoviesRecord(
+              this.widget.gBook.cover,
+              this.widget.gBook.name,
+              map.keys.elementAt(0),
+              map.values.elementAt(0),
+              jsonEncode2);
+
+          Routes.navigateTo(context, Routes.lookVideo, params: {
+            "cover": this.widget.gBook.cover,
+            "name": this.widget.gBook.name,
+            "id": map.keys.elementAt(0),
+            "mcids": jsonEncode2
+          });
         },
       ));
     }

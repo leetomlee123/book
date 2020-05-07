@@ -17,17 +17,19 @@ dart,provider,eventbus,dio等
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | <img src="https://p3.pstatp.com/origin/pgc-image/e97e60e41be842ebb631a50e69a4f014" alt="书架"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/2bc0d3e0fd424196b35191fa3cd170de" alt="书架"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/2b09abf2ded54a67b81e82d656f7e58b" alt="书架"  /> |
 | <img src="https://p3.pstatp.com/origin/pgc-image/4de21433e2864ccda934868e9e4c6204" alt="个人中心" /> | <img src="https://p3.pstatp.com/origin/pgc-image/3824360a20ad44b9b54e7008292b4b76" alt="阅读" /> | <img src="https://p3.pstatp.com/origin/pgc-image/0c573da607d34a5a9821bc6d26b82700" alt="设置"  /> |
-| <img src="https://p3.pstatp.com/origin/pgc-image/cf0d138ab954450c88b2e5cda4557651" alt="章节"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/be154b3ce5754406a2077d9d0ce26fca" alt="详情"  /> | <img src="https://p3.pstatp.com/large/pgc-image/23896188b2af42cbafd00500d2755b56" alt="章节"  /> |
+| <img src="https://p3.pstatp.com/origin/pgc-image/cf0d138ab954450c88b2e5cda4557651" alt="章节"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/be154b3ce5754406a2077d9d0ce26fca" alt="详情"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/757cdcb7e2dd4ea797569fbc1cefe1bf" alt="章节"  /> |
+| <img src="https://p3.pstatp.com/origin/pgc-image/e986f385a7c9400eac8e55536144292d" alt="章节"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/aa4f3ffe8c47459788a0fe6a99186b76" alt="章节"  /> | <img src="https://p3.pstatp.com/origin/pgc-image/f9e7316831b442b98b100d675fe26a51" alt="章节"  /> |
+| <img src="https://p3.pstatp.com/origin/pgc-image/e4ce512bbac4403bba85973a0c93e7ff" alt="章节"  /> |                                                              |                                                              |
 
 
 
-                                                                                              
-                                                                                              
-                                                                                              
-                                                                                              
-                                                                                              
-                                                                                              
-                                                                                              
+
+​                                                                                              
+​                                                                                              
+​                                                                                              
+​                                                                                              
+​                                                                                              
+​                                                                                              
 
 
 ## LICENSE

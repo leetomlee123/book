@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/common/FunUtil.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
@@ -16,8 +17,11 @@ import 'package:video_player/video_player.dart';
 
 class LookVideo extends StatefulWidget {
   String id;
+  List<dynamic> mcids;
+  String cover;
+  String name;
 
-  LookVideo(this.id);
+  LookVideo(this.id, this.mcids, this.cover, this.name);
 
   @override
   State<StatefulWidget> createState() {
@@ -26,15 +30,18 @@ class LookVideo extends StatefulWidget {
   }
 }
 
-class LookVideoState extends State<LookVideo> {
+class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   ColorModel colorModel;
   VideoPlayerController videoPlayerController;
-
+  String source;
   ChewieController chewieController;
   List<Widget> wds = [];
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
+
+    var widgetsBinding = WidgetsBinding.instance;
     // TODO: implement initState
     super.initState();
     getData();
@@ -44,44 +51,78 @@ class LookVideoState extends State<LookVideo> {
   void dispose() {
     // TODO: implement dispose
     super.dispose();
+
     videoPlayerController.dispose();
     chewieController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+
+    saveRecord(videoPlayerController.value.position);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    saveRecord(videoPlayerController.value.position);
+  }
+
+  saveRecord(Duration position) {
+    if (SpUtil.haveKey(source)) {
+      SpUtil.remove(source);
+    }
+
+    SpUtil.putInt(source, position.inMicroseconds);
   }
 
   @override
   Widget build(BuildContext context) {
-    colorModel = Store.value<ColorModel>(context);
     // TODO: implement build
-    return chewieController != null
-        ? Material(
-            child: Theme(
-              child: SingleChildScrollView(
-                child: Container(
-                  color: Colors.white,
-                  child: Column(
-                    children: wds,
-                  ),
-                ),
-              ),
-              data: colorModel.theme,
-            ),
-          )
-        : Material(child: LoadingDialog());
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) => Theme(
+              child: chewieController != null
+                  ? Scaffold(
+                      body: SingleChildScrollView(
+                        child: Container(
+                          child: Column(
+                            children: wds,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Material(child: LoadingDialog()),
+              data: model.theme,
+            ));
   }
 
   getData() async {
     String url = Common.look_m + '/${this.widget.id}';
     Response future = await Util(null).http().get(url);
-    videoPlayerController = VideoPlayerController.network(future.data[2]);
+    source = future.data[2];
+    videoPlayerController = VideoPlayerController.network(source);
 
     chewieController = ChewieController(
       videoPlayerController: videoPlayerController,
-      aspectRatio: 3 / 2,
-      autoPlay: true,
-      looping: true,
+      aspectRatio: 16 / 9,
+      autoPlay: false,
+      allowedScreenSleep: false,
+      looping: false,
     );
+
+    videoPlayerController.initialize().then((_) {
+      if (SpUtil.haveKey(source)) {
+        int p = SpUtil.getInt(source);
+        chewieController.seekTo(Duration(microseconds: p));
+      }
+      chewieController.play();
+    });
     wds.add(Chewie(
       controller: chewieController,
+    ));
+    wds.add(SizedBox(
+      height: 10,
+    ));
+    wds.add(Wrap(
+      spacing: 3, //主轴上子控件的间距
+      runSpacing: 5, //交叉轴上子控件之间的间
+      children: mItems(this.widget.mcids),
     ));
     for (var i = 0; i < 2; i++) {
       List list = future.data[i];
@@ -94,6 +135,42 @@ class LookVideoState extends State<LookVideo> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  List<Widget> mItems(List<dynamic> list) {
+    List<Widget> wds = [];
+    for (var value in list) {
+      Map map = Map.castFrom(value);
+      wds.add(GestureDetector(
+        child: Container(
+          width: (ScreenUtil.getScreenW(context) - 20) / 3,
+          color: this.widget.id == map.keys.elementAt(0)
+              ? Colors.white
+              : Store.value<ColorModel>(context).theme.primaryColor,
+          child: Text(
+            map.values.elementAt(0),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(context);
+          FunUtil.saveMoviesRecord(
+              this.widget.cover,
+              this.widget.name,
+              map.keys.elementAt(0),
+              map.values.elementAt(0),
+              jsonEncode(this.widget.mcids));
+          Routes.navigateTo(context, Routes.lookVideo, params: {
+            "id": map.keys.elementAt(0),
+            "mcids": jsonEncode(list),
+            "cover": this.widget.cover,
+            "name": this.widget.name
+          });
+        },
+      ));
+    }
+    return wds;
   }
 
   Widget item(String title, List<GBook> bks) {

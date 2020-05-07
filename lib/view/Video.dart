@@ -4,6 +4,7 @@ import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/GBook.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -41,9 +42,16 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
     return gbks.isEmpty
         ? Scaffold()
         : Scaffold(
+            drawer: MHistory(),
             appBar: AppBar(
               title: Text("美剧"),
               centerTitle: true,
+              leading: IconButton(
+                icon: Icon(Icons.history),
+                onPressed: () {
+                  eventBus.fire(OpenEvent("m"));
+                },
+              ),
               elevation: 0,
               actions: <Widget>[
                 IconButton(
@@ -219,4 +227,18 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   @override
   // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
+}
+
+class MHistory extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) => Theme(
+              child: ListView(
+                children: <Widget>[],
+              ),
+              data: model.theme,
+            ));
+  }
 }

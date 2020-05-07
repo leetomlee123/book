@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:book/common/PicWidget.dart';
+import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
@@ -11,9 +14,12 @@ import 'package:book/view/Me.dart';
 import 'package:book/view/Video.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+
+import 'entity/MRecords.dart';
 
 GetIt locator = GetIt.instance;
 
@@ -53,6 +59,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _tabIndex = 0;
+  bool isMovie = false;
+  ColorModel value;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
@@ -95,7 +103,15 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    eventBus.on<OpenEvent>().listen((_) {
+    eventBus.on<OpenEvent>().listen((openEvent) {
+      if (openEvent.name == "m") {
+        isMovie = true;
+      } else {
+        isMovie = false;
+      }
+      if (mounted) {
+        setState(() {});
+      }
       q.currentState.openDrawer();
     });
     eventBus.on<NavEvent>().listen((navEvent) {
@@ -105,41 +121,11 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    ColorModel value = Store.value<ColorModel>(context);
+    value = Store.value<ColorModel>(context);
     return Theme(
       child: Scaffold(
         drawer: Drawer(
-          child: Container(
-            child: Column(
-              children: <Widget>[
-                UserAccountsDrawerHeader(
-                  accountEmail: Text(
-                    SpUtil.haveKey('email')
-                        ? SpUtil.getString('email')
-                        : '登陆/注册',
-                  ),
-                  accountName: Text(SpUtil.getString("username") ?? ""),
-                  onDetailsPressed: () {
-                    if (!SpUtil.haveKey('email')) {
-                      Routes.navigateTo(
-                        context,
-                        Routes.login,
-                      );
-                    }
-                  },
-                  currentAccountPicture: CircleAvatar(
-                    backgroundImage: AssetImage('images/fu.png'),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    color: value.theme.scaffoldBackgroundColor,
-                  ),
-                )
-              ],
-            ),
-            color: value.theme.primaryColor,
-          ),
+          child: ListView(children: isMovie ? mList() : pDre()),
         ),
         key: q,
         body: PageView.builder(
@@ -170,5 +156,77 @@ class _MainPageState extends State<MainPage> {
     setState(() {
       if (_tabIndex != index) _tabIndex = index;
     });
+  }
+
+  List<Widget> pDre() {
+    List<Widget> wds = [];
+    wds.add(Padding(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          CircleAvatar(
+            radius: 45,
+            backgroundImage: AssetImage('images/fu.png'),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Text(
+            SpUtil.getString("username") ?? "",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          GestureDetector(
+            child: Text(
+              SpUtil.haveKey('email') ? "" : '登陆/注册',
+            ),
+            onTap: () {
+              if (!SpUtil.haveKey('email')) {
+                Routes.navigateTo(
+                  context,
+                  Routes.login,
+                );
+              }
+            },
+          )
+        ],
+      ),
+      padding: EdgeInsets.only(left: 15),
+    ));
+
+    return wds;
+  }
+
+  List<Widget> mList() {
+    List<Widget> wds = [];
+    List<MRecords> mrds = [];
+    if (SpUtil.haveKey(Common.movies_record)) {
+      List stringList = jsonDecode(SpUtil.getString(Common.movies_record));
+
+      mrds = stringList.map((f) => MRecords.fromJson(f)).toList();
+      for (var i = mrds.length-1; i >= 0; i--) {
+        MRecords value = mrds[i];
+        wds.add(GestureDetector(
+          child: ListTile(
+            leading: PicWidget(
+              value.cover,
+              width: 100,
+              height: 100,
+            ),
+            title: Text(
+              value.name,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(value.cname),
+          ),
+          onTap: () {
+            Routes.navigateTo(context, Routes.lookVideo,
+                params: {"id": value.cid, "mcids": value.mcids ?? [],"cover":value.cover,"name":value.name});
+          },
+        ));
+        wds.add(Divider());
+      }
+    }
+
+    return wds;
   }
 }

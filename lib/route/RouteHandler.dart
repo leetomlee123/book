@@ -25,7 +25,7 @@ var rootHandler =
 // 设置页 - 示例：不传参数
 var searchHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-      String type = (params['type'][0]);
+  String type = (params['type'][0]);
   return Search(type);
 });
 var loginHandler =
@@ -56,8 +56,11 @@ var vDetailHandler =
 var lookVideoHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String id = (params['id'][0]);
+  String cover = (params['cover'][0]);
+  String name = (params['name'][0]);
+  List mcids = convert.jsonDecode(params['mcids'][0]);
 
-  return LookVideo(id);
+  return LookVideo(id, mcids, cover, name);
 });
 var tagVideoHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
