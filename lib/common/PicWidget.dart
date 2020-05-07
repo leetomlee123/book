@@ -1,4 +1,4 @@
-import 'package:extended_image/extended_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -8,63 +8,28 @@ class PicWidget extends StatelessWidget {
   double width;
   bool fitOk;
 
-  PicWidget(this.url, {this.height, this.width, this.fitOk});
+  PicWidget(this.url, {this.height = 100, this.width = 80, this.fitOk});
 
   @override
   Widget build(BuildContext context) {
+    return CachedNetworkImage(
+      imageUrl: url,
+      imageBuilder: (context, imageProvider) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: imageProvider,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
 
-    if (fitOk??false) {
-      return ExtendedImage.network(
-        url,
-        fit: BoxFit.cover,
-        cache: true,
-        retries: 1,
-        loadStateChanged: (ExtendedImageState state) {
-          switch (state.extendedImageLoadState) {
-            case LoadState.loading:
-              return null;
-              break;
-
-            case LoadState.completed:
-              return null;
-              break;
-            case LoadState.failed:
-              return Image.asset(
-                "images/nocover.jpg",
-                width: 80,
-                height: 100,
-              );
-              break;
-          }
-        },
-      );
-    } else {
-      return ExtendedImage.network(
-        url,
-        height: height ?? 100,
-        width: width ?? 80,
-        fit: BoxFit.cover,
-        cache: true,
-        retries: 1,
-        loadStateChanged: (ExtendedImageState state) {
-          switch (state.extendedImageLoadState) {
-            case LoadState.loading:
-              return null;
-              break;
-
-            case LoadState.completed:
-              return null;
-              break;
-            case LoadState.failed:
-              return Image.asset(
-                "images/nocover.jpg",
-                width: 80,
-                height: 100,
-              );
-              break;
-          }
-        },
-      );
-    }
+      errorWidget: (context, url, error) => Image.asset(
+        "images/nocover.jpg",
+        width: width,
+        height: height,
+      ),
+    );
   }
 }

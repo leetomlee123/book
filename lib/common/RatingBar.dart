@@ -306,7 +306,7 @@ class _RatingBarIndicatorState extends State<RatingBarIndicator> {
               child: widget.itemBuilder(context, index),
             ),
           ),
-          if (index + 1 == _ratingNumber)
+//          if (index + 1 == _ratingNumber)
             _isRTL
                 ? FittedBox(
               fit: BoxFit.contain,

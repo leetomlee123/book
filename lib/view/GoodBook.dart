@@ -177,7 +177,8 @@ class StateTabItem extends State<TabItem>
           GestureDetector(
             child: PicWidget(
               gbk.cover,
-              fitOk: true,
+              width: (ScreenUtil.getScreenW(context) - 40) / 4,
+              height: ((ScreenUtil.getScreenW(context) - 40) / 4) * 1.2,
             ),
             onTap: () async {
               String url = Common.detail + '/${gbk.id}';
