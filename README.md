@@ -35,7 +35,7 @@ dart,provider,eventbus,dio等
 ## LICENSE
 
 ```
-Copyright (C) zhaolijun, Open source codes for study only.
+Copyright (C) mindLee, Open source codes for study only.
 Do not use for commercial purpose.
 
 Licensed under the Apache License, Version 2.0 (the "License");
