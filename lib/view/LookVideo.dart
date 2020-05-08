@@ -9,6 +9,7 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/MyControls.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -74,20 +75,26 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    colorModel=Store.value<ColorModel>(context);
+    colorModel = Store.value<ColorModel>(context);
     // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
               child: wds.isNotEmpty
-                  ? Scaffold(
-                body: SingleChildScrollView(
-                  child: Container(
-                    child: Column(
-                      children: wds,
-                    ),
-                  ),
-                ),
-              )
+                  ? Material(
+                      child: Column(
+                        children: <Widget>[
+                          Chewie(
+                            controller: chewieController,
+                          ),
+                          Expanded(
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: wds,
+                            ),
+                          )
+                        ],
+                      ),
+                    )
                   : Material(child: LoadingDialog()),
               data: model.theme,
             ));
@@ -100,6 +107,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     videoPlayerController = VideoPlayerController.network(source);
 
     chewieController = ChewieController(
+      customControls: MyControls(this.widget.name),
       videoPlayerController: videoPlayerController,
       aspectRatio: 16 / 9,
       autoPlay: false,
@@ -114,16 +122,14 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
       }
       chewieController.play();
     });
-    wds.add(Chewie(
-      controller: chewieController,
-    ));
-    wds.add(SizedBox(
-      height: 10,
-    ));
-    wds.add(Wrap(
-      spacing: 3, //主轴上子控件的间距
-      runSpacing: 5, //交叉轴上子控件之间的间
-      children: mItems(this.widget.mcids),
+
+    wds.add(Center(
+      child: Wrap(
+        runAlignment: WrapAlignment.center,
+        spacing: 3, //主轴上子控件的间距
+        runSpacing: 5, //交叉轴上子控件之间的间
+        children: mItems(this.widget.mcids),
+      ),
     ));
     for (var i = 0; i < 2; i++) {
       List list = future.data[i];
@@ -164,7 +170,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           });
         },
         color: map.keys.elementAt(0) == this.widget.id
-            ? colorModel.dark?Colors.black:Colors.white
+            ? colorModel.dark ? Colors.black : Colors.white
             : colorModel.theme.primaryColor,
       ));
     }
