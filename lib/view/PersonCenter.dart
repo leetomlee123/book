@@ -66,10 +66,9 @@ class Login extends StatelessWidget {
   Widget build(BuildContext context) {
     login() async {
       FocusScope.of(context).requestFocus(FocusNode());
-
-      Response response = await Util(context)
-          .http()
-          .post(Common.login, data: {"name": username, "password": pwd});
+      var formData = FormData.fromMap({"name": username, "password": pwd});
+      Response response =
+          await Util(context).http().post(Common.login, data: formData);
       var data = response.data;
       if (data['code'] != 200) {
         Toast.show(data['msg']);

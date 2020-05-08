@@ -257,19 +257,22 @@ class Me extends StatelessWidget {
                 },
               ),
               SpUtil.haveKey("login")
-                  ? GestureDetector(
-                      child: Card(
-                        child: Container(
-                          height: 50,
-                          child: Text("退出登录"),
-                          alignment: Alignment.center,
+                  ? Store.connect<ShelfModel>(
+                      builder: (context, ShelfModel model, child) {
+                      return GestureDetector(
+                        child: Card(
+                          child: Container(
+                            height: 50,
+                            child: Text("退出登录"),
+                            alignment: Alignment.center,
+                          ),
                         ),
-                      ),
-                      onTap: () {
-                        Store.value<ShelfModel>(context).dropAccountOut();
-                        eventBus.fire(new BooksEvent([]));
-                      },
-                    )
+                        onTap: () {
+                          model.dropAccountOut();
+                          eventBus.fire(new BooksEvent([]));
+                        },
+                      );
+                    })
                   : Container(),
             ],
           ),

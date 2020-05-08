@@ -4,7 +4,6 @@ import 'package:book/common/util.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/PersonCenter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -123,21 +122,22 @@ class _RegisterState extends State<Register> {
         return;
       }
       Response response;
+      var formData = FormData.fromMap({"name": name, "password": pwd, "email": email});
       try {
         response = await Util(context).http().post(
-              Common.register + '?name=$name&password=$pwd&email=$email',
-            );
+          Common.register,
+          data: formData,
+        );
         var data = response.data;
         if (data["code"] == 200) {
           Toast.show(data['msg']);
-        Routes.navigateTo(context, Routes.login);
+          Routes.navigateTo(context, Routes.login);
         } else {
           Toast.show(data['msg']);
         }
       } catch (e) {
         Toast.show("注册异常,请重试...");
       }
-
     } else {
       Toast.show('检查输入项不可为空');
     }

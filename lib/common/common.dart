@@ -4,9 +4,9 @@ class Common {
 
   // static String domain = "http://120.27.244.128:6081";
 //  static String domain = "http://192.168.3.9:8081";
-  static String domain = "https://book.leetomlee.xyz";
+static String domain = "https://book.leetomlee.xyz/v1";
 
-//  static String domain = "http://192.168.3.56:8081";
+//  static String domain = "http://192.168.3.56:8081/v1";
   static String search = domain + "/book/search";
   static String login = domain + "/login";
   static String register = domain + "/register";

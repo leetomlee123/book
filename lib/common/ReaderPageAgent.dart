@@ -6,6 +6,7 @@ class ReaderPageAgent {
     String tempStr = content;
     List<int> pageConfig = [];
     int last = 0;
+
     while (true) {
       TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
       textPainter.text =
@@ -16,6 +17,7 @@ class ReaderPageAgent {
         break;
       }
       tempStr = tempStr.substring(end, tempStr.length);
+
       pageConfig.add(last + end);
       last = last + end;
     }

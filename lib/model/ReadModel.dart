@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
@@ -238,11 +237,10 @@ class ReadModel with ChangeNotifier {
 
     if (!SpUtil.haveKey(id)) {
       String url = Common.bookContentUrl + '/$id';
-      print(id);
 
       Response v = await Util(null).http().get(url);
 
-      r.chapterContent = v.data['data']['content'].toString();
+      r.chapterContent = v.data['data']['content'].toString().replaceAll("-", "");
       //缓存章节
       SpUtil.putString(id, r.chapterContent);
       //缓存章节分页
@@ -252,7 +250,8 @@ class ReadModel with ChangeNotifier {
 //      map["width"] = contentW;
 //      map["fontSize"] = fontSize;
 //      r.pageOffsets = await compute(getPageOffsets, map);
-      r.pageOffsets = ReaderPageAgent.getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
+      r.pageOffsets = ReaderPageAgent.getPageOffsets(
+          r.chapterContent, contentH, contentW, fontSize);
       SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
       bookTag.chapters[idx].hasContent = 2;
     } else {
@@ -263,7 +262,8 @@ class ReadModel with ChangeNotifier {
             .map((f) => int.parse(f))
             .toList();
       } else {
-        r.pageOffsets = ReaderPageAgent.getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
+        r.pageOffsets = ReaderPageAgent.getPageOffsets(
+            r.chapterContent, contentH, contentW, fontSize);
 //        Map map = new Map();
 //        map["content"] = r.chapterContent;
 //        map["height"] = contentH;
@@ -417,8 +417,8 @@ class ReadModel with ChangeNotifier {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = jsonDecode(responseBody);
-     
-      return dataList['data']['content'].toString().trim();
+
+      return dataList['data']['content'].toString().replaceAll("-", "");
     } catch (e) {
       print(e);
     }
@@ -434,7 +434,12 @@ class ReadModel with ChangeNotifier {
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
     for (var i = 0; i < r.pageOffsets.length; i++) {
-      var content = r.stringAtPageIndex(i).trim();
+      var content = r.stringAtPageIndex(i);
+      if (content.startsWith("\n")) {
+        content = content.substring(1);
+      }
+      print(content);
+      print("-------------------------------------------------------");
       contents.add(
         GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -464,7 +469,7 @@ class ReadModel with ChangeNotifier {
                         Expanded(
                           child: Container(
                               padding: EdgeInsets.only(
-                                right: 10,
+                                right: 5,
                                 left: 15,
                               ),
                               child: Text(
