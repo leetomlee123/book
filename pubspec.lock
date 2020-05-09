@@ -233,6 +233,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.16.1"
+  jpush_flutter:
+    dependency: "direct main"
+    description:
+      name: jpush_flutter
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.5.3"
   js:
     dependency: transitive
     description:

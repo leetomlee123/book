@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.1.0 <3.0.0"
 
 dependencies:
+  jpush_flutter: 0.5.3
   chewie: ^0.9.10
   video_player: ^0.10.9+1
   flutter_swiper: ^1.1.6

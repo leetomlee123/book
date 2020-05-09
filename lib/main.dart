@@ -18,6 +18,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+import 'package:jpush_flutter/jpush_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'entity/MRecords.dart';
 
@@ -46,14 +48,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-          return MaterialApp(
-            title: '清阅',
-            home: MainPage(),
-            onGenerateRoute: Routes.router.generator,
-            theme: model.theme,// 配置route generate
-          );
-        });
-
+      return MaterialApp(
+        title: '清阅',
+        home: MainPage(),
+        onGenerateRoute: Routes.router.generator,
+        theme: model.theme, // 配置route generate
+      );
+    });
   }
 }
 
@@ -63,6 +64,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
+  String debugLable = 'Unknown';
+  final JPush jpush = new JPush();
   int _tabIndex = 0;
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
@@ -107,6 +110,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    _startupJpush();
     eventBus.on<OpenEvent>().listen((openEvent) {
       if (openEvent.name == "m") {
         isMovie = true;
@@ -251,5 +255,78 @@ class _MainPageState extends State<MainPage> {
       ));
     }
     return wds;
+  }
+
+  void _startupJpush() async {
+    String platformVersion;
+
+    try {
+      jpush.addEventHandler(
+          onReceiveNotification: (Map<String, dynamic> message) async {
+        print("flutter onReceiveNotification: $message");
+        setState(() {
+          debugLable = "flutter onReceiveNotification: $message";
+        });
+      }, onOpenNotification: (Map<String, dynamic> message) async {
+        /// 吊起QQ
+        /// [number]QQ号
+        /// [isGroup]是否是群号,默认是,不是群号则直接跳转聊天
+        callQQ();
+        print("flutter onOpenNotification: $message");
+        setState(() {
+          debugLable = "flutter onOpenNotification: $message";
+        });
+      }, onReceiveMessage: (Map<String, dynamic> message) async {
+        print("flutter onReceiveMessage: $message");
+        setState(() {
+          debugLable = "flutter onReceiveMessage: $message";
+        });
+      }, onReceiveNotificationAuthorization:
+              (Map<String, dynamic> message) async {
+        print("flutter onReceiveNotificationAuthorization: $message");
+        setState(() {
+          debugLable = "flutter onReceiveNotificationAuthorization: $message";
+        });
+      });
+    } on PlatformException {
+      platformVersion = 'Failed to get platform version.';
+    }
+
+    jpush.setup(
+      appKey: "f90562283a6e6bffa036d5dd", //你自己应用的 AppKey
+      channel: "theChannel",
+      production: true,
+      debug: false,
+    );
+    jpush.applyPushAuthority(
+        new NotificationSettingsIOS(sound: true, alert: true, badge: true));
+
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    jpush.getRegistrationID().then((rid) {
+      print("flutter get registration id : $rid");
+      setState(() {
+        debugLable = "flutter getRegistrationID: $rid";
+      });
+    });
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+
+    setState(() {
+      debugLable = platformVersion;
+    });
+  }
+
+  void callQQ({int number = 953457248, bool isGroup = true}) async {
+    String url = isGroup
+        ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
+        : 'mqqwpa://im/chat?chat_type=wpa&uin=${number ?? 0}&version=1&src_type=web&web_src=oicqzone.com';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      print('不能访问');
+    }
   }
 }

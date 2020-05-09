@@ -256,24 +256,24 @@ class Me extends StatelessWidget {
                           ));
                 },
               ),
-              SpUtil.haveKey("login")
-                  ? Store.connect<ShelfModel>(
-                      builder: (context, ShelfModel model, child) {
-                      return GestureDetector(
-                        child: Card(
-                          child: Container(
-                            height: 50,
-                            child: Text("退出登录"),
-                            alignment: Alignment.center,
-                          ),
-                        ),
-                        onTap: () {
-                          model.dropAccountOut();
-                          eventBus.fire(new BooksEvent([]));
-                        },
-                      );
-                    })
-                  : Container(),
+//              SpUtil.haveKey("login")
+//                  ? Store.connect<ShelfModel>(
+//                      builder: (context, ShelfModel model, child) {
+//                      return GestureDetector(
+//                        child: Card(
+//                          child: Container(
+//                            height: 50,
+//                            child: Text("退出登录"),
+//                            alignment: Alignment.center,
+//                          ),
+//                        ),
+//                        onTap: () {
+//                          model.dropAccountOut();
+//                          eventBus.fire(new BooksEvent([]));
+//                        },
+//                      );
+//                    })
+//                  : Container(),
             ],
           ),
         ),
