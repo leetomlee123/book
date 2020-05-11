@@ -113,28 +113,25 @@ class ReadModel with ChangeNotifier {
     nextPage = await loadChapter(idx + 1);
     Navigator.pop(context);
 
-    print('refresh ok');
     fillAllContent();
     value = bookTag.cur.toDouble();
     if (jump) {
       int ix = prePage?.pageOffsets?.length ?? 0;
-      print(ix);
 
-      print("jump 1");
       pageController.jumpToPage(ix);
     }
   }
 
   changeChapter(int idx) async {
     bookTag.index = idx;
-    print("${bookTag.index}bbbbb");
+
     int preLen = prePage == null ? 0 : prePage.pageOffsets.length;
     int curLen = curPage == null ? 0 : curPage.pageOffsets.length;
 
     if ((idx + 1 - preLen) > (curLen)) {
       int temp = bookTag.cur + 1;
       if (temp >= bookTag.chapters.length) {
-        print("has more ?");
+
         Toast.show("已经是最后一页");
         pageController.previousPage(
             duration: Duration(microseconds: 1), curve: Curves.ease);
@@ -158,14 +155,14 @@ class ReadModel with ChangeNotifier {
           curPage = nextPage;
         }
         nextPage = await loadChapter(bookTag.cur + 1);
-        print("next chapter");
+
         fillAllContent();
 
-        print("jump 2");
+
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
       }
     } else if (idx < preLen) {
-      print("pre chapter");
+
       int temp = bookTag.cur - 1;
       if (temp < 0) {
         return;
@@ -174,12 +171,12 @@ class ReadModel with ChangeNotifier {
         nextPage = curPage;
         curPage = prePage;
         prePage = await loadChapter(bookTag.cur - 1);
-        print("pre chapter");
+
         fillAllContent();
         int ix = (prePage?.pageOffsets?.length ?? 0) +
             curPage.pageOffsets.length -
             1;
-        print("jump 3");
+
         pageController.jumpToPage(ix);
 //        notifyListeners();
       }
@@ -200,12 +197,12 @@ class ReadModel with ChangeNotifier {
       Toast.show('加载目录...');
     }
     Response response = await Util(ctx).http().get(url);
-    print('chapters init ok');
+
     List data = response.data['data'];
     if (data == null) {
       return;
     }
-    print(data.length.toString());
+
     List<Chapter> list = data.map((c) => Chapter.fromJson(c)).toList();
     bookTag.chapters.addAll(list);
     //书的最后一章
@@ -236,11 +233,8 @@ class ReadModel with ChangeNotifier {
 //    , double width, double fontSize
 
     if (!SpUtil.haveKey(id)) {
-      String url = Common.bookContentUrl + '/$id';
+      r.chapterContent = await compute(requestDataWithCompute, id);
 
-      Response v = await Util(null).http().get(url);
-
-      r.chapterContent = v.data['data']['content'].toString().replaceAll("-", "");
       //缓存章节
       SpUtil.putString(id, r.chapterContent);
       //缓存章节分页
@@ -272,7 +266,7 @@ class ReadModel with ChangeNotifier {
 //        r.pageOffsets = await compute(getPageOffsets, map);
       }
     }
-    print('white cache success');
+
     return r;
   }
 
@@ -403,7 +397,7 @@ class ReadModel with ChangeNotifier {
         SpUtil.putString(chapter.id, content);
         chapter.hasContent = 2;
       }
-      print("download ${chapter.name} ok");
+
     }
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
     saveData();
@@ -417,8 +411,7 @@ class ReadModel with ChangeNotifier {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = jsonDecode(responseBody);
-
-      return dataList['data']['content'].toString().replaceAll("-", "");
+      return dataList['data']['content'].toString();
     } catch (e) {
       print(e);
     }
@@ -438,8 +431,7 @@ class ReadModel with ChangeNotifier {
       if (content.startsWith("\n")) {
         content = content.substring(1);
       }
-      print(content);
-      print("-------------------------------------------------------");
+
       contents.add(
         GestureDetector(
             behavior: HitTestBehavior.opaque,
