@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:book/common/LoadDialog.dart';
@@ -131,7 +132,6 @@ class ReadModel with ChangeNotifier {
     if ((idx + 1 - preLen) > (curLen)) {
       int temp = bookTag.cur + 1;
       if (temp >= bookTag.chapters.length) {
-
         Toast.show("已经是最后一页");
         pageController.previousPage(
             duration: Duration(microseconds: 1), curve: Curves.ease);
@@ -158,11 +158,9 @@ class ReadModel with ChangeNotifier {
 
         fillAllContent();
 
-
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
       }
     } else if (idx < preLen) {
-
       int temp = bookTag.cur - 1;
       if (temp < 0) {
         return;
@@ -234,7 +232,6 @@ class ReadModel with ChangeNotifier {
 
     if (!SpUtil.haveKey(id)) {
       r.chapterContent = await compute(requestDataWithCompute, id);
-
       //缓存章节
       SpUtil.putString(id, r.chapterContent);
       //缓存章节分页
@@ -338,7 +335,13 @@ class ReadModel with ChangeNotifier {
       font = !font;
     }
     bookTag.index = 0;
-    SpUtil.remove('pages${bookTag.chapters[bookTag.cur].id}');
+
+    var keys = SpUtil.getKeys();
+    for (var key in keys) {
+      if (key.startsWith('pages')) {
+        SpUtil.remove(key);
+      }
+    }
     intiPageContent(bookTag.cur, true);
 //    notifyListeners();
   }
@@ -397,7 +400,6 @@ class ReadModel with ChangeNotifier {
         SpUtil.putString(chapter.id, content);
         chapter.hasContent = 2;
       }
-
     }
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
     saveData();

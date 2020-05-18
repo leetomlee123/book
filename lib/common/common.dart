@@ -2,9 +2,10 @@ class Common {
   static String imgPre =
       "https://appbdimg.cdn.bcebos.com/BookFiles/BookImages/";
 
-  // static String domain = "http://120.27.244.128:6081";
+//   static String domain = "http://120.27.244.128:8083/v1";
 //  static String domain = "http://192.168.3.9:8081";
-static String domain = "https://book.leetomlee.xyz/v1";
+static String domain = "https://newbook.leetomlee.xyz/v1";
+//static String domain = "https://book.leetomlee.xyz/v1";
 
 //  static String domain = "http://192.168.3.56:8081/v1";
   static String search = domain + "/book/search";

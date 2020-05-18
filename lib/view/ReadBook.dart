@@ -374,7 +374,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   buildSetting(state) {
-    return Store.connect<ColorModel>(builder: (context,ColorModel colorModel,child){
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel colorModel, child) {
       return Container(
         color: colorModel.theme.primaryColor,
         height: 150,
@@ -387,9 +388,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                     '亮度',
                     style: TextStyle(
                         fontSize: 12,
-                        color: colorModel.dark
-                            ? Colors.white70
-                            : Colors.black),
+                        color: colorModel.dark ? Colors.white70 : Colors.black),
                   ),
                   Expanded(
                     child: Container(
@@ -431,9 +430,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                     '字号',
                     style: TextStyle(
                         fontSize: 12,
-                        color:colorModel.dark
-                            ? Colors.white70
-                            : Colors.black),
+                        color: colorModel.dark ? Colors.white70 : Colors.black),
                   ),
                   SizedBox(
                     width: 10,
@@ -452,7 +449,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         ),
                         shape: RoundedRectangleBorder(
                             borderRadius:
-                            BorderRadius.all(Radius.circular(20.0))),
+                                BorderRadius.all(Radius.circular(20.0))),
                       ),
                     ),
                   ),
@@ -473,7 +470,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         ),
                         shape: RoundedRectangleBorder(
                             borderRadius:
-                            BorderRadius.all(Radius.circular(20.0))),
+                                BorderRadius.all(Radius.circular(20.0))),
                       ),
                     ),
                   ),
@@ -485,9 +482,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                     '背景',
                     style: TextStyle(
                         fontSize: 12,
-                        color:colorModel.dark
-                            ? Colors.white70
-                            : Colors.black),
+                        color: colorModel.dark ? Colors.white70 : Colors.black),
                   ),
                   SizedBox(
                     width: 10,
@@ -506,7 +501,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         ),
       );
     });
-
   }
 
   List<Widget> readThemes(state) {

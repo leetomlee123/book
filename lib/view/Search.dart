@@ -55,6 +55,12 @@ class _SearchState extends State<Search> {
   }
 
   @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
@@ -160,91 +166,104 @@ class _SearchState extends State<Search> {
       controller: searchModel.refreshController,
       onRefresh: searchModel.onRefresh,
       onLoading: searchModel.onLoading,
-      child: isBookSearch?ListView.builder(
-        itemBuilder: (context, i) {
-          var auth = searchModel.bks[i].Author;
-          var cate = searchModel.bks[i].CName;
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            child: Row(
-              children: <Widget>[
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: <Widget>[
-                    new Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                      child: Image.network(
-                        searchModel.bks[i].Img,
-                        height: 100,
-                        width: 80,
-                        fit: BoxFit.cover,
+      child: isBookSearch
+          ? ListView.builder(
+              itemBuilder: (context, i) {
+                var auth = searchModel.bks[i].Author;
+                var cate = searchModel.bks[i].CName;
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: <Widget>[
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          new Container(
+                            padding:
+                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(5),
+                              child: Container(
+                                height: 100,
+                                width: 80,
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                    image: NetworkImage(searchModel.bks[i].Img),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
                       ),
-                    )
-                  ],
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  verticalDirection: VerticalDirection.down,
-                  // textDirection:,
-                  textBaseline: TextBaseline.alphabetic,
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        verticalDirection: VerticalDirection.down,
+                        // textDirection:,
+                        textBaseline: TextBaseline.alphabetic,
 
-                  children: <Widget>[
-                    Container(
-                      width: ScreenUtil.getScreenW(context) - 120,
-                      padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                      child: Text(
-                        searchModel.bks[i].Name,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 15),
+                        children: <Widget>[
+                          Container(
+                            width: ScreenUtil.getScreenW(context) - 120,
+                            padding:
+                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                            child: Text(
+                              searchModel.bks[i].Name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          ),
+                          Container(
+                            padding:
+                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                            child: new Text('$cate | $auth',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                )),
+                          ),
+                          Container(
+                            padding:
+                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                            child: Text(searchModel.bks[i].Desc.trim(),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                )),
+                            width: ScreenUtil.getScreenW(context) - 120,
+                          ),
+                        ],
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                      child: new Text('$cate | $auth',
-                          style: TextStyle(
-                            fontSize: 14,
-                          )),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                      child: Text(searchModel.bks[i].Desc.trim(),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
-                          style: TextStyle(
-                            fontSize: 12,
-                          )),
-                      width: ScreenUtil.getScreenW(context) - 120,
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  onTap: () async {
+                    String url = Common.detail + '/${searchModel.bks[i].Id}';
+                    Response future = await Util(context).http().get(url);
+                    var d = future.data['data'];
+                    BookInfo b = BookInfo.fromJson(d);
+                    Routes.navigateTo(context, Routes.detail,
+                        params: {"detail": jsonEncode(b)});
+                  },
+                );
+              },
+              itemCount: searchModel.bks.length,
+            )
+          : GridView(
+              shrinkWrap: true,
+              padding: EdgeInsets.all(5.0),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 1.0,
+                  crossAxisSpacing: 10.0,
+                  childAspectRatio: 0.7),
+              children: searchModel.mks.map((i) => img(i)).toList(),
             ),
-            onTap: () async {
-              String url = Common.detail + '/${searchModel.bks[i].Id}';
-              Response future = await Util(context).http().get(url);
-              var d = future.data['data'];
-              BookInfo b = BookInfo.fromJson(d);
-              Routes.navigateTo(context, Routes.detail,
-                  params: {"detail": jsonEncode(b)});
-            },
-          );
-        },
-        itemCount: searchModel.bks.length,
-      ):GridView(
-        shrinkWrap: true,
-
-        padding: EdgeInsets.all(5.0),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 1.0,
-            crossAxisSpacing: 10.0,
-            childAspectRatio: 0.7),
-        children: searchModel.mks.map((i) => img(i)).toList(),
-      ),
     );
   }
+
   Widget img(GBook gbk) {
     return GestureDetector(
       child: Column(
@@ -270,6 +289,7 @@ class _SearchState extends State<Search> {
       },
     );
   }
+
   Widget suggestionWidget(data) {
     return SingleChildScrollView(
       child: Container(
