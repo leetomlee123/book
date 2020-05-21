@@ -70,15 +70,15 @@ class Login extends StatelessWidget {
       Response response =
           await Util(context).http().post(Common.login, data: formData);
       var data = response.data;
-      if (data['code'] != 200) {
+      if (data['code'] != 201) {
         Toast.show(data['msg']);
       } else {
         //收起键盘
-        SpUtil.putString('email', data['data']['email']);
-        SpUtil.putString('pwd', pwd);
+//        SpUtil.putString('email', data['data']['email']);
+//        SpUtil.putString('pwd', pwd);
         SpUtil.putString('username', username);
         SpUtil.putBool('login', true);
-        SpUtil.putString("auth", response.headers.value("auth"));
+        SpUtil.putString("auth", data['data']['token']);
         eventBus.fire(new SyncShelfEvent(""));
 
         //书架同步

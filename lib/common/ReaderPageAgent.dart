@@ -1,3 +1,4 @@
+import 'package:book/common/TextLayoutCache.dart';
 import 'package:flutter/material.dart';
 
 class ReaderPageAgent {
@@ -8,9 +9,10 @@ class ReaderPageAgent {
     int last = 0;
 
     while (true) {
-      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-      textPainter.text =
-          TextSpan(text: tempStr, style: TextStyle(fontSize: fontSize));
+//      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+      var textPainter = TextLayoutCache(TextDirection.ltr, 6553600)
+          .getOrPerformLayout(
+              TextSpan(text: tempStr, style: TextStyle(fontSize: fontSize)));
       textPainter.layout(maxWidth: width);
       var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
       if (end == 0) {

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:book/common/LoadDialog.dart';
@@ -174,7 +173,6 @@ class ReadModel with ChangeNotifier {
         int ix = (prePage?.pageOffsets?.length ?? 0) +
             curPage.pageOffsets.length -
             1;
-
         pageController.jumpToPage(ix);
 //        notifyListeners();
       }
@@ -267,31 +265,31 @@ class ReadModel with ChangeNotifier {
     return r;
   }
 
-//  static Future<List<int>> getPageOffsets(Map map) async {
-//    String content = map["content"];
-//    double height = map["height"];
-//    double width = map["width"];
-//    double fontSize = map["fontSize"];
-//
-//    String tempStr = content;
-//    List<int> pageConfig = [];
-//    int last = 0;
-//    while (true) {
-//      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-//      textPainter.text =
-//          TextSpan(text: tempStr, style: TextStyle(fontSize: fontSize));
-//      textPainter.layout(maxWidth: width);
-//      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
-//
-//      if (end == 0) {
-//        break;
-//      }
-//      tempStr = tempStr.substring(end, tempStr.length);
-//      pageConfig.add(last + end);
-//      last = last + end;
-//    }
-//    return pageConfig;
-//  }
+  static Future<List<int>> getPageOffsets(Map map) async {
+    String content = map["content"];
+    double height = map["height"];
+    double width = map["width"];
+    double fontSize = map["fontSize"];
+
+    String tempStr = content;
+    List<int> pageConfig = [];
+    int last = 0;
+    while (true) {
+      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+      textPainter.text =
+          TextSpan(text: tempStr, style: TextStyle(fontSize: fontSize));
+      textPainter.layout(maxWidth: width);
+      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
+
+      if (end == 0) {
+        break;
+      }
+      tempStr = tempStr.substring(end, tempStr.length);
+      pageConfig.add(last + end);
+      last = last + end;
+    }
+    return pageConfig;
+  }
 
   fillAllContent() {
     allContent = [];

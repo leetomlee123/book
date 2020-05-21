@@ -61,6 +61,7 @@ class _BookShelfState extends State<BookShelf>
             builder: (context, ShelfModel model, child) => SmartRefresher(
                 enablePullDown: true,
 //                header: MyWaterDropHeader(),
+                header: WaterDropMaterialHeader(),
                 footer: CustomFooter(
                   builder: (BuildContext context, LoadStatus mode) {
                     if (mode == LoadStatus.idle) {

@@ -45,10 +45,9 @@ class _SearchState extends State<Search> {
                   automaticallyImplyLeading: false,
                 ),
                 body: Store.connect<SearchModel>(
-                    builder: (context, SearchModel data, child) =>
-                        data.showResult
-                            ? resultWidget()
-                            : suggestionWidget(data)),
+                    builder: (context, SearchModel d, child) {
+                  return d.showResult ? resultWidget() : suggestionWidget(d);
+                }),
               ),
               data: data.theme,
             ));
@@ -67,20 +66,24 @@ class _SearchState extends State<Search> {
     isBookSearch = this.widget.type == "book";
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
-      searchModel = Store.value<SearchModel>(context);
-      searchModel.context = context;
-      searchModel.controller = controller;
-      searchModel.isBookSearch = this.isBookSearch;
-      searchModel.store_word = isBookSearch
-          ? Common.book_search_history
-          : Common.movie_search_history;
-      searchModel.initHistory();
-      if (isBookSearch) {
-        searchModel.initBookHot();
-      } else {
-        searchModel.initMovieHot();
-      }
+      initModel();
     });
+  }
+
+  void initModel() {
+    searchModel = Store.value<SearchModel>(context);
+    searchModel.showResult=false;
+    searchModel.context = context;
+    searchModel.controller = controller;
+    searchModel.isBookSearch = this.isBookSearch;
+    searchModel.store_word =
+        isBookSearch ? Common.book_search_history : Common.movie_search_history;
+    searchModel.initHistory();
+    if (isBookSearch) {
+      searchModel.initBookHot();
+    } else {
+      searchModel.initMovieHot();
+    }
   }
 
   Widget buildSearchWidget() {
