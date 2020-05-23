@@ -74,6 +74,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     // TODO: implement dispose
     super.dispose();
     readModel.saveData();
+    readModel.clear();
     WidgetsBinding.instance.removeObserver(this);
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 class ReaderPageAgent {
   static List<int> getPageOffsets(
       String content, double height, double width, double fontSize) {
+    print(fontSize);
     String tempStr = content;
     List<int> pageConfig = [];
     int last = 0;

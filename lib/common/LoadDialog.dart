@@ -12,9 +12,9 @@ class LoadingDialog extends Dialog {
         child: Container(
       width: 600,
       height: 600,
-      child: SpinKitCircle(
+      child: SpinKitThreeBounce(
         color: value.dark ? Colors.white : value.theme.primaryColor,
-        size: 50,
+        size: 30,
       ),
     ));
   }

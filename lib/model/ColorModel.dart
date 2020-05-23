@@ -16,7 +16,6 @@ class ColorModel with ChangeNotifier {
     }
     _theme = dark
         ? ThemeData.dark().copyWith(
-
             textTheme: TextTheme(body1: TextStyle(color: Color(0xFFB8B8B8))))
         : ThemeData.light().copyWith(primaryColor: skins[idx]);
     return _theme;

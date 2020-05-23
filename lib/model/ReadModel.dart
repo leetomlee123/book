@@ -46,7 +46,7 @@ class ReadModel with ChangeNotifier {
   ];
 
   //页面字体大小
-  double fontSize = 28.0;
+  double fontSize = 29.0;
 
   //显示上层 设置
   bool showMenu = false;
@@ -117,7 +117,6 @@ class ReadModel with ChangeNotifier {
     value = bookTag.cur.toDouble();
     if (jump) {
       int ix = prePage?.pageOffsets?.length ?? 0;
-
       pageController.jumpToPage(ix);
     }
   }
@@ -185,14 +184,15 @@ class ReadModel with ChangeNotifier {
   }
 
   Future getChapters() async {
+    print("load chpaters");
     var url = Common.chaptersUrl +
         '/${bookInfo.Id}/${bookTag?.chapters?.length ?? 0}';
-    var ctx;
-    if ((bookTag?.chapters?.length ?? 0) == 0 && context != null) {
-      ctx = context;
-      Toast.show('加载目录...');
-    }
-    Response response = await Util(ctx).http().get(url);
+//    var ctx;
+//    if ((bookTag?.chapters?.length ?? 0) == 0 && context != null) {
+//      ctx = context;
+//      Toast.show('加载目录...');
+//    }
+    Response response = await Util(null).http().get(url);
 
     List data = response.data['data'];
     if (data == null) {
@@ -225,20 +225,12 @@ class ReadModel with ChangeNotifier {
 
     r.chapterName = bookTag.chapters[idx].name;
     String id = bookTag.chapters[idx].id;
-    //    String content, double height
-//    , double width, double fontSize
 
     if (!SpUtil.haveKey(id)) {
       r.chapterContent = await compute(requestDataWithCompute, id);
-      //缓存章节
+
       SpUtil.putString(id, r.chapterContent);
-      //缓存章节分页
-//      Map map = new Map();
-//      map["content"] = r.chapterContent;
-//      map["height"] = contentH;
-//      map["width"] = contentW;
-//      map["fontSize"] = fontSize;
-//      r.pageOffsets = await compute(getPageOffsets, map);
+
       r.pageOffsets = ReaderPageAgent.getPageOffsets(
           r.chapterContent, contentH, contentW, fontSize);
       SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
@@ -253,42 +245,10 @@ class ReadModel with ChangeNotifier {
       } else {
         r.pageOffsets = ReaderPageAgent.getPageOffsets(
             r.chapterContent, contentH, contentW, fontSize);
-//        Map map = new Map();
-//        map["content"] = r.chapterContent;
-//        map["height"] = contentH;
-//        map["width"] = contentW;
-//        map["fontSize"] = fontSize;
-//        r.pageOffsets = await compute(getPageOffsets, map);
       }
     }
 
     return r;
-  }
-
-  static Future<List<int>> getPageOffsets(Map map) async {
-    String content = map["content"];
-    double height = map["height"];
-    double width = map["width"];
-    double fontSize = map["fontSize"];
-
-    String tempStr = content;
-    List<int> pageConfig = [];
-    int last = 0;
-    while (true) {
-      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-      textPainter.text =
-          TextSpan(text: tempStr, style: TextStyle(fontSize: fontSize));
-      textPainter.layout(maxWidth: width);
-      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
-
-      if (end == 0) {
-        break;
-      }
-      tempStr = tempStr.substring(end, tempStr.length);
-      pageConfig.add(last + end);
-      last = last + end;
-    }
-    return pageConfig;
   }
 
   fillAllContent() {
@@ -336,7 +296,7 @@ class ReadModel with ChangeNotifier {
 
     var keys = SpUtil.getKeys();
     for (var key in keys) {
-      if (key.startsWith('pages')) {
+      if (key.startsWith("pages")) {
         SpUtil.remove(key);
       }
     }
@@ -496,5 +456,10 @@ class ReadModel with ChangeNotifier {
       );
     }
     return contents;
+  }
+
+  clear() {
+    bookTag = null;
+    allContent = null;
   }
 }
