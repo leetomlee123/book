@@ -19,7 +19,7 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
+import 'dart:ui' as ui show window;
 class ReadModel with ChangeNotifier {
   BookInfo bookInfo;
 
@@ -46,7 +46,7 @@ class ReadModel with ChangeNotifier {
   ];
 
   //页面字体大小
-  double fontSize = 29.0;
+  double fontSize = 28.0;
 
   //显示上层 设置
   bool showMenu = false;
@@ -68,7 +68,10 @@ class ReadModel with ChangeNotifier {
   getBookRecord() async {
     showMenu = false;
     if (SpUtil.haveKey(bookInfo.Id)) {
-      bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(bookInfo.Id)));
+      bookTag =
+          BookTag.fromJson(await parseJson(SpUtil.getString(bookInfo.Id)));
+      List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
+      bookTag.chapters = list.map((e) => Chapter.fromJson(e)).toList();
       getChapters();
       //书的最后一章
       if (bookInfo.CId == "-1") {
@@ -83,7 +86,7 @@ class ReadModel with ChangeNotifier {
       bookTag = BookTag(0, 0, bookInfo.Name, []);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
         var string = SpUtil.getString('${bookInfo.Id}chapters');
-        List v = jsonDecode(string);
+        List v = parseJson(string);
         bookTag.chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
       pageController = PageController(initialPage: 0);
@@ -184,7 +187,6 @@ class ReadModel with ChangeNotifier {
   }
 
   Future getChapters() async {
-    print("load chpaters");
     var url = Common.chaptersUrl +
         '/${bookInfo.Id}/${bookTag?.chapters?.length ?? 0}';
 //    var ctx;
@@ -206,6 +208,7 @@ class ReadModel with ChangeNotifier {
       bookTag.cur = bookTag.chapters.length - 1;
       value = bookTag.cur.toDouble();
     }
+    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(bookTag.chapters));
     notifyListeners();
   }
 
@@ -310,6 +313,7 @@ class ReadModel with ChangeNotifier {
   }
 
   saveData() {
+    bookTag.chapters = [];
     SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
     SpUtil.putDouble('fontSize', fontSize);
     SpUtil.putInt('bgIdx', bgIdx);
@@ -370,7 +374,7 @@ class ReadModel with ChangeNotifier {
       var request = await client.getUrl(Uri.parse(url));
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
-      var dataList = jsonDecode(responseBody);
+      var dataList = await parseJson(responseBody);
       return dataList['data']['content'].toString();
     } catch (e) {
       print(e);
@@ -427,7 +431,7 @@ class ReadModel with ChangeNotifier {
                               child: Text(
                                 content,
                                 style: TextStyle(
-                                  fontSize: fontSize / Screen.textScaleFactor,
+                                  fontSize: fontSize / MediaQueryData.fromWindow(ui.window).textScaleFactor,
                                 ),
                               )),
                         ),

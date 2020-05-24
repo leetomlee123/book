@@ -6,9 +6,7 @@ part 'BookTag.g.dart';
 @JsonSerializable()
 class BookTag {
   int cur;
-
   int index;
-
   String bookName;
   List<Chapter> chapters;
 
