@@ -511,7 +511,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       wds.add(RawMaterialButton(
         onPressed: () {
           readModel.switchBgColor(i);
-          readModel.saveData();
+//          readModel.saveData();
           state(() {});
         },
         constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),

@@ -345,7 +345,8 @@ class ReadModel with ChangeNotifier {
   downloadAll() async {
     if (bookTag?.chapters?.isEmpty ?? 0 == 0) {
       await getChapters();
-      saveData();
+//      saveData();
+
     }
     List<String> ids = [];
     if (SpUtil.haveKey(Common.downloadlist)) {
@@ -364,7 +365,7 @@ class ReadModel with ChangeNotifier {
       }
     }
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
-    saveData();
+    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(bookTag.chapters));
   }
 
   static Future<String> requestDataWithCompute(String id) async {

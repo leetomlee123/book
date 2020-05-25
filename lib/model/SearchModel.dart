@@ -250,6 +250,13 @@ class SearchModel with ChangeNotifier {
           Response future = await Util(context).http().get(url);
           var d = future.data['data'];
           BookInfo b = BookInfo.fromJson(d);
+          Routes.navigateTo(
+            context,
+            Routes.detail,
+            params: {
+              'detail': jsonEncode(b),
+            },
+          );
           Navigator.of(context).push(MaterialPageRoute(
               builder: (BuildContext context) => BookDetail(b)));
         },
