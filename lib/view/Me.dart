@@ -4,11 +4,10 @@ import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
+import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/Info.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
-import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
@@ -322,10 +321,11 @@ class _CacheManager extends State<CacheManager> {
   }
 
   Widget item(id, Color color) {
+    List list = jsonDecode(SpUtil.getString('${id}chapters'));
+    List all = list.map((e) => Chapter.fromJson(e)).toList();
     BookTag bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(id)));
-    int all = bookTag.chapters.length;
     int sub = 0;
-    bookTag.chapters.forEach((f) {
+    all.forEach((f) {
       if (f.hasContent == 2) {
         sub += 1;
       }
@@ -342,7 +342,7 @@ class _CacheManager extends State<CacheManager> {
                     activeColor: Colors.white,
                     inactiveColor: Colors.white70,
                     value: sub.toDouble(),
-                    max: all.toDouble(),
+                    max: all.length.toDouble(),
                     min: 0.0,
                   ),
                 ),

@@ -234,7 +234,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                                 activeColor: Colors.white,
                                                 inactiveColor: Colors.white70,
                                                 value: model.value,
-                                                max: (model.bookTag.chapters
+                                                max: (model.chapters
                                                             .length -
                                                         1)
                                                     .toDouble(),
@@ -247,7 +247,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                                       model.bookTag.cur, true);
                                                 },
                                                 label:
-                                                    '${model.bookTag.chapters[model.bookTag.cur].name} ',
+                                                    '${model.chapters[model.bookTag.cur].name} ',
                                                 semanticFormatterCallback:
                                                     (newValue) {
                                                   return '${newValue.round()} dollars';

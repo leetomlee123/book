@@ -82,8 +82,8 @@ class _ChapterViewItem extends State<ChapterView> {
               controller: _scrollController,
               itemExtent: ITEM_HEIGH,
               itemBuilder: (context, index) {
-                var title = data.bookTag.chapters[index].name;
-                var has = data.bookTag.chapters[index].hasContent;
+                var title = data.chapters[index].name;
+                var has = data.chapters[index].hasContent;
                 return ListTile(
                   title: Text(
                     title,
@@ -100,11 +100,11 @@ class _ChapterViewItem extends State<ChapterView> {
                     data.bookTag.cur = index;
                     data.intiPageContent(index, true);
                     print(
-                        "chapters len ${data.bookTag.chapters.length} and curIdx $index and name $title}");
+                        "chapters len ${data.chapters.length} and curIdx $index and name $title}");
                   },
                 );
               },
-              itemCount: data.bookTag.chapters.length,
+              itemCount: data.chapters.length,
             ),
           ),
           floatingActionButton: Column(
@@ -137,7 +137,7 @@ class _ChapterViewItem extends State<ChapterView> {
     if (_scrollController.hasClients) {
       int temp = showToTopBtn
           ? 1
-          : Store.value<ReadModel>(context).bookTag.chapters.length - 8;
+          : Store.value<ReadModel>(context).chapters.length - 8;
       await _scrollController.animateTo(temp * ITEM_HEIGH,
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }
@@ -146,7 +146,7 @@ class _ChapterViewItem extends State<ChapterView> {
   Future<void> refresh() async {
     Store.value<ReadModel>(context).getChapters();
     if (_scrollController.hasClients) {
-      int temp =  Store.value<ReadModel>(context).bookTag.chapters.length - 8;
+      int temp =  Store.value<ReadModel>(context).chapters.length - 8;
       await _scrollController.animateTo(temp * ITEM_HEIGH,
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }

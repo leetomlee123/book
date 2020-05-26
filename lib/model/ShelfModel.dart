@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/entity/Chapter.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -79,8 +80,9 @@ class ShelfModel with ChangeNotifier {
   void delLocalCache(List<String> ids) {
     ids.forEach((f) {
       if (SpUtil.haveKey(f)) {
-        BookTag _bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(f)));
-        for (var value in _bookTag.chapters) {
+        List list = jsonDecode(SpUtil.getString('${f}chapters'));
+        List cps = list.map((e) => Chapter.fromJson(e)).toList();
+        for (var value in cps) {
           SpUtil.remove(value.id.toString());
           SpUtil.remove('pages${value.id.toString()}');
         }
@@ -91,10 +93,10 @@ class ShelfModel with ChangeNotifier {
 
   modifyShelf(Book book) {
     var action =
-        shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
+    shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
       Toast.show('已添加到书架');
-      shelf.insert(0,book);
+      shelf.insert(0, book);
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
         if (shelf[i].Id == book.Id) {

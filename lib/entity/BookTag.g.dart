@@ -8,18 +8,16 @@ part of 'BookTag.dart';
 
 BookTag _$BookTagFromJson(Map<String, dynamic> json) {
   return BookTag(
-      json['cur'] as int,
-      json['index'] as int,
-      json['bookName'] as String,
-      (json['chapters'] as List)
-          ?.map((e) =>
-              e == null ? null : Chapter.fromJson(e as Map<String, dynamic>))
-          ?.toList());
+    json['cur'] as int,
+    json['index'] as int,
+    json['bookName'] as String,
+
+  );
 }
 
 Map<String, dynamic> _$BookTagToJson(BookTag instance) => <String, dynamic>{
       'cur': instance.cur,
       'index': instance.index,
       'bookName': instance.bookName,
-      'chapters': instance.chapters
+
     };

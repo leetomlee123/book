@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui show window;
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
@@ -19,9 +19,10 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui show window;
+
 class ReadModel with ChangeNotifier {
   BookInfo bookInfo;
+  List<Chapter> chapters = [];
 
   //本书记录
   BookTag bookTag;
@@ -71,11 +72,11 @@ class ReadModel with ChangeNotifier {
       bookTag =
           BookTag.fromJson(await parseJson(SpUtil.getString(bookInfo.Id)));
       List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
-      bookTag.chapters = list.map((e) => Chapter.fromJson(e)).toList();
+      chapters = list.map((e) => Chapter.fromJson(e)).toList();
       getChapters();
       //书的最后一章
       if (bookInfo.CId == "-1") {
-        bookTag.cur = bookTag.chapters.length - 1;
+        bookTag.cur = chapters.length - 1;
       }
       intiPageContent(bookTag.cur, false);
       pageController = PageController(initialPage: bookTag.index);
@@ -83,20 +84,20 @@ class ReadModel with ChangeNotifier {
       notifyListeners();
       //本书已读过
     } else {
-      bookTag = BookTag(0, 0, bookInfo.Name, []);
+      bookTag = BookTag(0, 0, bookInfo.Name);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
         var string = SpUtil.getString('${bookInfo.Id}chapters');
-        List v = parseJson(string);
-        bookTag.chapters = v.map((f) => Chapter.fromJson(f)).toList();
+        List v = await parseJson(string);
+        chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
       pageController = PageController(initialPage: 0);
       getChapters().then((_) {
         if (bookInfo.CId == "-1") {
-          bookTag.cur = bookTag.chapters.length - 1;
+          bookTag.cur = chapters.length - 1;
         }
         intiPageContent(bookTag.cur, false);
       });
-      saveData();
+//      saveData();
     }
   }
 
@@ -132,7 +133,7 @@ class ReadModel with ChangeNotifier {
 
     if ((idx + 1 - preLen) > (curLen)) {
       int temp = bookTag.cur + 1;
-      if (temp >= bookTag.chapters.length) {
+      if (temp >= chapters.length) {
         Toast.show("已经是最后一页");
         pageController.previousPage(
             duration: Duration(microseconds: 1), curve: Curves.ease);
@@ -183,12 +184,13 @@ class ReadModel with ChangeNotifier {
 
   switchBgColor(i) {
     bgIdx = i;
+    SpUtil.putInt('bgIdx', i);
+
     notifyListeners();
   }
 
   Future getChapters() async {
-    var url = Common.chaptersUrl +
-        '/${bookInfo.Id}/${bookTag?.chapters?.length ?? 0}';
+    var url = Common.chaptersUrl + '/${bookInfo.Id}/${chapters?.length ?? 0}';
 //    var ctx;
 //    if ((bookTag?.chapters?.length ?? 0) == 0 && context != null) {
 //      ctx = context;
@@ -202,13 +204,13 @@ class ReadModel with ChangeNotifier {
     }
 
     List<Chapter> list = data.map((c) => Chapter.fromJson(c)).toList();
-    bookTag.chapters.addAll(list);
+    chapters.addAll(list);
     //书的最后一章
     if (bookInfo.CId == "-1") {
-      bookTag.cur = bookTag.chapters.length - 1;
+      bookTag.cur = chapters.length - 1;
       value = bookTag.cur.toDouble();
     }
-    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(bookTag.chapters));
+    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     notifyListeners();
   }
 
@@ -219,15 +221,15 @@ class ReadModel with ChangeNotifier {
       r.pageOffsets = List(1);
       r.chapterContent = "封面";
       return r;
-    } else if (idx == bookTag.chapters.length) {
+    } else if (idx == chapters.length) {
       r.chapterName = "-1";
       r.pageOffsets = List(1);
       r.chapterContent = "没有更多内容,等待作者更新";
       return r;
     }
 
-    r.chapterName = bookTag.chapters[idx].name;
-    String id = bookTag.chapters[idx].id;
+    r.chapterName = chapters[idx].name;
+    String id = chapters[idx].id;
 
     if (!SpUtil.haveKey(id)) {
       r.chapterContent = await compute(requestDataWithCompute, id);
@@ -237,7 +239,7 @@ class ReadModel with ChangeNotifier {
       r.pageOffsets = ReaderPageAgent.getPageOffsets(
           r.chapterContent, contentH, contentW, fontSize);
       SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
-      bookTag.chapters[idx].hasContent = 2;
+      chapters[idx].hasContent = 2;
     } else {
       r.chapterContent = SpUtil.getString(id);
       if (SpUtil.haveKey('pages' + id)) {
@@ -295,6 +297,8 @@ class ReadModel with ChangeNotifier {
     if (!font) {
       font = !font;
     }
+
+    SpUtil.putDouble('fontSize', fontSize);
     bookTag.index = 0;
 
     var keys = SpUtil.getKeys();
@@ -313,10 +317,7 @@ class ReadModel with ChangeNotifier {
   }
 
   saveData() {
-    bookTag.chapters = [];
     SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
-    SpUtil.putDouble('fontSize', fontSize);
-    SpUtil.putInt('bgIdx', bgIdx);
   }
 
   void tapPage(BuildContext context, TapDownDetails details) {
@@ -343,7 +344,7 @@ class ReadModel with ChangeNotifier {
   }
 
   downloadAll() async {
-    if (bookTag?.chapters?.isEmpty ?? 0 == 0) {
+    if (chapters?.isEmpty ?? 0 == 0) {
       await getChapters();
 //      saveData();
 
@@ -356,7 +357,7 @@ class ReadModel with ChangeNotifier {
       ids.add(bookInfo.Id);
     }
     SpUtil.putStringList(Common.downloadlist, ids);
-    for (var chapter in bookTag.chapters) {
+    for (var chapter in chapters) {
       String id = chapter.id;
       if (!SpUtil.haveKey(id)) {
         String content = await compute(requestDataWithCompute, id);
@@ -365,7 +366,7 @@ class ReadModel with ChangeNotifier {
       }
     }
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
-    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(bookTag.chapters));
+    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
   }
 
   static Future<String> requestDataWithCompute(String id) async {
@@ -380,13 +381,6 @@ class ReadModel with ChangeNotifier {
     } catch (e) {
       print(e);
     }
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    saveData();
-    super.dispose();
   }
 
   List<Widget> chapterContent(ReadPage r) {
@@ -432,7 +426,9 @@ class ReadModel with ChangeNotifier {
                               child: Text(
                                 content,
                                 style: TextStyle(
-                                  fontSize: fontSize / MediaQueryData.fromWindow(ui.window).textScaleFactor,
+                                  fontSize: fontSize /
+                                      MediaQueryData.fromWindow(ui.window)
+                                          .textScaleFactor,
                                 ),
                               )),
                         ),
@@ -466,5 +462,6 @@ class ReadModel with ChangeNotifier {
   clear() {
     bookTag = null;
     allContent = null;
+    chapters = [];
   }
 }

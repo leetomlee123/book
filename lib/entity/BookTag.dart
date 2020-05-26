@@ -8,12 +8,12 @@ class BookTag {
   int cur;
   int index;
   String bookName;
-  List<Chapter> chapters;
+
 
   factory BookTag.fromJson(Map<String, dynamic> json) =>
       _$BookTagFromJson(json);
 
   Map<String, dynamic> toJson() => _$BookTagToJson(this);
 
-  BookTag(this.cur, this.index, this.bookName, this.chapters);
+  BookTag(this.cur, this.index, this.bookName);
 }
