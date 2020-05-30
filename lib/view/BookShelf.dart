@@ -154,16 +154,21 @@ class _BookShelfState extends State<BookShelf>
                   padding: const EdgeInsets.only(left: 10.0, top: 10.0),
                   child: Text(
                     item.Name,
-                    style: TextStyle(fontSize: 16.0),
+                    style:
+                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.only(left: 10.0, top: 5.0),
-                  child: Text(
-                    item.LastChapter,
-                    style: TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                  child: Row(
+                    children: <Widget>[
+                      Text(
+                        item.LastChapter,
+                        style: TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      )
+                    ],
                   ),
                   width: ScreenUtil.getScreenW(context) - 120,
                 ),

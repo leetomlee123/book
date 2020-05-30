@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui show window;
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
@@ -47,7 +47,7 @@ class ReadModel with ChangeNotifier {
   ];
 
   //页面字体大小
-  double fontSize = 28.0;
+  double fontSize = 29.0;
 
   //显示上层 设置
   bool showMenu = false;
@@ -377,7 +377,7 @@ class ReadModel with ChangeNotifier {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = await parseJson(responseBody);
-      return dataList['data']['content'].toString();
+      return dataList['data']['content'].toString().replaceAll(" ", "\t\t");
     } catch (e) {
       print(e);
     }
@@ -423,13 +423,15 @@ class ReadModel with ChangeNotifier {
                                 right: 5,
                                 left: 15,
                               ),
-                              child: Text(
-                                content,
-                                style: TextStyle(
-                                  fontSize: fontSize /
-                                      MediaQueryData.fromWindow(ui.window)
-                                          .textScaleFactor,
-                                ),
+                              child: Text.rich(
+                                TextSpan(children: [
+                                  TextSpan(
+                                      text: content,
+                                      style: TextStyle(
+                                          fontSize: fontSize /
+                                              Screen.textScaleFactor))
+                                ]),
+                                textAlign: TextAlign.justify,
                               )),
                         ),
                         Container(

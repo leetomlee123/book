@@ -1,3 +1,4 @@
+import 'package:book/common/Screen.dart';
 import 'package:book/common/TextLayoutCache.dart';
 import 'package:flutter/material.dart';
 
@@ -5,6 +6,7 @@ class ReaderPageAgent {
   static List<int> getPageOffsets(
       String content, double height, double width, double fontSize) {
     print(fontSize);
+    print(Screen.textScaleFactor);
     String tempStr = content;
     List<int> pageConfig = [];
     int last = 0;

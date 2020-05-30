@@ -234,9 +234,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                                 activeColor: Colors.white,
                                                 inactiveColor: Colors.white70,
                                                 value: model.value,
-                                                max: (model.chapters
-                                                            .length -
-                                                        1)
+                                                max: (model.chapters.length - 1)
                                                     .toDouble(),
                                                 min: 0.0,
                                                 onChanged: (newValue) {
