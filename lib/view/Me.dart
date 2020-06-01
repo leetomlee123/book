@@ -16,6 +16,7 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart';
 
@@ -226,9 +227,16 @@ class Me extends StatelessWidget {
               getItem(
                 ImageIcon(AssetImage("images/fe.png")),
                 '意见反馈',
-                () {
+                    () {
                   locator<TelAndSmsService>()
                       .sendEmail('leetomlee123@gmail.com');
+                },
+              ),
+              getItem(
+                ImageIcon(AssetImage("images/github.png")),
+                '开源地址',
+                    () {
+                      launch('https://github.com/leetomlee123/book');
                 },
               ),
               getItem(

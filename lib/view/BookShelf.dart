@@ -109,8 +109,9 @@ class _BookShelfState extends State<BookShelf>
   freshShelf() async {
     if (SpUtil.haveKey('login')) {
       Store.value<ShelfModel>(context).refreshShelf();
-      _refreshController.refreshCompleted();
     }
+    _refreshController.refreshCompleted();
+
   }
 
   getBookItemView(Book item) {
@@ -150,7 +151,7 @@ class _BookShelfState extends State<BookShelf>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
-                  width: ScreenUtil.getScreenW(context) - 120,
+                  width: ScreenUtil.getScreenW(context) - 110,
                   padding: const EdgeInsets.only(left: 10.0, top: 10.0),
                   child: Text(
                     item.Name,
@@ -160,17 +161,13 @@ class _BookShelfState extends State<BookShelf>
                 ),
                 Container(
                   padding: const EdgeInsets.only(left: 10.0, top: 5.0),
-                  child: Row(
-                    children: <Widget>[
-                      Text(
-                        item.LastChapter,
-                        style: TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      )
-                    ],
+                  child:      Text(
+                    item.LastChapter,
+                    style: TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  width: ScreenUtil.getScreenW(context) - 120,
+                  width: ScreenUtil.getScreenW(context) - 110,
                 ),
                 Container(
                   padding: const EdgeInsets.only(left: 10.0, top: 10.0),

@@ -47,7 +47,7 @@ class ReadModel with ChangeNotifier {
   ];
 
   //页面字体大小
-  double fontSize = 29.0;
+  double fontSize = 28.0;
 
   //显示上层 设置
   bool showMenu = false;
@@ -191,11 +191,6 @@ class ReadModel with ChangeNotifier {
 
   Future getChapters() async {
     var url = Common.chaptersUrl + '/${bookInfo.Id}/${chapters?.length ?? 0}';
-//    var ctx;
-//    if ((bookTag?.chapters?.length ?? 0) == 0 && context != null) {
-//      ctx = context;
-//      Toast.show('加载目录...');
-//    }
     Response response = await Util(null).http().get(url);
 
     List data = response.data['data'];
