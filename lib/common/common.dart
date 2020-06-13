@@ -33,7 +33,7 @@ class Common {
 
   static String index = video_domain + '/index';
   static String m_detail = video_domain + '/movies';
-  static String look_m = video_domain + '/movies/tv';
+  static String look_m = video_domain + '/movies/tv/';
   static String cache_index = "movie_cache_index";
   static String tag_movies = video_domain + "/movies/category";
   static String movie_hot = video_domain + "/hot";
