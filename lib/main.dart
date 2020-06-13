@@ -92,19 +92,19 @@ class _MainPageState extends State<MainPage> {
         title: Text(
           '美剧',
         )),
-    BottomNavigationBarItem(
-        icon: ImageIcon(
-          AssetImage("images/account.png"),
-        ),
-        title: Text(
-          '我的',
-        )),
+//    BottomNavigationBarItem(
+//        icon: ImageIcon(
+//          AssetImage("images/account.png"),
+//        ),
+//        title: Text(
+//          '我的',
+//        )),
   ];
 
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video(), Me()];
+  var _pages = [BookShelf(), GoodBook(), Video()];
 
   @override
   void initState() {
@@ -134,18 +134,7 @@ class _MainPageState extends State<MainPage> {
       return Theme(
         child: Scaffold(
           drawer: Drawer(
-            child: Theme(
-              child: Scaffold(
-                body: ListView(children: isMovie ? mList() : pDre()),
-                appBar: AppBar(
-                  title: Text("观剧记录"),
-                  elevation: 0,
-                  centerTitle: true,
-                  automaticallyImplyLeading: false,
-                ),
-              ),
-              data: model.theme,
-            ),
+            child: isMovie ? mList() : person(),
           ),
           key: q,
           body: PageView.builder(
@@ -179,45 +168,11 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  List<Widget> pDre() {
-    List<Widget> wds = [];
-    wds.add(Padding(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          CircleAvatar(
-            radius: 45,
-            backgroundImage: AssetImage('images/fu.png'),
-          ),
-          SizedBox(
-            height: 10,
-          ),
-          Text(
-            SpUtil.getString("username") ?? "",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          GestureDetector(
-            child: Text(
-              SpUtil.haveKey('email') ? "" : '登陆/注册',
-            ),
-            onTap: () {
-              if (!SpUtil.haveKey('email')) {
-                Routes.navigateTo(
-                  context,
-                  Routes.login,
-                );
-              }
-            },
-          )
-        ],
-      ),
-      padding: EdgeInsets.only(left: 15),
-    ));
-
-    return wds;
+  Widget person() {
+    return Me();
   }
 
-  List<Widget> mList() {
+  Widget mList() {
     List<Widget> wds = [];
     List<MRecords> mrds = [];
     if (SpUtil.haveKey(Common.movies_record)) {
@@ -254,7 +209,9 @@ class _MainPageState extends State<MainPage> {
         child: Text("暂无观看记录"),
       ));
     }
-    return wds;
+    return ListView(
+      children: wds,
+    );
   }
 
   void _startupJpush() async {

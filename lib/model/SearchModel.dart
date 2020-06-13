@@ -229,22 +229,7 @@ class SearchModel with ChangeNotifier {
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
       hot.add(GestureDetector(
-        child: Card(
-          child: ListTile(
-            title: Text(
-              hbs[i].Name,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Container(
-              width: 80,
-              height: 20,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: showFire(hbs[i].Hot),
-              ),
-            ),
-          ),
-        ),
+        child: item(hbs[i].Name),
         onTap: () async {
           String url = Common.detail + '/${hbs[i].Id}';
           Response future = await Util(context).http().get(url);
@@ -292,15 +277,9 @@ class SearchModel with ChangeNotifier {
     List data = res.data;
     List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
+
       hot.add(GestureDetector(
-        child: Card(
-          child: ListTile(
-            title: Text(
-              hbs[i].name,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
+        child: item(hbs[i].name),
         onTap: () async {
           Routes.navigateTo(context, Routes.vDetail,
               params: {"gbook": jsonEncode(hbs[i])});
@@ -308,5 +287,22 @@ class SearchModel with ChangeNotifier {
       ));
     }
     notifyListeners();
+  }
+  Widget item(String name){
+    return Store.connect<ColorModel>(builder: (context,ColorModel data,child){
+      return Container(
+        alignment: Alignment(0, 0),
+        height: 38,
+        width: (ScreenUtil.getScreenW(context) - 40) / 2,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          border: Border.all(width: 1, color: data.dark?Colors.white:Theme.of(context).primaryColor),
+        ),
+        child: Text(
+          name,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    });
   }
 }

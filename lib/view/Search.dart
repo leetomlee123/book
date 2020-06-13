@@ -72,7 +72,7 @@ class _SearchState extends State<Search> {
 
   void initModel() {
     searchModel = Store.value<SearchModel>(context);
-    searchModel.showResult=false;
+    searchModel.showResult = false;
     searchModel.context = context;
     searchModel.controller = controller;
     searchModel.isBookSearch = this.isBookSearch;
@@ -336,9 +336,10 @@ class _SearchState extends State<Search> {
                 ),
               ],
             ),
-            Column(
-              children: searchModel?.hot ?? [],
-            )
+            Wrap(
+              children: searchModel?.hot ?? [], spacing: 2, //主轴上子控件的间距
+              runSpacing: 5,
+            ),
           ],
         ),
       ),

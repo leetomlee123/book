@@ -22,13 +22,12 @@ import '../main.dart';
 
 class Me extends StatelessWidget {
   Widget getItem(imagIcon, text, func) {
-    return Card(
-        child: ListTile(
+    return ListTile(
       onTap: func,
       leading: imagIcon,
       title: Text(text),
-      trailing: Icon(Icons.keyboard_arrow_right),
-    ));
+//      trailing: Icon(Icons.keyboard_arrow_right),
+    );
   }
 
   @override

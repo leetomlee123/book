@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:book/common/FunUtil.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
@@ -37,11 +36,13 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   String source;
   ChewieController chewieController;
   List<Widget> wds = [];
+  bool initOk = false;
+  var urlKey;
 
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
-
+    urlKey = this.widget.id;
     var widgetsBinding = WidgetsBinding.instance;
     // TODO: implement initState
     super.initState();
@@ -52,8 +53,11 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   void dispose() {
     // TODO: implement dispose
     super.dispose();
+    if (videoPlayerController != null) {
+      videoPlayerController.removeListener(_videoListener);
+      videoPlayerController.dispose();
+    }
 
-    videoPlayerController.dispose();
     chewieController.dispose();
     WidgetsBinding.instance.removeObserver(this);
 
@@ -66,6 +70,9 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   }
 
   saveRecord(Duration position) {
+    if (position == null) {
+      return;
+    }
     if (SpUtil.haveKey(source)) {
       SpUtil.remove(source);
     }
@@ -79,48 +86,52 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
-              child: wds.isNotEmpty
-                  ? Material(
-                      child: Column(
-                        children: <Widget>[
-                          Chewie(
-                            controller: chewieController,
-                          ),
-                          Expanded(
-                            child: ListView(
-                              shrinkWrap: true,
-                              children: wds,
-                            ),
-                          )
-                        ],
-                      ),
-                    )
-                  : Material(child: LoadingDialog()),
-              data: model.theme,
-            ));
+          child: wds.isNotEmpty
+              ? Material(
+            child: Column(
+              children: <Widget>[
+                initOk
+                    ? Chewie(
+                  controller: chewieController,
+                )
+                    : Container(
+                  width: double.infinity,
+                  height: 180,
+                  child: LoadingDialog(),
+                ),
+                Expanded(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: wds,
+                  ),
+                )
+              ],
+            ),
+          )
+              : Material(child: LoadingDialog()),
+          data: model.theme,
+        ));
   }
 
   getData() async {
-    String url = Common.look_m + '/${this.widget.id}';
+    String url = Common.look_m + '${this.widget.id}';
     Response future = await Util(null).http().get(url);
     source = future.data[2];
     videoPlayerController = VideoPlayerController.network(source);
-
-    chewieController = ChewieController(
-      customControls: MyControls(this.widget.name),
-      videoPlayerController: videoPlayerController,
-      aspectRatio: 16 / 9,
-      autoPlay: false,
-      allowedScreenSleep: false,
-      looping: false,
-    );
-
+    videoPlayerController.addListener(_videoListener);
     videoPlayerController.initialize().then((_) {
+      chewieController = ChewieController(
+        customControls: MyControls(this.widget.name),
+        videoPlayerController: videoPlayerController,
+        aspectRatio: videoPlayerController.value.aspectRatio,
+        autoPlay: false,
+        allowedScreenSleep: false,
+        looping: false,
+      );
       if (SpUtil.haveKey(source)) {
         int p = SpUtil.getInt(source);
         chewieController.seekTo(Duration(microseconds: p));
       }
-      chewieController.play();
     });
 
     wds.add(Center(
@@ -144,6 +155,53 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     }
   }
 
+  void _videoListener() async {
+    if (videoPlayerController.value.initialized) {
+      if (mounted) {
+        setState(() {
+          initOk = true;
+        });
+      }
+    }
+  }
+
+  void _urlChange(url, name) async {
+    if (videoPlayerController != null) {
+      /// 如果控制器存在，清理掉重新创建
+      videoPlayerController.removeListener(_videoListener);
+      videoPlayerController.pause();
+//      videoPlayerController.dispose();
+    }
+    setState(() {
+      /// 重置组件参数
+      initOk = false;
+      urlKey = url;
+    });
+    Response future = await Util(null).http().get(Common.look_m + url);
+    videoPlayerController = VideoPlayerController.network(future.data[2]);
+
+    videoPlayerController.addListener(_videoListener);
+    videoPlayerController.initialize().then((_) {
+      chewieController = ChewieController(
+        customControls: MyControls(name),
+        videoPlayerController: videoPlayerController,
+        aspectRatio: videoPlayerController.value.aspectRatio,
+        autoPlay: false,
+        allowedScreenSleep: false,
+        looping: false,
+      );
+      if (SpUtil.haveKey(source)) {
+        int p = SpUtil.getInt(source);
+        chewieController.seekTo(Duration(microseconds: p));
+      }
+      if (mounted) {
+        setState(() {
+          initOk = true;
+        });
+      }
+    });
+  }
+
   List<Widget> mItems(List<dynamic> list) {
     List<Widget> wds = [];
     for (var value in list) {
@@ -155,21 +213,23 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           overflow: TextOverflow.ellipsis,
         ),
         onPressed: () {
-          Navigator.pop(context);
-          FunUtil.saveMoviesRecord(
-              this.widget.cover,
-              this.widget.name,
-              map.keys.elementAt(0),
-              map.values.elementAt(0),
-              jsonEncode(this.widget.mcids));
-          Routes.navigateTo(context, Routes.lookVideo, params: {
-            "id": map.keys.elementAt(0),
-            "mcids": jsonEncode(list),
-            "cover": this.widget.cover,
-            "name": this.widget.name
-          });
+          saveRecord(videoPlayerController.value.position);
+          _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
+//          Navigator.pop(context);
+//          FunUtil.saveMoviesRecord(
+//              this.widget.cover,
+//              this.widget.name,
+//              map.keys.elementAt(0),
+//              map.values.elementAt(0),
+//              jsonEncode(this.widget.mcids));
+//          Routes.navigateTo(context, Routes.lookVideo, params: {
+//            "id": map.keys.elementAt(0),
+//            "mcids": jsonEncode(list),
+//            "cover": this.widget.cover,
+//            "name": this.widget.name
+//          });
         },
-        color: map.keys.elementAt(0) == this.widget.id
+        color: map.keys.elementAt(0) == urlKey
             ? colorModel.dark ? Colors.black : Colors.white
             : colorModel.theme.primaryColor,
       ));

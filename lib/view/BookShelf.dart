@@ -36,7 +36,7 @@ class _BookShelfState extends State<BookShelf>
           leading: IconButton(
             icon: Icon(Icons.person),
             onPressed: () {
-              eventBus.fire(new NavEvent(3));
+              eventBus.fire(OpenEvent("p"));
             },
           ),
           elevation: 0,
