@@ -28,7 +28,7 @@ class _MyMaterialControlsState extends State<MyControls> {
   bool _dragging = false;
   bool _displayTapped = false;
   static const lightColor = Color.fromRGBO(255, 255, 255, 0.85);
-  static const darkColor = Color.fromRGBO(1, 1, 1, 0.35);
+  static const darkColor = Colors.transparent;
   final barHeight = 48.0;
   final marginSize = 5.0;
   Offset _initialSwipeOffset;

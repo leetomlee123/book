@@ -86,31 +86,33 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
-          child: wds.isNotEmpty
-              ? Material(
-            child: Column(
-              children: <Widget>[
-                initOk
-                    ? Chewie(
-                  controller: chewieController,
-                )
-                    : Container(
-                  width: double.infinity,
-                  height: 180,
-                  child: LoadingDialog(),
-                ),
-                Expanded(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: wds,
-                  ),
-                )
-              ],
-            ),
-          )
-              : Material(child: LoadingDialog()),
-          data: model.theme,
-        ));
+              child: wds.isNotEmpty
+                  ? Material(
+                      child: SafeArea(
+                        child: Column(
+                          children: <Widget>[
+                            initOk
+                                ? Chewie(
+                                    controller: chewieController,
+                                  )
+                                : Container(
+                                    width: double.infinity,
+                                    height: 180,
+                                    child: LoadingDialog(),
+                                  ),
+                            Expanded(
+                              child: ListView(
+                                shrinkWrap: true,
+                                children: wds,
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    )
+                  : Material(child: LoadingDialog()),
+              data: model.theme,
+            ));
   }
 
   getData() async {
@@ -166,6 +168,8 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   }
 
   void _urlChange(url, name) async {
+    saveRecord(videoPlayerController.value.position);
+
     if (videoPlayerController != null) {
       /// 如果控制器存在，清理掉重新创建
       videoPlayerController.removeListener(_videoListener);
@@ -190,8 +194,8 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         allowedScreenSleep: false,
         looping: false,
       );
-      if (SpUtil.haveKey(source)) {
-        int p = SpUtil.getInt(source);
+      if (SpUtil.haveKey(future.data[2])) {
+        int p = SpUtil.getInt(future.data[2]);
         chewieController.seekTo(Duration(microseconds: p));
       }
       if (mounted) {
