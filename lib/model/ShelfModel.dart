@@ -77,17 +77,18 @@ class ShelfModel with ChangeNotifier {
 
   //删除本地记录
   void delLocalCache(List<String> ids) {
-    ids.forEach((f) {
-      if (SpUtil.haveKey(f)) {
-        List list = jsonDecode(SpUtil.getString('${f}chapters'));
+    for(var i=0;i<ids.length;i++){
+      if (SpUtil.haveKey(ids[i])) {
+        List list = jsonDecode(SpUtil.getString('${ids[i]}chapters'));
         List cps = list.map((e) => Chapter.fromJson(e)).toList();
         for (var value in cps) {
           SpUtil.remove(value.id.toString());
           SpUtil.remove('pages${value.id.toString()}');
         }
-        SpUtil.remove(f);
+        SpUtil.remove(ids[i]);
       }
-    });
+    }
+
   }
 
   modifyShelf(Book book) {

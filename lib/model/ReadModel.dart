@@ -128,9 +128,9 @@ class ReadModel with ChangeNotifier {
   changeChapter(int idx) async {
     bookTag.index = idx;
 
-    int preLen = prePage == null ? 0 : prePage.pageOffsets.length;
-    int curLen = curPage == null ? 0 : curPage.pageOffsets.length;
-
+    int preLen = prePage?.pageOffsets?.length ?? 0;
+    int curLen = curPage?.pageOffsets?.length ?? 0;
+    print("idx:$idx > prelen:$preLen >curlen:$curLen");
     if ((idx + 1 - preLen) > (curLen)) {
       int temp = bookTag.cur + 1;
       if (temp >= chapters.length) {
@@ -157,9 +157,9 @@ class ReadModel with ChangeNotifier {
           curPage = nextPage;
         }
         nextPage = await loadChapter(bookTag.cur + 1);
-
+        print("next ok");
         fillAllContent();
-
+        print("prep jump");
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
       }
     } else if (idx < preLen) {
@@ -247,7 +247,7 @@ class ReadModel with ChangeNotifier {
             r.chapterContent, contentH, contentW, fontSize);
       }
     }
-
+    print("load ok");
     return r;
   }
 
