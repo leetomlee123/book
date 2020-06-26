@@ -22,7 +22,7 @@ class Common {
   static String chaptersUrl = domain + "/book/chapters";
   static String bookContentUrl = domain + '/book/chapter';
   static String bookAction = domain + '/book/action';
-
+  static String page_height_pre = "php";
 
   static String listbookname = "booklist";
   static String toplist = "toplist";

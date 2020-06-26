@@ -5,6 +5,7 @@ import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -18,6 +19,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 class ReadBook extends StatefulWidget {
   BookInfo _bookInfo;
@@ -36,22 +38,27 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   //背景色数据
   List<List> bgs = [
-    [246, 242, 234],
-    [242, 233, 209],
-    [231, 241, 231],
-    [228, 239, 242],
-    [242, 228, 228],
+    [250, 245, 235],
+    [245, 234, 204],
+    [230, 242, 230],
+    [228, 241, 245],
+    [245, 228, 228],
+    [224, 224, 224],
   ];
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
 
   @override
   void initState() {
+    eventBus.on<ReadRefresh>().listen((event) {
+      readModel.fillAllContent();
+    });
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
+//      SystemChrome.setEnabledSystemUIOverlays([]);
       readModel = Store.value<ReadModel>(context);
       readModel.bookInfo = this.widget._bookInfo;
       readModel.context = context;
@@ -65,7 +72,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.contentH = ScreenUtil.getScreenH(context) -
           ScreenUtil.getStatusBarH(context) -
           60;
-      readModel.contentW = ScreenUtil.getScreenW(context) - 20;
+      readModel.contentW =
+          (ScreenUtil.getScreenW(context) - 20).floorToDouble();
     });
   }
 
@@ -425,12 +433,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               ),
               Row(
                 children: <Widget>[
-                  Text(
-                    '字号',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: colorModel.dark ? Colors.white70 : Colors.black),
-                  ),
+//                  Text(
+//                    '字号',
+//                    style: TextStyle(
+//                        fontSize: 12,
+//                        color: colorModel.dark ? Colors.white70 : Colors.black),
+//                  ),
                   SizedBox(
                     width: 10,
                   ),
@@ -473,26 +481,21 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
+
+//                  FlatButton(
+//                    child: Text('字体'),
+//                    onPressed: () {
+//                      Routes.navigateTo(
+//                        context,
+//                        Routes.fontSet,
+//                      );
+//                    },
+//                  ),
                 ],
               ),
               Row(
-                children: <Widget>[
-                  Text(
-                    '背景',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: colorModel.dark ? Colors.white70 : Colors.black),
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: readThemes(state),
-                    ),
-                  )
-                ],
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: readThemes(state),
               ),
             ],
           ),
@@ -518,7 +521,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           width: 40.0,
           height: 40.0,
           decoration: BoxDecoration(
-              color: Color.fromRGBO(f[0], f[1], f[2], 1),
+              color: Color.fromRGBO(f[0], f[1], f[2], 0.8),
               borderRadius: BorderRadius.all(Radius.circular(25.0)),
               border: readModel.bgIdx == i
                   ? Border.all(color: Theme.of(context).primaryColor, width: 2)

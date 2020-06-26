@@ -10,11 +10,13 @@ class OpenEvent {
 
   OpenEvent(this.name);
 }
-class NavEvent {
- int idx;
 
- NavEvent(this.idx);
+class NavEvent {
+  int idx;
+
+  NavEvent(this.idx);
 }
+
 class PageEvent {
   int page;
 
@@ -37,4 +39,10 @@ class BooksEvent {
   List<Book> books;
 
   BooksEvent(this.books);
+}
+
+class ReadRefresh {
+  var em;
+
+  ReadRefresh(this.em);
 }

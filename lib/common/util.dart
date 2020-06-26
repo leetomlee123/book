@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:book/common/toast.dart';
 import 'package:dio/dio.dart';
@@ -18,7 +17,7 @@ class Util {
   Dio http() {
     _dio = new Dio();
 
-    var dic = DirectoryUtil.getAppDocPath();
+//    var dic = DirectoryUtil.getAppDocPath();
 //    _dio.httpClientAdapter = Http2Adapter(
 //      ConnectionManager(
 //        idleTimeout: 10000,
@@ -93,7 +92,7 @@ class Util {
       Toast.show("请求取消");
     } else {
       //DEFAULT Default error type, Some other Error. In this case, you can read the DioError.error if it is not null.
-      log(e.message);
+//      log(e.message);
       Toast.show("未知错误");
     }
   }
@@ -107,5 +106,3 @@ _parseAndDecode(String response) {
 parseJson(String text) {
   return compute(_parseAndDecode, text);
 }
-
-

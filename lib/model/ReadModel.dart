@@ -39,11 +39,12 @@ class ReadModel with ChangeNotifier {
 
   //背景色数据
   List<List> bgs = [
-    [246, 242, 234],
-    [242, 233, 209],
-    [231, 241, 231],
-    [228, 239, 242],
-    [242, 228, 228],
+    [250, 245, 235],
+    [245, 234, 204],
+    [230, 242, 230],
+    [228, 241, 245],
+    [245, 228, 228],
+    [224, 224, 224],
   ];
 
   //页面字体大小
@@ -54,6 +55,9 @@ class ReadModel with ChangeNotifier {
 
   //背景色索引
   int bgIdx = 0;
+
+//章节翻页标志
+  bool changeCpOk = true;
 
   //页面宽高
   double contentH;
@@ -68,6 +72,8 @@ class ReadModel with ChangeNotifier {
   //获取本书记录
   getBookRecord() async {
     showMenu = false;
+    changeCpOk = true;
+    font = false;
     if (SpUtil.haveKey(bookInfo.Id)) {
       bookTag =
           BookTag.fromJson(await parseJson(SpUtil.getString(bookInfo.Id)));
@@ -102,6 +108,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future intiPageContent(int idx, bool jump) async {
+    changeCpOk = false;
     showGeneralDialog(
       context: context,
       barrierLabel: "",
@@ -123,15 +130,20 @@ class ReadModel with ChangeNotifier {
       int ix = prePage?.pageOffsets?.length ?? 0;
       pageController.jumpToPage(ix);
     }
+    changeCpOk = true;
   }
 
   changeChapter(int idx) async {
+    if (!changeCpOk) {
+      print("error get");
+      return;
+    }
     bookTag.index = idx;
 
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
-    print("idx:$idx > prelen:$preLen >curlen:$curLen");
     if ((idx + 1 - preLen) > (curLen)) {
+      changeCpOk = false;
       int temp = bookTag.cur + 1;
       if (temp >= chapters.length) {
         Toast.show("已经是最后一页");
@@ -157,12 +169,12 @@ class ReadModel with ChangeNotifier {
           curPage = nextPage;
         }
         nextPage = await loadChapter(bookTag.cur + 1);
-        print("next ok");
         fillAllContent();
-        print("prep jump");
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
       }
+      changeCpOk = true;
     } else if (idx < preLen) {
+      changeCpOk = false;
       int temp = bookTag.cur - 1;
       if (temp < 0) {
         return;
@@ -179,6 +191,7 @@ class ReadModel with ChangeNotifier {
         pageController.jumpToPage(ix);
 //        notifyListeners();
       }
+      changeCpOk = true;
     }
   }
 
@@ -231,8 +244,8 @@ class ReadModel with ChangeNotifier {
 
       SpUtil.putString(id, r.chapterContent);
 
-      r.pageOffsets = ReaderPageAgent.getPageOffsets(
-          r.chapterContent, contentH, contentW, fontSize);
+      r.pageOffsets = new ReaderPageAgent()
+          .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
       SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
       chapters[idx].hasContent = 2;
     } else {
@@ -243,8 +256,8 @@ class ReadModel with ChangeNotifier {
             .map((f) => int.parse(f))
             .toList();
       } else {
-        r.pageOffsets = ReaderPageAgent.getPageOffsets(
-            r.chapterContent, contentH, contentW, fontSize);
+        r.pageOffsets = new ReaderPageAgent()
+            .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
       }
     }
     print("load ok");
@@ -267,20 +280,20 @@ class ReadModel with ChangeNotifier {
 
   Widget readView() {
     return Theme(
-      child: Scaffold(
-        backgroundColor: Store.value<ColorModel>(context).dark
+      child: Container(
+        color: Store.value<ColorModel>(context).dark
             ? null
-            : Color.fromRGBO(bgs[bgIdx][0], bgs[bgIdx][1], bgs[bgIdx][2], 1),
-        body: PageView.builder(
+            : Color.fromRGBO(bgs[bgIdx][0], bgs[bgIdx][1], bgs[bgIdx][2], 0.8),
+        child: PageView.builder(
           controller: pageController,
           physics: AlwaysScrollableScrollPhysics(),
           itemBuilder: (BuildContext context, int index) {
             return allContent[index];
           },
           //条目个数
-          itemCount: (prePage == null ? 0 : prePage.pageOffsets.length) +
-              (curPage == null ? 0 : curPage.pageOffsets.length) +
-              (nextPage == null ? 0 : nextPage.pageOffsets.length),
+          itemCount: (prePage?.pageOffsets?.length ?? 0) +
+              (curPage?.pageOffsets?.length ?? 0) +
+              (nextPage?.pageOffsets?.length ?? 0),
           onPageChanged: (idx) => changeChapter(idx),
         ),
       ),
@@ -387,70 +400,75 @@ class ReadModel with ChangeNotifier {
       }
 
       contents.add(
-        GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (TapDownDetails details) {
-              tapPage(context, details);
-            },
-            child: (r.chapterName == "-1" || r.chapterName == "1")
-                ? Container(
-                    child: Text(r.chapterContent),
-                    alignment: Alignment.center,
-                  )
-                : Container(
-                    child: Column(
-                      children: <Widget>[
-                        SizedBox(height: ScreenUtil.getStatusBarH(context)),
-                        Container(
-                          height: 30,
-                          padding: EdgeInsets.only(left: 3),
-                          child: Text(
-                            r.chapterName,
-                            style: TextStyle(
-                              fontSize: 16,
+        Store.connect<ColorModel>(builder: (context, ColorModel model, child) {
+          return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (TapDownDetails details) {
+                tapPage(context, details);
+              },
+              child: (r.chapterName == "-1" || r.chapterName == "1")
+                  ? Container(
+                      child: Text(r.chapterContent),
+                      alignment: Alignment.center,
+                    )
+                  : Container(
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(height: ScreenUtil.getStatusBarH(context)),
+                          Container(
+                            height: 30,
+                            padding: EdgeInsets.only(left: 3),
+                            child: Text(
+                              r.chapterName,
+                              style: TextStyle(
+                                fontSize: 16,
+                                  fontFamily: model.font
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        Expanded(
-                          child: Container(
-                              padding: EdgeInsets.only(
-                                right: 5,
-                                left: 15,
-                              ),
-                              child: Text.rich(
-                                TextSpan(children: [
-                                  TextSpan(
-                                      text: content,
-                                      style: TextStyle(
-                                          fontSize: fontSize /
-                                              Screen.textScaleFactor))
-                                ]),
-                                textAlign: TextAlign.justify,
-                              )),
-                        ),
-                        Container(
-                          height: 30,
-                          padding: EdgeInsets.only(right: 8),
-                          child: Row(
-                            children: <Widget>[
-                              Expanded(child: Container()),
-                              Text(
-                                '第${i + 1}/${r.pageOffsets.length}页',
-                                style: TextStyle(
-                                  fontSize: 13,
+                          Expanded(
+                            child: Container(
+                                padding: EdgeInsets.only(
+                                  right: 5,
+                                  left: 15,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                                child: Text.rich(
+                                  TextSpan(children: [
+                                    TextSpan(
+                                        text: content,
+                                        style: TextStyle(
+                                            fontSize: fontSize /
+                                                Screen.textScaleFactor))
+                                  ]),
+                                  textAlign: TextAlign.justify,
+                                  style: TextStyle(fontFamily: model.font),
+                                )),
                           ),
-                        ),
-                      ],
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                    ),
-                    width: double.infinity,
-                    height: double.infinity,
-                  )),
+                          Container(
+                            height: 30,
+                            padding: EdgeInsets.only(right: 8),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(child: Container()),
+                                Text(
+                                  '第${i + 1}/${r.pageOffsets.length}页',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                      fontFamily: model.font
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      width: double.infinity,
+                      height: double.infinity,
+                    ));
+        }),
       );
     }
     return contents;

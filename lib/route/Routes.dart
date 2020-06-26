@@ -18,6 +18,7 @@ class Routes {
   static String vDetail = '/vDetail';
   static String lookVideo = '/lookVideo';
   static String tagVideo = '/tagVideo';
+  static String fontSet = '/fontSet';
 
   // 配置route
   static void configureRoutes(Router router) {
@@ -38,6 +39,7 @@ class Routes {
     router.define(vDetail, handler: vDetailHandler);
     router.define(lookVideo, handler: lookVideoHandler);
     router.define(tagVideo, handler: tagVideoHandler);
+    router.define(fontSet, handler: fontSetHandler);
 
 
   }

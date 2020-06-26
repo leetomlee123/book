@@ -1,14 +1,25 @@
+import 'package:book/common/common.dart';
+import 'package:book/event/event.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ColorModel with ChangeNotifier {
   bool dark = false;
   var fontFamily = '';
   List<Color> skins = Colors.accents;
-
+  Map fonts = {
+    "默认字体": "",
+    "方正新楷体": "http://dl.cdn.sogou.com/font/FZXK_GBK.ttf",
+    "方正俊黑体": "http://oss-asq-download.11222.cn/font/package/FZJunHJW.ttf",
+    "方正宋繁体": "http://moren-1252794300.file.myqcloud.com/fangzhengsongheiFT.ttf",
+    "方正宋简体": "http://mag.reader.3g.qq.com/plugin/fzstys-gb18030.ttf"
+  };
   int idx = SpUtil.getInt('skin');
   ThemeData _theme;
+  String font = SpUtil.getString("fontName");
 
   ThemeData get theme {
     if (SpUtil.haveKey("dark")) {
@@ -64,5 +75,54 @@ class ColorModel with ChangeNotifier {
     dark = !dark;
     SpUtil.putBool("dark", dark);
     notifyListeners();
+  }
+
+  List<Widget> fontList() {
+    List<Widget> wds = [];
+    var center = Center(
+      child: Text(
+        "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
+        style: TextStyle(fontWeight: FontWeight.bold, fontFamily: font),
+      ),
+    );
+    wds.add(center);
+    for (var i = 0; i < fonts.length; i++) {
+      wds.add(Row(
+        children: <Widget>[
+          Text(fonts.keys.elementAt(i)),
+          Expanded(
+            child: Container(),
+          ),
+          FlatButton(
+            child: Text("使用"),
+            onPressed: () {
+              loadFont(fonts.keys.elementAt(i), fonts.values.elementAt(i));
+            },
+          )
+        ],
+      ));
+    }
+    return wds;
+  }
+
+  loadFont(var name, var url) async {
+    if (name != "默认字体") {
+      var fontLoad = FontLoader(name);
+//      Future<String> loadString = NetworkAssetBundle(Uri()).loadString(url);
+//      fontLoad.addFont();
+      await fontLoad.load();
+    }
+    font = name;
+    notifyListeners();
+    SpUtil.getKeys().forEach((f) {
+      if (f.startsWith('pages') || f.startsWith(Common.page_height_pre)) {
+        SpUtil.remove(f);
+      }
+    });
+    if (SpUtil.haveKey("fontName")) {
+      SpUtil.remove("fontName");
+    }
+    SpUtil.putString("fontName", name);
+    eventBus.fire(ReadRefresh(""));
   }
 }

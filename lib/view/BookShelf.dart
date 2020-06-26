@@ -31,78 +31,80 @@ class _BookShelfState extends State<BookShelf>
   Widget build(BuildContext context) {
     super.build(context);
     // TODO: implement build
-    return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              eventBus.fire(OpenEvent("p"));
-            },
-          ),
-          elevation: 0,
-          title: Text(
-            '书架',
-            style: TextStyle(
-              fontSize: 18,
-            ),
-          ),
-          centerTitle: true,
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.search),
+    return Store.connect<ShelfModel>(
+        builder: (context, ShelfModel model, child) {
+      return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.person),
               onPressed: () {
-                Routes.navigateTo(context, Routes.search,
-                    params: {"type": "book"});
+                eventBus.fire(OpenEvent("p"));
               },
-            )
-          ],
-        ),
-        body: Store.connect<ShelfModel>(
-            builder: (context, ShelfModel model, child) => SmartRefresher(
-                enablePullDown: true,
+            ),
+            elevation: 0,
+            title: Text(
+              '书架',
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
+            centerTitle: true,
+            actions: <Widget>[
+              IconButton(
+                icon: Icon(Icons.search),
+                onPressed: () {
+                  Routes.navigateTo(context, Routes.search,
+                      params: {"type": "book"});
+                },
+              )
+            ],
+          ),
+          body: SmartRefresher(
+              enablePullDown: true,
 //                header: MyWaterDropHeader(),
-                header: WaterDropMaterialHeader(),
-                footer: CustomFooter(
-                  builder: (BuildContext context, LoadStatus mode) {
-                    if (mode == LoadStatus.idle) {
-                    } else if (mode == LoadStatus.loading) {
-                      body = CupertinoActivityIndicator();
-                    } else if (mode == LoadStatus.failed) {
-                      body = Text("加载失败！点击重试！");
-                    } else if (mode == LoadStatus.canLoading) {
-                      body = Text("松手,加载更多!");
-                    } else {
-                      body = Text("到底了!");
-                    }
-                    return Center(
-                      child: body,
-                    );
-                  },
-                ),
-                controller: _refreshController,
-                onRefresh: freshShelf,
-                child: ListView.builder(
-                    itemCount: model.shelf.length,
-                    itemBuilder: (context, i) {
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          model.shelf[i].NewChapterCount = 0;
-                          Book temp = model.shelf[i];
-                          Routes.navigateTo(
-                            context,
-                            Routes.read,
-                            params: {
-                              'read': jsonEncode(
-                                  BookInfo.id(temp.Id, temp.Name, temp.Img)),
-                            },
-                          );
+              header: WaterDropHeader(),
+              footer: CustomFooter(
+                builder: (BuildContext context, LoadStatus mode) {
+                  if (mode == LoadStatus.idle) {
+                  } else if (mode == LoadStatus.loading) {
+                    body = CupertinoActivityIndicator();
+                  } else if (mode == LoadStatus.failed) {
+                    body = Text("加载失败！点击重试！");
+                  } else if (mode == LoadStatus.canLoading) {
+                    body = Text("松手,加载更多!");
+                  } else {
+                    body = Text("到底了!");
+                  }
+                  return Center(
+                    child: body,
+                  );
+                },
+              ),
+              controller: _refreshController,
+              onRefresh: freshShelf,
+              child: ListView.builder(
+                  itemCount: model.shelf.length,
+                  itemBuilder: (context, i) {
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        model.shelf[i].NewChapterCount = 0;
+                        Book temp = model.shelf[i];
+                        Routes.navigateTo(
+                          context,
+                          Routes.read,
+                          params: {
+                            'read': jsonEncode(
+                                BookInfo.id(temp.Id, temp.Name, temp.Img)),
+                          },
+                        );
 
-                          model.upTotop(temp);
-                        },
-                        child: getBookItemView(model.shelf[i]),
-                      );
-                    }))));
+                        model.upTotop(temp);
+                      },
+                      child: getBookItemView(model.shelf[i]),
+                    );
+                  })));
+    });
   }
 
 //刷新书架
@@ -111,7 +113,6 @@ class _BookShelfState extends State<BookShelf>
       Store.value<ShelfModel>(context).refreshShelf();
     }
     _refreshController.refreshCompleted();
-
   }
 
   getBookItemView(Book item) {
@@ -161,7 +162,7 @@ class _BookShelfState extends State<BookShelf>
                 ),
                 Container(
                   padding: const EdgeInsets.only(left: 10.0, top: 5.0),
-                  child:      Text(
+                  child: Text(
                     item.LastChapter,
                     style: TextStyle(fontSize: 12),
                     overflow: TextOverflow.ellipsis,

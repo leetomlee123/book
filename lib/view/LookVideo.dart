@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/GBook.dart';
@@ -87,30 +88,26 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
               child: wds.isNotEmpty
-                  ? Material(
-                      child: SafeArea(
-                        child: Column(
-                          children: <Widget>[
-                            initOk
-                                ? Chewie(
-                                    controller: chewieController,
-                                  )
-                                : Container(
-                                    width: double.infinity,
-                                    height: 180,
-                                    child: LoadingDialog(),
-                                  ),
-                            Expanded(
-                              child: ListView(
-                                shrinkWrap: true,
-                                children: wds,
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                    )
-                  : Material(child: LoadingDialog()),
+                  ? Scaffold(body: Column(
+                children: <Widget>[
+                  initOk
+                      ? Chewie(
+                    controller: chewieController,
+                  )
+                      : Container(
+                    width: double.infinity,
+                    height: 220,
+                    child: LoadingDialog(),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: wds,
+                    ),
+                  )
+                ],
+              ),)
+                  : Scaffold(body: LoadingDialog()),
               data: model.theme,
             ));
   }
@@ -122,6 +119,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     videoPlayerController = VideoPlayerController.network(source);
     videoPlayerController.addListener(_videoListener);
     videoPlayerController.initialize().then((_) {
+      print(videoPlayerController.value.size);
       chewieController = ChewieController(
         customControls: MyControls(this.widget.name),
         videoPlayerController: videoPlayerController,

@@ -5,6 +5,7 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/main.dart';
 import 'package:book/view/AllTagBook.dart';
 import 'package:book/view/BookDetail.dart';
+import 'package:book/view/FontSet.dart';
 import 'package:book/view/Forgetpass.dart';
 import 'package:book/view/LookVideo.dart';
 import 'package:book/view/PersonCenter.dart';
@@ -40,6 +41,11 @@ var modifyPasswordHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   return ForgetPass();
 });
+var fontSetHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  return FontSet();
+});
+
 var allTagBookHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String title = (params['title'][0]);

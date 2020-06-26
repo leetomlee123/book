@@ -118,18 +118,20 @@ class StateTabItem extends State<TabItem>
           Row(
             children: <Widget>[
               Padding(
-                child: Container(
-                  width: 4,
-                  height: 20,
-                  color: value.dark
-                      ? value.theme.textTheme.body1.color
-                      : value.theme.primaryColor,
-                ),
+                child: Store.connect<ColorModel>(builder:(context,ColorModel data,child){
+                  return Container(
+                    width: 4,
+                    height: 20,
+                    color: data.dark
+                        ? data.theme.textTheme.body1.color
+                        : data.theme.primaryColor,
+                  );
+                }),
                 padding: EdgeInsets.only(left: 5.0, right: 3.0),
               ),
               Text(
                 title,
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16.0),
               ),
               Expanded(
                 child: Container(),
@@ -139,7 +141,7 @@ class StateTabItem extends State<TabItem>
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: Colors.grey,fontSize: 14.0),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,
@@ -234,7 +236,6 @@ class StateTabItem extends State<TabItem>
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    value = Store.value<ColorModel>(context);
     super.build(context);
     return Scaffold(
       body: values.length == 0

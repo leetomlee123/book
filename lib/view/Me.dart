@@ -43,28 +43,19 @@ class Me extends StatelessWidget {
                 SizedBox(
                   width: 20,
                 ),
-                GestureDetector(
-                  child: Padding(
-                    child: Container(
-                      height: 80,
-                      width: 80,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        backgroundImage: AssetImage(SpUtil.haveKey("login")
-                            ? "images/fu.png"
-                            : "images/account.png"),
-                      ),
+                Padding(
+                  child: Container(
+                    height: 80,
+                    width: 80,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      backgroundImage: AssetImage(SpUtil.haveKey("login")
+                          ? "images/fu.png"
+                          : "images/account.png"),
                     ),
-                    padding:
-                        EdgeInsets.only(top: ScreenUtil.getStatusBarH(context)),
                   ),
-                  onTap: () {
-                    if (SpUtil.haveKey("login")) {
-                      return;
-                    } else {
-                      Routes.navigateTo(context, Routes.login);
-                    }
-                  },
+                  padding:
+                  EdgeInsets.only(top: ScreenUtil.getStatusBarH(context)),
                 ),
                 SizedBox(
                   width: 10,
@@ -86,7 +77,9 @@ class Me extends StatelessWidget {
               ],
             ),
             onTap: () {
-              if (!SpUtil.haveKey('email')) {
+              if (SpUtil.haveKey("login")) {
+                return;
+              } else {
                 Routes.navigateTo(context, Routes.login);
               }
             },

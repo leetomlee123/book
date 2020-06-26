@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
@@ -110,16 +109,20 @@ class SearchModel with ChangeNotifier {
           search(value);
           notifyListeners();
         },
-        child: Container(
-          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-          decoration: BoxDecoration(
-              color: colors[Random().nextInt(colors.length)],
-              borderRadius: BorderRadius.all(Radius.circular(5))),
-          child: Container(
-            margin: EdgeInsets.all(8),
-            child: Text(value),
-          ),
+        child: ListTile(
+          leading: Icon(Icons.update),
+          title: Text(value),
         ),
+//        child: Container(
+//          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+//          decoration: BoxDecoration(
+//              color: colors[Random().nextInt(colors.length)],
+//              borderRadius: BorderRadius.all(Radius.circular(5))),
+//          child: Container(
+//            margin: EdgeInsets.all(8),
+//            child: Text(value),
+//          ),
+//        ),
       ));
 //      wds.add(GestureDetector(
 //        onTap: () {
@@ -186,7 +189,6 @@ class SearchModel with ChangeNotifier {
   }
 
   initHistory() {
-    print(store_word);
     if (SpUtil.haveKey(store_word)) {
       searchHistory = SpUtil.getStringList(store_word);
     }
@@ -229,7 +231,9 @@ class SearchModel with ChangeNotifier {
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
       hot.add(GestureDetector(
-        child: item(hbs[i].Name),
+        child: Chip(
+          label: Text(hbs[i].Name),
+        ),
         onTap: () async {
           String url = Common.detail + '/${hbs[i].Id}';
           Response future = await Util(context).http().get(url);
@@ -277,9 +281,10 @@ class SearchModel with ChangeNotifier {
     List data = res.data;
     List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
-
       hot.add(GestureDetector(
-        child: item(hbs[i].name),
+        child: Chip(
+          label: Text(hbs[i].name),
+        ),
         onTap: () async {
           Routes.navigateTo(context, Routes.vDetail,
               params: {"gbook": jsonEncode(hbs[i])});
@@ -288,15 +293,19 @@ class SearchModel with ChangeNotifier {
     }
     notifyListeners();
   }
-  Widget item(String name){
-    return Store.connect<ColorModel>(builder: (context,ColorModel data,child){
+
+  Widget item(String name) {
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel data, child) {
       return Container(
         alignment: Alignment(0, 0),
         height: 38,
         width: (ScreenUtil.getScreenW(context) - 40) / 2,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(20.0)),
-          border: Border.all(width: 1, color: data.dark?Colors.white:Theme.of(context).primaryColor),
+          border: Border.all(
+              width: 1,
+              color: data.dark ? Colors.white : Theme.of(context).primaryColor),
         ),
         child: Text(
           name,

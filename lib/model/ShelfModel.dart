@@ -12,6 +12,7 @@ import 'package:flutter/cupertino.dart';
 class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
   BuildContext context;
+  bool model = false;
 
   ShelfModel();
 
@@ -19,37 +20,42 @@ class ShelfModel with ChangeNotifier {
     SpUtil.putString(Common.listbookname, jsonEncode(shelf));
   }
 
+  toggleModel() {
+    model = !model;
+    notifyListeners();
+  }
+
   refreshShelf() async {
-      Response response2 = await Util(null).http().get(Common.shelf);
-      List decode = response2.data['data'];
-      if (decode == null) {
-        return;
-      }
-      List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
-      if (shelf.isNotEmpty) {
-        var ids = shelf.map((f) => f.Id).toList();
-        bs.forEach((f) {
-          if (!ids.contains(f.Id)) {
-            shelf.add(f);
-          }
-        });
-        for (var i = 0; i < shelf.length; i++) {
-          for (var j = 0; j < bs.length; j++) {
-            if (shelf[i].Id == bs[j].Id) {
-              if (shelf[i].LastChapter != bs[j].LastChapter) {
-                shelf[i].UTime = bs[j].UTime;
-                shelf[i].LastChapter = bs[j].LastChapter;
-                shelf[i].NewChapterCount = 1;
-              }
+    Response response2 = await Util(null).http().get(Common.shelf);
+    List decode = response2.data['data'];
+    if (decode == null) {
+      return;
+    }
+    List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
+    if (shelf.isNotEmpty) {
+      var ids = shelf.map((f) => f.Id).toList();
+      bs.forEach((f) {
+        if (!ids.contains(f.Id)) {
+          shelf.add(f);
+        }
+      });
+      for (var i = 0; i < shelf.length; i++) {
+        for (var j = 0; j < bs.length; j++) {
+          if (shelf[i].Id == bs[j].Id) {
+            if (shelf[i].LastChapter != bs[j].LastChapter) {
+              shelf[i].UTime = bs[j].UTime;
+              shelf[i].LastChapter = bs[j].LastChapter;
+              shelf[i].NewChapterCount = 1;
             }
           }
         }
-      } else {
-        shelf = bs;
       }
-      notifyListeners();
+    } else {
+      shelf = bs;
+    }
+    notifyListeners();
 
-      saveShelf();
+    saveShelf();
   }
 
   upTotop(Book book) {
@@ -77,7 +83,7 @@ class ShelfModel with ChangeNotifier {
 
   //删除本地记录
   void delLocalCache(List<String> ids) {
-    for(var i=0;i<ids.length;i++){
+    for (var i = 0; i < ids.length; i++) {
       if (SpUtil.haveKey(ids[i])) {
         List list = jsonDecode(SpUtil.getString('${ids[i]}chapters'));
         List cps = list.map((e) => Chapter.fromJson(e)).toList();
@@ -88,7 +94,6 @@ class ShelfModel with ChangeNotifier {
         SpUtil.remove(ids[i]);
       }
     }
-
   }
 
   modifyShelf(Book book) {

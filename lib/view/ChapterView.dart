@@ -99,8 +99,6 @@ class _ChapterViewItem extends State<ChapterView> {
                     //不是卷目录
                     data.bookTag.cur = index;
                     data.intiPageContent(index, true);
-                    print(
-                        "chapters len ${data.chapters.length} and curIdx $index and name $title}");
                   },
                 );
               },

@@ -296,7 +296,7 @@ class _SearchState extends State<Search> {
   Widget suggestionWidget(data) {
     return SingleChildScrollView(
       child: Container(
-        padding: EdgeInsets.only(left: 15, right: 15, top: 10),
+        padding: EdgeInsets.only(left: 10, right: 10, top: 10),
         child: Column(
           children: <Widget>[
             Row(
@@ -338,7 +338,6 @@ class _SearchState extends State<Search> {
             ),
             Wrap(
               children: searchModel?.hot ?? [], spacing: 2, //主轴上子控件的间距
-              runSpacing: 5,
             ),
           ],
         ),
