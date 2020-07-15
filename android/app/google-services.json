@@ -1,0 +1,41 @@
+{
+  "project_info": {
+    "project_number": "251952418925",
+    "firebase_url": "https://deerbook-92e03.firebaseio.com",
+    "project_id": "deerbook-92e03",
+    "storage_bucket": "deerbook-92e03.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:251952418925:android:7f0609c42ea87324b46f64",
+        "android_client_info": {
+          "package_name": "com.leetomlee.book"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "251952418925-436i549v6s2nuf1e6ns9quves792a94k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-oJb7I5nnL5nteA7IeYjgMQSU9FtX2Us"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "251952418925-436i549v6s2nuf1e6ns9quves792a94k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-6006602100377888~6213822540"
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -232,6 +232,13 @@ class Me extends StatelessWidget {
                 },
               ),
               getItem(
+                ImageIcon(AssetImage("images/logo.png")),
+                'WEB站点',
+                    () {
+                  launch('https://web.leetomlee.xyz/');
+                },
+              ),
+              getItem(
                 ImageIcon(AssetImage("images/ab.png")),
                 '关于',
                 () {

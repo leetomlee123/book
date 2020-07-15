@@ -13,6 +13,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
+import 'Ad.dart';
+
 class BookShelf extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -54,7 +56,7 @@ class _BookShelfState extends State<BookShelf>
                 icon: Icon(Icons.search),
                 onPressed: () {
                   Routes.navigateTo(context, Routes.search,
-                      params: {"type": "book"});
+                      params: {"type": "book","name":""});
                 },
               )
             ],
@@ -62,7 +64,7 @@ class _BookShelfState extends State<BookShelf>
           body: SmartRefresher(
               enablePullDown: true,
 //                header: MyWaterDropHeader(),
-              header: WaterDropHeader(),
+//              header: WaterDropHeader(),
               footer: CustomFooter(
                 builder: (BuildContext context, LoadStatus mode) {
                   if (mode == LoadStatus.idle) {

@@ -19,19 +19,16 @@ class ReaderPageAgent {
     while (true) {
 //      TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
       TextPainter textPainter = layout(tempStr, fontSize, width);
+
       if (!SpUtil.haveKey(Common.page_height_pre + fontSize.toString())) {
-        if ((!okHeight)) {
-          var end =
-              textPainter.getPositionForOffset(Offset(width, height)).offset;
-          if (end == 0) {
-            break;
-          }
-          var substring = tempStr.substring(0, end);
-          height = checkHeight(substring, fontSize, width, height);
+        height = checkHeight(textPainter, height);
+        String key = Common.page_height_pre + fontSize.toString();
+        if (SpUtil.haveKey(key)) {
+          SpUtil.remove(key);
         }
+        SpUtil.putDouble(key, height);
       }
 
-//textPainter.getOffsetAfter(offset)
       var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
 
       if (end == 0) {
@@ -55,36 +52,34 @@ class ReaderPageAgent {
     return textPainter;
   }
 
-  double checkHeight(
-      String text, double fontSize, double width, double height) {
-    TextPainter textPainter = layout(text, fontSize, width);
-    print("calc height");
-    double temp = height;
+  double checkHeight(TextPainter textPainter, double height) {
+//    double textHeight = textPainter.height;
+    double lineHeight = textPainter.preferredLineHeight;
+//    int lineNumber = textHeight ~/ lineHeight;
+    int lineNumberPerPage = height ~/ lineHeight;
+//    int pageNum = (lineNumber / lineNumberPerPage).ceil();
+    double actualPageHeight = lineNumberPerPage * lineHeight;
+//    double temp = height;
 
-    while (textPainter.size.height > temp + 1.5) {
-//      print(
-//          "painter:${textPainter.size.height} me:${height} ${textPainter.size.height > height} strlen:${text.length}");
+//    while (textPainter.size.height > temp + 1.5) {
+////      print(
+////          "painter:${textPainter.size.height} me:${height} ${textPainter.size.height > height} strlen:${text.length}");
+//
+//      height -= fontSize;
+//      if (height < 0) {
+//        break;
+//      }
+//      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
+//      if (end == 0) {
+//        break;
+//      }
+//      text = text.substring(0, end);
+//
+//      textPainter = layout(text, fontSize, width);
+//      print(textPainter.height);
+//    }
 
-      height -= fontSize;
-      if (height < 0) {
-        break;
-      }
-      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
-      if (end == 0) {
-        break;
-      }
-      text = text.substring(0, end);
-
-      textPainter = layout(text, fontSize, width);
-      print(textPainter.height);
-    }
-    String key = Common.page_height_pre + fontSize.toString();
-    if (SpUtil.haveKey(key)) {
-      SpUtil.remove(key);
-    }
-    SpUtil.putDouble(key, height);
-
-    okHeight = true;
-    return height;
+//    okHeight = true;
+    return actualPageHeight;
   }
 }

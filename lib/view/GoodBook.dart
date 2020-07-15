@@ -118,7 +118,8 @@ class StateTabItem extends State<TabItem>
           Row(
             children: <Widget>[
               Padding(
-                child: Store.connect<ColorModel>(builder:(context,ColorModel data,child){
+                child: Store.connect<ColorModel>(
+                    builder: (context, ColorModel data, child) {
                   return Container(
                     width: 4,
                     height: 20,
@@ -141,7 +142,7 @@ class StateTabItem extends State<TabItem>
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey,fontSize: 14.0),
+                      style: TextStyle(color: Colors.grey, fontSize: 14.0),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,
@@ -186,9 +187,16 @@ class StateTabItem extends State<TabItem>
               String url = Common.detail + '/${gbk.id}';
               Response future = await Util(context).http().get(url);
               var d = future.data['data'];
-              BookInfo bookInfo = BookInfo.fromJson(d);
-              Routes.navigateTo(context, Routes.detail,
-                  params: {"detail": jsonEncode(bookInfo)});
+              if (d == null) {
+                Routes.navigateTo(context, Routes.search, params: {
+                  "type":"book",
+                  "name": gbk.name,
+                });
+              } else {
+                BookInfo bookInfo = BookInfo.fromJson(d);
+                Routes.navigateTo(context, Routes.detail,
+                    params: {"detail": jsonEncode(bookInfo)});
+              }
             },
           ),
           Text(

@@ -27,7 +27,8 @@ var rootHandler =
 var searchHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String type = (params['type'][0]);
-  return Search(type);
+  String name = (params['name'][0]);
+  return Search(type,name);
 });
 var loginHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {

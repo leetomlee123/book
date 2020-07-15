@@ -19,7 +19,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 
 class ReadBook extends StatefulWidget {
   BookInfo _bookInfo;
@@ -33,7 +32,8 @@ class ReadBook extends StatefulWidget {
   }
 }
 
-class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
+class _ReadBookState extends State<ReadBook>
+    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   ReadModel readModel;
 
   //背景色数据
@@ -43,7 +43,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     [230, 242, 230],
     [228, 241, 245],
     [245, 228, 228],
-    [224, 224, 224],
   ];
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
 
@@ -104,6 +103,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // TODO: implement build
     return Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
       return WillPopScope(
@@ -154,7 +154,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             ),
             body: Stack(
               children: <Widget>[
-                model.readView(),
+                readModel != null ? model.readView() : Container(),
                 model.showMenu
                     ? Container(
                         color: Colors.transparent,
@@ -320,6 +320,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               ),
               onTap: () {
                 colorModel.switchModel();
+//                readModel.pageController.jumpToPage(readModel.bookTag.index);
 //                      setState(() {});
                 readModel.toggleShowMenu();
               }),
@@ -385,52 +386,53 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         builder: (context, ColorModel colorModel, child) {
       return Container(
         color: colorModel.theme.primaryColor,
-        height: 150,
+        height: 120,
         child: Padding(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Text(
-                    '亮度',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: colorModel.dark ? Colors.white70 : Colors.black),
-                  ),
-                  Expanded(
-                    child: Container(
-                      child: Slider(
-                        activeColor: Colors.white,
-                        inactiveColor: Colors.white70,
-                        value: 50,
-                        max: 100,
-                        min: 0.0,
-                        onChanged: (newValue) {},
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 130,
-                    child: Row(
-                      children: <Widget>[
-                        Text(
-                          '跟随系统',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: colorModel.dark
-                                  ? Colors.white70
-                                  : Colors.black),
-                        ),
-                        Checkbox(
-                          value: false,
-                          activeColor: Colors.blue,
-                          onChanged: (bool val) {},
-                        )
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+//              Row(
+//                children: <Widget>[
+//                  Text(
+//                    '亮度',
+//                    style: TextStyle(
+//                        fontSize: 12,
+//                        color: colorModel.dark ? Colors.white70 : Colors.black),
+//                  ),
+//                  Expanded(
+//                    child: Container(
+//                      child: Slider(
+//                        activeColor: Colors.white,
+//                        inactiveColor: Colors.white70,
+//                        value: 50,
+//                        max: 100,
+//                        min: 0.0,
+//                        onChanged: (newValue) {},
+//                      ),
+//                    ),
+//                  ),
+//                  Container(
+//                    width: 130,
+//                    child: Row(
+//                      children: <Widget>[
+//                        Text(
+//                          '跟随系统',
+//                          style: TextStyle(
+//                              fontSize: 12,
+//                              color: colorModel.dark
+//                                  ? Colors.white70
+//                                  : Colors.black),
+//                        ),
+//                        Checkbox(
+//                          value: false,
+//                          activeColor: Colors.blue,
+//                          onChanged: (bool val) {},
+//                        )
+//                      ],
+//                    ),
+//                  ),
+//                ],
+//              ),
               Row(
                 children: <Widget>[
 //                  Text(
@@ -534,4 +536,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     ));
     return wds;
   }
+
+  @override
+  // TODO: implement wantKeepAlive
+  bool get wantKeepAlive => true;
 }

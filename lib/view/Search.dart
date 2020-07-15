@@ -17,8 +17,9 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class Search extends StatefulWidget {
   final String type;
+  final String name;
 
-  Search(this.type);
+  Search(this.type, this.name);
 
   @override
   State<StatefulWidget> createState() {
@@ -57,6 +58,7 @@ class _SearchState extends State<Search> {
   void dispose() {
     // TODO: implement dispose
     super.dispose();
+    searchModel.clear();
   }
 
   @override
@@ -64,6 +66,9 @@ class _SearchState extends State<Search> {
     // TODO: implement initState
     super.initState();
     isBookSearch = this.widget.type == "book";
+    if(this.widget.type=="book"&&this.widget.name!=""){
+      controller.text=this.widget.name;
+    }
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
       initModel();
@@ -173,7 +178,7 @@ class _SearchState extends State<Search> {
           ? ListView.builder(
               itemBuilder: (context, i) {
                 var auth = searchModel.bks[i].Author;
-                var cate = searchModel.bks[i].CName;
+//                var cate = searchModel.bks[i].CName??"";
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   child: Row(
@@ -222,7 +227,7 @@ class _SearchState extends State<Search> {
                           Container(
                             padding:
                                 const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: new Text('$cate | $auth',
+                            child: new Text('$auth',
                                 style: TextStyle(
                                   fontSize: 14,
                                 )),
@@ -296,7 +301,7 @@ class _SearchState extends State<Search> {
   Widget suggestionWidget(data) {
     return SingleChildScrollView(
       child: Container(
-        padding: EdgeInsets.only(left: 10, right: 10, top: 10),
+        padding: EdgeInsets.only(left: 5, right: 5, top: 10),
         child: Column(
           children: <Widget>[
             Row(

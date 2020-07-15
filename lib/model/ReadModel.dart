@@ -14,6 +14,7 @@ import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -44,14 +45,26 @@ class ReadModel with ChangeNotifier {
     [230, 242, 230],
     [228, 241, 245],
     [245, 228, 228],
-    [224, 224, 224],
+  ];
+  List<String> bgimg = [
+    "https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png",
+    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme1_bg.9987a.png",
+    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme2_bg.75a33.png",
+    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/theme_3_bg.31237.png",
+    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme5_bg.85f0d.png",
   ];
 
   //页面字体大小
-  double fontSize = 28.0;
+  double fontSize = 32.0;
 
   //显示上层 设置
   bool showMenu = false;
+
+  //章节切换过程中 页面切换数
+  int offset = 0;
+
+  //offset tag 上一章 -1 下一张 +1
+  int offsetTag = 0;
 
   //背景色索引
   int bgIdx = 0;
@@ -72,8 +85,9 @@ class ReadModel with ChangeNotifier {
   //获取本书记录
   getBookRecord() async {
     showMenu = false;
-    changeCpOk = true;
     font = false;
+    offset = 0;
+    offsetTag = 0;
     if (SpUtil.haveKey(bookInfo.Id)) {
       bookTag =
           BookTag.fromJson(await parseJson(SpUtil.getString(bookInfo.Id)));
@@ -97,18 +111,15 @@ class ReadModel with ChangeNotifier {
         chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
       pageController = PageController(initialPage: 0);
-      getChapters().then((_) {
-        if (bookInfo.CId == "-1") {
-          bookTag.cur = chapters.length - 1;
-        }
-        intiPageContent(bookTag.cur, false);
-      });
-//      saveData();
+      await getChapters();
+      if (bookInfo.CId == "-1") {
+        bookTag.cur = chapters.length - 1;
+      }
+      intiPageContent(bookTag.cur, false);
     }
   }
 
   Future intiPageContent(int idx, bool jump) async {
-    changeCpOk = false;
     showGeneralDialog(
       context: context,
       barrierLabel: "",
@@ -130,68 +141,82 @@ class ReadModel with ChangeNotifier {
       int ix = prePage?.pageOffsets?.length ?? 0;
       pageController.jumpToPage(ix);
     }
-    changeCpOk = true;
   }
 
   changeChapter(int idx) async {
-    if (!changeCpOk) {
-      print("error get");
-      return;
-    }
     bookTag.index = idx;
+    offset = offset + offsetTag;
+    print("calc offset $offset $offsetTag");
 
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
-    if ((idx + 1 - preLen) > (curLen)) {
-      changeCpOk = false;
-      int temp = bookTag.cur + 1;
-      if (temp >= chapters.length) {
-        Toast.show("已经是最后一页");
-        pageController.previousPage(
-            duration: Duration(microseconds: 1), curve: Curves.ease);
-      } else {
-        bookTag.cur += 1;
-        prePage = curPage;
-        if (nextPage.chapterName == "-1") {
-          showGeneralDialog(
-            context: context,
-            barrierLabel: "",
-            barrierDismissible: true,
-            transitionDuration: Duration(milliseconds: 300),
-            pageBuilder: (BuildContext context, Animation animation,
-                Animation secondaryAnimation) {
-              return LoadingDialog();
-            },
-          );
-          curPage = await loadChapter(bookTag.cur);
-          Navigator.pop(context);
+    if (changeCpOk) {
+      if ((idx + 1 - preLen) > (curLen)) {
+        changeCpOk = false;
+        int temp = bookTag.cur + 1;
+        if (temp >= chapters.length) {
+          Toast.show("已经是最后一页");
+          pageController.previousPage(
+              duration: Duration(microseconds: 1), curve: Curves.ease);
         } else {
-          curPage = nextPage;
-        }
-        nextPage = await loadChapter(bookTag.cur + 1);
-        fillAllContent();
-        pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
-      }
-      changeCpOk = true;
-    } else if (idx < preLen) {
-      changeCpOk = false;
-      int temp = bookTag.cur - 1;
-      if (temp < 0) {
-        return;
-      } else {
-        bookTag.cur -= 1;
-        nextPage = curPage;
-        curPage = prePage;
-        prePage = await loadChapter(bookTag.cur - 1);
+          offset = 1;
+          offsetTag = 1;
 
-        fillAllContent();
-        int ix = (prePage?.pageOffsets?.length ?? 0) +
-            curPage.pageOffsets.length -
-            1;
-        pageController.jumpToPage(ix);
+          bookTag.cur += 1;
+          prePage = curPage;
+          if (nextPage.chapterName == "-1") {
+            showGeneralDialog(
+              context: context,
+              barrierLabel: "",
+              barrierDismissible: true,
+              transitionDuration: Duration(milliseconds: 300),
+              pageBuilder: (BuildContext context, Animation animation,
+                  Animation secondaryAnimation) {
+                return LoadingDialog();
+              },
+            );
+            curPage = await loadChapter(bookTag.cur);
+            int preLen = prePage?.pageOffsets?.length ?? 0;
+            int curLen = curPage?.pageOffsets?.length ?? 0;
+            bookTag.index = preLen + curLen - 1;
+            Navigator.pop(context);
+          } else {
+            curPage = nextPage;
+          }
+          nextPage = await loadChapter(bookTag.cur + 1);
+          fillAllContent();
+          print("my offset $offset");
+          int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
+          print(realIdx);
+          pageController.jumpToPage(realIdx - 1);
+          offset = 0;
+          offsetTag = 0;
+        }
+        changeCpOk = true;
+      } else if (idx < preLen) {
+        changeCpOk = false;
+        int temp = bookTag.cur - 1;
+        if (temp < 0) {
+          return;
+        } else {
+          offsetTag = -1;
+          offset = -1;
+          bookTag.cur -= 1;
+          nextPage = curPage;
+          curPage = prePage;
+          prePage = await loadChapter(bookTag.cur - 1);
+
+          fillAllContent();
+          int ix = (prePage?.pageOffsets?.length ?? 0) +
+              curPage.pageOffsets.length +
+              offset;
+          pageController.jumpToPage(ix);
+          offset = 0;
+          offsetTag = 0;
 //        notifyListeners();
+        }
+        changeCpOk = true;
       }
-      changeCpOk = true;
     }
   }
 
@@ -204,10 +229,12 @@ class ReadModel with ChangeNotifier {
 
   Future getChapters() async {
     var url = Common.chaptersUrl + '/${bookInfo.Id}/${chapters?.length ?? 0}';
-    Response response = await Util(null).http().get(url);
+    Response response =
+        await Util(chapters.isEmpty ? context : null).http().get(url);
 
     List data = response.data['data'];
     if (data == null) {
+      print("load cps ok");
       return;
     }
 
@@ -220,6 +247,7 @@ class ReadModel with ChangeNotifier {
     }
     SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     notifyListeners();
+    print("load cps ok");
   }
 
   Future<ReadPage> loadChapter(int idx) async {
@@ -260,7 +288,6 @@ class ReadModel with ChangeNotifier {
             .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
       }
     }
-    print("load ok");
     return r;
   }
 
@@ -278,12 +305,19 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
+//  Color.fromRGBO(122, 122, 122, 1)
   Widget readView() {
-    return Theme(
-      child: Container(
-        color: Store.value<ColorModel>(context).dark
-            ? null
-            : Color.fromRGBO(bgs[bgIdx][0], bgs[bgIdx][1], bgs[bgIdx][2], 0.8),
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) {
+      return Container(
+        decoration: model.dark ? null :BoxDecoration(
+          image: DecorationImage(
+            image: CachedNetworkImageProvider(
+                 bgimg[bgIdx]),
+            fit: BoxFit.cover,
+          ),
+        ),
+        color: model.dark ? Colors.black : null,
         child: PageView.builder(
           controller: pageController,
           physics: AlwaysScrollableScrollPhysics(),
@@ -296,9 +330,8 @@ class ReadModel with ChangeNotifier {
               (nextPage?.pageOffsets?.length ?? 0),
           onPageChanged: (idx) => changeChapter(idx),
         ),
-      ),
-      data: Store.value<ColorModel>(context).theme,
-    );
+      );
+    });
   }
 
   modifyFont() {
@@ -385,7 +418,13 @@ class ReadModel with ChangeNotifier {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = await parseJson(responseBody);
-      return dataList['data']['content'].toString().replaceAll(" ", "\t\t");
+      var splist = ["…", "*", "-", "~"];
+      String string = dataList['data']['content'];
+      return string;
+//      if (string.startsWith("\r\n")){
+//        string=string.substring(2);
+//      }
+//      return string.replaceAll(" ", "\t\t");
     } catch (e) {
       print(e);
     }
@@ -421,9 +460,11 @@ class ReadModel with ChangeNotifier {
                             child: Text(
                               r.chapterName,
                               style: TextStyle(
-                                fontSize: 16,
-                                  fontFamily: model.font
-                              ),
+                                  fontSize: 16,
+                                  fontFamily: model.font,
+                                  color: model.dark
+                                      ? Color.fromRGBO(142, 142, 142, 1)
+                                      : null),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -438,6 +479,10 @@ class ReadModel with ChangeNotifier {
                                     TextSpan(
                                         text: content,
                                         style: TextStyle(
+                                            color: model.dark
+                                                ? Color.fromRGBO(
+                                                    122, 122, 122, 1)
+                                                : null,
                                             fontSize: fontSize /
                                                 Screen.textScaleFactor))
                                   ]),
@@ -454,9 +499,11 @@ class ReadModel with ChangeNotifier {
                                 Text(
                                   '第${i + 1}/${r.pageOffsets.length}页',
                                   style: TextStyle(
-                                    fontSize: 13,
-                                      fontFamily: model.font
-                                  ),
+                                      color: model.dark
+                                          ? Color.fromRGBO(122, 122, 122, 1)
+                                          : null,
+                                      fontSize: 13,
+                                      fontFamily: model.font),
                                   textAlign: TextAlign.center,
                                 ),
                               ],

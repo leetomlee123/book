@@ -26,8 +26,7 @@ class ColorModel with ChangeNotifier {
       dark = SpUtil.getBool("dark");
     }
     _theme = dark
-        ? ThemeData.dark().copyWith(
-            textTheme: TextTheme(body1: TextStyle(color: Color(0xFFB8B8B8))))
+        ? ThemeData.dark()
         : ThemeData.light().copyWith(primaryColor: skins[idx]);
     return _theme;
   }
@@ -108,17 +107,21 @@ class ColorModel with ChangeNotifier {
   loadFont(var name, var url) async {
     if (name != "默认字体") {
       var fontLoad = FontLoader(name);
-//      Future<String> loadString = NetworkAssetBundle(Uri()).loadString(url);
-//      fontLoad.addFont();
+      var load = NetworkAssetBundle(Uri()).load(url);
+      fontLoad.addFont(load);
       await fontLoad.load();
     }
     font = name;
     notifyListeners();
-    SpUtil.getKeys().forEach((f) {
+    var keys = SpUtil.getKeys();
+    print(keys.length);
+    for (var f in keys) {
       if (f.startsWith('pages') || f.startsWith(Common.page_height_pre)) {
         SpUtil.remove(f);
       }
-    });
+    }
+    keys = SpUtil.getKeys();
+    print(keys.length);
     if (SpUtil.haveKey("fontName")) {
       SpUtil.remove("fontName");
     }

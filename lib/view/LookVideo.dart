@@ -44,7 +44,6 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     urlKey = this.widget.id;
-    var widgetsBinding = WidgetsBinding.instance;
     // TODO: implement initState
     super.initState();
     getData();
@@ -174,10 +173,11 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
       videoPlayerController.pause();
 //      videoPlayerController.dispose();
     }
+    urlKey = url;
+
     setState(() {
       /// 重置组件参数
       initOk = false;
-      urlKey = url;
     });
     Response future = await Util(null).http().get(Common.look_m + url);
     videoPlayerController = VideoPlayerController.network(future.data[2]);
