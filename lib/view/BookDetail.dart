@@ -136,7 +136,7 @@ class _BookDetailState extends State<BookDetail> {
                                       itemBuilder: (context, _) => Icon(
                                         Icons.star,
                                         color: Colors.amber,
-                                      ),
+                                      ), onRatingUpdate: (double value) {  },
                                     ),
                                     Text('${_bookInfo.Rate ?? 0.0}分')
                                   ],

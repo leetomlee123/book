@@ -7,15 +7,15 @@ class LoadingDialog extends Dialog {
   @override
   Widget build(BuildContext context) {
     //创建透明层
-    var value = Store.value<ColorModel>(context);
-    return Center(
-        child: Container(
-      width: 600,
-      height: 600,
-      child: SpinKitThreeBounce(
-        color: value.dark ? Colors.white : value.theme.primaryColor,
-        size: 30,
-      ),
-    ));
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) {
+      return Center(
+          child: Container(
+        child: SpinKitCircle(
+          color: model.dark ? Colors.white : model.theme.primaryColor,
+          size: 70,
+        ),
+      ));
+    });
   }
 }

@@ -4,7 +4,11 @@ class Common {
 
 //   static String domain = "http://120.27.244.128:8083/v1";
 //  static String domain = "http://192.168.0.107:8081/v1";
-  static String domain = "https://newbook.leetomlee.xyz/v1";
+//  static String domain = "http://192.168.0.107:8081/v1";
+  static String domain = "https://book.leetomlee.xyz/v1";
+
+//  static String domain = "https://newbook.leetomlee.xyz/v1";
+  static String video_domain = "https://movie.leetomlee.xyz";
 
 //static String domain = "https://book.leetomlee.xyz/v1";
 
@@ -17,7 +21,9 @@ class Common {
   static String detail = domain + "/book/detail";
   static String shelf = domain + "/book/shelf";
   static String rank = domain + "/book/rank";
-  static String search = domain + "/book/search";
+  static String search = video_domain + "/book/search";
+
+//  static String search = domain + "/book/search";
   static String bookInfo = domain + "/book/info/";
   static String chaptersUrl = domain + "/book/chapters";
   static String bookContentUrl = domain + '/book/chapter';
@@ -29,7 +35,6 @@ class Common {
   static String downloadlist = "downloadlist";
 
 //  static String video_domain = "http://192.168.3.56:8082";
-  static String video_domain = "https://movie.leetomlee.xyz";
 
   static String index = video_domain + '/index';
   static String m_detail = video_domain + '/movies';

@@ -58,7 +58,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                   icon: Icon(Icons.search),
                   onPressed: () {
                     Routes.navigateTo(context, Routes.search,
-                        params: {"type": "movie"});
+                        params: {"type": "movie", "name": ""});
                   },
                 )
               ],

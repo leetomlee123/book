@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/model/MovieModel.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class Store {
   static BuildContext context;
@@ -17,6 +18,7 @@ class Store {
         ChangeNotifierProvider(create: (_) => ColorModel()),
         ChangeNotifierProvider(create: (_) => ShelfModel()),
         ChangeNotifierProvider(create: (_) => ReadModel()),
+        ChangeNotifierProvider(create: (_) => MovieModel())
       ],
       child: child,
     );
@@ -24,7 +26,7 @@ class Store {
 
   //  通过Provider.value<T>(context)获取状态数据
   static T value<T>(context) {
-    return Provider.of(context,listen: false);
+    return Provider.of(context, listen: false);
   }
 
   //  通过Consumer获取状态数据

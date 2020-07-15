@@ -23,6 +23,7 @@ class SearchModel with ChangeNotifier {
   List<SearchItem> bks = [];
   List<GBook> mks = [];
   List<Widget> hot = [];
+  bool loading = false;
 
   // ignore: non_constant_identifier_names
   String store_word = "";
@@ -36,7 +37,27 @@ class SearchModel with ChangeNotifier {
 
   List<Color> colors = Colors.accents;
 
+  clear() {
+    searchHistory = new List();
+    isBookSearch = false;
+
+    showResult = false;
+    bks = [];
+    mks = [];
+    hot = [];
+
+    // ignore: non_constant_identifier_names
+    store_word = "";
+    page = 1;
+    size = 10;
+    word = "";
+    temp = "";
+  }
+
   getSearchData() async {
+    if (!loading) {
+      return;
+    }
     if (temp == "") {
       temp = word;
     } else {
@@ -51,16 +72,19 @@ class SearchModel with ChangeNotifier {
       ctx = context;
     }
     if (isBookSearch) {
-      var url = '${Common.search}?key=$word&page=$page&size=$size';
+      var url = '${Common.search}/$word/$page';
+//      var url = '${Common.search}?key=$word&page=$page&size=$size';
 
       Response res = await Util(ctx).http().get(url);
-      List data = res.data['data'];
-      if (data == null) {
+      var d = await parseJson(res.data);
+      List data = d['data'];
+      if (data.isEmpty) {
         refreshController.loadNoData();
       } else {
-        data.forEach((f) {
-          bks.add(SearchItem.fromJson(f));
-        });
+        for (var d in data) {
+          bks.add(SearchItem.fromJson(d));
+        }
+        refreshController.loadComplete();
       }
     } else {
 //    /movies
@@ -68,12 +92,13 @@ class SearchModel with ChangeNotifier {
 
       Response res = await Util(ctx).http().get(url);
       List data = res.data;
-      if (data == null) {
+      if (data.isEmpty) {
         refreshController.loadNoData();
       } else {
-        data.forEach((f) {
-          mks.add(GBook.fromJson(f));
-        });
+        for (var d in data) {
+          mks.add(GBook.fromJson(d));
+        }
+        refreshController.loadComplete();
       }
     }
   }
@@ -82,15 +107,19 @@ class SearchModel with ChangeNotifier {
     bks = [];
     mks = [];
     page = 1;
-    getSearchData();
+    loading = true;
+    await getSearchData();
+    loading = false;
     refreshController.refreshCompleted();
     notifyListeners();
   }
 
   void onLoading() async {
     page += 1;
-    getSearchData();
-    refreshController.loadComplete();
+    loading = true;
+    await getSearchData();
+    loading = false;
+
     notifyListeners();
   }
 
@@ -219,7 +248,9 @@ class SearchModel with ChangeNotifier {
     mks = [];
     showResult = true;
     word = w;
+    loading = true;
     await getSearchData();
+    loading = false;
     setHistory(w);
     notifyListeners();
   }
