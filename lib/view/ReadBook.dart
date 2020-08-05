@@ -49,7 +49,7 @@ class _ReadBookState extends State<ReadBook>
   @override
   void initState() {
     eventBus.on<ReadRefresh>().listen((event) {
-      readModel.fillAllContent();
+      readModel.intiPageContent(readModel.bookTag.cur, false);
     });
     // TODO: implement initState
     super.initState();
@@ -483,16 +483,16 @@ class _ReadBookState extends State<ReadBook>
                       ),
                     ),
                   ),
-
-//                  FlatButton(
-//                    child: Text('字体'),
-//                    onPressed: () {
-//                      Routes.navigateTo(
-//                        context,
-//                        Routes.fontSet,
-//                      );
-//                    },
-//                  ),
+SizedBox(),
+                  GestureDetector(
+                    child: Text('字体'),
+                    onTap: () {
+                      Routes.navigateTo(
+                        context,
+                        Routes.fontSet,
+                      );
+                    },
+                  ),
                 ],
               ),
               Row(

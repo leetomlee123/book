@@ -6,10 +6,11 @@ part 'GBook.g.dart';
 class GBook {
   String cover;
   String name;
+  String author;
   String id;
 
 
-  GBook(this.cover, this.name, this.id);
+  GBook(this.cover, this.name,this.author, this.id);
 
   factory GBook.fromJson(Map<String, dynamic> json) =>
       _$GBookFromJson(json);

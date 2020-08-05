@@ -24,12 +24,12 @@ class StateGoodBook extends State<GoodBook>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   TabController controller;
   var tabs = <Tab>[];
-
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    tabs = <Tab>[
+
+    tabs = [
       Tab(
         text: "男生",
       ),
@@ -37,10 +37,10 @@ class StateGoodBook extends State<GoodBook>
         text: "女生",
       ),
     ];
-
     //initialIndex初始选中第几个
     controller =
-        TabController(initialIndex: 0, length: tabs.length, vsync: this);
+        TabController(initialIndex: 0, length: tabs.length, vsync: this)
+;
   }
 
   @override
@@ -184,12 +184,12 @@ class StateTabItem extends State<TabItem>
               height: ((ScreenUtil.getScreenW(context) - 40) / 4) * 1.2,
             ),
             onTap: () async {
-              String url = Common.detail + '/${gbk.id}';
+              String url = Common.two + '/${gbk.name}/${gbk.author}';
               Response future = await Util(context).http().get(url);
               var d = future.data['data'];
               if (d == null) {
                 Routes.navigateTo(context, Routes.search, params: {
-                  "type":"book",
+                  "type": "book",
                   "name": gbk.name,
                 });
               } else {

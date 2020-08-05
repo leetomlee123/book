@@ -1,3 +1,3 @@
-flutter build apk --target-platform android-arm64 --split-per-abi
+flutter build apk --obfuscate --split-debug-info=HLQ_Struggle --target-platform android-arm,android-arm64,android-x64 --split-per-abi
 
 flutter install

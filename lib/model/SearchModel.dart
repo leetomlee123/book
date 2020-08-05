@@ -9,7 +9,6 @@ import 'package:book/entity/SearchItem.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/BookDetail.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -123,6 +122,16 @@ class SearchModel with ChangeNotifier {
     notifyListeners();
   }
 
+  deleteHistoryItem(String source) {
+    for (var i = 0; i < searchHistory.length; i++) {
+      if (source == searchHistory[i]) {
+        searchHistory.removeAt(i);
+      }
+    }
+    SpUtil.putStringList(store_word, searchHistory);
+    notifyListeners();
+  }
+
   toggleShowResult() {
     showResult = !showResult;
     notifyListeners();
@@ -141,6 +150,12 @@ class SearchModel with ChangeNotifier {
         child: ListTile(
           leading: Icon(Icons.update),
           title: Text(value),
+          trailing: IconButton(
+            icon: Icon(Icons.clear),
+            onPressed: () {
+              deleteHistoryItem(value);
+            },
+          ),
         ),
 //        child: Container(
 //          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
@@ -277,8 +292,6 @@ class SearchModel with ChangeNotifier {
               'detail': jsonEncode(b),
             },
           );
-          Navigator.of(context).push(MaterialPageRoute(
-              builder: (BuildContext context) => BookDetail(b)));
         },
       ));
     }
