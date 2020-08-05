@@ -146,7 +146,6 @@ class ReadModel with ChangeNotifier {
   changeChapter(int idx) async {
     bookTag.index = idx;
     offset = offset + offsetTag;
-    print("calc offset $offset $offsetTag");
 
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
@@ -272,22 +271,19 @@ class ReadModel with ChangeNotifier {
 
       SpUtil.putString(id, r.chapterContent);
 
-      r.pageOffsets = new ReaderPageAgent()
-          .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
-      SpUtil.putString('pages' + id, r.pageOffsets.join('-'));
       chapters[idx].hasContent = 2;
+      SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     } else {
       r.chapterContent = SpUtil.getString(id);
-      if (SpUtil.haveKey('pages' + id)) {
-        r.pageOffsets = SpUtil.getString('pages' + id)
-            .split('-')
-            .map((f) => int.parse(f))
-            .toList();
-      } else {
-        r.pageOffsets = new ReaderPageAgent()
-            .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
-      }
     }
+    if (SpUtil.haveKey('pages' + id)) {
+      r.pageOffsets = SpUtil.getStringList('pages' + id);
+    } else {
+      r.pageOffsets = ReaderPageAgent()
+          .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
+      SpUtil.putStringList('pages' + id, r.pageOffsets);
+    }
+
     return r;
   }
 
@@ -309,29 +305,31 @@ class ReadModel with ChangeNotifier {
   Widget readView() {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-      return Container(
-        decoration: model.dark ? null :BoxDecoration(
-          image: DecorationImage(
-            image: CachedNetworkImageProvider(
-                 bgimg[bgIdx]),
-            fit: BoxFit.cover,
-          ),
-        ),
-        color: model.dark ? Colors.black : null,
-        child: PageView.builder(
-          controller: pageController,
-          physics: AlwaysScrollableScrollPhysics(),
-          itemBuilder: (BuildContext context, int index) {
-            return allContent[index];
-          },
-          //条目个数
-          itemCount: (prePage?.pageOffsets?.length ?? 0) +
-              (curPage?.pageOffsets?.length ?? 0) +
-              (nextPage?.pageOffsets?.length ?? 0),
-          onPageChanged: (idx) => changeChapter(idx),
-        ),
-      );
-    });
+          return Container(
+            decoration: model.dark
+                ? null
+                : BoxDecoration(
+              image: DecorationImage(
+                image: CachedNetworkImageProvider(bgimg[bgIdx]),
+                fit: BoxFit.cover,
+              ),
+            ),
+            color: model.dark ? Color.fromRGBO(26, 26, 26, 1) : null,
+            child: PageView.builder(
+              controller: pageController,
+              physics: AlwaysScrollableScrollPhysics(),
+              itemBuilder: (BuildContext context, int index) {
+                return allContent[index];
+              },
+              //条目个数
+              itemCount: (prePage?.pageOffsets?.length ?? 0) +
+                  (curPage?.pageOffsets?.length ?? 0) +
+                  (nextPage?.pageOffsets?.length ?? 0),
+              onPageChanged: (idx) => changeChapter(idx),
+            ),
+          );
+
+        });
   }
 
   modifyFont() {
@@ -418,13 +416,7 @@ class ReadModel with ChangeNotifier {
       var response = await request.close();
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = await parseJson(responseBody);
-      var splist = ["…", "*", "-", "~"];
-      String string = dataList['data']['content'];
-      return string;
-//      if (string.startsWith("\r\n")){
-//        string=string.substring(2);
-//      }
-//      return string.replaceAll(" ", "\t\t");
+      return dataList['data']['content'];
     } catch (e) {
       print(e);
     }
@@ -432,11 +424,12 @@ class ReadModel with ChangeNotifier {
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
+
     for (var i = 0; i < r.pageOffsets.length; i++) {
-      var content = r.stringAtPageIndex(i);
-      if (content.startsWith("\n")) {
-        content = content.substring(1);
-      }
+      var content = r.pageOffsets[i];
+//      if (content.startsWith("\n")) {
+//        content = content.substring(1);
+//      }
 
       contents.add(
         Store.connect<ColorModel>(builder: (context, ColorModel model, child) {
@@ -458,38 +451,33 @@ class ReadModel with ChangeNotifier {
                             height: 30,
                             padding: EdgeInsets.only(left: 3),
                             child: Text(
+
                               r.chapterName,
+
                               style: TextStyle(
-                                  fontSize: 16,
-                                  fontFamily: model.font,
+                                  fontSize: 12,
                                   color: model.dark
-                                      ? Color.fromRGBO(142, 142, 142, 1)
+                                      ? Color.fromRGBO(128, 128, 128, 1)
                                       : null),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Expanded(
-                            child: Container(
-                                padding: EdgeInsets.only(
-                                  right: 5,
-                                  left: 15,
-                                ),
-                                child: Text.rich(
-                                  TextSpan(children: [
-                                    TextSpan(
-                                        text: content,
-                                        style: TextStyle(
-                                            color: model.dark
-                                                ? Color.fromRGBO(
-                                                    122, 122, 122, 1)
-                                                : null,
-                                            fontSize: fontSize /
-                                                Screen.textScaleFactor))
-                                  ]),
-                                  textAlign: TextAlign.justify,
-                                  style: TextStyle(fontFamily: model.font),
-                                )),
-                          ),
+                              child: Container(
+                                  padding: EdgeInsets.only(
+                                    right: 5,
+                                    left: 15,
+                                  ),
+                                  child: Text(
+                                    content,
+                                    style: TextStyle(
+                                        color: model.dark
+                                            ? Color.fromRGBO(128, 128, 128, 1)
+                                            : null,
+                                        fontSize:
+                                            fontSize / Screen.textScaleFactor),
+                                    textAlign: TextAlign.justify,
+                                  ))),
                           Container(
                             height: 30,
                             padding: EdgeInsets.only(right: 8),
@@ -499,11 +487,11 @@ class ReadModel with ChangeNotifier {
                                 Text(
                                   '第${i + 1}/${r.pageOffsets.length}页',
                                   style: TextStyle(
-                                      color: model.dark
-                                          ? Color.fromRGBO(122, 122, 122, 1)
-                                          : null,
-                                      fontSize: 13,
-                                      fontFamily: model.font),
+                                    color: model.dark
+                                        ? Color.fromRGBO(128, 128, 128, 1)
+                                        : null,
+                                    fontSize: 13,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],

@@ -33,6 +33,8 @@ class BookDetail extends StatefulWidget {
 class _BookDetailState extends State<BookDetail> {
   BookInfo _bookInfo;
   bool inShelf = false;
+  int maxLines = 3;
+  GlobalKey _globalKey = new GlobalKey();
 
   _BookDetailState(this._bookInfo);
 
@@ -136,7 +138,8 @@ class _BookDetailState extends State<BookDetail> {
                                       itemBuilder: (context, _) => Icon(
                                         Icons.star,
                                         color: Colors.amber,
-                                      ), onRatingUpdate: (double value) {  },
+                                      ),
+                                      onRatingUpdate: (double value) {},
                                     ),
                                     Text('${_bookInfo.Rate ?? 0.0}分')
                                   ],
@@ -163,14 +166,34 @@ class _BookDetailState extends State<BookDetail> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(left: 17.0, top: 5.0),
-                          child: Text(
-                            _bookInfo.Desc ?? "".trim(),
-                            style: TextStyle(fontSize: 12),
+                          child: Stack(
+                            children: <Widget>[
+                              Text(
+                                _bookInfo.Desc ?? "".trim(),
+                                style: TextStyle(fontSize: 12),
+
+
+                              ),
+
+                            ],
                           ),
                         ),
                       ],
                     ),
                     Divider(),
+//                    Center(
+//                      child: GestureDetector(
+//                        child: Text("更多"),
+//                        onTap: () {
+//                          if (maxLines == 3) {
+//                            maxLines = 100;
+//                          } else {
+//                            maxLines = 3;
+//                          }
+//                          setState(() {});
+//                        },
+//                      ),
+//                    ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.max,

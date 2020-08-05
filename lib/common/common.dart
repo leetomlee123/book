@@ -8,6 +8,7 @@ class Common {
   static String domain = "https://book.leetomlee.xyz/v1";
 
 //  static String domain = "https://newbook.leetomlee.xyz/v1";
+//  static String video_domain = "http://192.168.0.107:8082";
   static String video_domain = "https://movie.leetomlee.xyz";
 
 //static String domain = "https://book.leetomlee.xyz/v1";
@@ -22,6 +23,7 @@ class Common {
   static String shelf = domain + "/book/shelf";
   static String rank = domain + "/book/rank";
   static String search = video_domain + "/book/search";
+  static String two = domain + "/book/two";
 
 //  static String search = domain + "/book/search";
   static String bookInfo = domain + "/book/info/";
@@ -48,4 +50,5 @@ class Common {
   static String book_search_history = "book_search_history";
   static String movie_search_history = "movie_search_history";
   static String notice_info = "notice_info";
+  static String reading_style = "READINGSTYLE";
 }

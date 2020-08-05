@@ -15,5 +15,7 @@ class BookTag {
 
   Map<String, dynamic> toJson() => _$BookTagToJson(this);
 
-  BookTag(this.cur, this.index, this.bookName);
+  BookTag(this.cur, this.index,  this.bookName);
+
+
 }

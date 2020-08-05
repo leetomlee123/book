@@ -185,9 +185,10 @@ class VideoDetailState extends State<VideoDetail> {
 
   List<Widget> mItems(List<dynamic> list) {
     List<Widget> wds = [];
+
     for (var value in list) {
       Map map = Map.castFrom(value);
-      wds.add(RaisedButton(
+      wds.add(FlatButton(
         child: Text(
           map.values.elementAt(0),
           textAlign: TextAlign.center,
@@ -203,7 +204,6 @@ class VideoDetailState extends State<VideoDetail> {
               jsonEncode2);
 
           Routes.navigateTo(context, Routes.lookVideo, params: {
-            "cover": this.widget.gBook.cover,
             "name": this.widget.gBook.name,
             "id": map.keys.elementAt(0),
             "mcids": jsonEncode2

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
 import 'package:flustars/flustars.dart';
@@ -5,29 +7,35 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ColorModel with ChangeNotifier {
+  BuildContext buildContext;
   bool dark = false;
-  var fontFamily = '';
   List<Color> skins = Colors.accents;
+  String savePath = "";
   Map fonts = {
     "默认字体": "",
-    "方正新楷体": "http://dl.cdn.sogou.com/font/FZXK_GBK.ttf",
-    "方正俊黑体": "http://oss-asq-download.11222.cn/font/package/FZJunHJW.ttf",
-    "方正宋繁体": "http://moren-1252794300.file.myqcloud.com/fangzhengsongheiFT.ttf",
-    "方正宋简体": "http://mag.reader.3g.qq.com/plugin/fzstys-gb18030.ttf"
+    "方正新楷体": "https://oss-asq-download.11222.cn/font/package/FZXKTK.TTF",
+    "方正稚艺": "http://oss-asq-download.11222.cn/font/package/FZZHYK.TTF",
+    "方正魏碑": "http://oss-asq-download.11222.cn/font/package/FZWBK.TTF",
+    "方正苏新诗柳楷": "https://oss-asq-download.11222.cn/font/package/FZSXSLKJW.TTF",
+    "方正宋刻本秀楷体": "https://oss-asq-download.11222.cn/font/package/FZSKBXKK.TTF",
+    "方正卡通": "http://oss-asq-download.11222.cn/font/package/FZKATK.TTF",
   };
   int idx = SpUtil.getInt('skin');
   ThemeData _theme;
   String font = SpUtil.getString("fontName");
 
   ThemeData get theme {
+    if(font!=""){
+    readFont(font);}
     if (SpUtil.haveKey("dark")) {
       dark = SpUtil.getBool("dark");
     }
     _theme = dark
-        ? ThemeData.dark()
-        : ThemeData.light().copyWith(primaryColor: skins[idx]);
+        ? ThemeData(brightness: Brightness.dark, fontFamily: font)
+        : ThemeData(primaryColor: skins[idx], fontFamily: font);
     return _theme;
   }
 
@@ -66,66 +74,40 @@ class ColorModel with ChangeNotifier {
   }
 
   switchModel() {
-    if (dark) {
-      _theme = ThemeData.dark();
-    } else {
-      _theme = ThemeData.light().copyWith(primaryColor: skins[idx]);
-    }
     dark = !dark;
     SpUtil.putBool("dark", dark);
     notifyListeners();
   }
 
-  List<Widget> fontList() {
-    List<Widget> wds = [];
-    var center = Center(
-      child: Text(
-        "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
-        style: TextStyle(fontWeight: FontWeight.bold, fontFamily: font),
-      ),
-    );
-    wds.add(center);
-    for (var i = 0; i < fonts.length; i++) {
-      wds.add(Row(
-        children: <Widget>[
-          Text(fonts.keys.elementAt(i)),
-          Expanded(
-            child: Container(),
-          ),
-          FlatButton(
-            child: Text("使用"),
-            onPressed: () {
-              loadFont(fonts.keys.elementAt(i), fonts.values.elementAt(i));
-            },
-          )
-        ],
-      ));
-    }
-    return wds;
-  }
-
-  loadFont(var name, var url) async {
-    if (name != "默认字体") {
-      var fontLoad = FontLoader(name);
-      var load = NetworkAssetBundle(Uri()).load(url);
-      fontLoad.addFont(load);
-      await fontLoad.load();
-    }
+  setFontFamily(name) {
     font = name;
-    notifyListeners();
+    SpUtil.putString("fontName", font);
+
     var keys = SpUtil.getKeys();
-    print(keys.length);
+
     for (var f in keys) {
       if (f.startsWith('pages') || f.startsWith(Common.page_height_pre)) {
         SpUtil.remove(f);
       }
     }
-    keys = SpUtil.getKeys();
-    print(keys.length);
-    if (SpUtil.haveKey("fontName")) {
-      SpUtil.remove("fontName");
-    }
-    SpUtil.putString("fontName", name);
+
     eventBus.fire(ReadRefresh(""));
+    notifyListeners();
+  }
+
+  Future<void> readFont(String name) async {
+    var path =
+        (await getApplicationDocumentsDirectory()).path + "/font" + "/" + name;
+    var fontLoader = FontLoader(name); //自定义名字
+    fontLoader.addFont(getCustomFont(path));
+    await fontLoader.load();
+  }
+
+  Future<ByteData> getCustomFont(String path) async {
+    File file = File(path);
+    var uint8list = await file.readAsBytes();
+
+    ByteData asByteData = uint8list.buffer.asByteData();
+    return Future.value(asByteData);
   }
 }

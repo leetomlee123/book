@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/GBook.dart';
@@ -13,16 +12,16 @@ import 'package:book/view/MyControls.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 class LookVideo extends StatefulWidget {
   String id;
   List<dynamic> mcids;
-  String cover;
   String name;
 
-  LookVideo(this.id, this.mcids, this.cover, this.name);
+  LookVideo(this.id, this.mcids, this.name);
 
   @override
   State<StatefulWidget> createState() {
@@ -37,6 +36,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   String source;
   ChewieController chewieController;
   List<Widget> wds = [];
+  Widget cps ;
   bool initOk = false;
   var urlKey;
 
@@ -87,25 +87,28 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
               child: wds.isNotEmpty
-                  ? Scaffold(body: Column(
-                children: <Widget>[
-                  initOk
-                      ? Chewie(
-                    controller: chewieController,
-                  )
-                      : Container(
-                    width: double.infinity,
-                    height: 220,
-                    child: LoadingDialog(),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: wds,
-                    ),
-                  )
-                ],
-              ),)
+                  ? Scaffold(
+                      body: Column(
+                        children: <Widget>[
+                          initOk
+                              ? Chewie(
+                            controller: chewieController,
+                          )
+                              : Container(
+                                  width: double.infinity,
+                                  height: 220,
+                                  child: LoadingDialog(),
+                                ),
+                          cps,
+                          Expanded(
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: wds,
+                            ),
+                          )
+                        ],
+                      ),
+                    )
                   : Scaffold(body: LoadingDialog()),
               data: model.theme,
             ));
@@ -132,15 +135,14 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         chewieController.seekTo(Duration(microseconds: p));
       }
     });
-
-    wds.add(Center(
+    cps=Center(
       child: Wrap(
         runAlignment: WrapAlignment.center,
         spacing: 3, //主轴上子控件的间距
         runSpacing: 5, //交叉轴上子控件之间的间
         children: mItems(this.widget.mcids),
       ),
-    ));
+    );
     for (var i = 0; i < 2; i++) {
       List list = future.data[i];
       if (list.isNotEmpty) {
@@ -173,9 +175,10 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
       videoPlayerController.pause();
 //      videoPlayerController.dispose();
     }
-    urlKey = url;
 
     setState(() {
+      urlKey = url;
+
       /// 重置组件参数
       initOk = false;
     });
@@ -196,6 +199,14 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         int p = SpUtil.getInt(future.data[2]);
         chewieController.seekTo(Duration(microseconds: p));
       }
+      cps=Center(
+        child: Wrap(
+          runAlignment: WrapAlignment.center,
+          spacing: 3, //主轴上子控件的间距
+          runSpacing: 5, //交叉轴上子控件之间的间
+          children: mItems(this.widget.mcids),
+        ),
+      );
       if (mounted) {
         setState(() {
           initOk = true;
@@ -208,7 +219,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     List<Widget> wds = [];
     for (var value in list) {
       Map map = Map.castFrom(value);
-      wds.add(RaisedButton(
+      wds.add(FlatButton(
         child: Text(
           map.values.elementAt(0),
           textAlign: TextAlign.center,
@@ -217,22 +228,9 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         onPressed: () {
           saveRecord(videoPlayerController.value.position);
           _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
-//          Navigator.pop(context);
-//          FunUtil.saveMoviesRecord(
-//              this.widget.cover,
-//              this.widget.name,
-//              map.keys.elementAt(0),
-//              map.values.elementAt(0),
-//              jsonEncode(this.widget.mcids));
-//          Routes.navigateTo(context, Routes.lookVideo, params: {
-//            "id": map.keys.elementAt(0),
-//            "mcids": jsonEncode(list),
-//            "cover": this.widget.cover,
-//            "name": this.widget.name
-//          });
         },
         color: map.keys.elementAt(0) == urlKey
-            ? colorModel.dark ? Colors.black : Colors.white
+            ? (colorModel.dark ? Colors.black : Colors.white)
             : colorModel.theme.primaryColor,
       ));
     }

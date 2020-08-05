@@ -152,7 +152,7 @@ class _SearchState extends State<Search> {
   Widget resultWidget() {
     return SmartRefresher(
       enablePullDown: true,
-      enablePullUp: true,
+      enablePullUp: false,
       header: WaterDropHeader(),
       footer: CustomFooter(
         builder: (BuildContext context, LoadStatus mode) {
@@ -174,6 +174,7 @@ class _SearchState extends State<Search> {
       controller: searchModel.refreshController,
       onRefresh: searchModel.onRefresh,
       onLoading: searchModel.onLoading,
+
       child: isBookSearch
           ? ListView.builder(
               itemBuilder: (context, i) {
@@ -181,6 +182,7 @@ class _SearchState extends State<Search> {
 //                var cate = searchModel.bks[i].CName??"";
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
+
                   child: Row(
                     children: <Widget>[
                       Column(
@@ -196,7 +198,7 @@ class _SearchState extends State<Search> {
                                 width: 80,
                                 decoration: BoxDecoration(
                                   image: DecorationImage(
-                                    image: NetworkImage(searchModel.bks[i].Img),
+                                    image: NetworkImage(searchModel.bks[i]?.Img??""),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -235,7 +237,7 @@ class _SearchState extends State<Search> {
                           Container(
                             padding:
                                 const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(searchModel.bks[i].Desc.trim(),
+                            child: Text(searchModel.bks[i].Desc??"",
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 2,
                                 style: TextStyle(
@@ -247,6 +249,7 @@ class _SearchState extends State<Search> {
                       ),
                     ],
                   ),
+
                   onTap: () async {
                     String url = Common.detail + '/${searchModel.bks[i].Id}';
                     Response future = await Util(context).http().get(url);

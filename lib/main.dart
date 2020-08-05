@@ -92,13 +92,7 @@ class _MainPageState extends State<MainPage> {
         title: Text(
           '美剧',
         )),
-//    BottomNavigationBarItem(
-//        icon: ImageIcon(
-//          AssetImage("images/account.png"),
-//        ),
-//        title: Text(
-//          '我的',
-//        )),
+
   ];
 
   /*
