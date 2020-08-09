@@ -490,7 +490,7 @@ class ReadModel with ChangeNotifier {
                                     color: model.dark
                                         ? Color.fromRGBO(128, 128, 128, 1)
                                         : null,
-                                    fontSize: 13,
+                                    fontSize: 12,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),

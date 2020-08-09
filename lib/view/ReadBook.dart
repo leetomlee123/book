@@ -176,6 +176,7 @@ class _ReadBookState extends State<ReadBook>
                                 ),
                                 elevation: 0,
                                 actions: <Widget>[
+
                                   IconButton(
                                     icon: Icon(Icons.info),
                                     onPressed: () async {
