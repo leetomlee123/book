@@ -98,6 +98,7 @@ class _ChapterViewItem extends State<ChapterView> {
                     Navigator.of(context).pop();
                     //不是卷目录
                     data.bookTag.cur = index;
+
                     data.intiPageContent(index, true);
                   },
                 );
@@ -142,7 +143,7 @@ class _ChapterViewItem extends State<ChapterView> {
   }
 
   Future<void> refresh() async {
-    Store.value<ReadModel>(context).getChapters();
+    Store.value<ReadModel>(context).reloadChapters();
     if (_scrollController.hasClients) {
       int temp =  Store.value<ReadModel>(context).chapters.length - 8;
       await _scrollController.animateTo(temp * ITEM_HEIGH,

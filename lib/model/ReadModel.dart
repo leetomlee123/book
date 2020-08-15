@@ -269,9 +269,11 @@ class ReadModel with ChangeNotifier {
     if (!SpUtil.haveKey(id)) {
       r.chapterContent = await compute(requestDataWithCompute, id);
 
-      SpUtil.putString(id, r.chapterContent);
+      if (r.chapterContent.isNotEmpty) {
+        SpUtil.putString(id, r.chapterContent);
 
-      chapters[idx].hasContent = 2;
+        chapters[idx].hasContent = 2;
+      }
       SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     } else {
       r.chapterContent = SpUtil.getString(id);
@@ -305,31 +307,30 @@ class ReadModel with ChangeNotifier {
   Widget readView() {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-          return Container(
-            decoration: model.dark
-                ? null
-                : BoxDecoration(
-              image: DecorationImage(
-                image: CachedNetworkImageProvider(bgimg[bgIdx]),
-                fit: BoxFit.cover,
+      return Container(
+        decoration: model.dark
+            ? null
+            : BoxDecoration(
+                image: DecorationImage(
+                  image: CachedNetworkImageProvider(bgimg[bgIdx]),
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-            color: model.dark ? Color.fromRGBO(26, 26, 26, 1) : null,
-            child: PageView.builder(
-              controller: pageController,
-              physics: AlwaysScrollableScrollPhysics(),
-              itemBuilder: (BuildContext context, int index) {
-                return allContent[index];
-              },
-              //条目个数
-              itemCount: (prePage?.pageOffsets?.length ?? 0) +
-                  (curPage?.pageOffsets?.length ?? 0) +
-                  (nextPage?.pageOffsets?.length ?? 0),
-              onPageChanged: (idx) => changeChapter(idx),
-            ),
-          );
-
-        });
+        color: model.dark ? Color.fromRGBO(26, 26, 26, 1) : null,
+        child: PageView.builder(
+          controller: pageController,
+          physics: AlwaysScrollableScrollPhysics(),
+          itemBuilder: (BuildContext context, int index) {
+            return allContent[index];
+          },
+          //条目个数
+          itemCount: (prePage?.pageOffsets?.length ?? 0) +
+              (curPage?.pageOffsets?.length ?? 0) +
+              (nextPage?.pageOffsets?.length ?? 0),
+          onPageChanged: (idx) => changeChapter(idx),
+        ),
+      );
+    });
   }
 
   modifyFont() {
@@ -400,8 +401,10 @@ class ReadModel with ChangeNotifier {
       String id = chapter.id;
       if (!SpUtil.haveKey(id)) {
         String content = await compute(requestDataWithCompute, id);
-        SpUtil.putString(chapter.id, content);
-        chapter.hasContent = 2;
+        if (content.isNotEmpty) {
+          SpUtil.putString(chapter.id, content);
+          chapter.hasContent = 2;
+        }
       }
     }
     Toast.show("${bookInfo?.Name ?? ""}下载完成");
@@ -451,9 +454,7 @@ class ReadModel with ChangeNotifier {
                             height: 30,
                             padding: EdgeInsets.only(left: 3),
                             child: Text(
-
                               r.chapterName,
-
                               style: TextStyle(
                                   fontSize: 12,
                                   color: model.dark
@@ -513,5 +514,32 @@ class ReadModel with ChangeNotifier {
     bookTag = null;
     allContent = null;
     chapters = [];
+  }
+
+  Future<void> reloadChapters() async {
+    chapters=[];
+    var key='${bookInfo.Id}chapters';
+    if(SpUtil.haveKey(key)){
+      SpUtil.remove(key);
+    }
+    var url = Common.chaptersUrl + '/${bookInfo.Id}/0';
+    Response response =
+        await Util(null).http().get(url);
+
+    List data = response.data['data'];
+    if (data == null) {
+      print("load cps ok");
+      return;
+    }
+
+    chapters= data.map((c) => Chapter.fromJson(c)).toList();
+
+    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
+    notifyListeners();
+
+  }
+
+  void reloadCurrentPage() {
+
   }
 }

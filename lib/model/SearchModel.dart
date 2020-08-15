@@ -71,11 +71,11 @@ class SearchModel with ChangeNotifier {
       ctx = context;
     }
     if (isBookSearch) {
-      var url = '${Common.search}/$word/$page';
-//      var url = '${Common.search}?key=$word&page=$page&size=$size';
+//      var url = '${Common.search}/$word/$page';
+      var url = '${Common.search}?key=$word&page=$page&size=$size';
 
       Response res = await Util(ctx).http().get(url);
-      var d = await parseJson(res.data);
+      var d =res.data;
       List data = d['data'];
       if (data.isEmpty) {
         refreshController.loadNoData();

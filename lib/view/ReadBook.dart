@@ -176,7 +176,9 @@ class _ReadBookState extends State<ReadBook>
                                 ),
                                 elevation: 0,
                                 actions: <Widget>[
-
+IconButton(icon: Icon(Icons.refresh),onPressed: (){
+  readModel.reloadCurrentPage();
+},),
                                   IconButton(
                                     icon: Icon(Icons.info),
                                     onPressed: () async {
@@ -228,7 +230,7 @@ class _ReadBookState extends State<ReadBook>
                                         children: <Widget>[
                                           GestureDetector(
                                             child: Container(
-                                              child: Icon(Icons.arrow_back_ios),
+                                              child: Icon(Icons.arrow_back_ios,color: Colors.white,),
                                               width: 70,
                                             ),
                                             onTap: () {
@@ -265,7 +267,7 @@ class _ReadBookState extends State<ReadBook>
                                           GestureDetector(
                                             child: Container(
                                               child:
-                                                  Icon(Icons.arrow_forward_ios),
+                                                  Icon(Icons.arrow_forward_ios,color: Colors.white,),
                                               width: 70,
                                             ),
                                             onTap: () {
@@ -308,21 +310,18 @@ class _ReadBookState extends State<ReadBook>
                   children: <Widget>[
                     ImageIcon(colorModel.dark
                         ? AssetImage("images/sun.png")
-                        : AssetImage("images/moon.png")),
+                        : AssetImage("images/moon.png"),color: Colors.white,),
                     SizedBox(height: 5),
                     Text(colorModel.dark ? '日间' : '夜间',
                         style: TextStyle(
                             fontSize: 12,
-                            color: Store.value<ColorModel>(context).dark
-                                ? Colors.white70
-                                : Colors.black)),
+                            color:Colors.white)),
                   ],
                 ),
               ),
               onTap: () {
                 colorModel.switchModel();
-//                readModel.pageController.jumpToPage(readModel.bookTag.index);
-//                      setState(() {});
+
                 readModel.toggleShowMenu();
               }),
           buildBottomItem('缓存', Icons.cloud_download),
@@ -341,14 +340,12 @@ class _ReadBookState extends State<ReadBook>
         padding: EdgeInsets.symmetric(vertical: 7),
         child: Column(
           children: <Widget>[
-            Icon(iconData),
+            Icon(iconData,color: Colors.white,),
             SizedBox(height: 5),
             Text(title,
                 style: TextStyle(
                     fontSize: 12,
-                    color: Store.value<ColorModel>(context).dark
-                        ? Colors.white70
-                        : Colors.black)),
+                    color: Colors.white)),
           ],
         ),
       ),
@@ -485,15 +482,15 @@ class _ReadBookState extends State<ReadBook>
                     ),
                   ),
 SizedBox(),
-                  GestureDetector(
-                    child: Text('字体'),
-                    onTap: () {
-                      Routes.navigateTo(
-                        context,
-                        Routes.fontSet,
-                      );
-                    },
-                  ),
+//                  GestureDetector(
+//                    child: Text('字体'),
+//                    onTap: () {
+//                      Routes.navigateTo(
+//                        context,
+//                        Routes.fontSet,
+//                      );
+//                    },
+//                  ),
                 ],
               ),
               Row(
