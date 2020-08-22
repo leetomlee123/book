@@ -97,6 +97,7 @@ class _ChapterViewItem extends State<ChapterView> {
                   onTap: () async {
                     Navigator.of(context).pop();
                     //不是卷目录
+                    Future.delayed(Duration(microseconds: 500));
                     data.bookTag.cur = index;
 
                     data.intiPageContent(index, true);

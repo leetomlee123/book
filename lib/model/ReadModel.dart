@@ -70,7 +70,8 @@ class ReadModel with ChangeNotifier {
   int bgIdx = 0;
 
 //章节翻页标志
-  bool changeCpOk = true;
+  bool chapterLoading = false;
+  bool loadOk = false;
 
   //页面宽高
   double contentH;
@@ -101,6 +102,7 @@ class ReadModel with ChangeNotifier {
       intiPageContent(bookTag.cur, false);
       pageController = PageController(initialPage: bookTag.index);
       value = bookTag.cur.toDouble();
+      loadOk = true;
       notifyListeners();
       //本书已读过
     } else {
@@ -115,7 +117,8 @@ class ReadModel with ChangeNotifier {
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
-      intiPageContent(bookTag.cur, false);
+      await intiPageContent(bookTag.cur, false);
+      loadOk = true;
     }
   }
 
@@ -149,9 +152,8 @@ class ReadModel with ChangeNotifier {
 
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
-    if (changeCpOk) {
-      if ((idx + 1 - preLen) > (curLen)) {
-        changeCpOk = false;
+    if ((idx + 1 - preLen) > (curLen)) {
+      if (!chapterLoading) {
         int temp = bookTag.cur + 1;
         if (temp >= chapters.length) {
           Toast.show("已经是最后一页");
@@ -160,6 +162,7 @@ class ReadModel with ChangeNotifier {
         } else {
           offset = 1;
           offsetTag = 1;
+          chapterLoading = true;
 
           bookTag.cur += 1;
           prePage = curPage;
@@ -186,18 +189,20 @@ class ReadModel with ChangeNotifier {
           Future.delayed(Duration(microseconds: 500));
           nextPage = await loadChapter(bookTag.cur + 1);
           fillAllContent();
-//          int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
-//          pageController.jumpToPage(realIdx - 1);
+          int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
+          pageController.jumpToPage(realIdx - 1);
           offset = 0;
           offsetTag = 0;
         }
-        changeCpOk = true;
-      } else if (idx < preLen) {
-        changeCpOk = false;
+        chapterLoading = false;
+      }
+    } else if (idx < preLen) {
+      if (!chapterLoading) {
         int temp = bookTag.cur - 1;
         if (temp < 0) {
           return;
         } else {
+          chapterLoading = true;
           offsetTag = -1;
           offset = -1;
           bookTag.cur -= 1;
@@ -214,9 +219,9 @@ class ReadModel with ChangeNotifier {
           pageController.jumpToPage(ix);
           offset = 0;
           offsetTag = 0;
+          chapterLoading = false;
 //        notifyListeners();
         }
-        changeCpOk = true;
       }
     }
   }
@@ -231,7 +236,7 @@ class ReadModel with ChangeNotifier {
   Future getChapters() async {
     var url = Common.chaptersUrl + '/${bookInfo.Id}/${chapters?.length ?? 0}';
     Response response =
-        await Util(chapters.isEmpty ? context : null).http().get(url);
+    await Util(chapters.isEmpty ? context : null).http().get(url);
 
     List data = response.data['data'];
     if (data == null) {
@@ -280,6 +285,11 @@ class ReadModel with ChangeNotifier {
     } else {
       r.chapterContent = SpUtil.getString(id);
     }
+    if (r.chapterContent.isEmpty) {
+      r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
+      r.pageOffsets = [r.chapterContent];
+      return r;
+    }
     if (SpUtil.haveKey('pages' + id)) {
       r.pageOffsets = SpUtil.getStringList('pages' + id);
     } else {
@@ -309,30 +319,30 @@ class ReadModel with ChangeNotifier {
   Widget readView() {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-      return Container(
-        decoration: model.dark
-            ? null
-            : BoxDecoration(
-                image: DecorationImage(
-                  image: CachedNetworkImageProvider(bgimg[bgIdx]),
-                  fit: BoxFit.cover,
-                ),
+          return Container(
+            decoration: model.dark
+                ? null
+                : BoxDecoration(
+              image: DecorationImage(
+                image: CachedNetworkImageProvider(bgimg[bgIdx]),
+                fit: BoxFit.cover,
               ),
-        color: model.dark ? Color.fromRGBO(26, 26, 26, 1) : null,
-        child: PageView.builder(
-          controller: pageController,
-          physics: AlwaysScrollableScrollPhysics(),
-          itemBuilder: (BuildContext context, int index) {
-            return allContent[index];
-          },
-          //条目个数
-          itemCount: (prePage?.pageOffsets?.length ?? 0) +
-              (curPage?.pageOffsets?.length ?? 0) +
-              (nextPage?.pageOffsets?.length ?? 0),
-          onPageChanged: (idx) => changeChapter(idx),
-        ),
-      );
-    });
+            ),
+            color: model.dark ? Color.fromRGBO(26, 26, 26, 1) : null,
+            child: PageView.builder(
+              controller: pageController,
+              physics: AlwaysScrollableScrollPhysics(),
+              itemBuilder: (BuildContext context, int index) {
+                return allContent[index];
+              },
+              //条目个数
+              itemCount: (prePage?.pageOffsets?.length ?? 0) +
+                  (curPage?.pageOffsets?.length ?? 0) +
+                  (nextPage?.pageOffsets?.length ?? 0),
+              onPageChanged: (idx) => changeChapter(idx),
+            ),
+          );
+        });
   }
 
   modifyFont() {
@@ -445,67 +455,67 @@ class ReadModel with ChangeNotifier {
               },
               child: (r.chapterName == "-1" || r.chapterName == "1")
                   ? Container(
-                      child: Text(r.chapterContent),
-                      alignment: Alignment.center,
-                    )
+                child: Text(r.chapterContent),
+                alignment: Alignment.center,
+              )
                   : Container(
-                      child: Column(
-                        children: <Widget>[
-                          SizedBox(height: ScreenUtil.getStatusBarH(context)),
-                          Container(
-                            height: 30,
-                            padding: EdgeInsets.only(left: 3),
+                child: Column(
+                  children: <Widget>[
+                    SizedBox(height: ScreenUtil.getStatusBarH(context)),
+                    Container(
+                      height: 30,
+                      padding: EdgeInsets.only(left: 3),
+                      child: Text(
+                        r.chapterName,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: model.dark
+                                ? Color.fromRGBO(128, 128, 128, 1)
+                                : null),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Expanded(
+                        child: Container(
+                            padding: EdgeInsets.only(
+                              right: 5,
+                              left: 15,
+                            ),
                             child: Text(
-                              r.chapterName,
+                              content,
                               style: TextStyle(
-                                  fontSize: 12,
                                   color: model.dark
                                       ? Color.fromRGBO(128, 128, 128, 1)
-                                      : null),
-                              overflow: TextOverflow.ellipsis,
+                                      : null,
+                                  fontSize:
+                                  fontSize / Screen.textScaleFactor),
+                              textAlign: TextAlign.justify,
+                            ))),
+                    Container(
+                      height: 30,
+                      padding: EdgeInsets.only(right: 8),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(child: Container()),
+                          Text(
+                            '第${i + 1}/${r.pageOffsets.length}页',
+                            style: TextStyle(
+                              color: model.dark
+                                  ? Color.fromRGBO(128, 128, 128, 1)
+                                  : null,
+                              fontSize: 12,
                             ),
-                          ),
-                          Expanded(
-                              child: Container(
-                                  padding: EdgeInsets.only(
-                                    right: 5,
-                                    left: 15,
-                                  ),
-                                  child: Text(
-                                    content,
-                                    style: TextStyle(
-                                        color: model.dark
-                                            ? Color.fromRGBO(128, 128, 128, 1)
-                                            : null,
-                                        fontSize:
-                                            fontSize / Screen.textScaleFactor),
-                                    textAlign: TextAlign.justify,
-                                  ))),
-                          Container(
-                            height: 30,
-                            padding: EdgeInsets.only(right: 8),
-                            child: Row(
-                              children: <Widget>[
-                                Expanded(child: Container()),
-                                Text(
-                                  '第${i + 1}/${r.pageOffsets.length}页',
-                                  style: TextStyle(
-                                    color: model.dark
-                                        ? Color.fromRGBO(128, 128, 128, 1)
-                                        : null,
-                                    fontSize: 12,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
-                        crossAxisAlignment: CrossAxisAlignment.start,
                       ),
-                      width: double.infinity,
-                      height: double.infinity,
-                    ));
+                    ),
+                  ],
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                width: double.infinity,
+                height: double.infinity,
+              ));
         }),
       );
     }
@@ -519,14 +529,13 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> reloadChapters() async {
-    chapters=[];
-    var key='${bookInfo.Id}chapters';
-    if(SpUtil.haveKey(key)){
+    chapters = [];
+    var key = '${bookInfo.Id}chapters';
+    if (SpUtil.haveKey(key)) {
       SpUtil.remove(key);
     }
     var url = Common.chaptersUrl + '/${bookInfo.Id}/0';
-    Response response =
-        await Util(null).http().get(url);
+    Response response = await Util(null).http().get(url);
 
     List data = response.data['data'];
     if (data == null) {
@@ -534,14 +543,24 @@ class ReadModel with ChangeNotifier {
       return;
     }
 
-    chapters= data.map((c) => Chapter.fromJson(c)).toList();
+    chapters = data.map((c) => Chapter.fromJson(c)).toList();
 
     SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     notifyListeners();
-
   }
 
-  void reloadCurrentPage() {
-
+  Future<void> reloadCurrentPage() async {
+    var chapter = chapters[bookTag.cur];
+    SpUtil.remove(chapter.id);
+    SpUtil.remove("pages" + chapter.id);
+    var future =
+    await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
+    var content = future.data['data']['content'];
+    if (content.isNotEmpty) {
+      SpUtil.putString(chapter.id, content);
+      chapters[bookTag.cur].hasContent = 2;
+    }
+    curPage = await loadChapter(bookTag.cur);
+    fillAllContent();
   }
 }

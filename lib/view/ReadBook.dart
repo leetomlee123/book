@@ -154,7 +154,7 @@ class _ReadBookState extends State<ReadBook>
             ),
             body: Stack(
               children: <Widget>[
-                readModel != null ? model.readView() : Container(),
+                (readModel?.loadOk ?? false) ? model.readView() : Container(),
                 model.showMenu
                     ? Container(
                         color: Colors.transparent,
@@ -176,9 +176,13 @@ class _ReadBookState extends State<ReadBook>
                                 ),
                                 elevation: 0,
                                 actions: <Widget>[
-IconButton(icon: Icon(Icons.refresh),onPressed: (){
-  readModel.reloadCurrentPage();
-},),
+                                  IconButton(
+                                    icon: Icon(Icons.refresh),
+                                    onPressed: () {
+                                      readModel.reloadCurrentPage();
+                                   readModel.toggleShowMenu();
+                                    },
+                                  ),
                                   IconButton(
                                     icon: Icon(Icons.info),
                                     onPressed: () async {
@@ -230,7 +234,10 @@ IconButton(icon: Icon(Icons.refresh),onPressed: (){
                                         children: <Widget>[
                                           GestureDetector(
                                             child: Container(
-                                              child: Icon(Icons.arrow_back_ios,color: Colors.white,),
+                                              child: Icon(
+                                                Icons.arrow_back_ios,
+                                                color: Colors.white,
+                                              ),
                                               width: 70,
                                             ),
                                             onTap: () {
@@ -266,8 +273,10 @@ IconButton(icon: Icon(Icons.refresh),onPressed: (){
                                           ),
                                           GestureDetector(
                                             child: Container(
-                                              child:
-                                                  Icon(Icons.arrow_forward_ios,color: Colors.white,),
+                                              child: Icon(
+                                                Icons.arrow_forward_ios,
+                                                color: Colors.white,
+                                              ),
                                               width: 70,
                                             ),
                                             onTap: () {
@@ -308,14 +317,15 @@ IconButton(icon: Icon(Icons.refresh),onPressed: (){
                 padding: EdgeInsets.symmetric(vertical: 7),
                 child: Column(
                   children: <Widget>[
-                    ImageIcon(colorModel.dark
-                        ? AssetImage("images/sun.png")
-                        : AssetImage("images/moon.png"),color: Colors.white,),
+                    ImageIcon(
+                      colorModel.dark
+                          ? AssetImage("images/sun.png")
+                          : AssetImage("images/moon.png"),
+                      color: Colors.white,
+                    ),
                     SizedBox(height: 5),
                     Text(colorModel.dark ? '日间' : '夜间',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color:Colors.white)),
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
                   ],
                 ),
               ),
@@ -340,12 +350,12 @@ IconButton(icon: Icon(Icons.refresh),onPressed: (){
         padding: EdgeInsets.symmetric(vertical: 7),
         child: Column(
           children: <Widget>[
-            Icon(iconData,color: Colors.white,),
+            Icon(
+              iconData,
+              color: Colors.white,
+            ),
             SizedBox(height: 5),
-            Text(title,
-                style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white)),
+            Text(title, style: TextStyle(fontSize: 12, color: Colors.white)),
           ],
         ),
       ),
@@ -481,7 +491,7 @@ IconButton(icon: Icon(Icons.refresh),onPressed: (){
                       ),
                     ),
                   ),
-SizedBox(),
+                  SizedBox(),
 //                  GestureDetector(
 //                    child: Text('字体'),
 //                    onTap: () {

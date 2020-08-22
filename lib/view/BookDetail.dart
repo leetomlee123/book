@@ -35,6 +35,7 @@ class _BookDetailState extends State<BookDetail> {
   bool inShelf = false;
   int maxLines = 3;
   GlobalKey _globalKey = new GlobalKey();
+  int maxLine = 3;
 
   _BookDetailState(this._bookInfo);
 
@@ -166,15 +167,45 @@ class _BookDetailState extends State<BookDetail> {
                         ),
                         Padding(
                           padding: const EdgeInsets.only(left: 17.0, top: 5.0),
-                          child: Stack(
+                          child: Column(
                             children: <Widget>[
                               Text(
                                 _bookInfo.Desc ?? "".trim(),
-                                style: TextStyle(fontSize: 12),
-
-
+                                style: TextStyle(
+                                  fontSize: 12,
+                                ),
+                                maxLines: maxLine,
                               ),
-
+                              Center(
+                                  child: GestureDetector(
+                                child: Image.asset(
+                                  maxLine <= 3
+                                      ? "images/more_info.png"
+                                      : "images/add_collapse.png",
+                                  width: 30,
+                                  height: 30,
+                                  color: value.dark?Colors.white:Colors.black,
+                                ),
+                                onTap: () {
+                                  if (mounted) {
+                                    setState(() {
+                                      maxLine = maxLine > 3 ? 3 : 100;
+                                    });
+                                  }
+                                },
+                              )
+//                                child: IconButton(
+//                                  padding: EdgeInsets.all(0.0),
+//                                  icon: Icon(Icons.expand_more),
+//                                  onPressed: (){
+//                                    if(mounted){
+//                                      setState(() {
+//                                    maxLine=maxLine>3?3:100;
+//                                      });
+//                                    }
+//                                  },
+//                                ),
+                                  )
                             ],
                           ),
                         ),
