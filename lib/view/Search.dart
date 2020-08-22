@@ -152,7 +152,7 @@ class _SearchState extends State<Search> {
   Widget resultWidget() {
     return SmartRefresher(
       enablePullDown: true,
-      enablePullUp: false,
+      enablePullUp: true,
       header: WaterDropHeader(),
       footer: CustomFooter(
         builder: (BuildContext context, LoadStatus mode) {
