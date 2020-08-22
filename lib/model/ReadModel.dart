@@ -182,12 +182,12 @@ class ReadModel with ChangeNotifier {
           } else {
             curPage = nextPage;
           }
+          //翻过页后再执行 缓解卡顿
+          Future.delayed(Duration(microseconds: 500));
           nextPage = await loadChapter(bookTag.cur + 1);
           fillAllContent();
-          print("my offset $offset");
-          int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
-          print(realIdx);
-          pageController.jumpToPage(realIdx - 1);
+//          int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
+//          pageController.jumpToPage(realIdx - 1);
           offset = 0;
           offsetTag = 0;
         }
@@ -203,6 +203,8 @@ class ReadModel with ChangeNotifier {
           bookTag.cur -= 1;
           nextPage = curPage;
           curPage = prePage;
+          //翻过页后再执行 缓解卡顿
+          Future.delayed(Duration(microseconds: 500));
           prePage = await loadChapter(bookTag.cur - 1);
 
           fillAllContent();
