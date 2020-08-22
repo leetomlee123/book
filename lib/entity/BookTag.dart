@@ -8,6 +8,7 @@ class BookTag {
   int cur;
   int index;
   String bookName;
+  double offset;
 
 
   factory BookTag.fromJson(Map<String, dynamic> json) =>
@@ -15,7 +16,7 @@ class BookTag {
 
   Map<String, dynamic> toJson() => _$BookTagToJson(this);
 
-  BookTag(this.cur, this.index,  this.bookName);
+  BookTag(this.cur, this.index,  this.bookName,this.offset);
 
 
 }

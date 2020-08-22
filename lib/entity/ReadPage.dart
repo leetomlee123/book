@@ -7,6 +7,8 @@ class ReadPage {
 
   String chapterName;
 
+  double height;
+
 //  String stringAtPageIndex(int index) {
 //    return this.chapterContent.substring(
 //        index - 1 == -1 ? 0 : pageOffsets[index - 1], pageOffsets[index]);

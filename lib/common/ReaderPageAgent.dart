@@ -6,6 +6,14 @@ import 'common.dart';
 class ReaderPageAgent {
   bool okHeight = false;
 
+  double getPageHeight(
+      String content, double height, double width, double fontSize) {
+    String fontFamily = SpUtil.getString("fontName");
+    TextPainter textPainter = layout(content, fontSize, width, fontFamily);
+    textPainter.layout(maxWidth: width, minWidth: width);
+    return textPainter.height;
+  }
+
   List<String> getPageOffsets(
       String content, double height, double width, double fontSize) {
     String fontFamily = SpUtil.getString("fontName");
@@ -51,22 +59,19 @@ class ReaderPageAgent {
     TextPainter textPainter = TextPainter(
         text: TextSpan(
             text: text,
-
             style: TextStyle(
               fontFamily: fontFamily,
               fontSize: fontSize,
             )),
-        strutStyle:  StrutStyle(
+        strutStyle: StrutStyle(
           fontFamily: fontFamily,
           fontSize: fontSize,
-
         ),
         textDirection: TextDirection.ltr);
     return textPainter;
   }
 
   double checkHeight(TextPainter textPainter, double height) {
-
     double lineHeight = textPainter.preferredLineHeight;
     print("lineHeight:$lineHeight");
     int lineNumberPerPage = height ~/ lineHeight;

@@ -501,7 +501,7 @@ class _BookDetailState extends State<BookDetail> {
 
                       var value = Store.value<ReadModel>(context);
                       value.bookInfo = _bookInfo;
-                      value.bookTag = BookTag(0, 0, _bookInfo.Name);
+                      value.bookTag = BookTag(0, 0, _bookInfo.Name,0.0);
                       value.downloadAll();
                     }
                     break;

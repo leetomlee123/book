@@ -11,6 +11,7 @@ BookTag _$BookTagFromJson(Map<String, dynamic> json) {
     json['cur'] as int,
     json['index'] as int,
     json['bookName'] as String,
+    json['offset'] as double,
 
   );
 }
@@ -19,5 +20,6 @@ Map<String, dynamic> _$BookTagToJson(BookTag instance) => <String, dynamic>{
       'cur': instance.cur,
       'index': instance.index,
       'bookName': instance.bookName,
+      'offset': instance.offset,
 
     };
