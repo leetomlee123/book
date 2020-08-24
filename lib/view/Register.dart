@@ -1,9 +1,10 @@
 import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
+
 import 'package:book/common/util.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -114,11 +115,12 @@ class _RegisterState extends State<Register> {
         name.isNotEmpty &&
         email.isNotEmpty) {
       if (pwd != repassword) {
-        Toast.show("两次密码不一致");
+        BotToast.showText(text:'两次密码不一致');
         return;
       }
       if (!email.contains("@")) {
-        Toast.show("输入正确邮箱账号");
+        BotToast.showText(text:'输入正确邮箱账号');
+
         return;
       }
       Response response;
@@ -130,16 +132,19 @@ class _RegisterState extends State<Register> {
         );
         var data = response.data;
         if (data["code"] == 200) {
-          Toast.show(data['msg']);
+          BotToast.showText(text:data['msg']);
+
           Routes.navigateTo(context, Routes.login);
         } else {
-          Toast.show(data['msg']);
+          BotToast.showText(text:data['msg']);
+
         }
       } catch (e) {
-        Toast.show("注册异常,请重试...");
+        BotToast.showText(text:"注册异常,请重试...");
       }
     } else {
-      Toast.show('检查输入项不可为空');
+      BotToast.showText(text:"检查输入项不可为空");
+
     }
   }
 }

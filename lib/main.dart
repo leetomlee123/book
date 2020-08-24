@@ -12,6 +12,7 @@ import 'package:book/view/BookShelf.dart';
 import 'package:book/view/GoodBook.dart';
 import 'package:book/view/Me.dart';
 import 'package:book/view/Video.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
       return MaterialApp(
         title: '清阅',
         home: MainPage(),
+        builder: BotToastInit(), //
         onGenerateRoute: Routes.router.generator,
         theme: model.theme, // 配置route generate
       );

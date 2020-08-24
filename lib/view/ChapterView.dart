@@ -99,7 +99,7 @@ class _ChapterViewItem extends State<ChapterView> {
                     //不是卷目录
                     Future.delayed(Duration(microseconds: 500));
                     data.bookTag.cur = index;
-
+                    await Future.delayed(Duration(microseconds: 1000));
                     data.intiPageContent(index, true);
                   },
                 );

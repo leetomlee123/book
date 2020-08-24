@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
+
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
@@ -14,6 +14,7 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -497,7 +498,7 @@ class _BookDetailState extends State<BookDetail> {
                     break;
                   case 2:
                     {
-                      Toast.show('开始下载...');
+                      BotToast.showText(text:"开始下载...");
 
                       var value = Store.value<ReadModel>(context);
                       value.bookInfo = _bookInfo;

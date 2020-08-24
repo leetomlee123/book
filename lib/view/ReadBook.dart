@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
@@ -13,6 +12,7 @@ import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/ChapterView.dart';
 import 'package:book/view/MyBottomSheet.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -154,7 +154,7 @@ class _ReadBookState extends State<ReadBook>
             ),
             body: Stack(
               children: <Widget>[
-                (readModel?.loadOk ?? false) ? model.readView() : Container(),
+                readModel != null ? model.readView() : Container(),
                 model.showMenu
                     ? Container(
                         color: Colors.transparent,
@@ -180,7 +180,6 @@ class _ReadBookState extends State<ReadBook>
                                     icon: Icon(Icons.refresh),
                                     onPressed: () {
                                       readModel.reloadCurrentPage();
-                                   readModel.toggleShowMenu();
                                     },
                                   ),
                                   IconButton(
@@ -370,7 +369,7 @@ class _ReadBookState extends State<ReadBook>
             break;
           case '缓存':
             {
-              Toast.show('开始下载...');
+              BotToast.showText(text: '开始下载...');
               readModel.downloadAll();
             }
             break;

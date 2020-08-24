@@ -1,11 +1,12 @@
 import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
+
 import 'package:book/common/util.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -71,7 +72,7 @@ class Login extends StatelessWidget {
           await Util(context).http().post(Common.login, data: formData);
       var data = response.data;
       if (data['code'] != 201) {
-        Toast.show(data['msg']);
+        BotToast.showText(text:data['msg']);
       } else {
         //收起键盘
 //        SpUtil.putString('email', data['data']['email']);

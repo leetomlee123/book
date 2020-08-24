@@ -6,7 +6,6 @@ import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
@@ -14,6 +13,7 @@ import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -195,7 +195,7 @@ class ReadModel with ChangeNotifier {
       if (!chapterLoading) {
         int temp = bookTag.cur + 1;
         if (temp >= chapters.length) {
-          Toast.show("已经是最后一页");
+          BotToast.showText(text: "已经是最后一页");
           pageController.previousPage(
               duration: Duration(microseconds: 1), curve: Curves.ease);
         } else {
@@ -224,9 +224,10 @@ class ReadModel with ChangeNotifier {
           } else {
             curPage = nextPage;
           }
-          //翻过页后再执行 缓解卡顿
-          Future.delayed(Duration(microseconds: 500));
+
           nextPage = await loadChapter(bookTag.cur + 1);
+          //翻过页后再执行 缓解卡顿
+          await Future.delayed(Duration(microseconds: 1000));
           fillAllContent();
           int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
           pageController.jumpToPage(realIdx - 1);
@@ -248,8 +249,8 @@ class ReadModel with ChangeNotifier {
           nextPage = curPage;
           curPage = prePage;
           //翻过页后再执行 缓解卡顿
-          Future.delayed(Duration(microseconds: 500));
           prePage = await loadChapter(bookTag.cur - 1);
+          await Future.delayed(Duration(microseconds: 1000));
 
           fillAllContent();
           int ix = (prePage?.pageOffsets?.length ?? 0) +
@@ -300,7 +301,7 @@ class ReadModel with ChangeNotifier {
       r.chapterName = "1";
       r.pageOffsets = List(1);
       r.height = Screen.height;
-      r.chapterContent = "封面";
+      r.chapterContent = "感谢APP喵的赞助,请大家关注公众号APP喵!!!";
       return r;
     } else if (idx == chapters.length) {
       r.chapterName = "-1";
@@ -474,7 +475,7 @@ class ReadModel with ChangeNotifier {
         }
       }
     }
-    Toast.show("${bookInfo?.Name ?? ""}下载完成");
+    BotToast.showText(text: "${bookInfo?.Name ?? ""}下载完成");
     SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
   }
 
@@ -649,4 +650,5 @@ class ReadModel with ChangeNotifier {
     curPage = await loadChapter(bookTag.cur);
     fillAllContent();
   }
+
 }

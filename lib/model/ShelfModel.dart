@@ -1,10 +1,11 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-import 'package:book/common/toast.dart';
+
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -100,7 +101,7 @@ class ShelfModel with ChangeNotifier {
     var action =
         shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
-      Toast.show('已添加到书架');
+      BotToast.showText(text:"已添加到书架");
       shelf.insert(0, book);
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
@@ -108,7 +109,8 @@ class ShelfModel with ChangeNotifier {
           shelf.removeAt(i);
         }
       }
-      Toast.show('已移除出书架');
+      BotToast.showText(text:"已移除出书架");
+
       delLocalCache([book.Id]);
     }
     if (SpUtil.haveKey("auth")) {
