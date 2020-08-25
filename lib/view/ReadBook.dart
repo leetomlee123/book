@@ -154,7 +154,7 @@ class _ReadBookState extends State<ReadBook>
             ),
             body: Stack(
               children: <Widget>[
-                readModel != null ? model.readView() : Container(),
+                readModel?.loadOk ?? false ? model.readView() : Container(),
                 model.showMenu
                     ? Container(
                         color: Colors.transparent,

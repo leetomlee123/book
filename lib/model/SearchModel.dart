@@ -22,6 +22,8 @@ class SearchModel with ChangeNotifier {
   List<SearchItem> bks = [];
   List<GBook> mks = [];
   List<Widget> hot = [];
+  List<Widget> showHot = [];
+  int idx = 0;
   bool loading = false;
 
   // ignore: non_constant_identifier_names
@@ -39,12 +41,12 @@ class SearchModel with ChangeNotifier {
   clear() {
     searchHistory = new List();
     isBookSearch = false;
-
+    idx = 0;
     showResult = false;
     bks = [];
     mks = [];
     hot = [];
-
+    showHot = [];
     // ignore: non_constant_identifier_names
     store_word = "";
     page = 1;
@@ -75,7 +77,7 @@ class SearchModel with ChangeNotifier {
       var url = '${Common.search}?key=$word&page=$page&size=$size';
 
       Response res = await Util(ctx).http().get(url);
-      var d =res.data;
+      var d = res.data;
       List data = d['data'];
       if (data.isEmpty) {
         refreshController.loadNoData();
@@ -317,6 +319,25 @@ class SearchModel with ChangeNotifier {
       ));
     }
     return wds;
+  }
+
+  getHot() {
+    if (hot.isNotEmpty) {
+      showHot = [];
+      var j = 0;
+      if (((idx * 10) + 9) > hot.length - 1) {
+        j = hot.length - 1;
+        idx = 0;
+      } else {
+        j = (idx * 10 + 9);
+        idx += 1;
+
+      }
+      for (var i = j - 9; i <= j; i++) {
+        showHot.add(hot[i]);
+      }
+    }
+    notifyListeners();
   }
 
   Future<void> initMovieHot() async {

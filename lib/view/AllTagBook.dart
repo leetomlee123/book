@@ -30,12 +30,12 @@ class AllTagBook extends StatelessWidget {
                 fitOk: true,
               ),
               onTap: () async {
-                String url = Common.detail + '/${gbk.id}';
+                String url = Common.two + '/${gbk.name}/${gbk.author}';
                 Response future = await Util(context).http().get(url);
                 var d = future.data['data'];
                 if (d == null) {
                   Routes.navigateTo(context, Routes.search, params: {
-                    "type":"book",
+                    "type": "book",
                     "name": gbk.name,
                   });
                 } else {
@@ -43,6 +43,7 @@ class AllTagBook extends StatelessWidget {
                   Routes.navigateTo(context, Routes.detail,
                       params: {"detail": jsonEncode(bookInfo)});
                 }
+           
               },
             ),
             Text(

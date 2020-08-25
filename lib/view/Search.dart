@@ -66,8 +66,8 @@ class _SearchState extends State<Search> {
     // TODO: implement initState
     super.initState();
     isBookSearch = this.widget.type == "book";
-    if(this.widget.type=="book"&&this.widget.name!=""){
-      controller.text=this.widget.name;
+    if (this.widget.type == "book" && this.widget.name != "") {
+      controller.text = this.widget.name;
     }
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
@@ -75,7 +75,7 @@ class _SearchState extends State<Search> {
     });
   }
 
-  void initModel() {
+  Future<void> initModel() async {
     searchModel = Store.value<SearchModel>(context);
     searchModel.showResult = false;
     searchModel.context = context;
@@ -85,10 +85,11 @@ class _SearchState extends State<Search> {
         isBookSearch ? Common.book_search_history : Common.movie_search_history;
     searchModel.initHistory();
     if (isBookSearch) {
-      searchModel.initBookHot();
+      await searchModel.initBookHot();
     } else {
-      searchModel.initMovieHot();
+      await searchModel.initMovieHot();
     }
+    searchModel.getHot();
   }
 
   Widget buildSearchWidget() {
@@ -174,7 +175,6 @@ class _SearchState extends State<Search> {
       controller: searchModel.refreshController,
       onRefresh: searchModel.onRefresh,
       onLoading: searchModel.onLoading,
-
       child: isBookSearch
           ? ListView.builder(
               itemBuilder: (context, i) {
@@ -182,7 +182,6 @@ class _SearchState extends State<Search> {
 //                var cate = searchModel.bks[i].CName??"";
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
-
                   child: Row(
                     children: <Widget>[
                       Column(
@@ -198,7 +197,8 @@ class _SearchState extends State<Search> {
                                 width: 80,
                                 decoration: BoxDecoration(
                                   image: DecorationImage(
-                                    image: NetworkImage(searchModel.bks[i]?.Img??""),
+                                    image: NetworkImage(
+                                        searchModel.bks[i]?.Img ?? ""),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -237,7 +237,7 @@ class _SearchState extends State<Search> {
                           Container(
                             padding:
                                 const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(searchModel.bks[i].Desc??"",
+                            child: Text(searchModel.bks[i].Desc ?? "",
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 2,
                                 style: TextStyle(
@@ -249,7 +249,6 @@ class _SearchState extends State<Search> {
                       ),
                     ],
                   ),
-
                   onTap: () async {
                     String url = Common.detail + '/${searchModel.bks[i].Id}';
                     Response future = await Util(context).http().get(url);
@@ -313,10 +312,19 @@ class _SearchState extends State<Search> {
                   '热门${this.widget.type == "book" ? "书籍" : "美剧"}',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
+                Expanded(
+                  child: Container(),
+                ),
+                IconButton(
+                  icon: Icon(Icons.refresh),
+                  onPressed: () {
+                    searchModel.getHot();
+                  },
+                )
               ],
             ),
             Wrap(
-              children: searchModel?.hot ?? [], spacing: 2, //主轴上子控件的间距
+              children: searchModel?.showHot ?? [], spacing: 2, //主轴上子控件的间距
             ),
             Row(
               children: <Widget>[
@@ -347,7 +355,6 @@ class _SearchState extends State<Search> {
               spacing: 3, //主轴上子控件的间距
               runSpacing: 5, //交叉轴上子控件之间的间距
             ),
-
           ],
         ),
       ),

@@ -53,6 +53,7 @@ class MyApp extends StatelessWidget {
         title: '清阅',
         home: MainPage(),
         builder: BotToastInit(), //
+        navigatorObservers: [BotToastNavigatorObserver()],
         onGenerateRoute: Routes.router.generator,
         theme: model.theme, // 配置route generate
       );
