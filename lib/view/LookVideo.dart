@@ -14,6 +14,7 @@ import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:video_player/video_player.dart';
 
 class LookVideo extends StatefulWidget {
@@ -36,7 +37,8 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   String source;
   ChewieController chewieController;
   List<Widget> wds = [];
-  Widget cps ;
+  Widget cps;
+
   bool initOk = false;
   var urlKey;
 
@@ -90,14 +92,22 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                   ? Scaffold(
                       body: Column(
                         children: <Widget>[
+                          Container(height: ScreenUtil.getStatusBarH(context),color: Colors.black,),
                           initOk
                               ? Chewie(
-                            controller: chewieController,
-                          )
+                                  controller: chewieController,
+                                )
                               : Container(
                                   width: double.infinity,
-                                  height: 220,
-                                  child: LoadingDialog(),
+                                  height: 225,
+                                  color: Colors.black,
+                                  child: Center(
+                                      child: Container(
+                                        child: SpinKitCircle(
+                                          color: Colors.white ,
+                                          size: 70,
+                                        ),
+                                      )),
                                 ),
                           cps,
                           Expanded(
@@ -135,7 +145,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         chewieController.seekTo(Duration(microseconds: p));
       }
     });
-    cps=Center(
+    cps = Center(
       child: Wrap(
         runAlignment: WrapAlignment.center,
         spacing: 3, //主轴上子控件的间距
@@ -199,7 +209,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         int p = SpUtil.getInt(future.data[2]);
         chewieController.seekTo(Duration(microseconds: p));
       }
-      cps=Center(
+      cps = Center(
         child: Wrap(
           runAlignment: WrapAlignment.center,
           spacing: 3, //主轴上子控件的间距

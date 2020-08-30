@@ -153,7 +153,7 @@ class _SearchState extends State<Search> {
   Widget resultWidget() {
     return SmartRefresher(
       enablePullDown: true,
-      enablePullUp: false,
+      enablePullUp: true,
       header: WaterDropHeader(),
       footer: CustomFooter(
         builder: (BuildContext context, LoadStatus mode) {
@@ -351,7 +351,7 @@ class _SearchState extends State<Search> {
 //            children: data.getHistory(),
 //          ),
             Wrap(
-              children: data.getHistory(),
+              children: searchModel?.getHistory()??[],
               spacing: 3, //主轴上子控件的间距
               runSpacing: 5, //交叉轴上子控件之间的间距
             ),

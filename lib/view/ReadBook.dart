@@ -13,6 +13,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/ChapterView.dart';
 import 'package:book/view/MyBottomSheet.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,8 +33,7 @@ class ReadBook extends StatefulWidget {
   }
 }
 
-class _ReadBookState extends State<ReadBook>
-    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   ReadModel readModel;
 
   //背景色数据
@@ -56,7 +56,7 @@ class _ReadBookState extends State<ReadBook>
     WidgetsBinding.instance.addObserver(this);
 
     var widgetsBinding = WidgetsBinding.instance;
-    widgetsBinding.addPostFrameCallback((callback) {
+    widgetsBinding.addPostFrameCallback((callback) async {
 //      SystemChrome.setEnabledSystemUIOverlays([]);
       readModel = Store.value<ReadModel>(context);
       readModel.bookInfo = this.widget._bookInfo;
@@ -90,6 +90,42 @@ class _ReadBookState extends State<ReadBook>
     readModel.saveData();
   }
 
+  Widget readView() {
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) {
+      return Container(
+          decoration: model.dark
+              ? null
+              : BoxDecoration(
+                  image: DecorationImage(
+                    image: CachedNetworkImageProvider(
+                        readModel.bgimg[readModel.bgIdx]),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+          color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
+          child: readModel.isPage
+              ? PageView.builder(
+                  controller: readModel.pageController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  itemBuilder: (BuildContext context, int index) {
+                    return readModel.allContent[index];
+                  },
+                  //条目个数
+                  itemCount: (readModel.prePage?.pageOffsets?.length ?? 0) +
+                      (readModel.curPage?.pageOffsets?.length ?? 0) +
+                      (readModel.nextPage?.pageOffsets?.length ?? 0),
+                  onPageChanged: (idx) => readModel.changeChapter(idx),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  controller: readModel.listController,
+                  itemBuilder: (BuildContext context, int index) {
+                    return readModel.allContent[index];
+                  }));
+    });
+  }
+
   Widget _createDialog(
       String _confirmContent, Function sureFunction, Function cancelFunction) {
     return AlertDialog(
@@ -103,7 +139,6 @@ class _ReadBookState extends State<ReadBook>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     // TODO: implement build
     return Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
       return WillPopScope(
@@ -154,7 +189,7 @@ class _ReadBookState extends State<ReadBook>
             ),
             body: Stack(
               children: <Widget>[
-                readModel?.loadOk ?? false ? model.readView() : Container(),
+                readModel?.loadOk ?? false ? readView() : Container(),
                 model.showMenu
                     ? Container(
                         color: Colors.transparent,
@@ -543,8 +578,4 @@ class _ReadBookState extends State<ReadBook>
     ));
     return wds;
   }
-
-  @override
-  // TODO: implement wantKeepAlive
-  bool get wantKeepAlive => true;
 }

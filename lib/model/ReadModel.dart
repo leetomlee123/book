@@ -188,7 +188,7 @@ class ReadModel with ChangeNotifier {
   changeChapter(int idx) async {
     bookTag.index = idx;
     offset = offset + offsetTag;
-
+    print(idx);
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
     if ((idx + 1 - preLen) > (curLen)) {
@@ -366,40 +366,7 @@ class ReadModel with ChangeNotifier {
   }
 
 //  Color.fromRGBO(122, 122, 122, 1)
-  Widget readView() {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel model, child) {
-      return Container(
-          decoration: model.dark
-              ? null
-              : BoxDecoration(
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(bgimg[bgIdx]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-          color: model.dark ? Color.fromRGBO(26, 26, 26, 1) : null,
-          child: isPage
-              ? PageView.builder(
-                  controller: pageController,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  itemBuilder: (BuildContext context, int index) {
-                    return allContent[index];
-                  },
-                  //条目个数
-                  itemCount: (prePage?.pageOffsets?.length ?? 0) +
-                      (curPage?.pageOffsets?.length ?? 0) +
-                      (nextPage?.pageOffsets?.length ?? 0),
-                  onPageChanged: (idx) => changeChapter(idx),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  controller: listController,
-                  itemBuilder: (BuildContext context, int index) {
-                    return allContent[index];
-                  }));
-    });
-  }
+
 
   modifyFont() {
     if (!font) {
@@ -650,5 +617,4 @@ class ReadModel with ChangeNotifier {
     curPage = await loadChapter(bookTag.cur);
     fillAllContent();
   }
-
 }

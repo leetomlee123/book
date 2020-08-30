@@ -79,7 +79,8 @@ class SearchModel with ChangeNotifier {
       Response res = await Util(ctx).http().get(url);
       var d = res.data;
       List data = d['data'];
-      if (data.isEmpty) {
+      // ignore: null_aware_in_condition
+      if (data?.isEmpty ?? true) {
         refreshController.loadNoData();
       } else {
         for (var d in data) {
@@ -93,7 +94,7 @@ class SearchModel with ChangeNotifier {
 
       Response res = await Util(ctx).http().get(url);
       List data = res.data;
-      if (data.isEmpty) {
+      if (data?.isEmpty ?? true) {
         refreshController.loadNoData();
       } else {
         for (var d in data) {
@@ -331,7 +332,6 @@ class SearchModel with ChangeNotifier {
       } else {
         j = (idx * 10 + 9);
         idx += 1;
-
       }
       for (var i = j - 9; i <= j; i++) {
         showHot.add(hot[i]);

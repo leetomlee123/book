@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ColorModel with ChangeNotifier {
@@ -28,8 +29,9 @@ class ColorModel with ChangeNotifier {
   String font = SpUtil.getString("fontName");
 
   ThemeData get theme {
-    if(font!=""){
-    readFont(font);}
+    if (font != "") {
+      readFont(font);
+    }
     if (SpUtil.haveKey("dark")) {
       dark = SpUtil.getBool("dark");
     }
@@ -76,6 +78,11 @@ class ColorModel with ChangeNotifier {
   switchModel() {
     dark = !dark;
     SpUtil.putBool("dark", dark);
+    if (dark) {
+      FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
+    } else {
+      FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
+    }
     notifyListeners();
   }
 
