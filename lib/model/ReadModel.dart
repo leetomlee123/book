@@ -116,13 +116,11 @@ class ReadModel with ChangeNotifier {
       int cur = 0;
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
-        var url=Common.process + '/$userName/${bookInfo.Id}';
-        Response response = await Util(null)
-            .http()
-            .get(url);
+        var url = Common.process + '/$userName/${bookInfo.Id}';
+        Response response = await Util(null).http().get(url);
         String data = response.data['data'];
         if (data.isNotEmpty) {
-          cur = data as int;
+          cur = int.parse(data);
         }
       }
       bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
