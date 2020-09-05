@@ -9,6 +9,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/MyControls.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -131,7 +132,6 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     videoPlayerController = VideoPlayerController.network(source);
     videoPlayerController.addListener(_videoListener);
     videoPlayerController.initialize().then((_) {
-      print(videoPlayerController.value.size);
       chewieController = ChewieController(
         customControls: MyControls(this.widget.name),
         videoPlayerController: videoPlayerController,
@@ -139,6 +139,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         autoPlay: false,
         allowedScreenSleep: false,
         looping: false,
+        placeholder: CachedNetworkImage(imageUrl: 'https://tva2.sinaimg.cn/large/007UW77jly1g5elwuwv4rj30sg0g0wfo.jpg')
       );
       if (SpUtil.haveKey(source)) {
         int p = SpUtil.getInt(source);
@@ -204,6 +205,8 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         autoPlay: false,
         allowedScreenSleep: false,
         looping: false,
+          placeholder: CachedNetworkImage(imageUrl: 'https://tva2.sinaimg.cn/large/007UW77jly1g5elwuwv4rj30sg0g0wfo.jpg')
+
       );
       if (SpUtil.haveKey(future.data[2])) {
         int p = SpUtil.getInt(future.data[2]);

@@ -131,8 +131,8 @@ class _BookShelfState extends State<BookShelf>
                       PicWidget(item.Img),
                       item.NewChapterCount == 1
                           ? Container(
-                              height: 100,
-                              width: 80,
+                              height: 115,
+                              width: 95,
                               child: Align(
                                 alignment: Alignment.topRight,
                                 child: Image.asset(
@@ -152,7 +152,7 @@ class _BookShelfState extends State<BookShelf>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
-                  width: ScreenUtil.getScreenW(context) - 110,
+                  width: ScreenUtil.getScreenW(context) - 115,
                   padding: const EdgeInsets.only(left: 10.0, top: 10.0),
                   child: Text(
                     item.Name,
@@ -168,7 +168,7 @@ class _BookShelfState extends State<BookShelf>
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
-                  width: ScreenUtil.getScreenW(context) - 110,
+                  width: ScreenUtil.getScreenW(context) - 115,
                 ),
                 Container(
                   padding: const EdgeInsets.only(left: 10.0, top: 10.0),

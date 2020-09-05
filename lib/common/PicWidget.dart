@@ -76,7 +76,7 @@ class PicWidget extends StatelessWidget {
   double width;
   bool fitOk;
 
-  PicWidget(this.url, {this.height = 100, this.width = 80, this.fitOk});
+  PicWidget(this.url, {this.height = 115, this.width = 95, this.fitOk});
 
   @override
   Widget build(BuildContext context) {

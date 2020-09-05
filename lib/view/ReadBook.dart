@@ -20,6 +20,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
 class ReadBook extends StatefulWidget {
   BookInfo _bookInfo;
@@ -54,10 +55,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) async {
-//      SystemChrome.setEnabledSystemUIOverlays([]);
       readModel = Store.value<ReadModel>(context);
       readModel.bookInfo = this.widget._bookInfo;
       readModel.context = context;
@@ -74,6 +73,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.contentW =
           (ScreenUtil.getScreenW(context) - 20).floorToDouble();
     });
+    setSystemBar();
   }
 
   @override
@@ -140,6 +140,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
+
     return Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
       return WillPopScope(
         onWillPop: () async {
@@ -577,5 +578,15 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       height: 8,
     ));
     return wds;
+  }
+
+  void setSystemBar() {
+
+    var dark = Store.value<ColorModel>(context).dark;
+    if (dark) {
+      FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
+    } else {
+      FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
+    }
   }
 }

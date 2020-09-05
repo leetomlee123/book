@@ -79,6 +79,7 @@ class ColorModel with ChangeNotifier {
     dark = !dark;
     SpUtil.putBool("dark", dark);
     if (dark) {
+
       FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
     } else {
       FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);

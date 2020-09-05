@@ -187,14 +187,14 @@ class _SearchState extends State<Search> {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: <Widget>[
-                          new Container(
+                           Container(
                             padding:
                                 const EdgeInsets.only(left: 10.0, top: 10.0),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(5),
                               child: Container(
-                                height: 100,
-                                width: 80,
+                                height: 115,
+                                width: 90,
                                 decoration: BoxDecoration(
                                   image: DecorationImage(
                                     image: NetworkImage(

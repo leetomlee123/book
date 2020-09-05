@@ -27,12 +27,14 @@ class Common {
 //  static String search = video_domain + "/book/search";
   static String two = domain + "/book/two";
 
+
   static String search = domain + "/book/search";
   static String bookInfo = domain + "/book/info/";
   static String chaptersUrl = domain + "/book/chapters";
   static String bookContentUrl = domain + '/book/chapter';
   static String reload = domain + '/book/chapter';
   static String bookAction = domain + '/book/action';
+  static String process = domain + '/book/process';
   static String page_height_pre = "php";
 
   static String listbookname = "booklist";

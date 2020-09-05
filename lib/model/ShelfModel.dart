@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
@@ -85,6 +84,8 @@ class ShelfModel with ChangeNotifier {
   //删除本地记录
   void delLocalCache(List<String> ids) {
     for (var i = 0; i < ids.length; i++) {
+      SpUtil.remove(ids[i]);
+
       if (SpUtil.haveKey(ids[i])) {
         List list = jsonDecode(SpUtil.getString('${ids[i]}chapters'));
         List cps = list.map((e) => Chapter.fromJson(e)).toList();
@@ -92,7 +93,6 @@ class ShelfModel with ChangeNotifier {
           SpUtil.remove(value.id.toString());
           SpUtil.remove('pages${value.id.toString()}');
         }
-        SpUtil.remove(ids[i]);
       }
     }
   }
@@ -101,7 +101,7 @@ class ShelfModel with ChangeNotifier {
     var action =
         shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
-      BotToast.showText(text:"已添加到书架");
+      BotToast.showText(text: "已添加到书架");
       shelf.insert(0, book);
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
@@ -109,7 +109,7 @@ class ShelfModel with ChangeNotifier {
           shelf.removeAt(i);
         }
       }
-      BotToast.showText(text:"已移除出书架");
+      BotToast.showText(text: "已移除出书架");
 
       delLocalCache([book.Id]);
     }

@@ -14,7 +14,6 @@ import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -114,7 +113,19 @@ class ReadModel with ChangeNotifier {
       notifyListeners();
       //本书已读过
     } else {
-      bookTag = BookTag(0, 0, bookInfo.Name, 0.0);
+      int cur = 0;
+      String userName = SpUtil.getString("username");
+      if (userName.isNotEmpty) {
+        var url=Common.process + '/$userName/${bookInfo.Id}';
+        Response response = await Util(null)
+            .http()
+            .get(url);
+        String data = response.data['data'];
+        if (data.isNotEmpty) {
+          cur = data as int;
+        }
+      }
+      bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
         var string = SpUtil.getString('${bookInfo.Id}chapters');
         List v = await parseJson(string);
@@ -367,7 +378,6 @@ class ReadModel with ChangeNotifier {
 
 //  Color.fromRGBO(122, 122, 122, 1)
 
-
   modifyFont() {
     if (!font) {
       font = !font;
@@ -391,8 +401,14 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  saveData() {
+  saveData() async {
     SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
+    String userName = SpUtil.getString("username");
+    if (userName.isNotEmpty) {
+      Util(null)
+          .http()
+          .patch(Common.process + '/$userName/${bookInfo.Id}/${bookTag.cur}');
+    }
   }
 
   void tapPage(BuildContext context, TapDownDetails details) {
