@@ -14,6 +14,7 @@ import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -93,6 +94,7 @@ class ReadModel with ChangeNotifier {
     font = false;
     offset = 0;
     offsetTag = 0;
+    loadOk = false;
     if (SpUtil.haveKey(bookInfo.Id)) {
       bookTag =
           BookTag.fromJson(await parseJson(SpUtil.getString(bookInfo.Id)));
@@ -105,13 +107,13 @@ class ReadModel with ChangeNotifier {
       }
       intiPageContent(bookTag.cur, false);
       if (isPage) {
-        pageController = PageController(initialPage: bookTag.index);
+        pageController =
+            PageController(initialPage: bookTag.index, keepPage: false);
       } else {
         listController = ScrollController(initialScrollOffset: bookTag.offset);
       }
       value = bookTag.cur.toDouble();
       loadOk = true;
-      notifyListeners();
       //本书已读过
     } else {
       int cur = 0;
@@ -124,42 +126,41 @@ class ReadModel with ChangeNotifier {
           cur = int.parse(data);
         }
       }
-      int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
-      bookTag = BookTag(cur, idx, bookInfo.Name, 0.0);
+      bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
         var string = SpUtil.getString('${bookInfo.Id}chapters');
         List v = await parseJson(string);
         chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
+      int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
       print(idx);
-
       await getChapters();
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
       if (isPage) {
-        pageController = PageController(initialPage: idx);
+        pageController = PageController(initialPage: idx, keepPage: false);
       } else {
         listController = ScrollController(initialScrollOffset: 0.0);
       }
       await intiPageContent(bookTag.cur, false);
       loadOk = true;
-      if(pageController.hasClients) {
-        pageController.jumpToPage(idx);
-      }
-
+//      notifyListeners();
     }
-    if (!isPage) {
-      listController.addListener(() {
-        double offset = listController.offset;
-        if (offset > (prePage.height + curPage.height)) {
-          print("next chapter");
-          if (!chapterLoading) {
-            nextChapter();
-          }
-        }
-      });
-    }
+//      if (pageController.hasClients) {
+//        pageController.jumpToPage(idx);
+//      }
+//    if (!isPage) {
+//      listController.addListener(() {
+//        double offset = listController.offset;
+//        if (offset > (prePage.height + curPage.height)) {
+//          print("next chapter");
+//          if (!chapterLoading) {
+//            nextChapter();
+//          }
+//        }
+//      });
+//    }
   }
 
   nextChapter() async {
@@ -191,6 +192,7 @@ class ReadModel with ChangeNotifier {
     );
     prePage = await loadChapter(idx - 1);
     curPage = await loadChapter(idx);
+    print(curPage.chapterName);
     nextPage = await loadChapter(idx + 1);
     Navigator.pop(context);
 
@@ -432,6 +434,41 @@ class ReadModel with ChangeNotifier {
     }
   }
 
+  Widget readView() {
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel model, child) {
+      return Container(
+          decoration: model.dark
+              ? null
+              : BoxDecoration(
+                  image: DecorationImage(
+                    image: CachedNetworkImageProvider(bgimg[bgIdx]),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+          color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
+          child: isPage
+              ? PageView.builder(
+                  controller: pageController,
+                  physics: AlwaysScrollableScrollPhysics(),
+                  itemBuilder: (BuildContext context, int index) {
+                    return allContent[index];
+                  },
+                  //条目个数
+                  itemCount: (prePage?.pageOffsets?.length ?? 0) +
+                      (curPage?.pageOffsets?.length ?? 0) +
+                      (nextPage?.pageOffsets?.length ?? 0),
+                  onPageChanged: (idx) => changeChapter(idx),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  controller: listController,
+                  itemBuilder: (BuildContext context, int index) {
+                    return allContent[index];
+                  }));
+    });
+  }
+
   reCalcPages() {
     SpUtil.getKeys().forEach((f) {
       if (f.startsWith('pages')) {
@@ -602,6 +639,8 @@ class ReadModel with ChangeNotifier {
     bookTag = null;
     allContent = null;
     chapters = [];
+    pageController.dispose();
+    loadOk = false;
   }
 
   Future<void> reloadChapters() async {

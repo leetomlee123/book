@@ -13,7 +13,6 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/ChapterView.dart';
 import 'package:book/view/MyBottomSheet.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -90,42 +89,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     readModel.saveData();
   }
 
-  Widget readView() {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel model, child) {
-      return Container(
-          decoration: model.dark
-              ? null
-              : BoxDecoration(
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(
-                        readModel.bgimg[readModel.bgIdx]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-          color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
-          child: readModel.isPage
-              ? PageView.builder(
-                  controller: readModel.pageController,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  itemBuilder: (BuildContext context, int index) {
-                    return readModel.allContent[index];
-                  },
-                  //条目个数
-                  itemCount: (readModel.prePage?.pageOffsets?.length ?? 0) +
-                      (readModel.curPage?.pageOffsets?.length ?? 0) +
-                      (readModel.nextPage?.pageOffsets?.length ?? 0),
-                  onPageChanged: (idx) => readModel.changeChapter(idx),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  controller: readModel.listController,
-                  itemBuilder: (BuildContext context, int index) {
-                    return readModel.allContent[index];
-                  }));
-    });
-  }
-
   Widget _createDialog(
       String _confirmContent, Function sureFunction, Function cancelFunction) {
     return AlertDialog(
@@ -141,8 +104,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     // TODO: implement build
 
-    return Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
-      return WillPopScope(
+    return WillPopScope(
         onWillPop: () async {
           if (!Store.value<ShelfModel>(context)
               .shelf
@@ -188,26 +150,30 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             drawer: Drawer(
               child: ChapterView(),
             ),
-            body: Stack(
-              children: <Widget>[
-                readModel?.loadOk ?? false ? readView() : Container(),
-                model.showMenu
-                    ? Container(
+            body:Store.connect<ReadModel>(
+                builder: (context, ReadModel model, child) {
+                  return (model?.loadOk ?? false)
+                      ? Stack(
+                    children: <Widget>[
+                      model.readView(),
+                      model.showMenu
+                          ? Container(
                         color: Colors.transparent,
                         child: Column(
                           children: <Widget>[
                             Container(
                               child: AppBar(
                                 backgroundColor:
-                                    Store.value<ColorModel>(context)
-                                        .theme
-                                        .primaryColor,
-                                title: Text('${model.bookTag.bookName ?? ""}'),
+                                Store.value<ColorModel>(context)
+                                    .theme
+                                    .primaryColor,
+                                title: Text(
+                                    '${readModel.bookTag.bookName ?? ""}'),
                                 centerTitle: true,
                                 leading: IconButton(
                                   icon: Icon(Icons.arrow_back),
                                   onPressed: () {
-                                    model.toggleShowMenu();
+                                    readModel.toggleShowMenu();
                                   },
                                 ),
                                 elevation: 0,
@@ -222,14 +188,19 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     icon: Icon(Icons.info),
                                     onPressed: () async {
                                       String url = Common.detail +
-                                          '/${model.bookInfo.Id}';
+                                          '/${readModel.bookInfo.Id}';
                                       Response future =
-                                          await Util(context).http().get(url);
+                                      await Util(context)
+                                          .http()
+                                          .get(url);
                                       var d = future.data['data'];
-                                      BookInfo bookInfo = BookInfo.fromJson(d);
-                                      Routes.navigateTo(context, Routes.detail,
+                                      BookInfo bookInfo =
+                                      BookInfo.fromJson(d);
+                                      Routes.navigateTo(
+                                          context, Routes.detail,
                                           params: {
-                                            "detail": jsonEncode(bookInfo)
+                                            "detail":
+                                            jsonEncode(bookInfo)
                                           });
                                     },
                                   )
@@ -246,15 +217,15 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                   ),
                                 ),
                                 onTap: () {
-                                  model.toggleShowMenu();
-                                  if (model.font) {
-                                    model.reCalcPages();
+                                  readModel.toggleShowMenu();
+                                  if (readModel.font) {
+                                    readModel.reCalcPages();
                                   }
                                 },
                               ),
                             ),
-                            Store.connect<ColorModel>(builder:
-                                (context, ColorModel colorModel, child) {
+                            Store.connect<ColorModel>(builder: (context,
+                                ColorModel colorModel, child) {
                               return Theme(
                                 child: Container(
                                   color: colorModel.theme.primaryColor,
@@ -265,7 +236,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     children: <Widget>[
                                       Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment
+                                            .spaceBetween,
                                         children: <Widget>[
                                           GestureDetector(
                                             child: Container(
@@ -276,29 +248,42 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                               width: 70,
                                             ),
                                             onTap: () {
-                                              model.bookTag.cur -= 1;
-                                              model.intiPageContent(
-                                                  model.bookTag.cur, true);
+                                              readModel.bookTag.cur -=
+                                              1;
+                                              readModel.intiPageContent(
+                                                  readModel.bookTag.cur,
+                                                  true);
                                             },
                                           ),
                                           Expanded(
                                             child: Container(
                                               child: Slider(
-                                                activeColor: Colors.white,
-                                                inactiveColor: Colors.white70,
-                                                value: model.value,
-                                                max: (model.chapters.length - 1)
+                                                activeColor:
+                                                Colors.white,
+                                                inactiveColor:
+                                                Colors.white70,
+                                                value: readModel.value,
+                                                max: (readModel.chapters
+                                                    .length -
+                                                    1)
                                                     .toDouble(),
                                                 min: 0.0,
                                                 onChanged: (newValue) {
-                                                  int temp = newValue.round();
-                                                  model.bookTag.cur = temp;
-                                                  model.value = temp.toDouble();
-                                                  model.intiPageContent(
-                                                      model.bookTag.cur, true);
+                                                  int temp =
+                                                  newValue.round();
+                                                  readModel.bookTag
+                                                      .cur = temp;
+                                                  readModel.value =
+                                                      temp.toDouble();
+                                                  readModel
+                                                      .intiPageContent(
+                                                      readModel
+                                                          .bookTag
+                                                          .cur,
+                                                      true);
                                                 },
                                                 label:
-                                                    '${model.chapters[model.bookTag.cur].name} ',
+                                                '${readModel.chapters[readModel.bookTag.cur].name} ',
                                                 semanticFormatterCallback:
                                                     (newValue) {
                                                   return '${newValue.round()} dollars';
@@ -315,14 +300,17 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                               width: 70,
                                             ),
                                             onTap: () {
-                                              model.bookTag.cur += 1;
-                                              model.intiPageContent(
-                                                  model.bookTag.cur, true);
+                                              readModel.bookTag.cur +=
+                                              1;
+                                              readModel.intiPageContent(
+                                                  readModel.bookTag.cur,
+                                                  true);
                                             },
                                           ),
                                         ],
                                       ),
-                                      buildBottomMenus(colorModel, model)
+                                      buildBottomMenus(
+                                          colorModel, readModel)
                                     ],
                                   ),
                                 ),
@@ -332,11 +320,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                           ],
                         ),
                       )
-                    : Container()
-              ],
-            )),
-      );
-    });
+                          : Container()
+                    ],
+                  )
+                      : Container();
+                })
+          ));
   }
 
   buildBottomMenus(ColorModel colorModel, ReadModel readModel) {
@@ -365,9 +354,9 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                 ),
               ),
               onTap: () {
-                colorModel.switchModel();
+                Store.value<ColorModel>(context).switchModel();
 
-                readModel.toggleShowMenu();
+//                readModel.toggleShowMenu();
               }),
           buildBottomItem('缓存', Icons.cloud_download),
           buildBottomItem('设置', Icons.settings),
@@ -581,7 +570,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   void setSystemBar() {
-
     var dark = Store.value<ColorModel>(context).dark;
     if (dark) {
       FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);

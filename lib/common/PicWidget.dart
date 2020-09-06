@@ -76,14 +76,14 @@ class PicWidget extends StatelessWidget {
   double width;
   bool fitOk;
 
-  PicWidget(this.url, {this.height = 115, this.width = 95, this.fitOk});
+  PicWidget(this.url, {this.height = 115, this.width = 97, this.fitOk});
 
   @override
   Widget build(BuildContext context) {
     return CachedNetworkImage(
       imageUrl: url,
       imageBuilder: (context, imageProvider) => ClipRRect(
-        borderRadius: BorderRadius.circular(5),
+//        borderRadius: BorderRadius.circular(5),
         child: Container(
           width: width,
           height: height,

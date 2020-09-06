@@ -132,7 +132,7 @@ class _BookShelfState extends State<BookShelf>
                       item.NewChapterCount == 1
                           ? Container(
                               height: 115,
-                              width: 95,
+                              width: 97,
                               child: Align(
                                 alignment: Alignment.topRight,
                                 child: Image.asset(
@@ -153,7 +153,7 @@ class _BookShelfState extends State<BookShelf>
               children: <Widget>[
                 Container(
                   width: ScreenUtil.getScreenW(context) - 115,
-                  padding: const EdgeInsets.only(left: 10.0, top: 10.0),
+                  padding: const EdgeInsets.only(left: 10.0, top: 8.0),
                   child: Text(
                     item.Name,
                     style:
@@ -161,7 +161,7 @@ class _BookShelfState extends State<BookShelf>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.only(left: 10.0, top: 5.0),
+                  padding: const EdgeInsets.only(left: 10.0, top: 12.0),
                   child: Text(
                     item.LastChapter,
                     style: TextStyle(fontSize: 12),
@@ -171,7 +171,7 @@ class _BookShelfState extends State<BookShelf>
                   width: ScreenUtil.getScreenW(context) - 115,
                 ),
                 Container(
-                  padding: const EdgeInsets.only(left: 10.0, top: 10.0),
+                  padding: const EdgeInsets.only(left: 10.0, top: 22.0),
                   child: Text(item.UTime,
                       style: TextStyle(color: Colors.grey, fontSize: 11)),
                 ),
