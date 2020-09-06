@@ -76,6 +76,7 @@ class ReadModel with ChangeNotifier {
   //页面宽高
   double contentH;
   double contentW;
+  bool jump = true;
 
 //阅读方式
   bool isPage = true;
@@ -123,23 +124,30 @@ class ReadModel with ChangeNotifier {
           cur = int.parse(data);
         }
       }
-      bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
+      int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
+      bookTag = BookTag(cur, idx, bookInfo.Name, 0.0);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
         var string = SpUtil.getString('${bookInfo.Id}chapters');
         List v = await parseJson(string);
         chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
-      if (isPage) {
-        pageController = PageController(initialPage: 0);
-      } else {
-        listController = ScrollController(initialScrollOffset: 0.0);
-      }
+      print(idx);
+
       await getChapters();
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
+      if (isPage) {
+        pageController = PageController(initialPage: idx);
+      } else {
+        listController = ScrollController(initialScrollOffset: 0.0);
+      }
       await intiPageContent(bookTag.cur, false);
       loadOk = true;
+      if(pageController.hasClients) {
+        pageController.jumpToPage(idx);
+      }
+
     }
     if (!isPage) {
       listController.addListener(() {
