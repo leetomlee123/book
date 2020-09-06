@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/common/FunUtil.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
@@ -22,8 +23,9 @@ class LookVideo extends StatefulWidget {
   String id;
   List<dynamic> mcids;
   String name;
+  String cover;
 
-  LookVideo(this.id, this.mcids, this.name);
+  LookVideo(this.id, this.mcids, this.name,this.cover);
 
   @override
   State<StatefulWidget> createState() {
@@ -193,6 +195,14 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
       /// 重置组件参数
       initOk = false;
     });
+    cps = Center(
+      child: Wrap(
+        runAlignment: WrapAlignment.center,
+        spacing: 3, //主轴上子控件的间距
+        runSpacing: 5, //交叉轴上子控件之间的间
+        children: mItems(this.widget.mcids),
+      ),
+    );
     Response future = await Util(null).http().get(Common.look_m + url);
     videoPlayerController = VideoPlayerController.network(future.data[2]);
 
@@ -212,14 +222,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         int p = SpUtil.getInt(future.data[2]);
         chewieController.seekTo(Duration(microseconds: p));
       }
-      cps = Center(
-        child: Wrap(
-          runAlignment: WrapAlignment.center,
-          spacing: 3, //主轴上子控件的间距
-          runSpacing: 5, //交叉轴上子控件之间的间
-          children: mItems(this.widget.mcids),
-        ),
-      );
+
       if (mounted) {
         setState(() {
           initOk = true;
@@ -239,6 +242,13 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           overflow: TextOverflow.ellipsis,
         ),
         onPressed: () {
+          var jsonEncode2 = jsonEncode(list);
+          FunUtil.saveMoviesRecord(
+              this.widget.cover,
+              this.widget.name,
+              map.keys.elementAt(0),
+              map.values.elementAt(0),
+              jsonEncode2);
           saveRecord(videoPlayerController.value.position);
           _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
         },

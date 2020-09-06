@@ -205,6 +205,7 @@ class VideoDetailState extends State<VideoDetail> {
 
           Routes.navigateTo(context, Routes.lookVideo, params: {
             "name": this.widget.gBook.name,
+            "cover":this.widget.gBook.cover,
             "id": map.keys.elementAt(0),
             "mcids": jsonEncode2
           });

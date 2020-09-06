@@ -11,6 +11,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/BookShelf.dart';
 import 'package:book/view/GoodBook.dart';
 import 'package:book/view/Me.dart';
+import 'package:book/view/MovieRecord.dart';
 import 'package:book/view/Test.dart';
 import 'package:book/view/Video.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -138,7 +139,7 @@ class _MainPageState extends State<MainPage> {
       return Theme(
         child: Scaffold(
           drawer: Drawer(
-            child: isMovie ? mList() : person(),
+            child: isMovie ? MovieRecord() : Me(),
           ),
           key: q,
           body: PageView.builder(
@@ -172,51 +173,9 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  Widget person() {
-    return Me();
-  }
 
-  Widget mList() {
-    List<Widget> wds = [];
-    List<MRecords> mrds = [];
-    if (SpUtil.haveKey(Common.movies_record)) {
-      List stringList = jsonDecode(SpUtil.getString(Common.movies_record));
 
-      mrds = stringList.map((f) => MRecords.fromJson(f)).toList();
-      for (var i = mrds.length - 1; i >= 0; i--) {
-        MRecords value = mrds[i];
-        wds.add(GestureDetector(
-          child: ListTile(
-            leading: PicWidget(
-              value.cover,
-            ),
-            title: Text(
-              value.name,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(value.cname),
-          ),
-          onTap: () {
-            Routes.navigateTo(context, Routes.lookVideo, params: {
-              "id": value.cid,
-              "mcids": value.mcids ?? [],
-              "cover": value.cover,
-              "name": value.name
-            });
-          },
-        ));
-        wds.add(Divider());
-      }
-    }
-    if (wds.isEmpty) {
-      wds.add(Center(
-        child: Text("暂无观看记录"),
-      ));
-    }
-    return ListView(
-      children: wds,
-    );
-  }
+
 
   void _startupJpush() async {
     String platformVersion;

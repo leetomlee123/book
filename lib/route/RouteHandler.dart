@@ -64,9 +64,10 @@ var lookVideoHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String id = (params['id'][0]);
   String name = (params['name'][0]);
+  String cover = (params['cover'][0]);
   List mcids = convert.jsonDecode(params['mcids'][0]);
 
-  return LookVideo(id, mcids, name);
+  return LookVideo(id, mcids, name,cover);
 });
 var tagVideoHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
