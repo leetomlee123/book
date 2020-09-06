@@ -356,7 +356,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               onTap: () {
                 Store.value<ColorModel>(context).switchModel();
 
-//                readModel.toggleShowMenu();
+               readModel.toggleShowMenu();
               }),
           buildBottomItem('缓存', Icons.cloud_download),
           buildBottomItem('设置', Icons.settings),

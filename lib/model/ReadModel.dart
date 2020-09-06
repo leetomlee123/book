@@ -132,18 +132,20 @@ class ReadModel with ChangeNotifier {
         List v = await parseJson(string);
         chapters = v.map((f) => Chapter.fromJson(f)).toList();
       }
-      int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
-      print(idx);
+
       await getChapters();
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
+
+      await intiPageContent(bookTag.cur, false);
+      int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
+      print(idx);
       if (isPage) {
         pageController = PageController(initialPage: idx, keepPage: false);
       } else {
         listController = ScrollController(initialScrollOffset: 0.0);
       }
-      await intiPageContent(bookTag.cur, false);
       loadOk = true;
 //      notifyListeners();
     }
@@ -521,7 +523,7 @@ class ReadModel with ChangeNotifier {
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
-
+    var model = Store.value<ColorModel>(context);
     for (var i = 0; i < r.pageOffsets.length; i++) {
       var content = r.pageOffsets[i];
 //      if (content.startsWith("\n")) {
@@ -529,107 +531,103 @@ class ReadModel with ChangeNotifier {
 //      }
 
       contents.add(
-        Store.connect<ColorModel>(builder: (context, ColorModel model, child) {
-          return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTapDown: (TapDownDetails details) {
-                if (isPage) {
-                  tapPage(context, details);
-                }
-              },
-              child: (r.chapterName == "-1" || r.chapterName == "1")
-                  ? Container(
-                      child: Text(r.chapterContent),
-                      alignment: Alignment.center,
-                      height: Screen.height,
-                    )
-                  : isPage
-                      ? Container(
-                          child: Column(
-                            children: <Widget>[
-                              SizedBox(
-                                  height: ScreenUtil.getStatusBarH(context)),
-                              Container(
-                                height: 30,
-                                padding: EdgeInsets.only(left: 3),
-                                child: Text(
-                                  r.chapterName,
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: model.dark
-                                          ? Color.fromRGBO(128, 128, 128, 1)
-                                          : null),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Expanded(
-                                  child: Container(
-                                      padding: EdgeInsets.only(
-                                        right: 5,
-                                        left: 15,
-                                      ),
-                                      child: Text(
-                                        content,
-                                        style: TextStyle(
-                                            color: model.dark
-                                                ? Color.fromRGBO(
-                                                    128, 128, 128, 1)
-                                                : null,
-                                            fontSize: fontSize /
-                                                Screen.textScaleFactor),
-                                        textAlign: TextAlign.justify,
-                                      ))),
-                              Container(
-                                height: 30,
-                                padding: EdgeInsets.only(right: 8),
-                                child: Row(
-                                  children: <Widget>[
-                                    Expanded(child: Container()),
-                                    Text(
-                                      '第${i + 1}/${r.pageOffsets.length}页',
-                                      style: TextStyle(
-                                        color: model.dark
-                                            ? Color.fromRGBO(128, 128, 128, 1)
-                                            : null,
-                                        fontSize: 12,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                          ),
-                          width: double.infinity,
-                          height: double.infinity,
-                        )
-                      : Column(
-                          children: [
-                            Center(
+        GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (TapDownDetails details) {
+              if (isPage) {
+                tapPage(context, details);
+              }
+            },
+            child: (r.chapterName == "-1" || r.chapterName == "1")
+                ? Container(
+                    child: Text(r.chapterContent),
+                    alignment: Alignment.center,
+                    height: Screen.height,
+                  )
+                : isPage
+                    ? Container(
+                        child: Column(
+                          children: <Widget>[
+                            SizedBox(height: ScreenUtil.getStatusBarH(context)),
+                            Container(
+                              height: 30,
+                              padding: EdgeInsets.only(left: 3),
                               child: Text(
                                 r.chapterName,
-                                style: TextStyle(fontSize: fontSize + 2.0),
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: model.dark
+                                        ? Color.fromRGBO(128, 128, 128, 1)
+                                        : null),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            Expanded(
+                                child: Container(
+                                    padding: EdgeInsets.only(
+                                      right: 5,
+                                      left: 15,
+                                    ),
+                                    child: Text(
+                                      content,
+                                      style: TextStyle(
+                                          color: model.dark
+                                              ? Color.fromRGBO(128, 128, 128, 1)
+                                              : null,
+                                          fontSize: fontSize /
+                                              Screen.textScaleFactor),
+                                      textAlign: TextAlign.justify,
+                                    ))),
                             Container(
-                                padding: EdgeInsets.only(
-                                  right: 5,
-                                  left: 15,
-                                ),
-                                child: Text(
-                                  content,
-                                  style: TextStyle(
+                              height: 30,
+                              padding: EdgeInsets.only(right: 8),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(child: Container()),
+                                  Text(
+                                    '第${i + 1}/${r.pageOffsets.length}页',
+                                    style: TextStyle(
                                       color: model.dark
                                           ? Color.fromRGBO(128, 128, 128, 1)
                                           : null,
-                                      fontSize:
-                                          fontSize / Screen.textScaleFactor),
-                                  textAlign: TextAlign.justify,
-                                ))
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
-                        ));
-        }),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        width: double.infinity,
+                        height: double.infinity,
+                      )
+                    : Column(
+                        children: [
+                          Center(
+                            child: Text(
+                              r.chapterName,
+                              style: TextStyle(fontSize: fontSize + 2.0),
+                            ),
+                          ),
+                          Container(
+                              padding: EdgeInsets.only(
+                                right: 5,
+                                left: 15,
+                              ),
+                              child: Text(
+                                content,
+                                style: TextStyle(
+                                    color: model.dark
+                                        ? Color.fromRGBO(128, 128, 128, 1)
+                                        : null,
+                                    fontSize:
+                                        fontSize / Screen.textScaleFactor),
+                                textAlign: TextAlign.justify,
+                              ))
+                        ],
+                      )),
       );
     }
     return contents;
