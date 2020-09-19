@@ -8,6 +8,8 @@ class Book {
   String ChapterName;
   int NewChapterCount;
   String Id;
+  int cur;
+  int index;
   String CName;
   String Name;
   String Author;
@@ -21,6 +23,10 @@ class Book {
   Map<String, dynamic> toJson() => _$BookToJson(this);
 
   Book.Id(this.Id);
+
+
+  Book.fromSql(this.Id, this.Name, this.CName, this.Author, this.UTime,
+      this.Img, this.cur, this.index, this.NewChapterCount, this.LastChapter);
 
   Book(
       this.ChapterId,

@@ -150,182 +150,181 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             drawer: Drawer(
               child: ChapterView(),
             ),
-            body:Store.connect<ReadModel>(
+            body: Store.connect<ReadModel>(
                 builder: (context, ReadModel model, child) {
-                  return (model?.loadOk ?? false)
-                      ? Stack(
-                    children: <Widget>[
-                      model.readView(),
-                      model.showMenu
-                          ? Container(
-                        color: Colors.transparent,
-                        child: Column(
-                          children: <Widget>[
-                            Container(
-                              child: AppBar(
-                                backgroundColor:
-                                Store.value<ColorModel>(context)
-                                    .theme
-                                    .primaryColor,
-                                title: Text(
-                                    '${readModel.bookTag.bookName ?? ""}'),
-                                centerTitle: true,
-                                leading: IconButton(
-                                  icon: Icon(Icons.arrow_back),
-                                  onPressed: () {
-                                    readModel.toggleShowMenu();
-                                  },
-                                ),
-                                elevation: 0,
-                                actions: <Widget>[
-                                  IconButton(
-                                    icon: Icon(Icons.refresh),
-                                    onPressed: () {
-                                      readModel.reloadCurrentPage();
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.info),
-                                    onPressed: () async {
-                                      String url = Common.detail +
-                                          '/${readModel.bookInfo.Id}';
-                                      Response future =
-                                      await Util(context)
-                                          .http()
-                                          .get(url);
-                                      var d = future.data['data'];
-                                      BookInfo bookInfo =
-                                      BookInfo.fromJson(d);
-                                      Routes.navigateTo(
-                                          context, Routes.detail,
-                                          params: {
-                                            "detail":
-                                            jsonEncode(bookInfo)
-                                          });
-                                    },
-                                  )
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                child: Opacity(
-                                  opacity: 1,
-                                  child: Container(
-                                    width: double.infinity,
-                                  ),
-                                ),
-                                onTap: () {
-                                  readModel.toggleShowMenu();
-                                  if (readModel.font) {
-                                    readModel.reCalcPages();
-                                  }
-                                },
-                              ),
-                            ),
-                            Store.connect<ColorModel>(builder: (context,
-                                ColorModel colorModel, child) {
-                              return Theme(
-                                child: Container(
-                                  color: colorModel.theme.primaryColor,
-                                  height: 120,
-                                  width: double.infinity,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .spaceBetween,
-                                        children: <Widget>[
-                                          GestureDetector(
-                                            child: Container(
-                                              child: Icon(
-                                                Icons.arrow_back_ios,
-                                                color: Colors.white,
-                                              ),
-                                              width: 70,
-                                            ),
-                                            onTap: () {
-                                              readModel.bookTag.cur -=
-                                              1;
-                                              readModel.intiPageContent(
-                                                  readModel.bookTag.cur,
-                                                  true);
+              return (model?.loadOk ?? false)
+                  ? Stack(
+                      children: <Widget>[
+                        model.readView(),
+                        model.showMenu
+                            ? Container(
+                                color: Colors.transparent,
+                                child: Column(
+                                  children: <Widget>[
+                                    Container(
+                                      child: AppBar(
+                                        backgroundColor:
+                                            Store.value<ColorModel>(context)
+                                                .theme
+                                                .primaryColor,
+                                        title: Text(
+                                            '${readModel.bookTag.bookName ?? ""}'),
+                                        centerTitle: true,
+                                        leading: IconButton(
+                                          icon: Icon(Icons.arrow_back),
+                                          onPressed: () {
+                                            readModel.toggleShowMenu();
+                                          },
+                                        ),
+                                        elevation: 0,
+                                        actions: <Widget>[
+                                          IconButton(
+                                            icon: Icon(Icons.refresh),
+                                            onPressed: () {
+                                              readModel.reloadCurrentPage();
                                             },
                                           ),
-                                          Expanded(
-                                            child: Container(
-                                              child: Slider(
-                                                activeColor:
-                                                Colors.white,
-                                                inactiveColor:
-                                                Colors.white70,
-                                                value: readModel.value,
-                                                max: (readModel.chapters
-                                                    .length -
-                                                    1)
-                                                    .toDouble(),
-                                                min: 0.0,
-                                                onChanged: (newValue) {
-                                                  int temp =
-                                                  newValue.round();
-                                                  readModel.bookTag
-                                                      .cur = temp;
-                                                  readModel.value =
-                                                      temp.toDouble();
-                                                  readModel
-                                                      .intiPageContent(
-                                                      readModel
-                                                          .bookTag
-                                                          .cur,
-                                                      true);
-                                                },
-                                                label:
-                                                '${readModel.chapters[readModel.bookTag.cur].name} ',
-                                                semanticFormatterCallback:
-                                                    (newValue) {
-                                                  return '${newValue.round()} dollars';
-                                                },
-                                              ),
-                                            ),
-                                          ),
-                                          GestureDetector(
-                                            child: Container(
-                                              child: Icon(
-                                                Icons.arrow_forward_ios,
-                                                color: Colors.white,
-                                              ),
-                                              width: 70,
-                                            ),
-                                            onTap: () {
-                                              readModel.bookTag.cur +=
-                                              1;
-                                              readModel.intiPageContent(
-                                                  readModel.bookTag.cur,
-                                                  true);
+                                          IconButton(
+                                            icon: Icon(Icons.info),
+                                            onPressed: () async {
+                                              String url = Common.detail +
+                                                  '/${readModel.bookInfo.Id}';
+                                              Response future =
+                                                  await Util(context)
+                                                      .http()
+                                                      .get(url);
+                                              var d = future.data['data'];
+                                              BookInfo bookInfo =
+                                                  BookInfo.fromJson(d);
+                                              Routes.navigateTo(
+                                                  context, Routes.detail,
+                                                  params: {
+                                                    "detail":
+                                                        jsonEncode(bookInfo)
+                                                  });
                                             },
-                                          ),
+                                          )
                                         ],
                                       ),
-                                      buildBottomMenus(
-                                          colorModel, readModel)
-                                    ],
-                                  ),
+                                    ),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Opacity(
+                                          opacity: 1,
+                                          child: Container(
+                                            width: double.infinity,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          readModel.toggleShowMenu();
+                                          if (readModel.font) {
+                                            readModel.reCalcPages();
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    Store.connect<ColorModel>(builder: (context,
+                                        ColorModel colorModel, child) {
+                                      return Theme(
+                                        child: Container(
+                                          color: colorModel.theme.primaryColor,
+                                          height: 120,
+                                          width: double.infinity,
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: <Widget>[
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: <Widget>[
+                                                  GestureDetector(
+                                                    child: Container(
+                                                      child: Icon(
+                                                        Icons.arrow_back_ios,
+                                                        color: Colors.white,
+                                                      ),
+                                                      width: 70,
+                                                    ),
+                                                    onTap: () {
+                                                      readModel.bookTag.cur -=
+                                                          1;
+                                                      readModel.intiPageContent(
+                                                          readModel.bookTag.cur,
+                                                          true);
+                                                    },
+                                                  ),
+                                                  Expanded(
+                                                    child: Container(
+                                                      child: Slider(
+                                                        activeColor:
+                                                            Colors.white,
+                                                        inactiveColor:
+                                                            Colors.white70,
+                                                        value: readModel.value,
+                                                        max: (readModel.chapters
+                                                                    .length -
+                                                                1)
+                                                            .toDouble(),
+                                                        min: 0.0,
+                                                        onChanged: (newValue) {
+                                                          int temp =
+                                                              newValue.round();
+                                                          readModel.bookTag
+                                                              .cur = temp;
+                                                          readModel.value =
+                                                              temp.toDouble();
+                                                          readModel
+                                                              .intiPageContent(
+                                                                  readModel
+                                                                      .bookTag
+                                                                      .cur,
+                                                                  true);
+                                                        },
+                                                        label:
+                                                            '${readModel.chapters[readModel.bookTag.cur].name} ',
+                                                        semanticFormatterCallback:
+                                                            (newValue) {
+                                                          return '${newValue.round()} dollars';
+                                                        },
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  GestureDetector(
+                                                    child: Container(
+                                                      child: Icon(
+                                                        Icons.arrow_forward_ios,
+                                                        color: Colors.white,
+                                                      ),
+                                                      width: 70,
+                                                    ),
+                                                    onTap: () {
+                                                      readModel.bookTag.cur +=
+                                                          1;
+                                                      readModel.intiPageContent(
+                                                          readModel.bookTag.cur,
+                                                          true);
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                              buildBottomMenus(
+                                                  colorModel, readModel)
+                                            ],
+                                          ),
+                                        ),
+                                        data: colorModel.theme,
+                                      );
+                                    })
+                                  ],
                                 ),
-                                data: colorModel.theme,
-                              );
-                            })
-                          ],
-                        ),
-                      )
-                          : Container()
-                    ],
-                  )
-                      : Container();
-                })
-          ));
+                              )
+                            : Container()
+                      ],
+                    )
+                  : Container();
+            })));
   }
 
   buildBottomMenus(ColorModel colorModel, ReadModel readModel) {
@@ -356,7 +355,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               onTap: () {
                 Store.value<ColorModel>(context).switchModel();
 
-               readModel.toggleShowMenu();
+                readModel.toggleShowMenu();
               }),
           buildBottomItem('缓存', Icons.cloud_download),
           buildBottomItem('设置', Icons.settings),

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/common.dart';
-
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
@@ -185,7 +184,8 @@ class _BookDetailState extends State<BookDetail> {
                                       : "images/add_collapse.png",
                                   width: 30,
                                   height: 30,
-                                  color: value.dark?Colors.white:Colors.black,
+                                  color:
+                                      value.dark ? Colors.white : Colors.black,
                                 ),
                                 onTap: () {
                                   if (mounted) {
@@ -429,7 +429,7 @@ class _BookDetailState extends State<BookDetail> {
             ],
           ),
           bottomNavigationBar: Store.connect<ShelfModel>(
-              builder: (context, ShelfModel d, child) {
+              builder: (context, ShelfModel d, child)  {
             return BottomNavigationBar(
               type: BottomNavigationBarType.fixed,
               unselectedItemColor: value.dark ? Colors.white : null,
@@ -498,11 +498,11 @@ class _BookDetailState extends State<BookDetail> {
                     break;
                   case 2:
                     {
-                      BotToast.showText(text:"开始下载...");
+                      BotToast.showText(text: "开始下载...");
 
                       var value = Store.value<ReadModel>(context);
                       value.bookInfo = _bookInfo;
-                      value.bookTag = BookTag(0, 0, _bookInfo.Name,0.0);
+                      value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
                       value.downloadAll();
                     }
                     break;

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:book/common/DbHelper.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
@@ -71,13 +72,13 @@ class ReadModel with ChangeNotifier {
   int bgIdx = 0;
 
 //章节翻页标志
-  bool chapterLoading = false;
   bool loadOk = false;
 
   //页面宽高
   double contentH;
   double contentW;
   bool jump = true;
+  DbHelper _dbHelper = DbHelper();
 
 //阅读方式
   bool isPage = true;
@@ -96,10 +97,13 @@ class ReadModel with ChangeNotifier {
     offsetTag = 0;
     loadOk = false;
     if (SpUtil.haveKey(bookInfo.Id)) {
+      var btg = await parseJson(SpUtil.getString(bookInfo.Id));
       bookTag =
-          BookTag.fromJson(await parseJson(SpUtil.getString(bookInfo.Id)));
-      List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
-      chapters = list.map((e) => Chapter.fromJson(e)).toList();
+          BookTag.fromJson(btg);
+      // bookTag = await _dbHelper.getBookProcess(bookInfo.Id);
+      chapters = await _dbHelper.getChapters(bookInfo.Id);
+      // List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
+      // chapters = list.map((e) => Chapter.fromJson(e)).toList();
       getChapters();
       //书的最后一章
       if (bookInfo.CId == "-1") {
@@ -128,9 +132,7 @@ class ReadModel with ChangeNotifier {
       }
       bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
-        var string = SpUtil.getString('${bookInfo.Id}chapters');
-        List v = await parseJson(string);
-        chapters = v.map((f) => Chapter.fromJson(f)).toList();
+        chapters = await _dbHelper.getChapters(bookInfo.Id);
       }
 
       await getChapters();
@@ -140,13 +142,13 @@ class ReadModel with ChangeNotifier {
 
       await intiPageContent(bookTag.cur, false);
       int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
-      print(idx);
       if (isPage) {
         pageController = PageController(initialPage: idx, keepPage: false);
       } else {
         listController = ScrollController(initialScrollOffset: 0.0);
       }
       loadOk = true;
+
 //      notifyListeners();
     }
 //      if (pageController.hasClients) {
@@ -166,7 +168,6 @@ class ReadModel with ChangeNotifier {
   }
 
   nextChapter() async {
-    chapterLoading = true;
     bookTag.cur += 1;
     int idx = bookTag.cur;
     double offset = listController.offset;
@@ -178,7 +179,6 @@ class ReadModel with ChangeNotifier {
     fillAllContent();
     value = bookTag.cur.toDouble();
     listController.jumpTo(prePage.height + d);
-    chapterLoading = false;
   }
 
   Future intiPageContent(int idx, bool jump) async {
@@ -209,80 +209,83 @@ class ReadModel with ChangeNotifier {
   changeChapter(int idx) async {
     bookTag.index = idx;
     offset = offset + offsetTag;
-    print(idx);
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
+    // print("idx:$idx preLen:$preLen curLen:$curLen");
     if ((idx + 1 - preLen) > (curLen)) {
-      if (!chapterLoading) {
-        int temp = bookTag.cur + 1;
-        if (temp >= chapters.length) {
-          BotToast.showText(text: "已经是最后一页");
-          pageController.previousPage(
-              duration: Duration(microseconds: 1), curve: Curves.ease);
+      //下一章
+      int temp = bookTag.cur + 1;
+      if (temp >= chapters.length) {
+        BotToast.showText(text: "已经是最后一页");
+        pageController.previousPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
+      } else {
+        bookTag.cur += 1;
+        prePage = curPage;
+        if (nextPage.chapterName == "-1") {
+          showGeneralDialog(
+            context: context,
+            barrierLabel: "",
+            barrierDismissible: true,
+            transitionDuration: Duration(milliseconds: 300),
+            pageBuilder: (BuildContext context, Animation animation,
+                Animation secondaryAnimation) {
+              return LoadingDialog();
+            },
+          );
+          curPage = await loadChapter(bookTag.cur);
+          int preLen = prePage?.pageOffsets?.length ?? 0;
+          int curLen = curPage?.pageOffsets?.length ?? 0;
+          bookTag.index = preLen + curLen - 1;
+          Navigator.pop(context);
         } else {
-          offset = 1;
-          offsetTag = 1;
-          chapterLoading = true;
-
-          bookTag.cur += 1;
-          prePage = curPage;
-          if (nextPage.chapterName == "-1") {
-            showGeneralDialog(
-              context: context,
-              barrierLabel: "",
-              barrierDismissible: true,
-              transitionDuration: Duration(milliseconds: 300),
-              pageBuilder: (BuildContext context, Animation animation,
-                  Animation secondaryAnimation) {
-                return LoadingDialog();
-              },
-            );
-            curPage = await loadChapter(bookTag.cur);
-            int preLen = prePage?.pageOffsets?.length ?? 0;
-            int curLen = curPage?.pageOffsets?.length ?? 0;
-            bookTag.index = preLen + curLen - 1;
-            Navigator.pop(context);
-          } else {
-            curPage = nextPage;
-          }
-
-          nextPage = await loadChapter(bookTag.cur + 1);
-          //翻过页后再执行 缓解卡顿
-          await Future.delayed(Duration(microseconds: 1000));
-          fillAllContent();
-          int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
+          curPage = nextPage;
+        }
+        fillAllContent();
+        pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
+        offset = 1;
+        offsetTag = 1;
+        nextPage = await loadChapter(bookTag.cur + 1);
+        //翻过页后再执行 缓解卡顿
+        await Future.delayed(Duration(seconds: 1));
+        print(offsetTag);
+        fillAllContent();
+        int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
+        //有可能翻到下一页 又翻回上一页
+        if (offsetTag > 0) {
+          print("加载下一张完成 翻页");
           pageController.jumpToPage(realIdx - 1);
           offset = 0;
           offsetTag = 0;
         }
-        chapterLoading = false;
       }
     } else if (idx < preLen) {
-      if (!chapterLoading) {
-        int temp = bookTag.cur - 1;
-        if (temp < 0) {
-          return;
-        } else {
-          chapterLoading = true;
-          offsetTag = -1;
-          offset = -1;
-          bookTag.cur -= 1;
-          nextPage = curPage;
-          curPage = prePage;
-          //翻过页后再执行 缓解卡顿
-          prePage = await loadChapter(bookTag.cur - 1);
-          await Future.delayed(Duration(microseconds: 1000));
-
-          fillAllContent();
-          int ix = (prePage?.pageOffsets?.length ?? 0) +
-              curPage.pageOffsets.length +
-              offset;
+      //上一章
+      print('上一张');
+      int temp = bookTag.cur - 1;
+      if (temp < 0) {
+        return;
+      } else {
+        offsetTag = -1;
+        offset = -1;
+        bookTag.cur -= 1;
+        nextPage = curPage;
+        curPage = prePage;
+        //翻过页后再执行 缓解卡顿
+        prePage = await loadChapter(bookTag.cur - 1);
+        // await Future.delayed(Duration(seconds: 1));
+        print(offsetTag);
+        fillAllContent();
+        int ix = (prePage?.pageOffsets?.length ?? 0) +
+            curPage.pageOffsets.length +
+            offset;
+        if (offsetTag < 0) {
           pageController.jumpToPage(ix);
           offset = 0;
           offsetTag = 0;
-          chapterLoading = false;
-//        notifyListeners();
         }
+
+//        notifyListeners();
       }
     }
   }
@@ -311,7 +314,8 @@ class ReadModel with ChangeNotifier {
       bookTag.cur = chapters.length - 1;
       value = bookTag.cur.toDouble();
     }
-    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
+    SpUtil.putString('${bookInfo.Id}chapters', "");
+    _dbHelper.addChapters(chapters, bookInfo.Id);
     notifyListeners();
     print("load cps ok");
   }
@@ -333,18 +337,18 @@ class ReadModel with ChangeNotifier {
 
     r.chapterName = chapters[idx].name;
     String id = chapters[idx].id;
-
-    if (!SpUtil.haveKey(id)) {
+    var bool = await _dbHelper.getHasContent(id);
+    if (!bool) {
       r.chapterContent = await compute(requestDataWithCompute, id);
 
       if (r.chapterContent.isNotEmpty) {
-        SpUtil.putString(id, r.chapterContent);
-
+        // SpUtil.putString(id, r.chapterContent);
+        await _dbHelper.udpChapter(r.chapterContent, id);
         chapters[idx].hasContent = 2;
       }
-      SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
+      // SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     } else {
-      r.chapterContent = SpUtil.getString(id);
+      r.chapterContent = await _dbHelper.getContent(id);
     }
     if (r.chapterContent.isEmpty) {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
@@ -352,12 +356,14 @@ class ReadModel with ChangeNotifier {
       return r;
     }
     if (isPage) {
-      if (SpUtil.haveKey('pages' + id)) {
-        r.pageOffsets = SpUtil.getStringList('pages' + id);
+      var k = '${bookInfo.Id}pages' + r.chapterName;
+      if (SpUtil.haveKey(k)) {
+        r.pageOffsets = SpUtil.getStringList(k);
+        SpUtil.remove(k);
       } else {
         r.pageOffsets = ReaderPageAgent()
             .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
-        SpUtil.putStringList('pages' + id, r.pageOffsets);
+        // SpUtil.putStringList('pages' + id, r.pageOffsets);
       }
     } else {
       r.pageOffsets = [r.chapterContent];
@@ -413,12 +419,20 @@ class ReadModel with ChangeNotifier {
 
   saveData() async {
     SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
+    // _dbHelper.updBookProcess(bookTag.cur, bookTag.index, bookInfo.Id);
+    SpUtil.putStringList(
+        '${bookInfo.Id}pages' + prePage.chapterName, prePage.pageOffsets);
+    SpUtil.putStringList(
+        '${bookInfo.Id}pages' + curPage.chapterName, curPage.pageOffsets);
+    SpUtil.putStringList(
+        '${bookInfo.Id}pages' + nextPage.chapterName, nextPage.pageOffsets);
     String userName = SpUtil.getString("username");
     if (userName.isNotEmpty) {
       Util(null)
           .http()
           .patch(Common.process + '/$userName/${bookInfo.Id}/${bookTag.cur}');
     }
+    print("保存成功");
   }
 
   void tapPage(BuildContext context, TapDownDetails details) {
@@ -439,41 +453,43 @@ class ReadModel with ChangeNotifier {
   Widget readView() {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-      return Container(
-          decoration: model.dark
-              ? null
-              : BoxDecoration(
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(bgimg[bgIdx]),
-                    fit: BoxFit.cover,
+      return Scaffold(
+        body: Container(
+            decoration: model.dark
+                ? null
+                : BoxDecoration(
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(bgimg[bgIdx]),
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-          color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
-          child: isPage
-              ? PageView.builder(
-                  controller: pageController,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  itemBuilder: (BuildContext context, int index) {
-                    return allContent[index];
-                  },
-                  //条目个数
-                  itemCount: (prePage?.pageOffsets?.length ?? 0) +
-                      (curPage?.pageOffsets?.length ?? 0) +
-                      (nextPage?.pageOffsets?.length ?? 0),
-                  onPageChanged: (idx) => changeChapter(idx),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  controller: listController,
-                  itemBuilder: (BuildContext context, int index) {
-                    return allContent[index];
-                  }));
+            color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
+            child: isPage
+                ? PageView.builder(
+                    controller: pageController,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    itemBuilder: (BuildContext context, int index) {
+                      return allContent[index];
+                    },
+                    //条目个数
+                    itemCount: (prePage?.pageOffsets?.length ?? 0) +
+                        (curPage?.pageOffsets?.length ?? 0) +
+                        (nextPage?.pageOffsets?.length ?? 0),
+                    onPageChanged: (idx) => changeChapter(idx),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    controller: listController,
+                    itemBuilder: (BuildContext context, int index) {
+                      return allContent[index];
+                    })),
+      );
     });
   }
 
   reCalcPages() {
     SpUtil.getKeys().forEach((f) {
-      if (f.startsWith('pages')) {
+      if (f.contains('pages')) {
         SpUtil.remove(f);
       }
     });
@@ -494,17 +510,19 @@ class ReadModel with ChangeNotifier {
     }
     SpUtil.putStringList(Common.downloadlist, ids);
     for (var chapter in chapters) {
-      String id = chapter.id;
-      if (!SpUtil.haveKey(id)) {
+      var id = chapter.id;
+      var bool = await _dbHelper.getHasContent(id);
+      if (!bool) {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
-          SpUtil.putString(chapter.id, content);
+          // SpUtil.putString(chapter.id, content);
+          _dbHelper.udpChapter(content, id);
           chapter.hasContent = 2;
         }
       }
     }
     BotToast.showText(text: "${bookInfo?.Name ?? ""}下载完成");
-    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
+    // SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
   }
 
   static Future<String> requestDataWithCompute(String id) async {
@@ -523,15 +541,15 @@ class ReadModel with ChangeNotifier {
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
-    var model = Store.value<ColorModel>(context);
     for (var i = 0; i < r.pageOffsets.length; i++) {
       var content = r.pageOffsets[i];
 //      if (content.startsWith("\n")) {
 //        content = content.substring(1);
 //      }
 
-      contents.add(
-        GestureDetector(
+      contents.add(Store.connect<ColorModel>(
+          builder: (context, ColorModel model, child) {
+        return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapDown: (TapDownDetails details) {
               if (isPage) {
@@ -555,10 +573,11 @@ class ReadModel with ChangeNotifier {
                               child: Text(
                                 r.chapterName,
                                 style: TextStyle(
-                                    fontSize: 12,
-                                    color: model.dark
-                                        ? Color.fromRGBO(128, 128, 128, 1)
-                                        : null),
+                                  fontSize: 12,
+                                  color: model.dark
+                                      ? Colors.white38
+                                      : Colors.black,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -572,8 +591,8 @@ class ReadModel with ChangeNotifier {
                                       content,
                                       style: TextStyle(
                                           color: model.dark
-                                              ? Color.fromRGBO(128, 128, 128, 1)
-                                              : null,
+                                              ? Colors.white38
+                                              : Colors.black,
                                           fontSize: fontSize /
                                               Screen.textScaleFactor),
                                       textAlign: TextAlign.justify,
@@ -587,10 +606,10 @@ class ReadModel with ChangeNotifier {
                                   Text(
                                     '第${i + 1}/${r.pageOffsets.length}页',
                                     style: TextStyle(
-                                      color: model.dark
-                                          ? Color.fromRGBO(128, 128, 128, 1)
-                                          : null,
                                       fontSize: 12,
+                                      color: model.dark
+                                          ? Colors.white38
+                                          : Colors.black,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -627,8 +646,8 @@ class ReadModel with ChangeNotifier {
                                 textAlign: TextAlign.justify,
                               ))
                         ],
-                      )),
-      );
+                      ));
+      }));
     }
     return contents;
   }
@@ -643,10 +662,12 @@ class ReadModel with ChangeNotifier {
 
   Future<void> reloadChapters() async {
     chapters = [];
-    var key = '${bookInfo.Id}chapters';
-    if (SpUtil.haveKey(key)) {
-      SpUtil.remove(key);
-    }
+    _dbHelper.clearChapters(bookInfo.Id);
+
+    // var key = '${bookInfo.Id}chapters';
+    // if (SpUtil.haveKey(key)) {
+    //   SpUtil.remove(key);
+    // }
     var url = Common.chaptersUrl + '/${bookInfo.Id}/0';
     Response response = await Util(null).http().get(url);
 
@@ -658,19 +679,19 @@ class ReadModel with ChangeNotifier {
 
     chapters = data.map((c) => Chapter.fromJson(c)).toList();
 
-    SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
+    // SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
+    _dbHelper.addChapters(chapters, bookInfo.Id);
     notifyListeners();
   }
 
   Future<void> reloadCurrentPage() async {
     var chapter = chapters[bookTag.cur];
-    SpUtil.remove(chapter.id);
-    SpUtil.remove("pages" + chapter.id);
     var future =
         await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
-      SpUtil.putString(chapter.id, content);
+      // SpUtil.putString(chapter.id, content);
+      _dbHelper.udpChapter(content, chapter.id);
       chapters[bookTag.cur].hasContent = 2;
     }
     curPage = await loadChapter(bookTag.cur);

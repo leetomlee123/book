@@ -326,7 +326,7 @@ class SearchModel with ChangeNotifier {
     if (hot.isNotEmpty) {
       showHot = [];
       var j = 0;
-      if (((idx * 10) + 9) > hot.length - 1) {
+      if (((idx * 10) + 9) >= hot.length - 1) {
         j = hot.length - 1;
         idx = 0;
       } else {

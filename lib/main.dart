@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
@@ -31,6 +32,7 @@ GetIt locator = GetIt.instance;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SpUtil.getInstance();
+
 
   locator.registerSingleton(TelAndSmsService());
   final router = Router();

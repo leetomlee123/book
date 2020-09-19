@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
@@ -32,7 +31,7 @@ class _BookShelfState extends State<BookShelf>
     super.build(context);
     // TODO: implement build
     return Store.connect<ShelfModel>(
-        builder: (context, ShelfModel model, child) {
+        builder: (context, ShelfModel model, child)  {
       return Scaffold(
           appBar: AppBar(
             leading: IconButton(
@@ -88,8 +87,10 @@ class _BookShelfState extends State<BookShelf>
                     return GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () {
-                        model.shelf[i].NewChapterCount = 0;
                         Book temp = model.shelf[i];
+
+                        model.shelf[i].NewChapterCount = 0;
+                        model.updBookStatus(temp.Id);
                         Routes.navigateTo(
                           context,
                           Routes.read,
@@ -258,17 +259,16 @@ class _BookShelfState extends State<BookShelf>
     super.initState();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
+      // if (SpUtil.haveKey(Common.listbookname)) {
+      // var name = SpUtil.getString(Common.listbookname);
+      // List decode2 = json.decode(name);
+      // List<Book> bks = decode2.map((m) => Book.fromJson(m)).toList();
 
-      if (SpUtil.haveKey(Common.listbookname)) {
-        var name = SpUtil.getString(Common.listbookname);
-        List decode2 = json.decode(name);
-        List<Book> bks = decode2.map((m) => Book.fromJson(m)).toList();
-
-        Store.value<ShelfModel>(context).shelf = bks;
-        Store.value<ShelfModel>(context).context = context;
-        if (mounted) {
-          setState(() {});
-        }
+      Store.value<ShelfModel>(context).context = context;
+      Store.value<ShelfModel>(context).setShelf();
+      if (mounted) {
+        setState(() {});
+        // }
       }
     });
   }

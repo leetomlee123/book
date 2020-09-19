@@ -309,26 +309,6 @@ class _SearchState extends State<Search> {
             Row(
               children: <Widget>[
                 Text(
-                  '热门${this.widget.type == "book" ? "书籍" : "美剧"}',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Expanded(
-                  child: Container(),
-                ),
-                IconButton(
-                  icon: Icon(Icons.refresh),
-                  onPressed: () {
-                    searchModel.getHot();
-                  },
-                )
-              ],
-            ),
-            Wrap(
-              children: searchModel?.showHot ?? [], spacing: 2, //主轴上子控件的间距
-            ),
-            Row(
-              children: <Widget>[
-                Text(
                   '搜索历史',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
@@ -355,6 +335,27 @@ class _SearchState extends State<Search> {
               spacing: 3, //主轴上子控件的间距
               runSpacing: 5, //交叉轴上子控件之间的间距
             ),
+            Row(
+              children: <Widget>[
+                Text(
+                  '热门${this.widget.type == "book" ? "书籍" : "美剧"}',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Expanded(
+                  child: Container(),
+                ),
+                IconButton(
+                  icon: Icon(Icons.refresh),
+                  onPressed: () {
+                    searchModel.getHot();
+                  },
+                )
+              ],
+            ),
+            Wrap(
+              children: searchModel?.showHot ?? [], spacing: 2, //主轴上子控件的间距
+            ),
+
           ],
         ),
       ),

@@ -1,9 +1,7 @@
-import 'dart:convert';
-
+import 'package:book/common/DbHelper.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/Book.dart';
-import 'package:book/entity/Chapter.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -11,18 +9,28 @@ import 'package:flutter/cupertino.dart';
 
 class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
+
+  Future<void> setShelf() async {
+    shelf = await _dbHelper.getBooks();
+  }
+
   BuildContext context;
   bool model = false;
+  DbHelper _dbHelper = DbHelper();
 
   ShelfModel();
 
   saveShelf() {
-    SpUtil.putString(Common.listbookname, jsonEncode(shelf));
+    // SpUtil.putString(Common.listbookname, jsonEncode(shelf));
   }
 
   toggleModel() {
     model = !model;
     notifyListeners();
+  }
+
+  updBookStatus(String bookId) {
+    _dbHelper.updBookStatus(bookId,0);
   }
 
   refreshShelf() async {
@@ -36,6 +44,7 @@ class ShelfModel with ChangeNotifier {
       var ids = shelf.map((f) => f.Id).toList();
       bs.forEach((f) {
         if (!ids.contains(f.Id)) {
+          _dbHelper.addBooks([f]);
           shelf.add(f);
         }
       });
@@ -46,17 +55,21 @@ class ShelfModel with ChangeNotifier {
               shelf[i].UTime = bs[j].UTime;
               shelf[i].LastChapter = bs[j].LastChapter;
               shelf[i].NewChapterCount = 1;
+              _dbHelper.updBook(bs[j].LastChapter, 1, bs[j].UTime, shelf[i].Id);
             }
           }
         }
       }
     } else {
       shelf = bs;
+      _dbHelper.addBooks(bs);
     }
     notifyListeners();
 
     saveShelf();
   }
+
+
 
   upTotop(Book book) {
     for (var i = 0; i < shelf.length; i++) {
@@ -66,6 +79,8 @@ class ShelfModel with ChangeNotifier {
       }
     }
     shelf.insert(0, book);
+    _dbHelper.delBook(book.Id);
+    _dbHelper.addBooks([book]);
     notifyListeners();
     saveShelf();
   }
@@ -76,7 +91,7 @@ class ShelfModel with ChangeNotifier {
     SpUtil.remove('email');
     SpUtil.remove('auth');
     delLocalCache(shelf.map((f) => f.Id.toString()).toList());
-    SpUtil.remove(Common.listbookname);
+    // SpUtil.remove(Common.listbookname);
     shelf = [];
     notifyListeners();
   }
@@ -85,13 +100,10 @@ class ShelfModel with ChangeNotifier {
   void delLocalCache(List<String> ids) {
     for (var i = 0; i < ids.length; i++) {
       SpUtil.remove(ids[i]);
-
-      if (SpUtil.haveKey(ids[i])) {
-        List list = jsonDecode(SpUtil.getString('${ids[i]}chapters'));
-        List cps = list.map((e) => Chapter.fromJson(e)).toList();
-        for (var value in cps) {
-          SpUtil.remove(value.id.toString());
-          SpUtil.remove('pages${value.id.toString()}');
+      _dbHelper.delBook(ids[i]);
+      for (var value in SpUtil.getKeys()) {
+        if (value.contains("pages")) {
+          SpUtil.remove(value);
         }
       }
     }
@@ -103,12 +115,14 @@ class ShelfModel with ChangeNotifier {
     if (action == "add") {
       BotToast.showText(text: "已添加到书架");
       shelf.insert(0, book);
+      _dbHelper.addBooks([book]);
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
         if (shelf[i].Id == book.Id) {
           shelf.removeAt(i);
         }
       }
+      _dbHelper.delBook(book.Id);
       BotToast.showText(text: "已移除出书架");
 
       delLocalCache([book.Id]);
@@ -118,5 +132,12 @@ class ShelfModel with ChangeNotifier {
     }
     saveShelf();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _dbHelper.close();
   }
 }
