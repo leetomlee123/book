@@ -333,7 +333,8 @@ class _SearchState extends State<Search> {
             Wrap(
               children: searchModel?.getHistory()??[],
               spacing: 3, //主轴上子控件的间距
-              runSpacing: 5, //交叉轴上子控件之间的间距
+              runSpacing: 5,
+              alignment: WrapAlignment.start,//交叉轴上子控件之间的间距
             ),
             Row(
               children: <Widget>[

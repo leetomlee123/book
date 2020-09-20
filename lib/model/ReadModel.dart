@@ -314,8 +314,8 @@ class ReadModel with ChangeNotifier {
       bookTag.cur = chapters.length - 1;
       value = bookTag.cur.toDouble();
     }
-    SpUtil.putString('${bookInfo.Id}chapters', "");
-    _dbHelper.addChapters(chapters, bookInfo.Id);
+    // SpUtil.putString('${bookInfo.Id}chapters', "");
+    _dbHelper.addChapters(list, bookInfo.Id);
     notifyListeners();
     print("load cps ok");
   }
