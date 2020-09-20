@@ -197,16 +197,13 @@ class DbHelper {
   }
 
   Future<Null> updBookProcess(int cur, int idx, String bookId) async {
-    print(bookId);
     var dbClient = await db1;
     await dbClient.rawUpdate(
         "update $_tableName1 set cur=?,idx=? where book_id=?",
         [cur, idx, bookId]);
-
   }
 
   Future<BookTag> getBookProcess(String bookId) async {
-    print(bookId);
     var dbClient = await db1;
 
     var list = await dbClient.rawQuery(
@@ -228,7 +225,7 @@ class DbHelper {
         "hasContent": chapter.hasContent
       });
     }
-    await batch.commit(noResult: true);
+    batch.commit(noResult: true);
   }
 
   /// 添加章节

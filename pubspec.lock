@@ -680,7 +680,7 @@ packages:
     source: hosted
     version: "1.7.0"
   sqflite:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqflite
       url: "https://pub.flutter-io.cn"

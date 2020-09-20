@@ -78,7 +78,7 @@ class ReadModel with ChangeNotifier {
   double contentH;
   double contentW;
   bool jump = true;
-  DbHelper _dbHelper = DbHelper();
+  DbHelper _dbHelper;
 
 //阅读方式
   bool isPage = true;
@@ -91,6 +91,7 @@ class ReadModel with ChangeNotifier {
 
   //获取本书记录
   getBookRecord() async {
+    _dbHelper = DbHelper();
     showMenu = false;
     font = false;
     offset = 0;
@@ -98,8 +99,7 @@ class ReadModel with ChangeNotifier {
     loadOk = false;
     if (SpUtil.haveKey(bookInfo.Id)) {
       var btg = await parseJson(SpUtil.getString(bookInfo.Id));
-      bookTag =
-          BookTag.fromJson(btg);
+      bookTag = BookTag.fromJson(btg);
       // bookTag = await _dbHelper.getBookProcess(bookInfo.Id);
       chapters = await _dbHelper.getChapters(bookInfo.Id);
       // List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
@@ -343,7 +343,7 @@ class ReadModel with ChangeNotifier {
 
       if (r.chapterContent.isNotEmpty) {
         // SpUtil.putString(id, r.chapterContent);
-        await _dbHelper.udpChapter(r.chapterContent, id);
+        _dbHelper.udpChapter(r.chapterContent, id);
         chapters[idx].hasContent = 2;
       }
       // SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
@@ -404,7 +404,7 @@ class ReadModel with ChangeNotifier {
 
     var keys = SpUtil.getKeys();
     for (var key in keys) {
-      if (key.startsWith("pages")) {
+      if (key.contains("pages")) {
         SpUtil.remove(key);
       }
     }
@@ -418,8 +418,10 @@ class ReadModel with ChangeNotifier {
   }
 
   saveData() async {
+    // SpUtil.putString(bookInfo.Id, "");
     SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
     // _dbHelper.updBookProcess(bookTag.cur, bookTag.index, bookInfo.Id);
+    _dbHelper.close();
     SpUtil.putStringList(
         '${bookInfo.Id}pages' + prePage.chapterName, prePage.pageOffsets);
     SpUtil.putStringList(
