@@ -211,7 +211,8 @@ class ReadModel with ChangeNotifier {
     offset = offset + offsetTag;
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
-    // print("idx:$idx preLen:$preLen curLen:$curLen");
+
+    print("idx:$idx preLen:$preLen curLen:$curLen");
     if ((idx + 1 - preLen) > (curLen)) {
       //下一章
       int temp = bookTag.cur + 1;
@@ -244,21 +245,20 @@ class ReadModel with ChangeNotifier {
         nextPage = null;
         fillAllContent();
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
-        offset = 1;
-        offsetTag = 1;
+        // offset = 1;
+        // offsetTag = 1;
         nextPage = await loadChapter(bookTag.cur + 1);
         //翻过页后再执行 缓解卡顿
         await Future.delayed(Duration(seconds: 1));
-        print(offsetTag);
         fillAllContent();
-        int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
-        //有可能翻到下一页 又翻回上一页
-        if (offsetTag > 0) {
-          print("加载下一张完成 翻页");
-          pageController.jumpToPage(realIdx - 1);
-          offset = 0;
-          offsetTag = 0;
-        }
+        // int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
+        // //有可能翻到下一页 又翻回上一页
+        // if (offsetTag > 0) {
+        //   print("加载下一张完成 翻页");
+        //   pageController.jumpToPage(realIdx - 1);
+        //   offset = 0;
+        //   offsetTag = 0;
+        // }
       }
     } else if (idx < preLen) {
       //上一章
@@ -275,21 +275,25 @@ class ReadModel with ChangeNotifier {
         fillAllContent();
         var p = curPage?.pageOffsets?.length ?? 0;
         pageController.jumpToPage(p > 0 ? p-1 : 0);
-        offsetTag = -1;
-        offset = -1;
+        // offsetTag = -1;
+        // offset = -1;
         //翻过页后再执行 缓解卡顿
         prePage = await loadChapter(bookTag.cur - 1);
         // await Future.delayed(Duration(seconds: 1));
-        print(offsetTag);
+        // print(offsetTag);
         fillAllContent();
+        print("******* idx:$idx preLen:$preLen curLen:$curLen");
         int ix = (prePage?.pageOffsets?.length ?? 0) +
-            curPage.pageOffsets.length +
-            offset;
-        if (offsetTag < 0) {
-          pageController.jumpToPage(ix);
-          offset = 0;
-          offsetTag = 0;
-        }
+          idx;
+        pageController.jumpToPage(ix);
+        // int ix = (prePage?.pageOffsets?.length ?? 0) +
+        //     curPage.pageOffsets.length +
+        //     offset;
+        // if (offsetTag < 0) {
+        //   pageController.jumpToPage(ix);
+        //   offset = 0;
+        //   offsetTag = 0;
+        // }
 
 //        notifyListeners();
       }
