@@ -78,7 +78,7 @@ class ReadModel with ChangeNotifier {
   double contentH;
   double contentW;
   bool jump = true;
-  DbHelper _dbHelper;
+  DbHelper _dbHelper = DbHelper();
 
 //阅读方式
   bool isPage = true;
@@ -91,14 +91,14 @@ class ReadModel with ChangeNotifier {
 
   //获取本书记录
   getBookRecord() async {
-    _dbHelper = DbHelper();
     showMenu = false;
     font = false;
     offset = 0;
     offsetTag = 0;
     loadOk = false;
-    if (SpUtil.haveKey(bookInfo.Id)) {
-      var btg = await parseJson(SpUtil.getString(bookInfo.Id));
+    var string = SpUtil.getString(bookInfo.Id);
+    if (string.isNotEmpty&&string!="null") {
+      var btg = await parseJson(string);
       bookTag = BookTag.fromJson(btg);
       // bookTag = await _dbHelper.getBookProcess(bookInfo.Id);
       chapters = await _dbHelper.getChapters(bookInfo.Id);
@@ -241,6 +241,7 @@ class ReadModel with ChangeNotifier {
         } else {
           curPage = nextPage;
         }
+        nextPage = null;
         fillAllContent();
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
         offset = 1;
@@ -266,11 +267,16 @@ class ReadModel with ChangeNotifier {
       if (temp < 0) {
         return;
       } else {
-        offsetTag = -1;
-        offset = -1;
+
         bookTag.cur -= 1;
         nextPage = curPage;
         curPage = prePage;
+        prePage = null;
+        fillAllContent();
+        var p = curPage?.pageOffsets?.length ?? 0;
+        pageController.jumpToPage(p > 0 ? p-1 : 0);
+        offsetTag = -1;
+        offset = -1;
         //翻过页后再执行 缓解卡顿
         prePage = await loadChapter(bookTag.cur - 1);
         // await Future.delayed(Duration(seconds: 1));
@@ -421,7 +427,7 @@ class ReadModel with ChangeNotifier {
     // SpUtil.putString(bookInfo.Id, "");
     SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
     // _dbHelper.updBookProcess(bookTag.cur, bookTag.index, bookInfo.Id);
-    _dbHelper.close();
+
     SpUtil.putStringList(
         '${bookInfo.Id}pages' + prePage.chapterName, prePage.pageOffsets);
     SpUtil.putStringList(
@@ -698,5 +704,12 @@ class ReadModel with ChangeNotifier {
     }
     curPage = await loadChapter(bookTag.cur);
     fillAllContent();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    _dbHelper.close();
+    super.dispose();
   }
 }

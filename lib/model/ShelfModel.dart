@@ -11,6 +11,9 @@ class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
 
   Future<void> setShelf() async {
+    if(_dbHelper==null){
+      _dbHelper = DbHelper();
+    }
     shelf = await _dbHelper.getBooks();
   }
 
@@ -30,7 +33,7 @@ class ShelfModel with ChangeNotifier {
   }
 
   updBookStatus(String bookId) {
-    _dbHelper.updBookStatus(bookId,0);
+    _dbHelper.updBookStatus(bookId, 0);
   }
 
   refreshShelf() async {
@@ -39,6 +42,7 @@ class ShelfModel with ChangeNotifier {
     if (decode == null) {
       return;
     }
+    bool refresh = false;
     List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
     if (shelf.isNotEmpty) {
       var ids = shelf.map((f) => f.Id).toList();
@@ -46,12 +50,14 @@ class ShelfModel with ChangeNotifier {
         if (!ids.contains(f.Id)) {
           _dbHelper.addBooks([f]);
           shelf.add(f);
+          refresh = true;
         }
       });
       for (var i = 0; i < shelf.length; i++) {
         for (var j = 0; j < bs.length; j++) {
           if (shelf[i].Id == bs[j].Id) {
             if (shelf[i].LastChapter != bs[j].LastChapter) {
+              refresh = true;
               shelf[i].UTime = bs[j].UTime;
               shelf[i].LastChapter = bs[j].LastChapter;
               shelf[i].NewChapterCount = 1;
@@ -63,13 +69,13 @@ class ShelfModel with ChangeNotifier {
     } else {
       shelf = bs;
       _dbHelper.addBooks(bs);
+      refresh = true;
     }
-    notifyListeners();
-
+    if (refresh) {
+      notifyListeners();
+    }
     saveShelf();
   }
-
-
 
   upTotop(Book book) {
     for (var i = 0; i < shelf.length; i++) {
