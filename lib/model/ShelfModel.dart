@@ -11,7 +11,7 @@ class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
 
   Future<void> setShelf() async {
-    if(_dbHelper==null){
+    if (_dbHelper == null) {
       _dbHelper = DbHelper();
     }
     shelf = await _dbHelper.getBooks();
@@ -42,7 +42,6 @@ class ShelfModel with ChangeNotifier {
     if (decode == null) {
       return;
     }
-    bool refresh = false;
     List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
     if (shelf.isNotEmpty) {
       var ids = shelf.map((f) => f.Id).toList();
@@ -50,14 +49,12 @@ class ShelfModel with ChangeNotifier {
         if (!ids.contains(f.Id)) {
           _dbHelper.addBooks([f]);
           shelf.add(f);
-          refresh = true;
         }
       });
       for (var i = 0; i < shelf.length; i++) {
         for (var j = 0; j < bs.length; j++) {
           if (shelf[i].Id == bs[j].Id) {
             if (shelf[i].LastChapter != bs[j].LastChapter) {
-              refresh = true;
               shelf[i].UTime = bs[j].UTime;
               shelf[i].LastChapter = bs[j].LastChapter;
               shelf[i].NewChapterCount = 1;
@@ -69,11 +66,8 @@ class ShelfModel with ChangeNotifier {
     } else {
       shelf = bs;
       _dbHelper.addBooks(bs);
-      refresh = true;
     }
-    if (refresh) {
-      notifyListeners();
-    }
+    notifyListeners();
     saveShelf();
   }
 
@@ -117,7 +111,7 @@ class ShelfModel with ChangeNotifier {
 
   modifyShelf(Book book) {
     var action =
-        shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
+    shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
       BotToast.showText(text: "已添加到书架");
       shelf.insert(0, book);
