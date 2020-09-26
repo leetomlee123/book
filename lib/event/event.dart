@@ -11,6 +11,12 @@ class OpenEvent {
   OpenEvent(this.name);
 }
 
+class OpenChapters {
+  String name;
+
+  OpenChapters(this.name);
+}
+
 class NavEvent {
   int idx;
 

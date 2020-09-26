@@ -13,7 +13,8 @@ import 'package:path_provider/path_provider.dart';
 class ColorModel with ChangeNotifier {
   BuildContext buildContext;
   bool dark = false;
-  List<Color> skins = Colors.accents;
+  List<Color> skins = Colors.accents
+  ;
   String savePath = "";
   Map fonts = {
     "默认字体": "",

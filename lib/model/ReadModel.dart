@@ -21,6 +21,7 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 class ReadModel with ChangeNotifier {
   BookInfo bookInfo;
@@ -48,14 +49,22 @@ class ReadModel with ChangeNotifier {
     [228, 241, 245],
     [245, 228, 228],
   ];
+  // List<String> bgimg = [
+  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png",
+  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme1_bg.9987a.png",
+  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme2_bg.75a33.png",
+  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/theme_3_bg.31237.png",
+  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme5_bg.85f0d.png",
+  // ];
   List<String> bgimg = [
-    "https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png",
-    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme1_bg.9987a.png",
-    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme2_bg.75a33.png",
-    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/theme_3_bg.31237.png",
-    "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme5_bg.85f0d.png",
+    "QR_bg_1.jpg",
+    "QR_bg_2.jpg",
+    "QR_bg_3.jpg",
+    // "QR_bg_4.jpg",
+    "QR_bg_5.jpg",
+    "QR_bg_7.png",
+    "QR_bg_8.png",
   ];
-
   //页面字体大小
   double fontSize = 32.0;
 
@@ -212,7 +221,7 @@ class ReadModel with ChangeNotifier {
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
 
-    print("idx:$idx preLen:$preLen curLen:$curLen");
+    // print("idx:$idx preLen:$preLen curLen:$curLen");
     if ((idx + 1 - preLen) > (curLen)) {
       //下一章
       int temp = bookTag.cur + 1;
@@ -468,14 +477,19 @@ class ReadModel with ChangeNotifier {
       return Scaffold(
         body: Container(
             decoration: model.dark
-                ? null
+                ? BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("images/QR_bg_4.jpg"),
+                fit: BoxFit.cover,
+              ),
+            )
                 : BoxDecoration(
                     image: DecorationImage(
-                      image: CachedNetworkImageProvider(bgimg[bgIdx]),
+                      image: AssetImage("images/${bgimg[bgIdx]}"),
                       fit: BoxFit.cover,
                     ),
                   ),
-            color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
+            // color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
             child: isPage
                 ? PageView.builder(
                     controller: pageController,
@@ -601,7 +615,14 @@ class ReadModel with ChangeNotifier {
                                     ),
                                     child: Text(
                                       content,
+                                      locale: Locale('zh_CN'),
+                                        // strutStyle: StrutStyle(
+                                        //   // fontFamily: fontFamily,
+                                        //   fontSize: fontSize+5,
+                                        // ),
                                       style: TextStyle(
+                                          textBaseline: TextBaseline.ideographic,
+                                          // height: 1.5,
                                           color: model.dark
                                               ? Colors.white38
                                               : Colors.black,
@@ -697,6 +718,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> reloadCurrentPage() async {
+    toggleShowMenu();
     var chapter = chapters[bookTag.cur];
     var future =
         await Util(context).http().get(Common.reload + '/${chapter.id}/reload');

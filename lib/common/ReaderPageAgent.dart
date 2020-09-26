@@ -26,7 +26,6 @@ class ReaderPageAgent {
     }
     while (true) {
       TextPainter textPainter = layout(tempStr, fontSize, width, fontFamily);
-
       if (!SpUtil.haveKey(zz + fontSize.toString())) {
         height = checkHeight(textPainter, height);
         String key = zz + fontSize.toString();
@@ -60,22 +59,26 @@ class ReaderPageAgent {
         text: TextSpan(
             text: text,
             style: TextStyle(
-              fontFamily: fontFamily,
-              fontSize: fontSize,
-            )),
-        strutStyle: StrutStyle(
-          fontFamily: fontFamily,
-          fontSize: fontSize,
-        ),
+                textBaseline: TextBaseline.ideographic,
+                // height: 1.5,
+                 fontSize: fontSize)),
+        locale: Locale('zh_CN'),
+        // strutStyle: StrutStyle(
+        //   fontFamily: fontFamily,
+        //   fontSize: 16.0,
+        //   fontStyle: FontStyle.normal,
+        //   forceStrutHeight: true,
+        // ),
         textDirection: TextDirection.ltr);
     return textPainter;
   }
 
   double checkHeight(TextPainter textPainter, double height) {
     double lineHeight = textPainter.preferredLineHeight;
-    print("lineHeight:$lineHeight");
     int lineNumberPerPage = height ~/ lineHeight;
-    print(lineNumberPerPage);
+    print(
+        "lineHeight:$lineHeight allHeight:$height linePages:$lineNumberPerPage");
+
     double actualPageHeight = lineNumberPerPage * lineHeight;
 
     return actualPageHeight;

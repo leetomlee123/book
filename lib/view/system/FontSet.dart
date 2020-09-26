@@ -48,7 +48,7 @@ String _fontPath;
                       "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontFamily: model.font,
+                        // fontFamily: model.font,
                       ),
                     ),
                   ),

@@ -24,90 +24,98 @@ class _ForgetPassState extends State<ForgetPass> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      child: Material(
-        child: Container(
-          alignment: Alignment.center,
-          child: new ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.only(left: 24.0, right: 24.0),
-            children: <Widget>[
-              TextFormField(
-                keyboardType: TextInputType.phone,
-                autofocus: false,
-                decoration: InputDecoration(
-                  hintText: '账号',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  this.account = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: '邮箱',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  email = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: '输入新密码',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  newpwd = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                obscureText: true,
-                autofocus: false,
-                decoration: InputDecoration(
-                  hintText: '重复新密码',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  repetpwd = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: RaisedButton(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  onPressed: () {
-                    register();
-                  },
-                  padding: EdgeInsets.all(12),
-                  color: Colors.grey,
-                  child: Text('修改密码', style: TextStyle(color: Colors.white)),
-                ),
-              )
-            ],
+    return Scaffold(
+      body: Container(
+        height: double.infinity,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("images/login_background.png"),
+            fit: BoxFit.cover,
           ),
         ),
+        child: Center(child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.only(left: 24.0, right: 24.0),
+          children: <Widget>[
+            TextFormField(
+              keyboardType: TextInputType.phone,
+              autofocus: false,
+              decoration: InputDecoration(
+                hintText: '账号',
+                hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+              ),
+              onChanged: (String value) {
+                this.account = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            TextFormField(
+              autofocus: false,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                hintText: '邮箱',
+                hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+              ),
+              onChanged: (String value) {
+                email = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            TextFormField(
+              autofocus: false,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: '输入新密码',
+                hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+              ),
+              onChanged: (String value) {
+                newpwd = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            TextFormField(
+              obscureText: true,
+              autofocus: false,
+              decoration: InputDecoration(
+                hintText: '重复新密码',
+                hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+              ),
+              onChanged: (String value) {
+                repetpwd = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: RaisedButton(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                onPressed: () {
+                  register();
+                },
+                padding: EdgeInsets.all(12),
+                color: Colors.grey,
+                child: Text('修改密码', style: TextStyle(color: Colors.white)),
+              ),
+            )
+          ],
+        ),),
       ),
-      data: Store.value<ColorModel>(context).theme,
     );
+
   }
 
   register() async {

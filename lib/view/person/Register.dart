@@ -1,9 +1,6 @@
 import 'package:book/common/common.dart';
-
 import 'package:book/common/util.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -24,10 +21,16 @@ class _RegisterState extends State<Register> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      child: Material(
-        child: Container(
-          alignment: Alignment.center,
+    return Scaffold(
+      body: Container(
+        height: double.infinity,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("images/login_background.png"),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Center(
           child: ListView(
             shrinkWrap: true,
             padding: EdgeInsets.only(left: 24.0, right: 24.0),
@@ -37,6 +40,7 @@ class _RegisterState extends State<Register> {
                 autofocus: false,
                 decoration: InputDecoration(
                   hintText: '账号',
+                  hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -51,6 +55,7 @@ class _RegisterState extends State<Register> {
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: '密码',
+                  hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -65,6 +70,7 @@ class _RegisterState extends State<Register> {
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: '重复密码',
+                  hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -78,6 +84,7 @@ class _RegisterState extends State<Register> {
                 keyboardType: TextInputType.emailAddress,
                 autofocus: false,
                 decoration: InputDecoration(
+                  hintStyle: TextStyle(color: Colors.white),
                   hintText: '邮箱 找回密码的唯一凭证,请谨慎输入...',
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
@@ -105,7 +112,6 @@ class _RegisterState extends State<Register> {
           ),
         ),
       ),
-      data: Store.value<ColorModel>(context).theme,
     );
   }
 
@@ -115,36 +121,35 @@ class _RegisterState extends State<Register> {
         name.isNotEmpty &&
         email.isNotEmpty) {
       if (pwd != repassword) {
-        BotToast.showText(text:'两次密码不一致');
+        BotToast.showText(text: '两次密码不一致');
         return;
       }
       if (!email.contains("@")) {
-        BotToast.showText(text:'输入正确邮箱账号');
+        BotToast.showText(text: '输入正确邮箱账号');
 
         return;
       }
       Response response;
-      var formData = FormData.fromMap({"name": name, "password": pwd, "email": email});
+      var formData =
+          FormData.fromMap({"name": name, "password": pwd, "email": email});
       try {
         response = await Util(context).http().post(
-          Common.register,
-          data: formData,
-        );
+              Common.register,
+              data: formData,
+            );
         var data = response.data;
         if (data["code"] == 200) {
-          BotToast.showText(text:data['msg']);
+          BotToast.showText(text: data['msg']);
 
           Routes.navigateTo(context, Routes.login);
         } else {
-          BotToast.showText(text:data['msg']);
-
+          BotToast.showText(text: data['msg']);
         }
       } catch (e) {
-        BotToast.showText(text:"注册异常,请重试...");
+        BotToast.showText(text: "注册异常,请重试...");
       }
     } else {
-      BotToast.showText(text:"检查输入项不可为空");
-
+      BotToast.showText(text: "检查输入项不可为空");
     }
   }
 }
