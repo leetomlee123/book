@@ -61,7 +61,7 @@ class ReaderPageAgent {
             style: TextStyle(
                 textBaseline: TextBaseline.ideographic,
                 // height: 1.5,
-                 fontSize: fontSize)),
+                fontSize: fontSize)),
         locale: Locale('zh_CN'),
         // strutStyle: StrutStyle(
         //   fontFamily: fontFamily,

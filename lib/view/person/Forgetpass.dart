@@ -4,6 +4,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -29,7 +30,7 @@ class _ForgetPassState extends State<ForgetPass> {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("images/login_background.png"),
+            image: CachedNetworkImageProvider("http://p1.pstatp.com/large/pgc-image/233886d2dc95432bbd004aacb7d311c4"),
             fit: BoxFit.cover,
           ),
         ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/entity/BookInfo.dart';
@@ -44,61 +45,84 @@ class _MenuState extends State<Menu> {
   Widget build(BuildContext context) {
     return GestureDetector(
       child: Container(
-        decoration: _colorModel.dark
-            ? BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("images/QR_bg_4.jpg"),
-                  fit: BoxFit.cover,
-                ),
-              )
-            : BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
-                  fit: BoxFit.cover,
-                ),
-              ),
         // color: Colors.transparent,
         child: Column(
           children: <Widget>[
-            Container(
-              child: AppBar(
-                backgroundColor:
-                    Store.value<ColorModel>(context).theme.primaryColor,
-                title: Text('${_readModel.bookTag.bookName ?? ""}'),
-                centerTitle: true,
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back),
-                  onPressed: () {
-                    _readModel.toggleShowMenu();
-                  },
-                ),
-                elevation: 0,
-                actions: <Widget>[
-                  IconButton(
-                    icon: Icon(Icons.refresh),
-                    onPressed: () {
-                      _readModel.reloadCurrentPage();
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.info),
-                    onPressed: () async {
-                      String url = Common.detail + '/${_readModel.bookInfo.Id}';
-                      Response future = await Util(context).http().get(url);
-                      var d = future.data['data'];
-                      BookInfo bookInfo = BookInfo.fromJson(d);
-                      Routes.navigateTo(context, Routes.detail,
-                          params: {"detail": jsonEncode(bookInfo)});
-                    },
-                  )
-                ],
+            SizedBox(height: Screen.topSafeHeight,),
+            Row(children: [
+              Text('${_readModel.bookTag.bookName ?? ""}',style: TextStyle(fontWeight: FontWeight.w500,fontSize: 26),),
+              Expanded(child: Container(),),
+              IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: () {
+                  _readModel.reloadCurrentPage();
+                },
               ),
-            ),
+              IconButton(
+                icon: Icon(Icons.info),
+                onPressed: () async {
+                  String url = Common.detail + '/${_readModel.bookInfo.Id}';
+                  Response future = await Util(context).http().get(url);
+                  var d = future.data['data'];
+                  BookInfo bookInfo = BookInfo.fromJson(d);
+                  Routes.navigateTo(context, Routes.detail,
+                      params: {"detail": jsonEncode(bookInfo)});
+                },
+              )
+            ],),
+            // Container(
+            //   // decoration: _colorModel.dark
+            //   //     ? BoxDecoration(
+            //   //   image: DecorationImage(
+            //   //     image: AssetImage("images/QR_bg_4.jpg"),
+            //   //     fit: BoxFit.cover,
+            //   //   ),
+            //   // )
+            //   //     : BoxDecoration(
+            //   //   image: DecorationImage(
+            //   //     image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
+            //   //     fit: BoxFit.cover,
+            //   //   ),
+            //   // ),
+            //
+            //   child: AppBar(
+            //     backgroundColor: Colors.transparent,
+            //     title: Text('${_readModel.bookTag.bookName ?? ""}'),
+            //     centerTitle: true,
+            //     leading: IconButton(
+            //       icon: Icon(Icons.arrow_back),
+            //       onPressed: () {
+            //         _readModel.toggleShowMenu();
+            //       },
+            //     ),
+            //     elevation: 0,
+            //     actions: <Widget>[
+            //       IconButton(
+            //         icon: Icon(Icons.refresh),
+            //         onPressed: () {
+            //           _readModel.reloadCurrentPage();
+            //         },
+            //       ),
+            //       IconButton(
+            //         icon: Icon(Icons.info),
+            //         onPressed: () async {
+            //           String url = Common.detail + '/${_readModel.bookInfo.Id}';
+            //           Response future = await Util(context).http().get(url);
+            //           var d = future.data['data'];
+            //           BookInfo bookInfo = BookInfo.fromJson(d);
+            //           Routes.navigateTo(context, Routes.detail,
+            //               params: {"detail": jsonEncode(bookInfo)});
+            //         },
+            //       )
+            //     ],
+            //   ),
+            // ),
+
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 child: Opacity(
-                  opacity: 1,
+                  opacity: 0.0,
                   child: Container(
                     width: double.infinity,
                   ),
@@ -111,80 +135,86 @@ class _MenuState extends State<Menu> {
                 },
               ),
             ),
-            Store.connect<ColorModel>(
-                builder: (context, ColorModel colorModel, child) {
-              return Theme(
-                child: Container(
-                  color: colorModel.theme.primaryColor,
-                  height: 120,
-                  width: double.infinity,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+            Container(
+              // color: _colorModel.theme.appBarTheme.color,
+              // decoration: _colorModel.dark
+              //     ? BoxDecoration(
+              //         image: DecorationImage(
+              //           image: AssetImage("images/QR_bg_4.jpg"),
+              //           fit: BoxFit.cover,
+              //         ),
+              //       )
+              //     : BoxDecoration(
+              //         image: DecorationImage(
+              //           image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
+              //           fit: BoxFit.cover,
+              //         ),
+              //       ),
+              height: 120,
+              width: double.infinity,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          GestureDetector(
-                            child: Container(
-                              child: Icon(
-                                Icons.arrow_back_ios,
-                                color: Colors.white,
-                              ),
-                              width: 70,
-                            ),
-                            onTap: () {
-                              _readModel.bookTag.cur -= 1;
-                              _readModel.intiPageContent(
-                                  _readModel.bookTag.cur, true);
-                            },
+                      GestureDetector(
+                        child: Container(
+                          child: Icon(
+                            Icons.arrow_back_ios,
+                            // color: Colors.white,
                           ),
-                          Expanded(
-                            child: Container(
-                              child: Slider(
-                                activeColor: Colors.white,
-                                inactiveColor: Colors.white70,
-                                value: _readModel.value,
-                                max:
-                                    (_readModel.chapters.length - 1).toDouble(),
-                                min: 0.0,
-                                onChanged: (newValue) {
-                                  int temp = newValue.round();
-                                  _readModel.bookTag.cur = temp;
-                                  _readModel.value = temp.toDouble();
-                                  _readModel.intiPageContent(
-                                      _readModel.bookTag.cur, true);
-                                },
-                                label:
-                                    '${_readModel.chapters[_readModel.bookTag.cur].name} ',
-                                semanticFormatterCallback: (newValue) {
-                                  return '${newValue.round()} dollars';
-                                },
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            child: Container(
-                              child: Icon(
-                                Icons.arrow_forward_ios,
-                                color: Colors.white,
-                              ),
-                              width: 70,
-                            ),
-                            onTap: () {
-                              _readModel.bookTag.cur += 1;
-                              _readModel.intiPageContent(
-                                  _readModel.bookTag.cur, true);
-                            },
-                          ),
-                        ],
+                          width: 70,
+                        ),
+                        onTap: () {
+                          _readModel.bookTag.cur -= 1;
+                          _readModel.intiPageContent(
+                              _readModel.bookTag.cur, true);
+                        },
                       ),
-                      buildBottomMenus()
+                      Expanded(
+                        child: Container(
+                          child: Slider(
+                            // activeColor: Colors.white,
+                            // inactiveColor: Colors.white70,
+                            value: _readModel.value,
+                            max: (_readModel.chapters.length - 1).toDouble(),
+                            min: 0.0,
+                            onChanged: (newValue) {
+                              int temp = newValue.round();
+                              _readModel.bookTag.cur = temp;
+                              _readModel.value = temp.toDouble();
+                              _readModel.intiPageContent(
+                                  _readModel.bookTag.cur, true);
+                            },
+                            label:
+                                '${_readModel.chapters[_readModel.bookTag.cur].name} ',
+                            semanticFormatterCallback: (newValue) {
+                              return '${newValue.round()} dollars';
+                            },
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        child: Container(
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            // color: Colors.white,
+                          ),
+                          width: 70,
+                        ),
+                        onTap: () {
+                          _readModel.bookTag.cur += 1;
+                          _readModel.intiPageContent(
+                              _readModel.bookTag.cur, true);
+                        },
+                      ),
                     ],
                   ),
-                ),
-                data: colorModel.theme,
-              );
-            })
+                  buildBottomMenus()
+                ],
+              ),
+            )
           ],
         ),
       ),
@@ -211,11 +241,11 @@ class _MenuState extends State<Menu> {
                       _colorModel.dark
                           ? AssetImage("images/sun.png")
                           : AssetImage("images/moon.png"),
-                      color: Colors.white,
+                      // color: Colors.white,
                     ),
                     SizedBox(height: 5),
                     Text(_colorModel.dark ? '日间' : '夜间',
-                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                        style: TextStyle(fontSize: 12)),
                   ],
                 ),
               ),
@@ -242,10 +272,10 @@ class _MenuState extends State<Menu> {
           children: <Widget>[
             Icon(
               iconData,
-              color: Colors.white,
+              // color: Colors.white,
             ),
             SizedBox(height: 5),
-            Text(title, style: TextStyle(fontSize: 12, color: Colors.white)),
+            Text(title, style: TextStyle(fontSize: 12)),
           ],
         ),
       ),
@@ -281,96 +311,104 @@ class _MenuState extends State<Menu> {
   }
 
   buildSetting(state) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel colorModel, child) {
-      return Container(
-        color: colorModel.theme.primaryColor,
-        height: 120,
-        child: Padding(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Expanded(
-                    child: Container(
-                      child: FlatButton(
-                        color: Colors.white,
-                        onPressed: () {
-                          _readModel.fontSize -= 1.0;
-                          _readModel.modifyFont();
-                        },
-                        child: ImageIcon(
-                          AssetImage("images/fontsmall.png"),
-                          color: Colors.black,
-                        ),
-                        shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(20.0))),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Expanded(
-                    child: Container(
-                      child: FlatButton(
-                        color: Colors.white,
-                        onPressed: () {
-                          _readModel.fontSize += 1.0;
-                          _readModel.modifyFont();
-                        },
-                        child: ImageIcon(
-                          AssetImage("images/fontbig.png"),
-                          color: Colors.black,
-                        ),
-                        shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(20.0))),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Expanded(
-                    child: Container(
-                      child: FlatButton(
-                        onPressed: () {
-                          Routes.navigateTo(
-                            context,
-                            Routes.fontSet,
-                          );
-                        },
-                        child: Text(
-                          '字体',
-                          style: TextStyle(
-                              color: _colorModel.dark
-                                  ? Colors.white
-                                  : Colors.black),
-                        ),
-                        shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(20.0))),
-                      ),
-                    ),
-                  ),
-                ],
+    return Container(
+      decoration: _colorModel.dark
+          ? BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("images/QR_bg_4.jpg"),
+                fit: BoxFit.cover,
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: readThemes(state),
+            )
+          : BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
+                fit: BoxFit.cover,
               ),
-            ],
-          ),
-          padding: EdgeInsets.only(left: 10, right: 10),
+            ),
+      height: 120,
+      child: Padding(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                SizedBox(
+                  width: 10,
+                ),
+                Expanded(
+                  child: Container(
+                    child: FlatButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        _readModel.fontSize -= 1.0;
+                        _readModel.modifyFont();
+                      },
+                      child: ImageIcon(
+                        AssetImage("images/fontsmall.png"),
+                        color: Colors.black,
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(20.0))),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                Expanded(
+                  child: Container(
+                    child: FlatButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        _readModel.fontSize += 1.0;
+                        _readModel.modifyFont();
+                      },
+                      child: ImageIcon(
+                        AssetImage("images/fontbig.png"),
+                        color: Colors.black,
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(20.0))),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                Expanded(
+                  child: Container(
+                    child: FlatButton(
+                      onPressed: () {
+                        Routes.navigateTo(
+                          context,
+                          Routes.fontSet,
+                        );
+                      },
+                      child: Text(
+                        '字体',
+                        style: TextStyle(
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(20.0))),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: readThemes(state),
+            ),
+          ],
         ),
-      );
-    });
+        padding: EdgeInsets.only(left: 10, right: 10),
+      ),
+    );
   }
 
   List<Widget> readThemes(state) {

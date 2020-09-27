@@ -624,7 +624,7 @@ class ReadModel with ChangeNotifier {
                                           textBaseline: TextBaseline.ideographic,
                                           // height: 1.5,
                                           color: model.dark
-                                              ? Colors.white38
+                                              ? Colors.white54
                                               : Colors.black,
                                           fontSize: fontSize /
                                               Screen.textScaleFactor),

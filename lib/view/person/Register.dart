@@ -2,6 +2,7 @@ import 'package:book/common/common.dart';
 import 'package:book/common/util.dart';
 import 'package:book/route/Routes.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -26,7 +27,7 @@ class _RegisterState extends State<Register> {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("images/login_background.png"),
+            image: CachedNetworkImageProvider("http://p1.pstatp.com/large/pgc-image/233886d2dc95432bbd004aacb7d311c4"),
             fit: BoxFit.cover,
           ),
         ),
