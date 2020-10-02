@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -16,7 +16,6 @@ import 'package:flutter_swiper/flutter_swiper.dart';
 class Video extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return VideoState();
   }
 }
@@ -38,40 +37,38 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   Widget build(BuildContext context) {
     super.build(context);
     value = Store.value<ColorModel>(context);
-    // TODO: implement build
     return gbks.isEmpty
         ? Scaffold()
         : Scaffold(
-            drawer: MHistory(),
-            appBar: AppBar(
-              title: Text("美剧"),
-              centerTitle: true,
-              leading: IconButton(
-                icon: Icon(Icons.history),
-                onPressed: () {
-                  eventBus.fire(OpenEvent("m"));
-                },
-              ),
-              elevation: 0,
-              actions: <Widget>[
-                IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: () {
-                    Routes.navigateTo(context, Routes.search,
-                        params: {"type": "movie", "name": ""});
-                  },
-                )
-              ],
-            ),
-            body: ListView(
-              children: wds,
-            ),
-          );
+      drawer: MHistory(),
+      appBar: AppBar(
+        title: Text("美剧"),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.history),
+          onPressed: () {
+            eventBus.fire(OpenEvent("m"));
+          },
+        ),
+        elevation: 0,
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              Routes.navigateTo(context, Routes.search,
+                  params: {"type": "movie", "name": ""});
+            },
+          )
+        ],
+      ),
+      body: ListView(
+        children: wds,
+      ),
+    );
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
@@ -86,7 +83,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
       formatData(objectList);
     }
     Response res =
-        await Util(haveKey ? null : context).http().get(Common.index);
+    await Util(haveKey ? null : context).http().get(Common.index);
     List data = res.data;
     if (haveKey) {
       SpUtil.remove(Common.cache_index);
@@ -157,7 +154,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
               ),
               Text(
                 title,
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
               Expanded(
                 child: Container(),
@@ -167,7 +164,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,
@@ -201,6 +198,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   Widget img(GBook gbk) {
     return GestureDetector(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           PicWidget(
             gbk.cover,
@@ -225,16 +223,15 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   }
 
   @override
-  // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
 }
 
 class MHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Store.connect<ColorModel>(
-        builder: (context, ColorModel model, child) => Theme(
+        builder: (context, ColorModel model, child) =>
+            Theme(
               child: ListView(
                 children: <Widget>[],
               ),

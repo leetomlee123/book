@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
@@ -25,7 +25,6 @@ class BookDetail extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return new _BookDetailState(_bookInfo);
   }
 }
@@ -34,7 +33,6 @@ class _BookDetailState extends State<BookDetail> {
   BookInfo _bookInfo;
   bool inShelf = false;
   int maxLines = 3;
-  GlobalKey _globalKey = new GlobalKey();
   int maxLine = 3;
 
   _BookDetailState(this._bookInfo);
@@ -42,7 +40,6 @@ class _BookDetailState extends State<BookDetail> {
   @override
   Widget build(BuildContext context) {
     ColorModel value = Store.value<ColorModel>(context);
-    // TODO: implement build
     return Theme(
       child: Scaffold(
           appBar: AppBar(
@@ -128,20 +125,37 @@ class _BookDetailState extends State<BookDetail> {
                                 child: Row(
                                   children: <Widget>[
                                     RatingBar(
-                                      initialRating: _bookInfo.Rate ?? 0.0,
+                                      itemSize: 30,
+                                      initialRating: _bookInfo.Rate ?? 1,
                                       minRating: 1,
                                       direction: Axis.horizontal,
                                       allowHalfRating: true,
                                       itemCount: 5,
-                                      itemSize: 25,
                                       itemPadding:
-                                          EdgeInsets.symmetric(horizontal: 1.0),
+                                          EdgeInsets.symmetric(horizontal: 4.0),
                                       itemBuilder: (context, _) => Icon(
                                         Icons.star,
                                         color: Colors.amber,
                                       ),
-                                      onRatingUpdate: (double value) {},
+                                      onRatingUpdate: (rating) {
+                                        print(rating);
+                                      },
                                     ),
+                                    // RatingBar(
+                                    //   initialRating: _bookInfo.Rate ?? 0.0,
+                                    //   minRating: 1,
+                                    //   direction: Axis.horizontal,
+                                    //   allowHalfRating: true,
+                                    //   itemCount: 5,
+                                    //   itemSize: 25,
+                                    //   itemPadding:
+                                    //       EdgeInsets.symmetric(horizontal: 1.0),
+                                    //   itemBuilder: (context, _) => Icon(
+                                    //     Icons.star,
+                                    //     color: Colors.amber,
+                                    //   ),
+                                    //   onRatingUpdate: (double value) {},
+                                    // ),
                                     Text('${_bookInfo.Rate ?? 0.0}分')
                                   ],
                                 )),
@@ -429,7 +443,7 @@ class _BookDetailState extends State<BookDetail> {
             ],
           ),
           bottomNavigationBar: Store.connect<ShelfModel>(
-              builder: (context, ShelfModel d, child)  {
+              builder: (context, ShelfModel d, child) {
             return BottomNavigationBar(
               type: BottomNavigationBarType.fixed,
               unselectedItemColor: value.dark ? Colors.white : null,
@@ -440,30 +454,26 @@ class _BookDetailState extends State<BookDetail> {
                         icon: Icon(
                           Icons.clear,
                         ),
-                        title: new Text(
-                          '移除书架',
-                        ))
+                        label: '移除书架',
+                      )
                     : BottomNavigationBarItem(
                         icon: Icon(
                           Icons.playlist_add,
                         ),
-                        title: Text(
-                          '加入书架',
-                        )),
+                        label: '加入书架',
+                      ),
                 BottomNavigationBarItem(
-                    icon: ImageIcon(
-                      AssetImage("images/read.png"),
-                    ),
-                    title: Text(
-                      '立即阅读',
-                    )),
+                  icon: ImageIcon(
+                    AssetImage("images/read.png"),
+                  ),
+                  label: '立即阅读',
+                ),
                 BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.cloud_download,
-                    ),
-                    title: new Text(
-                      '全本缓存',
-                    )),
+                  icon: Icon(
+                    Icons.cloud_download,
+                  ),
+                  label: '全本缓存',
+                ),
               ],
 
               onTap: (int i) {

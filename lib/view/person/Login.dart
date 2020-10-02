@@ -1,5 +1,5 @@
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
@@ -28,7 +28,7 @@ class Login extends StatelessWidget {
 //        SpUtil.putString('email', data['data']['email']);
 //        SpUtil.putString('pwd', pwd);
       SpUtil.putString('username', username);
-      SpUtil.putBool('login', true);
+      // SpUtil.putBool('login', true);
       SpUtil.putString("auth", data['data']['token']);
       eventBus.fire(new SyncShelfEvent(""));
 
@@ -41,6 +41,8 @@ class Login extends StatelessWidget {
           }
         }
       }
+      // Routes.navigateTo(context, Routes.root);
+
       Navigator.of(context).popUntil(ModalRoute.withName('/'));
       eventBus.fire(new NavEvent(0));
     }
@@ -53,7 +55,8 @@ class Login extends StatelessWidget {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: CachedNetworkImageProvider("http://p1.pstatp.com/large/pgc-image/233886d2dc95432bbd004aacb7d311c4"),
+            image: CachedNetworkImageProvider(
+                "http://p1.pstatp.com/large/pgc-image/233886d2dc95432bbd004aacb7d311c4"),
             fit: BoxFit.cover,
           ),
         ),

@@ -1,11 +1,9 @@
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
-import 'common.dart';
 
 class ReaderPageAgent {
-  bool okHeight = false;
-
+  /// 文本间距
   double getPageHeight(
       String content, double height, double width, double fontSize) {
     String fontFamily = SpUtil.getString("fontName");
@@ -17,31 +15,42 @@ class ReaderPageAgent {
   List<String> getPageOffsets(
       String content, double height, double width, double fontSize) {
     String fontFamily = SpUtil.getString("fontName");
-    String zz = Common.page_height_pre + fontFamily;
+    // String zz = Common.page_height_pre + fontFamily;
     String tempStr = content;
     List<String> pageConfig = [];
     int last = 0;
-    if (SpUtil.haveKey(zz + fontSize.toString())) {
-      height = SpUtil.getDouble(zz + fontSize.toString());
+    String key=fontSize.toString();
+    double pageHeight;
+    if (SpUtil.haveKey(key)) {
+      pageHeight = SpUtil.getDouble(key);
     }
     while (true) {
       TextPainter textPainter = layout(tempStr, fontSize, width, fontFamily);
-      if (!SpUtil.haveKey(zz + fontSize.toString())) {
-        height = checkHeight(textPainter, height);
-        String key = zz + fontSize.toString();
+   
+      if (!SpUtil.haveKey(key)) {
+        print("fontFamily$fontFamily fontheight ${textPainter.preferredLineHeight} fontSize:$fontSize");
+        double textLineHeight = textPainter.preferredLineHeight;
+
+        pageHeight = (height ~/ textLineHeight) * textLineHeight;
+        print(height);
+
         if (SpUtil.haveKey(key)) {
           SpUtil.remove(key);
         }
-        SpUtil.putDouble(key, height);
+        SpUtil.putDouble(key, pageHeight);
       }
       textPainter.layout(maxWidth: width, minWidth: width);
 
-      var end = textPainter.getPositionForOffset(Offset(width, height)).offset;
+      var end =
+          textPainter.getPositionForOffset(Offset(width, pageHeight)).offset;
 
       if (end == 0) {
         break;
       }
-      pageConfig.add(tempStr.substring(0, end));
+      String pageText = tempStr.substring(0, end);
+      // print(pageText);
+      // print("------------------------------------");
+      pageConfig.add(pageText);
 
       tempStr = tempStr.substring(end, tempStr.length);
 
@@ -59,28 +68,13 @@ class ReaderPageAgent {
         text: TextSpan(
             text: text,
             style: TextStyle(
-                textBaseline: TextBaseline.ideographic,
-                // height: 1.5,
-                fontSize: fontSize)),
+                // textBaseline: TextBaseline.ideographic,
+                // height: 1.3,
+                fontFamily: fontFamily,
+                fontSize: fontSize )),
         locale: Locale('zh_CN'),
-        // strutStyle: StrutStyle(
-        //   fontFamily: fontFamily,
-        //   fontSize: 16.0,
-        //   fontStyle: FontStyle.normal,
-        //   forceStrutHeight: true,
-        // ),
+        // strutStyle: StrutStyle(forceStrutHeight: true),
         textDirection: TextDirection.ltr);
     return textPainter;
-  }
-
-  double checkHeight(TextPainter textPainter, double height) {
-    double lineHeight = textPainter.preferredLineHeight;
-    int lineNumberPerPage = height ~/ lineHeight;
-    print(
-        "lineHeight:$lineHeight allHeight:$height linePages:$lineNumberPerPage");
-
-    double actualPageHeight = lineNumberPerPage * lineHeight;
-
-    return actualPageHeight;
   }
 }

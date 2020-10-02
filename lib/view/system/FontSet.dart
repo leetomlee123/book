@@ -1,27 +1,27 @@
 import 'dart:io';
 
-import 'package:book/common/util.dart';
+import 'package:book/common/LoadDialog.dart';
+import 'package:book/common/net.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 class FontSet extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return StateFontSet();
   }
 }
 
 class StateFontSet extends State<FontSet> {
-String _fontPath;
+  String _fontPath;
+
   @override
   void initState() {
     initPath();
-    // TODO: implement initState
     super.initState();
   }
 
@@ -31,87 +31,84 @@ String _fontPath;
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text('阅读字体'),
-              elevation: 0,
-              centerTitle: true,
-            ),
-            body: Container(
-              child: Column(
-                children: <Widget>[
-                  Center(
-                    child: Text(
-                      "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        // fontFamily: model.font,
-                      ),
-                    ),
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('阅读字体'),
+          elevation: 0,
+          centerTitle: true,
+        ),
+        body: Container(
+          child: Column(
+            children: <Widget>[
+              Center(
+                child: Text(
+                  "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    // fontFamily: model.font,
                   ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  ListView.builder(
-                    itemBuilder: (context, i) {
-                      var elementAt2 = model.fonts.keys.elementAt(i);
-                      var elementAt = model.fonts.values.elementAt(i);
-                      var s = elementAt.toString().split('/');
-                      var name = s[s.length - 1];
-                      return Container(
-                        padding: EdgeInsets.only(bottom: 20),
-                        child: Row(
-                          children: <Widget>[
-                            Text(elementAt2),
-                            Expanded(
-                              child: Container(),
-                            ),
-                            GestureDetector(
-                              child: Container(
-                                child: model.font == name
-                                    ? Icon(Icons.check)
-                                    : Text((SpUtil.haveKey(elementAt2) ||
-                                    elementAt2 == "默认字体")
+                ),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              ListView.builder(
+                itemBuilder: (context, i) {
+                  var fontName = model.fonts.keys.elementAt(i);
+                  var fontUrl = model.fonts.values.elementAt(i);
+                  return Container(
+                    padding: EdgeInsets.only(bottom: 20),
+                    child: Row(
+                      children: <Widget>[
+                        Text(fontName),
+                        Expanded(
+                          child: Container(),
+                        ),
+                        GestureDetector(
+                          child: Container(
+                            child: (model.font == "" ? "默认字体" : model.font) ==
+                                    fontName
+                                ? Icon(Icons.check)
+                                : Text((SpUtil.haveKey(fontName) ||
+                                        fontName == "默认字体")
                                     ? "使用"
                                     : "下载"),
-                              ),
-                              onTap: () async {
-                                if (elementAt2 == "默认字体") {
-                                  model.setFontFamily("");
-                                } else {
-                                  if (SpUtil.haveKey(elementAt2)) {
-                                    try {
-                                      await model.readFont(name);
-                                    } catch (e) {}
-                                    model.setFontFamily(name);
-                                  } else {
-                                    try {
-                                      await download(name, elementAt);
-                                      SpUtil.putString(elementAt2, "1");
-                                      setState(() {});
-                                    } catch (e) {
-                                      print(e + "zz");
-                                    }
-                                  }
+                          ),
+                          onTap: () async {
+                            if (fontName == "默认字体") {
+                              model.setFontFamily("");
+                            } else {
+                              if (SpUtil.haveKey(fontName)) {
+                                try {
+                                  await model.readFont(fontName);
+                                } catch (e) {}
+                                model.setFontFamily(fontName);
+                              } else {
+                                try {
+                                  await download(fontName, fontUrl);
+                                  setState(() {});
+                                } catch (e) {
+                                  print(e + "zz");
                                 }
-                              },
-                            ),
-                          ],
+                              }
+                            }
+                          },
                         ),
-                      );
-                    },
-                    itemCount: model.fonts.length,
-                    shrinkWrap: true,
-                  )
-                ],
-              ),
-              padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
-            ),
-          );
-        });
+                      ],
+                    ),
+                  );
+                },
+                itemCount: model.fonts.length,
+                shrinkWrap: true,
+              )
+            ],
+          ),
+          padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
+        ),
+      );
+    });
   }
 
   Future<bool> isDirectoryExist(String path) async {
@@ -129,12 +126,26 @@ String _fontPath;
     if (!exist) {
       await createDirectory(_fontPath);
     }
-    var path = _fontPath + "/" + name;
+    var path = _fontPath + "/" + name + '.TTF';
     var bool2 = await isDirectoryExist(path);
     if (bool2) {
       print("已存在");
       return;
     }
-    Util(context).http().download(url, path);
+    showGeneralDialog(
+      context: context,
+      barrierLabel: "",
+      barrierDismissible: true,
+      transitionDuration: Duration(milliseconds: 300),
+      pageBuilder: (BuildContext context, Animation animation,
+          Animation secondaryAnimation) {
+        return LoadingDialog();
+      },
+    );
+    await Util(null).http().download(url, path);
+    Navigator.pop(context);
+    SpUtil.putString(name, "1");
+
+    BotToast.showText(text: "$name 字体下载完成");
   }
 }

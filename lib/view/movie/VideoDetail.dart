@@ -4,7 +4,7 @@ import 'package:book/common/FunUtil.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';

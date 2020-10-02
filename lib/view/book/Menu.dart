@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -35,7 +35,6 @@ class _MenuState extends State<Menu> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _readModel = Store.value<ReadModel>(context);
     _colorModel = Store.value<ColorModel>(context);
@@ -45,31 +44,44 @@ class _MenuState extends State<Menu> {
   Widget build(BuildContext context) {
     return GestureDetector(
       child: Container(
-        // color: Colors.transparent,
         child: Column(
           children: <Widget>[
-            SizedBox(height: Screen.topSafeHeight,),
-            Row(children: [
-              Text('${_readModel.bookTag.bookName ?? ""}',style: TextStyle(fontWeight: FontWeight.w500,fontSize: 26),),
-              Expanded(child: Container(),),
-              IconButton(
-                icon: Icon(Icons.refresh),
-                onPressed: () {
-                  _readModel.reloadCurrentPage();
-                },
+            Container(
+               color: _colorModel.dark?Colors.black: Colors.white,
+              height: Screen.topSafeHeight,
+            ),
+            Container(
+              color: _colorModel.dark?Colors.black: Colors.white,
+              child: Row(
+                children: [
+                  SizedBox(width: 10,),
+                  Text(
+                    '${_readModel?.bookTag?.bookName ?? ""}',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
+                  ),
+                  Expanded(
+                    child: Container(),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.refresh),
+                    onPressed: () {
+                      _readModel.reloadCurrentPage();
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.info),
+                    onPressed: () async {
+                      String url = Common.detail + '/${_readModel.bookInfo.Id}';
+                      Response future = await Util(context).http().get(url);
+                      var d = future.data['data'];
+                      BookInfo bookInfo = BookInfo.fromJson(d);
+                      Routes.navigateTo(context, Routes.detail,
+                          params: {"detail": jsonEncode(bookInfo)});
+                    },
+                  )
+                ],
               ),
-              IconButton(
-                icon: Icon(Icons.info),
-                onPressed: () async {
-                  String url = Common.detail + '/${_readModel.bookInfo.Id}';
-                  Response future = await Util(context).http().get(url);
-                  var d = future.data['data'];
-                  BookInfo bookInfo = BookInfo.fromJson(d);
-                  Routes.navigateTo(context, Routes.detail,
-                      params: {"detail": jsonEncode(bookInfo)});
-                },
-              )
-            ],),
+            ),
             // Container(
             //   // decoration: _colorModel.dark
             //   //     ? BoxDecoration(
@@ -135,86 +147,90 @@ class _MenuState extends State<Menu> {
                 },
               ),
             ),
-            Container(
-              // color: _colorModel.theme.appBarTheme.color,
-              // decoration: _colorModel.dark
-              //     ? BoxDecoration(
-              //         image: DecorationImage(
-              //           image: AssetImage("images/QR_bg_4.jpg"),
-              //           fit: BoxFit.cover,
-              //         ),
-              //       )
-              //     : BoxDecoration(
-              //         image: DecorationImage(
-              //           image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
-              //           fit: BoxFit.cover,
-              //         ),
-              //       ),
-              height: 120,
-              width: double.infinity,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      GestureDetector(
-                        child: Container(
-                          child: Icon(
-                            Icons.arrow_back_ios,
-                            // color: Colors.white,
+           Container(
+                color: _colorModel.dark?Colors.black: Colors.white,
+                // color: _colorModel.theme.appBarTheme.color,
+                // decoration: _colorModel.dark
+                //     ? BoxDecoration(
+                //         image: DecorationImage(
+                //           image: AssetImage("images/QR_bg_4.jpg"),
+                //           fit: BoxFit.cover,
+                //         ),
+                //       )
+                //     : BoxDecoration(
+                //         image: DecorationImage(
+                //           image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
+                //           fit: BoxFit.cover,
+                //         ),
+                //       ),
+                height: 120,
+                width: double.infinity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        GestureDetector(
+                          child: Container(
+                            child: Icon(
+                              Icons.arrow_back_ios,
+                              // color: Colors.white,
+                            ),
+                            width: 70,
                           ),
-                          width: 70,
+                          onTap: () {
+                            _readModel.bookTag.cur -= 1;
+                            BotToast.showText(text: _readModel.curPage.chapterName);
+                            _readModel.intiPageContent(
+                                _readModel.bookTag.cur, true);
+                          },
                         ),
-                        onTap: () {
-                          _readModel.bookTag.cur -= 1;
-                          _readModel.intiPageContent(
-                              _readModel.bookTag.cur, true);
-                        },
-                      ),
-                      Expanded(
-                        child: Container(
-                          child: Slider(
-                            // activeColor: Colors.white,
-                            // inactiveColor: Colors.white70,
-                            value: _readModel.value,
-                            max: (_readModel.chapters.length - 1).toDouble(),
-                            min: 0.0,
-                            onChanged: (newValue) {
-                              int temp = newValue.round();
-                              _readModel.bookTag.cur = temp;
-                              _readModel.value = temp.toDouble();
-                              _readModel.intiPageContent(
-                                  _readModel.bookTag.cur, true);
-                            },
-                            label:
-                                '${_readModel.chapters[_readModel.bookTag.cur].name} ',
-                            semanticFormatterCallback: (newValue) {
-                              return '${newValue.round()} dollars';
-                            },
+                        Expanded(
+                          child: Container(
+                            child: Slider(
+                              // activeColor: Colors.white,
+                              // inactiveColor: Colors.white70,
+                              value: _readModel.value,
+                              max: (_readModel.chapters.length - 1).toDouble(),
+                              min: 0.0,
+                              onChanged: (newValue) {
+                                int temp = newValue.round();
+                                _readModel.bookTag.cur = temp;
+                                _readModel.value = temp.toDouble();
+                                _readModel.intiPageContent(
+                                    _readModel.bookTag.cur, true);
+                              },
+                              label:
+                                  '${_readModel.chapters[_readModel.bookTag.cur].name} ',
+                              semanticFormatterCallback: (newValue) {
+                                return '${newValue.round()} dollars';
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      GestureDetector(
-                        child: Container(
-                          child: Icon(
-                            Icons.arrow_forward_ios,
-                            // color: Colors.white,
+                        GestureDetector(
+                          child: Container(
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              // color: Colors.white,
+                            ),
+                            width: 70,
                           ),
-                          width: 70,
+                          onTap: () {
+                            _readModel.bookTag.cur += 1;
+                            _readModel.intiPageContent(
+                                _readModel.bookTag.cur, true);
+                                BotToast.showText(text: _readModel.curPage.chapterName);
+                          },
                         ),
-                        onTap: () {
-                          _readModel.bookTag.cur += 1;
-                          _readModel.intiPageContent(
-                              _readModel.bookTag.cur, true);
-                        },
-                      ),
-                    ],
-                  ),
-                  buildBottomMenus()
-                ],
+                      ],
+                    ),
+                    buildBottomMenus()
+                  ],
+                ),
               ),
-            )
+              
           ],
         ),
       ),
@@ -312,19 +328,20 @@ class _MenuState extends State<Menu> {
 
   buildSetting(state) {
     return Container(
-      decoration: _colorModel.dark
-          ? BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("images/QR_bg_4.jpg"),
-                fit: BoxFit.cover,
-              ),
-            )
-          : BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
-                fit: BoxFit.cover,
-              ),
-            ),
+        color: _colorModel.dark?Colors.black: Colors.white,
+      // decoration: _colorModel.dark
+      //     ? BoxDecoration(
+      //         image: DecorationImage(
+      //           image: AssetImage("images/QR_bg_4.jpg"),
+      //           fit: BoxFit.cover,
+      //         ),
+      //       )
+      //     : BoxDecoration(
+      //         image: DecorationImage(
+      //           image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
+      //           fit: BoxFit.cover,
+      //         ),
+      //       ),
       height: 120,
       child: Padding(
         child: Column(
@@ -338,14 +355,14 @@ class _MenuState extends State<Menu> {
                 Expanded(
                   child: Container(
                     child: FlatButton(
-                      color: Colors.white,
+                      // color: Colors.white,
                       onPressed: () {
                         _readModel.fontSize -= 1.0;
                         _readModel.modifyFont();
                       },
                       child: ImageIcon(
                         AssetImage("images/fontsmall.png"),
-                        color: Colors.black,
+                        // color: Colors.black,
                       ),
                       shape: RoundedRectangleBorder(
                           borderRadius:
@@ -359,14 +376,14 @@ class _MenuState extends State<Menu> {
                 Expanded(
                   child: Container(
                     child: FlatButton(
-                      color: Colors.white,
+                      // color: Colors.white,
                       onPressed: () {
                         _readModel.fontSize += 1.0;
                         _readModel.modifyFont();
                       },
                       child: ImageIcon(
                         AssetImage("images/fontbig.png"),
-                        color: Colors.black,
+                        // color: Colors.black,
                       ),
                       shape: RoundedRectangleBorder(
                           borderRadius:
@@ -374,30 +391,30 @@ class _MenuState extends State<Menu> {
                     ),
                   ),
                 ),
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Container(
-                    child: FlatButton(
-                      onPressed: () {
-                        Routes.navigateTo(
-                          context,
-                          Routes.fontSet,
-                        );
-                      },
-                      child: Text(
-                        '字体',
-                        style: TextStyle(
-                            color:
-                                _colorModel.dark ? Colors.white : Colors.black),
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
-                    ),
-                  ),
-                ),
+                // SizedBox(
+                //   width: 10,
+                // ),
+                // Expanded(
+                //   child: Container(
+                //     child: FlatButton(
+                //       onPressed: () {
+                //         Routes.navigateTo(
+                //           context,
+                //           Routes.fontSet,
+                //         );
+                //       },
+                //       child: Text(
+                //         '字体',
+                //         style: TextStyle(
+                //             color:
+                //                 _colorModel.dark ? Colors.white : Colors.black),
+                //       ),
+                //       shape: RoundedRectangleBorder(
+                //           borderRadius:
+                //               BorderRadius.all(Radius.circular(20.0))),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
             Row(

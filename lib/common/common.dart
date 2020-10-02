@@ -17,6 +17,7 @@ class Common {
 
 //  static String domain = "http://192.168.3.56:8000/v1";
   static String login = domain + "/login";
+  static String freshToken = domain + "/book/freshToken";
   static String info = domain + '/info';
   static String modifypassword = domain + "/password";
   static String register = domain + "/register";
@@ -26,7 +27,6 @@ class Common {
   static String rank = domain + "/book/rank";
 //  static String search = video_domain + "/book/search";
   static String two = domain + "/book/two";
-
 
   static String search = domain + "/book/search";
   static String bookInfo = domain + "/book/info/";

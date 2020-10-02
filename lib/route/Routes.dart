@@ -1,11 +1,11 @@
-import 'package:fluro/fluro.dart';
+import 'package:fluro/fluro.dart' as fluro;
 import 'package:flutter/material.dart';
 
 import 'RouteHandler.dart';
 
 class Routes {
   // 路由管理
-  static Router router;
+  static fluro.Router router;
 
   static String root = '/'; // 根目录
   static String search = '/search';
@@ -21,9 +21,9 @@ class Routes {
   static String fontSet = '/fontSet';
 
   // 配置route
-  static void configureRoutes(Router router) {
+  static void configureRoutes(fluro.Router router) {
     // 未发现对应route
-    router.notFoundHandler = Handler(
+    router.notFoundHandler = fluro.Handler(
         handlerFunc: (BuildContext context, Map<String, dynamic> params) {
       print('route not found!');
       return;
@@ -45,7 +45,7 @@ class Routes {
   // 对参数进行encode，解决参数中有特殊字符，影响fluro路由匹配
   static Future navigateTo(BuildContext context, String path,
       {Map<String, dynamic> params,
-      TransitionType transition = TransitionType.native}) {
+        fluro.TransitionType transition = fluro.TransitionType.native}) {
     String query = "";
     if (params != null) {
       int index = 0;

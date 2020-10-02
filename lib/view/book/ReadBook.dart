@@ -21,7 +21,6 @@ class ReadBook extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return _ReadBookState();
   }
 }
@@ -42,12 +41,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   @override
   void initState() {
     eventBus.on<ReadRefresh>().listen((event) {
+      readModel.reSetPages();
       readModel.intiPageContent(readModel.bookTag.cur, false);
     });
     eventBus.on<OpenChapters>().listen((event) {
-      _globalKey.currentState.openDrawer();
+      _globalKey.currentState?.openDrawer();
     });
-    // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     var widgetsBinding = WidgetsBinding.instance;
@@ -73,7 +72,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     readModel.saveData();
     readModel.clear();
@@ -98,7 +96,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
 
     return WillPopScope(
         onWillPop: () async {

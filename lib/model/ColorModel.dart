@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
+import 'package:book/model/ReadModel.dart';
+import 'package:book/store/Store.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -13,8 +15,7 @@ import 'package:path_provider/path_provider.dart';
 class ColorModel with ChangeNotifier {
   BuildContext buildContext;
   bool dark = false;
-  List<Color> skins = Colors.accents
-  ;
+  List<Color> skins = Colors.accents;
   String savePath = "";
   Map fonts = {
     "默认字体": "",
@@ -80,7 +81,6 @@ class ColorModel with ChangeNotifier {
     dark = !dark;
     SpUtil.putBool("dark", dark);
     if (dark) {
-
       FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
     } else {
       FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
@@ -95,7 +95,7 @@ class ColorModel with ChangeNotifier {
     var keys = SpUtil.getKeys();
 
     for (var f in keys) {
-      if (f.startsWith('pages') || f.startsWith(Common.page_height_pre)) {
+      if (f.contains('pages') || f.startsWith(Common.page_height_pre)) {
         SpUtil.remove(f);
       }
     }
@@ -105,8 +105,11 @@ class ColorModel with ChangeNotifier {
   }
 
   Future<void> readFont(String name) async {
-    var path =
-        (await getApplicationDocumentsDirectory()).path + "/font" + "/" + name;
+    var path = (await getApplicationDocumentsDirectory()).path +
+        "/font" +
+        "/" +
+        name +
+        '.TTF';
     var fontLoader = FontLoader(name); //自定义名字
     fontLoader.addFont(getCustomFont(path));
     await fontLoader.load();

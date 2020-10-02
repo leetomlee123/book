@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
@@ -15,7 +15,6 @@ import 'package:flutter/material.dart';
 class GoodBook extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return StateGoodBook();
   }
 }
@@ -26,7 +25,6 @@ class StateGoodBook extends State<GoodBook>
   var tabs = <Tab>[];
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
 
     tabs = [
@@ -45,7 +43,6 @@ class StateGoodBook extends State<GoodBook>
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     controller.dispose();
   }
@@ -53,7 +50,6 @@ class StateGoodBook extends State<GoodBook>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // TODO: implement build
     return DefaultTabController(
       length: tabs.length,
       child: Scaffold(
@@ -77,7 +73,6 @@ class StateGoodBook extends State<GoodBook>
   }
 
   @override
-// TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
 }
 
@@ -88,7 +83,6 @@ class TabItem extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return StateTabItem();
   }
 }
@@ -243,7 +237,6 @@ class StateTabItem extends State<TabItem>
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     super.build(context);
     return Scaffold(
       body: values.length == 0
@@ -258,6 +251,5 @@ class StateTabItem extends State<TabItem>
   }
 
   @override
-  // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
 }

@@ -1,22 +1,20 @@
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:book/common/DbHelper.dart';
-import 'package:book/common/PicWidget.dart';
-import 'package:book/common/common.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
-import 'file:///F:/code/book/lib/view/book/BookShelf.dart';
-import 'file:///F:/code/book/lib/view/book/GoodBook.dart';
-import 'file:///F:/code/book/lib/view/person/Me.dart';
-import 'file:///F:/code/book/lib/view/movie/MovieRecord.dart';
-import 'file:///F:/code/book/lib/view/person/Test.dart';
-import 'file:///F:/code/book/lib/view/movie/Video.dart';
+import 'package:book/view/book/BookShelf.dart';
+import 'package:book/view/book/GoodBook.dart';
+import 'package:book/view/movie/MovieRecord.dart';
+import 'package:book/view/movie/Video.dart';
+import 'package:book/view/person/Me.dart';
+import 'package:book/widgets/ConfirmDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:fluro/fluro.dart';
+import 'package:fluro/fluro.dart ' as fluro;
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -25,17 +23,14 @@ import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'entity/MRecords.dart';
-
 GetIt locator = GetIt.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SpUtil.getInstance();
 
-
   locator.registerSingleton(TelAndSmsService());
-  final router = Router();
+  final router = fluro.Router();
   Routes.configureRoutes(router);
   Routes.router = router;
   runApp(Store.init(child: MyApp()));
@@ -56,7 +51,8 @@ class MyApp extends StatelessWidget {
       return MaterialApp(
         title: '清阅',
         home: MainPage(),
-        builder: BotToastInit(), //
+        builder: BotToastInit(),
+        //
         navigatorObservers: [BotToastNavigatorObserver()],
         onGenerateRoute: Routes.router.generator,
         theme: model.theme, // 配置route generate
@@ -79,33 +75,30 @@ class _MainPageState extends State<MainPage> {
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
     BottomNavigationBarItem(
-        icon: ImageIcon(
-          AssetImage("images/book_shelf.png"),
-        ),
-        title: Text(
-          '书架',
-        )),
+      icon: ImageIcon(
+        AssetImage("images/book_shelf.png"),
+      ),
+      label: '书架',
+    ),
     BottomNavigationBarItem(
-        icon: ImageIcon(
-          AssetImage("images/good.png"),
-        ),
-        title: Text(
-          '精选',
-        )),
+      icon: ImageIcon(
+        AssetImage("images/good.png"),
+      ),
+      label: '精选',
+    ),
     BottomNavigationBarItem(
-        icon: ImageIcon(
-          AssetImage("images/video.png"),
-        ),
-        title: Text(
-          '美剧',
-        )),
-//    BottomNavigationBarItem(
-//        icon: ImageIcon(
-//          AssetImage("images/video.png"),
-//        ),
-//        title: Text(
-//          '美剧',
-//        )),
+      icon: ImageIcon(
+        AssetImage("images/video.png"),
+      ),
+      label: '美剧',
+    ),
+    //  BottomNavigationBarItem(
+    //      icon: ImageIcon(
+    //        AssetImage("images/video.png"),
+    //      ),
+    //      title: Text(
+    //        '美剧',
+    //      )),
   ];
 
   /*
@@ -115,7 +108,6 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _startupJpush();
     eventBus.on<OpenEvent>().listen((openEvent) {
@@ -153,16 +145,90 @@ class _MainPageState extends State<MainPage> {
               //回调函数
               itemCount: _pages.length,
               itemBuilder: (context, index) => _pages[index]),
-          bottomNavigationBar: BottomNavigationBar(
-            unselectedItemColor: model.dark ? Colors.white : Colors.black,
-            elevation: 0,
-            items: bottoms,
-            type: BottomNavigationBarType.fixed,
-            currentIndex: _tabIndex,
-            onTap: (index) {
-              _pageController.jumpToPage(index);
-            },
-          ),
+          bottomNavigationBar: Store.connect<ShelfModel>(
+              builder: (context, ShelfModel shelf, child) {
+            return shelf.sortShelf
+                ? ButtonBar(
+                    alignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      FlatButton(
+                        child: Container(
+                          child: Text(shelf.pickAllFlag ? '全不选' : '全选'),
+                          // width: (Screen.width - 10) / 2,
+                        ),
+                        onPressed: () {
+                          shelf.pickAll();
+                        },
+                      ),
+                      FlatButton(
+                        child: Container(
+                          child: Text(
+                            '删除',
+                            style: TextStyle(
+                                color:
+                                    shelf.hasPick() ? Colors.red : Colors.grey),
+                          ),
+                          // width: (Screen.width - 10) / 2,
+                        ),
+                        onPressed: shelf.hasPick()
+                            ? () async {
+                                var _alertDialog = ConfirmDialog(
+                                  "确定要删除所选书籍吗?",
+                                  () {
+                                    // 展示 SnackBar
+                                    Navigator.of(context).pop(true);
+                                  },
+                                  () {
+                                    Navigator.of(context).pop(false);
+                                  },
+                                );
+                                var isDismiss = await showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return _alertDialog;
+                                    });
+                                if (isDismiss) {
+                                  shelf.removePicks();
+                                }
+                              }
+                            : null,
+                      ),
+                    ],
+                  )
+                // Row(
+                //     children:
+                //     [
+                //       FlatButton(
+                //         child: Container(
+                //           child: Text('全选'),
+                //           width: (Screen.width-10) / 2,
+                //         ),
+                //         onPressed: () {},
+                //       ),
+                //       FlatButton(
+                //         child: Container(
+                //           child: Text(
+                //             '删除',
+                //             style: TextStyle(color: Colors.red),
+                //           ),
+                //             width: (Screen.width-10) / 2,
+                //         ),
+                //         onPressed: () {},
+                //       ),
+                //     ],
+                //   )
+                : BottomNavigationBar(
+                    unselectedItemColor:
+                        model.dark ? Colors.white : Colors.black,
+                    elevation: 0,
+                    items: bottoms,
+                    type: BottomNavigationBarType.fixed,
+                    currentIndex: _tabIndex,
+                    onTap: (index) {
+                      _pageController.jumpToPage(index);
+                    },
+                  );
+          }),
         ),
         data: model.theme,
       );
@@ -174,10 +240,6 @@ class _MainPageState extends State<MainPage> {
       if (_tabIndex != index) _tabIndex = index;
     });
   }
-
-
-
-
 
   void _startupJpush() async {
     String platformVersion;

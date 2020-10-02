@@ -153,6 +153,8 @@ class DbHelper {
   Future<Null> delBook(String bookId) async {
     var dbClient = await db1;
     dbClient.rawDelete("delete from $_tableName1  where book_id=?", [bookId]);
+    var dbClient1 = await db;
+    dbClient1.rawDelete("delete from $_tableName where book_id=?", [bookId]);
   }
 
   Future<List<Book>> getBooks() async {

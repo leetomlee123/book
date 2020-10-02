@@ -16,7 +16,7 @@ class Util {
 
   Dio http() {
     _dio = new Dio();
-    _dio.options.connectTimeout = 10000;
+    // _dio.options.connectTimeout = 10000;
 
 //    var dic = DirectoryUtil.getAppDocPath();
 //    _dio.httpClientAdapter = Http2Adapter(

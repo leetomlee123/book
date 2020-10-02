@@ -1,6 +1,6 @@
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/Book.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
@@ -15,13 +15,81 @@ class ShelfModel with ChangeNotifier {
       _dbHelper = DbHelper();
     }
     shelf = await _dbHelper.getBooks();
+    notifyListeners();
   }
 
   BuildContext context;
-  bool model = false;
+  bool model = SpUtil.getBool("shelfModel");
+  bool sortShelf = false;
   DbHelper _dbHelper = DbHelper();
-
+  List<bool> _picks = [];
   ShelfModel();
+  bool pickAllFlag = false;
+  initPicks() {
+    pickAllFlag = false;
+    _picks = [];
+    for (var i = 0; i < shelf.length; i++) {
+      _picks.add(false);
+    }
+  }
+
+  removePicks() {
+    List<Book> bks = [];
+    List<String> ids = [];
+    List<bool> pics = [];
+
+    for (var i = 0; i < _picks.length; i++) {
+      if (_picks[i]) {
+        delLocalCache([shelf[i].Id]);
+        ids.add(shelf[i].Id);
+      } else {
+        bks.add(shelf[i]);
+        pics.add(_picks[i]);
+      }
+    }
+    shelf = bks;
+    _picks = pics;
+    sortShelf = false;
+    deleteCloudIds(ids);
+    notifyListeners();
+  }
+
+  deleteCloudIds(List<String> ids) async {
+    if (SpUtil.haveKey("auth")) {
+      for (var id in ids) {
+        await Util(null).http().get(Common.bookAction + '/$id/del');
+      }
+    }
+    BotToast.showText(text: "删除书籍成功");
+  }
+
+  pickAll() {
+    _picks = [];
+    for (var i = 0; i < shelf.length; i++) {
+      _picks.add(!pickAllFlag);
+    }
+    pickAllFlag = !pickAllFlag;
+
+    notifyListeners();
+  }
+
+  bool picks(int i) {
+    if (_picks.isEmpty) {
+      for (var i = 0; i < shelf.length; i++) {
+        _picks.add(false);
+      }
+    }
+    return _picks[i];
+  }
+
+  changePick(int i) {
+    _picks[i] = !_picks[i];
+    notifyListeners();
+  }
+
+  bool hasPick() {
+    return _picks.contains(true);
+  }
 
   saveShelf() {
     // SpUtil.putString(Common.listbookname, jsonEncode(shelf));
@@ -29,6 +97,13 @@ class ShelfModel with ChangeNotifier {
 
   toggleModel() {
     model = !model;
+    SpUtil.putBool("shelfModel", model);
+    notifyListeners();
+  }
+
+  sortShelfModel() {
+    initPicks();
+    sortShelf = !sortShelf;
     notifyListeners();
   }
 
@@ -100,22 +175,19 @@ class ShelfModel with ChangeNotifier {
   void delLocalCache(List<String> ids) {
     for (var i = 0; i < ids.length; i++) {
       SpUtil.remove(ids[i]);
+      SpUtil.remove('${ids[i]}chapters');
+
       _dbHelper.delBook(ids[i]);
-      for (var value in SpUtil.getKeys()) {
-        if (value.contains("pages")) {
-          SpUtil.remove(value);
-        }
-      }
     }
   }
 
   modifyShelf(Book book) {
     var action =
-    shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
+        shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
-      BotToast.showText(text: "已添加到书架");
       shelf.insert(0, book);
       _dbHelper.addBooks([book]);
+      BotToast.showText(text: "已添加到书架");
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
         if (shelf[i].Id == book.Id) {
@@ -123,9 +195,9 @@ class ShelfModel with ChangeNotifier {
         }
       }
       _dbHelper.delBook(book.Id);
-      BotToast.showText(text: "已移除出书架");
 
       delLocalCache([book.Id]);
+      BotToast.showText(text: "已移除出书架");
     }
     if (SpUtil.haveKey("auth")) {
       Util(null).http().get(Common.bookAction + '/${book.Id}/$action');
@@ -134,9 +206,18 @@ class ShelfModel with ChangeNotifier {
     notifyListeners();
   }
 
+  freshToken() async {
+    if (SpUtil.haveKey("username")) {
+      Response res = await Util(null).http().get(Common.freshToken);
+      var data = res.data;
+      if (data['code'] == 200) {
+        SpUtil.putString("auth", data['data']['token']);
+      }
+    }
+  }
+
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     _dbHelper.close();
   }

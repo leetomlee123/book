@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
@@ -15,7 +15,6 @@ import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../main.dart';
@@ -32,7 +31,6 @@ class Me extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(100),
@@ -49,13 +47,13 @@ class Me extends StatelessWidget {
                     width: 80,
                     child: CircleAvatar(
                       backgroundColor: Colors.white,
-                      backgroundImage: AssetImage(SpUtil.haveKey("login")
+                      backgroundImage: AssetImage(SpUtil.haveKey("username")
                           ? "images/fu.png"
                           : "images/account.png"),
                     ),
                   ),
                   padding:
-                  EdgeInsets.only(top: ScreenUtil.getStatusBarH(context)),
+                      EdgeInsets.only(top: ScreenUtil.getStatusBarH(context)),
                 ),
                 SizedBox(
                   width: 10,
@@ -63,7 +61,7 @@ class Me extends StatelessWidget {
                 Center(
                   child: Padding(
                     child: Text(
-                      SpUtil.haveKey("login")
+                      SpUtil.haveKey("username")
                           ? SpUtil.getString('username')
                           : "登陆/注册",
                       style: TextStyle(
@@ -77,7 +75,7 @@ class Me extends StatelessWidget {
               ],
             ),
             onTap: () {
-              if (SpUtil.haveKey("login")) {
+              if (SpUtil.haveKey("username")) {
                 return;
               } else {
                 Routes.navigateTo(context, Routes.login);
@@ -159,16 +157,15 @@ class Me extends StatelessWidget {
               getItem(
                 ImageIcon(AssetImage("images/co.png")),
                 '应用更新',
-
-                 ({int number = 953457248, bool isGroup = true}) async {
-                    String url = isGroup
-                        ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
-                        : 'mqqwpa://im/chat?chat_type=wpa&uin=${number ?? 0}&version=1&src_type=web&web_src=oicqzone.com';
-                    if (await canLaunch(url)) {
-                      await launch(url);
-                    } else {
-                      print('不能访问');
-                    }
+                ({int number = 953457248, bool isGroup = true}) async {
+                  String url = isGroup
+                      ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
+                      : 'mqqwpa://im/chat?chat_type=wpa&uin=${number ?? 0}&version=1&src_type=web&web_src=oicqzone.com';
+                  if (await canLaunch(url)) {
+                    await launch(url);
+                  } else {
+                    print('不能访问');
+                  }
 
 //                  showDialog(
 //                      context: context,
@@ -229,7 +226,7 @@ class Me extends StatelessWidget {
               getItem(
                 ImageIcon(AssetImage("images/fe.png")),
                 '意见反馈',
-                    () {
+                () {
                   locator<TelAndSmsService>()
                       .sendEmail('leetomlee123@gmail.com');
                 },
@@ -237,8 +234,8 @@ class Me extends StatelessWidget {
               getItem(
                 ImageIcon(AssetImage("images/github.png")),
                 '开源地址',
-                    () {
-                      launch('https://github.com/leetomlee123/book');
+                () {
+                  launch('https://github.com/leetomlee123/book');
                 },
               ),
 //              getItem(
@@ -384,7 +381,6 @@ class _CacheManager extends State<CacheManager> {
 class Skin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel data, child) => Theme(
               child: Scaffold(
@@ -413,7 +409,6 @@ class Skin extends StatelessWidget {
 class InfoPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return InfoState();
   }
 }
@@ -423,14 +418,12 @@ class InfoState extends State<InfoPage> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getInfo();
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel data, child) => Theme(
               child: Scaffold(

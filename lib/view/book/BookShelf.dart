@@ -1,12 +1,15 @@
 import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
+import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/widgets/ConfirmDialog.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +18,6 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 class BookShelf extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return new _BookShelfState();
   }
 }
@@ -25,43 +27,75 @@ class _BookShelfState extends State<BookShelf>
   Widget body;
   RefreshController _refreshController =
       RefreshController(initialRefresh: SpUtil.haveKey('login'));
-
+  ShelfModel _shelfModel;
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    // TODO: implement build
     return Store.connect<ShelfModel>(
-        builder: (context, ShelfModel model, child)  {
+        builder: (context, ShelfModel model, child) {
       return Scaffold(
-          appBar: AppBar(
-            leading: IconButton(
-              icon: Icon(Icons.person),
-              onPressed: () {
-                eventBus.fire(OpenEvent("p"));
-              },
-            ),
-            elevation: 0,
-            title: Text(
-              '书架',
-              style: TextStyle(
-                fontSize: 18,
-              ),
-            ),
-            centerTitle: true,
-            actions: <Widget>[
-              IconButton(
-                icon: Icon(Icons.search),
-                onPressed: () {
-                  Routes.navigateTo(context, Routes.search,
-                      params: {"type": "book", "name": ""});
-                },
-              )
-            ],
-          ),
+          appBar: model.sortShelf
+              ? AppBar(
+                  title: Text("书架整理"),
+                  elevation: 0,
+                  centerTitle: true,
+                  automaticallyImplyLeading: false,
+                  leading: IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: () {
+                        _shelfModel.sortShelfModel();
+                      }),
+                )
+              : AppBar(
+                  leading: IconButton(
+                    icon: Icon(Icons.person),
+                    onPressed: () {
+                      eventBus.fire(OpenEvent("p"));
+                    },
+                  ),
+                  elevation: 0,
+                  title: Text(
+                    '书架',
+                    style: TextStyle(
+                      fontSize: 18,
+                    ),
+                  ),
+                  centerTitle: true,
+                  actions: <Widget>[
+                    IconButton(
+                      icon: Icon(Icons.search),
+                      onPressed: () {
+                        Routes.navigateTo(context, Routes.search,
+                            params: {"type": "book", "name": ""});
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.more_vert),
+                      onPressed: () async {
+                        String shelfModelName =
+                            _shelfModel.model ? "列表模式" : "封面模式";
+                        final result = await showMenu(
+                            context: context,
+                            position: RelativeRect.fromLTRB(
+                                2000.0, Screen.navigationBarHeight, 0.0, 0.0),
+                            items: <PopupMenuItem<String>>[
+                              PopupMenuItem(
+                                  value: shelfModelName,
+                                  child: Text(shelfModelName)),
+                              PopupMenuItem(value: "书架整理", child: Text("书架整理"))
+                            ]);
+                        if (result == "封面模式" || result == "列表模式") {
+                          _shelfModel.toggleModel();
+                        } else if (result == "书架整理") {
+                          _shelfModel.sortShelfModel();
+                        }
+                      },
+                    )
+                  ],
+                ),
           body: SmartRefresher(
               enablePullDown: true,
-//                header: MyWaterDropHeader(),
-//              header: WaterDropHeader(),
+              header: WaterDropHeader(),
               footer: CustomFooter(
                 builder: (BuildContext context, LoadStatus mode) {
                   if (mode == LoadStatus.idle) {
@@ -81,105 +115,293 @@ class _BookShelfState extends State<BookShelf>
               ),
               controller: _refreshController,
               onRefresh: freshShelf,
-              child: ListView.builder(
-                  itemCount: model.shelf.length,
-                  itemBuilder: (context, i) {
-                    return GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        Book temp = model.shelf[i];
-
-                        model.shelf[i].NewChapterCount = 0;
-                        model.updBookStatus(temp.Id);
-                        Routes.navigateTo(
-                          context,
-                          Routes.read,
-                          params: {
-                            'read': jsonEncode(
-                                BookInfo.id(temp.Id, temp.Name, temp.Img)),
-                          },
-                        );
-
-                        model.upTotop(temp);
-                      },
-                      child: getBookItemView(model.shelf[i]),
-                    );
-                  })));
+              child: _shelfModel.model ? coverModel() : listModel()));
     });
   }
 
-//刷新书架
+  //书架封面模式
+  Widget coverModel() {
+    return GridView(
+      shrinkWrap: true,
+      // physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(10.0),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 1.0,
+          crossAxisSpacing: 10.0,
+          childAspectRatio: 0.7),
+      children: cover(),
+    );
+  }
+
+  List<Widget> cover() {
+    List<Widget> wds = [];
+    List<Book> books = _shelfModel.shelf;
+    Book book;
+    for (var i = 0; i < books.length; i++) {
+      book = books[i];
+      wds.add(GestureDetector(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Stack(
+              children: <Widget>[
+                PicWidget(
+                  book.Img,
+                  width: (ScreenUtil.getScreenW(context) - 80) / 3,
+                  height: ((ScreenUtil.getScreenW(context) - 80) / 3) * 1.2,
+                ),
+                book.NewChapterCount == 1
+                    ? Container(
+                        width: (ScreenUtil.getScreenW(context) - 80) / 3,
+                        height:
+                            ((ScreenUtil.getScreenW(context) - 80) / 3) * 1.2,
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          child: Image.asset(
+                            'images/h6.png',
+                            width: 30,
+                            height: 30,
+                          ),
+                        ),
+                      )
+                    : Container(),
+                _shelfModel.sortShelf
+                    ? GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: (ScreenUtil.getScreenW(context) - 80) / 3,
+                          height:
+                              ((ScreenUtil.getScreenW(context) - 80) / 3) * 1.2,
+                          child: Align(
+                            alignment: Alignment.topRight,
+                            child: Image.asset(
+                              'images/pick.png',
+                              color: !_shelfModel.picks(i)
+                                  ? Colors.white
+                                  : Store.value<ColorModel>(context)
+                                      .theme
+                                      .primaryColor,
+                              width: 30,
+                              height: 30,
+                            ),
+                          ),
+                        ),
+                        onTap: () {
+                          _shelfModel.changePick(i);
+                        },
+                      )
+                    : Container()
+              ],
+            ),
+            Text(
+              book.Name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          ],
+        ),
+        onTap: () async {
+          Book temp = _shelfModel.shelf[i];
+
+          _shelfModel.shelf[i].NewChapterCount = 0;
+          _shelfModel.updBookStatus(temp.Id);
+          Routes.navigateTo(
+            context,
+            Routes.read,
+            params: {
+              'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
+            },
+          );
+
+          _shelfModel.upTotop(temp);
+        },
+        onLongPress: () {
+          _shelfModel.sortShelfModel();
+        },
+      ));
+    }
+    return wds;
+  }
+
+//整理书架悬浮层
+  Widget pickWidget() {
+    return Container(
+      width: Screen.width,
+      height: Screen.height,
+      child: Column(
+        children: [
+          AppBar(
+            title: Text("书架整理"),
+            elevation: 0,
+            centerTitle: true,
+            automaticallyImplyLeading: false,
+            leading: IconButton(
+                icon: Icon(Icons.arrow_back),
+                onPressed: () {
+                  _shelfModel.sortShelfModel();
+                }),
+          ),
+          Expanded(
+            child: Opacity(
+              opacity: 0.0,
+              child: Container(
+                width: double.infinity,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              GestureDetector(
+                child: Text("全选"),
+              ),
+              GestureDetector(
+                child: Text(
+                  "删除",
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  //书架列表模式
+  Widget listModel() {
+    return ListView.builder(
+        itemCount: _shelfModel.shelf.length,
+        itemBuilder: (context, i) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              Book temp = _shelfModel.shelf[i];
+
+              _shelfModel.shelf[i].NewChapterCount = 0;
+              _shelfModel.updBookStatus(temp.Id);
+              Routes.navigateTo(
+                context,
+                Routes.read,
+                params: {
+                  'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
+                },
+              );
+
+              _shelfModel.upTotop(temp);
+            },
+            child: getBookItemView(_shelfModel.shelf[i], i),
+            onLongPress: () {
+              _shelfModel.sortShelfModel();
+            },
+          );
+        });
+  }
+
+  //刷新书架
   freshShelf() async {
-    if (SpUtil.haveKey('login')) {
+    if (SpUtil.haveKey('auth')) {
       Store.value<ShelfModel>(context).refreshShelf();
     }
     _refreshController.refreshCompleted();
   }
 
-  getBookItemView(Book item) {
+  getBookItemView(Book item, int i) {
     return Dismissible(
       key: Key(item.Id.toString()),
-      child: Container(
-        child: Row(
-          children: <Widget>[
-            Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+      child: Stack(
+        children: [
+          Container(
+            child: Row(
               children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                  child: Stack(
-                    children: <Widget>[
-                      PicWidget(item.Img),
-                      item.NewChapterCount == 1
-                          ? Container(
-                              height: 115,
-                              width: 97,
-                              child: Align(
-                                alignment: Alignment.topRight,
-                                child: Image.asset(
-                                  'images/h6.png',
-                                  width: 30,
-                                  height: 30,
-                                ),
-                              ),
-                            )
-                          : Container(),
-                    ],
-                  ),
-                )
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.only(left: 10.0, top: 10.0),
+                      child: Stack(
+                        children: <Widget>[
+                          PicWidget(item.Img),
+                          item.NewChapterCount == 1
+                              ? Container(
+                                  height: 115,
+                                  width: 97,
+                                  child: Align(
+                                    alignment: Alignment.topRight,
+                                    child: Image.asset(
+                                      'images/h6.png',
+                                      width: 30,
+                                      height: 30,
+                                    ),
+                                  ),
+                                )
+                              : Container(),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      width: ScreenUtil.getScreenW(context) - 115,
+                      padding: const EdgeInsets.only(left: 10.0, top: 8.0),
+                      child: Text(
+                        item.Name,
+                        style: TextStyle(
+                            fontSize: 16.0, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.only(left: 10.0, top: 12.0),
+                      child: Text(
+                        item.LastChapter,
+                        style: TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      width: ScreenUtil.getScreenW(context) - 115,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.only(left: 10.0, top: 22.0),
+                      child: Text(item.UTime,
+                          style: TextStyle(color: Colors.grey, fontSize: 11)),
+                    ),
+                  ],
+                ),
               ],
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  width: ScreenUtil.getScreenW(context) - 115,
-                  padding: const EdgeInsets.only(left: 10.0, top: 8.0),
-                  child: Text(
-                    item.Name,
-                    style:
-                        TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.only(left: 10.0, top: 12.0),
-                  child: Text(
-                    item.LastChapter,
-                    style: TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                  width: ScreenUtil.getScreenW(context) - 115,
-                ),
-                Container(
-                  padding: const EdgeInsets.only(left: 10.0, top: 22.0),
-                  child: Text(item.UTime,
-                      style: TextStyle(color: Colors.grey, fontSize: 11)),
-                ),
-              ],
-            ),
-          ],
-        ),
+          ),
+          Align(
+              alignment: Alignment.topRight,
+              child: _shelfModel.sortShelf
+                  ? GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        // color: Colors.red,
+                        height: 115,
+                        width: ScreenUtil.getScreenW(context),
+                        child: Align(
+                          alignment: Alignment.topRight,
+                          child: Image.asset(
+                            'images/pick.png',
+                            color: !_shelfModel.picks(i)
+                                ? Colors.white
+                                : Store.value<ColorModel>(context)
+                                    .theme
+                                    .primaryColor,
+                            width: 30,
+                            height: 30,
+                          ),
+                        ),
+                      ),
+                      onTap: () {
+                        _shelfModel.changePick(i);
+                      },
+                    )
+                  : Container())
+        ],
       ),
       onDismissed: (direction) {
         Store.value<ShelfModel>(context).modifyShelf(item);
@@ -212,7 +434,7 @@ class _BookShelfState extends State<BookShelf>
         if (direction == DismissDirection.endToStart) {
           // 从右向左  也就是删除
           _confirmContent = '确认删除     ${item.Name}';
-          _alertDialog = _createDialog(
+          _alertDialog = ConfirmDialog(
             _confirmContent,
             () {
               // 展示 SnackBar
@@ -235,41 +457,21 @@ class _BookShelfState extends State<BookShelf>
     );
   }
 
-  Widget _createDialog(
-      String _confirmContent, Function sureFunction, Function cancelFunction) {
-    return AlertDialog(
-      content: Text(_confirmContent),
-      actions: <Widget>[
-        FlatButton(onPressed: sureFunction, child: Text('确定')),
-        FlatButton(onPressed: cancelFunction, child: Text('取消')),
-      ],
-    );
-  }
-
   @override
-  // TODO: implement wantKeepAlive
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
-    // TODO: implement initState
+    _shelfModel = Store.value<ShelfModel>(context);
     eventBus
         .on<SyncShelfEvent>()
         .listen((SyncShelfEvent booksEvent) => freshShelf());
     super.initState();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
-      // if (SpUtil.haveKey(Common.listbookname)) {
-      // var name = SpUtil.getString(Common.listbookname);
-      // List decode2 = json.decode(name);
-      // List<Book> bks = decode2.map((m) => Book.fromJson(m)).toList();
-
-      Store.value<ShelfModel>(context).context = context;
-      Store.value<ShelfModel>(context).setShelf();
-      if (mounted) {
-        setState(() {});
-        // }
-      }
+      _shelfModel.context = context;
+      _shelfModel.setShelf();
+      _shelfModel.freshToken();
     });
   }
 }

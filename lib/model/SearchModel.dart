@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/entity/HotBook.dart';

@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 class ChapterView extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return _ChapterViewItem();
   }
 }
@@ -23,14 +22,13 @@ class _ChapterViewItem extends State<ChapterView> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     _scrollController.dispose();
   }
 
   @override
   void initState() {
-    // TODO: implement initState
+    super.initState();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
       scrollTo();
@@ -62,7 +60,6 @@ class _ChapterViewItem extends State<ChapterView> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
 
     return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
       var value = Store.value<ColorModel>(context);
@@ -146,11 +143,9 @@ class _ChapterViewItem extends State<ChapterView> {
   Future<void> refresh() async {
     Store.value<ReadModel>(context).reloadChapters();
     if (_scrollController.hasClients) {
-      int temp =  Store.value<ReadModel>(context).chapters.length - 8;
+      int temp = Store.value<ReadModel>(context).chapters.length - 8;
       await _scrollController.animateTo(temp * ITEM_HEIGH,
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }
   }
 }
-
-

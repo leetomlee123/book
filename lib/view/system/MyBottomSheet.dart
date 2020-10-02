@@ -48,10 +48,9 @@ class BottomSheet extends StatefulWidget {
 
   static AnimationController createAnimationController(TickerProvider vsync) {
     return AnimationController(
-      duration: _bottomSheetDuration,
-      debugLabel: 'BottomSheet',
-      vsync: vsync,
-    );
+        duration: _bottomSheetDuration,
+        debugLabel: 'BottomSheet',
+        vsync: vsync);
   }
 }
 
@@ -124,12 +123,11 @@ class _BottomSheetState extends State<BottomSheet> {
     return !widget.enableDrag
         ? bottomSheet
         : GestureDetector(
-
-      onVerticalDragUpdate: _handleDragUpdate,
-      onVerticalDragEnd: _handleDragEnd,
-      child: bottomSheet,
-      excludeFromSemantics: true,
-    );
+            onVerticalDragUpdate: _handleDragUpdate,
+            onVerticalDragEnd: _handleDragEnd,
+            child: bottomSheet,
+            excludeFromSemantics: true,
+          );
   }
 }
 
@@ -201,7 +199,7 @@ class _ModalBottomSheetState<T> extends State<_ModalBottomSheet<T>> {
     assert(debugCheckHasMaterialLocalizations(context));
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final MaterialLocalizations localizations =
-    MaterialLocalizations.of(context);
+        MaterialLocalizations.of(context);
     final String routeLabel = _getRouteLabel(localizations);
 
     return AnimatedBuilder(

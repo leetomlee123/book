@@ -7,7 +7,7 @@ import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/util.dart';
+import 'package:book/common/net.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
@@ -15,7 +15,6 @@ import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -49,6 +48,7 @@ class ReadModel with ChangeNotifier {
     [228, 241, 245],
     [245, 228, 228],
   ];
+
   // List<String> bgimg = [
   //   "https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png",
   //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme1_bg.9987a.png",
@@ -65,6 +65,11 @@ class ReadModel with ChangeNotifier {
     "QR_bg_7.png",
     "QR_bg_8.png",
   ];
+  bool refresh = true;
+
+  /// 文本间距
+  double textLineHeight = 3;
+
   //页面字体大小
   double fontSize = 32.0;
 
@@ -106,7 +111,7 @@ class ReadModel with ChangeNotifier {
     offsetTag = 0;
     loadOk = false;
     var string = SpUtil.getString(bookInfo.Id);
-    if (string.isNotEmpty&&string!="null") {
+    if (string.isNotEmpty && string != "null") {
       var btg = await parseJson(string);
       bookTag = BookTag.fromJson(btg);
       // bookTag = await _dbHelper.getBookProcess(bookInfo.Id);
@@ -119,12 +124,12 @@ class ReadModel with ChangeNotifier {
         bookTag.cur = chapters.length - 1;
       }
       intiPageContent(bookTag.cur, false);
-      if (isPage) {
-        pageController =
-            PageController(initialPage: bookTag.index, keepPage: false);
-      } else {
-        listController = ScrollController(initialScrollOffset: bookTag.offset);
-      }
+      // if (isPage) {
+      pageController =
+          PageController(initialPage: bookTag.index, keepPage: false);
+      // } else {
+      //   listController = ScrollController(initialScrollOffset: bookTag.offset);
+      // }
       value = bookTag.cur.toDouble();
       loadOk = true;
       //本书已读过
@@ -142,20 +147,21 @@ class ReadModel with ChangeNotifier {
       bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
         chapters = await _dbHelper.getChapters(bookInfo.Id);
+      } else {
+        await getChapters();
       }
 
-      await getChapters();
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
 
       await intiPageContent(bookTag.cur, false);
       int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
-      if (isPage) {
-        pageController = PageController(initialPage: idx, keepPage: false);
-      } else {
-        listController = ScrollController(initialScrollOffset: 0.0);
-      }
+      // if (isPage) {
+      pageController = PageController(initialPage: idx, keepPage: false);
+      // } else {
+      //   listController = ScrollController(initialScrollOffset: 0.0);
+      // }
       loadOk = true;
 
 //      notifyListeners();
@@ -256,10 +262,13 @@ class ReadModel with ChangeNotifier {
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
         // offset = 1;
         // offsetTag = 1;
-        nextPage = await loadChapter(bookTag.cur + 1);
+        ReadPage temp = await loadChapter(bookTag.cur + 1);
         //翻过页后再执行 缓解卡顿
-        await Future.delayed(Duration(seconds: 1));
+        // await Future.delayed(Duration(seconds: 1));
+
+        nextPage = temp;
         fillAllContent();
+
         // int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
         // //有可能翻到下一页 又翻回上一页
         // if (offsetTag > 0) {
@@ -276,14 +285,13 @@ class ReadModel with ChangeNotifier {
       if (temp < 0) {
         return;
       } else {
-
         bookTag.cur -= 1;
         nextPage = curPage;
         curPage = prePage;
         prePage = null;
         fillAllContent();
         var p = curPage?.pageOffsets?.length ?? 0;
-        pageController.jumpToPage(p > 0 ? p-1 : 0);
+        pageController.jumpToPage(p > 0 ? p - 1 : 0);
         // offsetTag = -1;
         // offset = -1;
         //翻过页后再执行 缓解卡顿
@@ -292,8 +300,7 @@ class ReadModel with ChangeNotifier {
         // print(offsetTag);
         fillAllContent();
         print("******* idx:$idx preLen:$preLen curLen:$curLen");
-        int ix = (prePage?.pageOffsets?.length ?? 0) +
-          idx;
+        int ix = (prePage?.pageOffsets?.length ?? 0) + idx;
         pageController.jumpToPage(ix);
         // int ix = (prePage?.pageOffsets?.length ?? 0) +
         //     curPage.pageOffsets.length +
@@ -333,7 +340,7 @@ class ReadModel with ChangeNotifier {
       bookTag.cur = chapters.length - 1;
       value = bookTag.cur.toDouble();
     }
-    // SpUtil.putString('${bookInfo.Id}chapters', "");
+    SpUtil.putString('${bookInfo.Id}chapters', "");
     _dbHelper.addChapters(list, bookInfo.Id);
     notifyListeners();
     print("load cps ok");
@@ -478,11 +485,11 @@ class ReadModel with ChangeNotifier {
         body: Container(
             decoration: model.dark
                 ? BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("images/QR_bg_4.jpg"),
-                fit: BoxFit.cover,
-              ),
-            )
+                    image: DecorationImage(
+                      image: AssetImage("images/QR_bg_4.jpg"),
+                      fit: BoxFit.cover,
+                    ),
+                  )
                 : BoxDecoration(
                     image: DecorationImage(
                       image: AssetImage("images/${bgimg[bgIdx]}"),
@@ -598,6 +605,9 @@ class ReadModel with ChangeNotifier {
                               padding: EdgeInsets.only(left: 3),
                               child: Text(
                                 r.chapterName,
+                                // strutStyle: StrutStyle(
+                                //     forceStrutHeight: true,
+                                //     height: textLineHeight),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: model.dark
@@ -616,13 +626,16 @@ class ReadModel with ChangeNotifier {
                                     child: Text(
                                       content,
                                       locale: Locale('zh_CN'),
-                                        // strutStyle: StrutStyle(
-                                        //   // fontFamily: fontFamily,
-                                        //   fontSize: fontSize+5,
-                                        // ),
+                                      // strutStyle: StrutStyle(
+                                      //     forceStrutHeight: true,
+                                      //     ),
                                       style: TextStyle(
-                                          textBaseline: TextBaseline.ideographic,
-                                          // height: 1.5,
+                                          textBaseline:
+                                              TextBaseline.ideographic,
+                                          // height:
+                                          //     SpUtil.getString("fontName") == ""
+                                          //         ? null
+                                          //         : 1.3,
                                           color: model.dark
                                               ? Colors.white54
                                               : Colors.black,
@@ -638,6 +651,9 @@ class ReadModel with ChangeNotifier {
                                   Expanded(child: Container()),
                                   Text(
                                     '第${i + 1}/${r.pageOffsets.length}页',
+                                    // strutStyle: StrutStyle(
+                                    //     forceStrutHeight: true,
+                                    //     height: textLineHeight),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: model.dark
@@ -730,6 +746,12 @@ class ReadModel with ChangeNotifier {
     }
     curPage = await loadChapter(bookTag.cur);
     fillAllContent();
+  }
+
+  reSetPages() {
+    prePage = null;
+    curPage = null;
+    nextPage = null;
   }
 
   @override

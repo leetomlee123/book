@@ -9,7 +9,6 @@ import 'file:///F:/code/book/lib/view/book/BookDetail.dart';
 import 'file:///F:/code/book/lib/view/system/FontSet.dart';
 import 'file:///F:/code/book/lib/view/person/Forgetpass.dart';
 import 'file:///F:/code/book/lib/view/movie/LookVideo.dart';
-import 'file:///F:/code/book/lib/view/person/PersonCenter.dart';
 import 'file:///F:/code/book/lib/view/book/ReadBook.dart';
 import 'file:///F:/code/book/lib/view/person/Register.dart';
 import 'file:///F:/code/book/lib/view/book/Search.dart';
