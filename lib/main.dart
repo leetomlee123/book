@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:book/common/Screen.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -137,20 +136,6 @@ class _MainPageState extends State<MainPage> {
             drawer: Drawer(
               child: isMovie ? MovieRecord() : Me(),
             ),
-            appBar:  shelfModel.sortShelf
-                  ? AppBar(
-                      title: Text("书架整理"),
-                      elevation: 0,
-                      centerTitle: true,
-                      automaticallyImplyLeading: false,
-                      leading: IconButton(
-                          icon: Icon(Icons.arrow_back),
-                          onPressed: () {
-                            shelfModel.sortShelfModel();
-                          }),
-                    )
-                  : null
-            ,
             key: q,
             body: PageView.builder(
                 //要点1
@@ -161,67 +146,16 @@ class _MainPageState extends State<MainPage> {
                 //回调函数
                 itemCount: _pages.length,
                 itemBuilder: (context, index) => _pages[index]),
-            bottomNavigationBar: shelfModel.sortShelf
-                  ? ButtonBar(
-                      alignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        FlatButton(
-                          child: Container(
-                            child: Text(shelfModel.pickAllFlag ? '全不选' : '全选'),
-                            // width: (Screen.width - 10) / 2,
-                          ),
-                          onPressed: () {
-                            shelfModel.pickAll();
-                          },
-                        ),
-                        FlatButton(
-                          child: Container(
-                            child: Text(
-                              '删除',
-                              style: TextStyle(
-                                  color: shelfModel.hasPick()
-                                      ? Colors.red
-                                      : Colors.grey),
-                            ),
-                            // width: (Screen.width - 10) / 2,
-                          ),
-                          onPressed: shelfModel.hasPick()
-                              ? () async {
-                                  var _alertDialog = ConfirmDialog(
-                                    "确定要删除所选书籍吗?",
-                                    () {
-                                      // 展示 SnackBar
-                                      Navigator.of(context).pop(true);
-                                    },
-                                    () {
-                                      Navigator.of(context).pop(false);
-                                    },
-                                  );
-                                  var isDismiss = await showDialog(
-                                      context: context,
-                                      builder: (context) {
-                                        return _alertDialog;
-                                      });
-                                  if (isDismiss) {
-                                    shelfModel.removePicks();
-                                  }
-                                }
-                              : null,
-                        ),
-                      ],
-                    )
-            
-                  : BottomNavigationBar(
-                      unselectedItemColor:
-                          model.dark ? Colors.white : Colors.black,
-                      elevation: 0,
-                      items: bottoms,
-                      type: BottomNavigationBarType.fixed,
-                      currentIndex: _tabIndex,
-                      onTap: (index) {
-                        _pageController.jumpToPage(index);
-                      },
-                    ),
+            bottomNavigationBar: BottomNavigationBar(
+              unselectedItemColor: model.dark ? Colors.white : Colors.black,
+              elevation: 0,
+              items: bottoms,
+              type: BottomNavigationBarType.fixed,
+              currentIndex: _tabIndex,
+              onTap: (index) {
+                _pageController.jumpToPage(index);
+              },
+            ),
           );
         }),
         data: model.theme,

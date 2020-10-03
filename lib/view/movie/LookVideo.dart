@@ -9,7 +9,8 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'file:///F:/code/book/lib/view/system/MyControls.dart';
+import 'package:book/view/system/MyControls.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';

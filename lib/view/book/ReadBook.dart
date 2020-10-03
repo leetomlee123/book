@@ -5,12 +5,12 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/ChapterView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
-import 'file:///F:/code/book/lib/view/book/ChapterView.dart';
 
 import 'Menu.dart';
 

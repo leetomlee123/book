@@ -3,17 +3,19 @@ import 'dart:convert' as convert;
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/main.dart';
+import 'package:book/view/book/AllTagBook.dart';
+import 'package:book/view/book/BookDetail.dart';
+import 'package:book/view/book/ReadBook.dart';
+import 'package:book/view/book/Search.dart';
+import 'package:book/view/book/SortShelf.dart';
+import 'package:book/view/movie/LookVideo.dart';
+import 'package:book/view/movie/TagVideo.dart';
+import 'package:book/view/movie/VideoDetail.dart';
+import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
-import 'file:///F:/code/book/lib/view/book/AllTagBook.dart';
-import 'file:///F:/code/book/lib/view/book/BookDetail.dart';
-import 'file:///F:/code/book/lib/view/system/FontSet.dart';
-import 'file:///F:/code/book/lib/view/person/Forgetpass.dart';
-import 'file:///F:/code/book/lib/view/movie/LookVideo.dart';
-import 'file:///F:/code/book/lib/view/book/ReadBook.dart';
-import 'file:///F:/code/book/lib/view/person/Register.dart';
-import 'file:///F:/code/book/lib/view/book/Search.dart';
-import 'file:///F:/code/book/lib/view/movie/TagVideo.dart';
-import 'file:///F:/code/book/lib/view/movie/VideoDetail.dart';
+import 'package:book/view/person/Register.dart';
+import 'package:book/view/system/FontSet.dart';
+
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
@@ -75,6 +77,12 @@ var tagVideoHandler =
   String name = (params['name'][0]);
 
   return TagVideo(category, name);
+});
+var sortShelfHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+
+
+  return SortShelf();
 });
 
 //// 网页加载 - 示例：传多个字符串参数
