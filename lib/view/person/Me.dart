@@ -1,23 +1,15 @@
-import 'dart:convert';
-
-import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
-import 'package:book/entity/BookInfo.dart';
-import 'package:book/entity/BookTag.dart';
-import 'package:book/entity/Chapter.dart';
-import 'package:book/entity/Info.dart';
+import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
-import 'package:dio/dio.dart';
+import 'package:book/view/person/CacheManager.dart';
+import 'package:book/view/person/InfoPage.dart';
+import 'package:book/view/person/Skin.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../main.dart';
 
 class Me extends StatelessWidget {
   Widget getItem(imagIcon, text, func) {
@@ -292,190 +284,5 @@ class Me extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class CacheManager extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    // TODO: implement createState
-    return _CacheManager();
-  }
-}
-
-class _CacheManager extends State<CacheManager> {
-  @override
-  Widget build(BuildContext context) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text("缓存管理"),
-                  centerTitle: true,
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                ),
-                body: ListView(
-                  children: managers(data.theme.primaryColor),
-                ),
-              ),
-              data: data.theme,
-            ));
-  }
-
-  List<Widget> managers(Color color) {
-    List<Widget> wds = [];
-    if (SpUtil.haveKey(Common.downloadlist)) {
-      List<String> ids = SpUtil.getStringList(Common.downloadlist);
-      ids.forEach((f) {
-        wds.add(item(f, color));
-      });
-    }
-    return wds;
-  }
-
-  Widget item(id, Color color) {
-    List list = jsonDecode(SpUtil.getString('${id}chapters'));
-    List all = list.map((e) => Chapter.fromJson(e)).toList();
-    BookTag bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(id)));
-    int sub = 0;
-    all.forEach((f) {
-      if (f.hasContent == 2) {
-        sub += 1;
-      }
-    });
-    return Card(
-      child: Column(
-        children: <Widget>[
-          Text(bookTag.bookName),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Container(
-                  child: Slider(
-                    activeColor: Colors.white,
-                    inactiveColor: Colors.white70,
-                    value: sub.toDouble(),
-                    max: all.length.toDouble(),
-                    min: 0.0,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.arrow_downward),
-                onPressed: () {
-                  var value = Store.value<ReadModel>(context);
-                  value.bookTag = bookTag;
-                  value.bookInfo = BookInfo.x(id);
-                  value.downloadAll();
-                },
-              )
-            ],
-          )
-        ],
-      ),
-    );
-  }
-}
-
-class Skin extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-              child: Scaffold(
-                body: Padding(
-                  padding: EdgeInsets.only(
-                      left: 15,
-                      right: 15,
-                      top: ScreenUtil.getStatusBarH(context) + 10),
-                  child: Wrap(
-                    spacing: 10.0,
-                    runSpacing: 12.0,
-                    children: data.getSkins(
-                        ((ScreenUtil.getScreenW(context) - 40) / 2).toDouble(),
-                        (ScreenUtil.getScreenW(context) - 40) /
-                            2 /
-                            5 *
-                            2.toDouble()),
-                  ),
-                ),
-              ),
-              data: data.theme,
-            ));
-  }
-}
-
-class InfoPage extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    return InfoState();
-  }
-}
-
-class InfoState extends State<InfoPage> {
-  List<Info> ifs = [];
-
-  @override
-  void initState() {
-    super.initState();
-    getInfo();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text("公告"),
-                  centerTitle: true,
-                  elevation: 0,
-                ),
-                body: Padding(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Center(
-                        child: Text(ifs.length == 0 ? "公告" : ifs[0].Title),
-                      ),
-                      Container(
-                        child: Text(
-                          ifs.length == 0 ? "太平无事" : ifs[0].Content,
-                          textAlign: TextAlign.start,
-                        ),
-                      ),
-                      Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: Container(),
-                          ),
-                          Text(
-                            ifs.length == 0
-                                ? DateUtil.getNowDateStr()
-                                : ifs[0].Date,
-                            textAlign: TextAlign.start,
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                  padding: EdgeInsets.all(15),
-                ),
-              ),
-              data: data.theme,
-            ));
-  }
-
-  Future<void> getInfo() async {
-    Response res = await Util(null).http().get(Common.info);
-    List data = res.data['data'];
-    if (data == null) {
-      return;
-    }
-    ifs = data.map((f) => Info.fromJson(f)).toList();
-    if (mounted) {
-      setState(() {});
-    }
   }
 }
