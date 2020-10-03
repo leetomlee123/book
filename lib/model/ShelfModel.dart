@@ -219,6 +219,5 @@ class ShelfModel with ChangeNotifier {
   @override
   void dispose() {
     super.dispose();
-    _dbHelper.close();
   }
 }

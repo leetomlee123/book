@@ -83,20 +83,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     readModel.saveData();
   }
 
-  Widget _createDialog(
-      String _confirmContent, Function sureFunction, Function cancelFunction) {
-    return AlertDialog(
-      content: Text(_confirmContent),
-      actions: <Widget>[
-        FlatButton(onPressed: sureFunction, child: Text('确定')),
-        FlatButton(onPressed: cancelFunction, child: Text('取消')),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-
     return WillPopScope(
         onWillPop: () async {
           if (!Store.value<ShelfModel>(context)
@@ -130,6 +118,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             child: Text('确定')),
                         FlatButton(
                             onPressed: () {
+                              Store.value<ShelfModel>(context)
+                                  .delLocalCache([this.widget._bookInfo.Id]);
                               Navigator.pop(context);
                             },
                             child: Text('取消')),

@@ -216,22 +216,27 @@ class DbHelper {
 
   /// 添加章节
   Future<Null> addChapters(List<Chapter> cps, String bookId) async {
+    print('add book $bookId');
     var dbClient = await db;
     var batch = dbClient.batch();
     for (Chapter chapter in cps) {
-      batch.insert("$_tableName", {
-        "chapter_id": chapter.id,
-        "name": chapter.name,
-        "content": "",
-        "book_id": bookId,
-        "hasContent": chapter.hasContent
-      });
+      // batch.rawInsert("$_tableName", {
+      //   "chapter_id": chapter.id,
+      //   "name": chapter.name,
+      //   "content": "",
+      //   "book_id": bookId,
+      //   "hasContent": chapter.hasContent
+      // });
+      batch.rawInsert(
+          'insert into $_tableName (chapter_id,name,content,book_id,hasContent) values(?,?,?,?,?)',
+          [chapter.id, chapter.name, "", bookId, chapter.hasContent]);
     }
-    batch.commit(noResult: true);
+    await batch.commit(noResult: true);
+    print("save cps success");
   }
 
-  /// 添加章节
   Future<List<Chapter>> getChapters(String bookId) async {
+    print('get book $bookId');
     var dbClient = await db;
     var list = await dbClient
         .rawQuery("select * from $_tableName where book_id=?", [bookId]);
@@ -239,6 +244,8 @@ class DbHelper {
     for (var i in list) {
       cps.add(Chapter(i['hasContent'], i['chapter_id'], i['name']));
     }
+    // await closeBook();
+
     return cps;
   }
 
@@ -303,9 +310,22 @@ class DbHelper {
         where: "bookId = ?", whereArgs: [user.bookId]);
   }
 
-  /// 关闭
+  //  关闭
   Future close() async {
-    var dbClient = await db;
+    await _db?.close();
+    await _db1?.close();
+    await _db2?.close();
+  }
+
+  //  关闭
+  Future closeBook() async {
+    var dbClient = await db1;
+    return dbClient.close();
+  }
+
+  //  关闭
+  Future closeMovies() async {
+    var dbClient = await db2;
     return dbClient.close();
   }
 }

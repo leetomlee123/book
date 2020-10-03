@@ -131,105 +131,99 @@ class _MainPageState extends State<MainPage> {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
       return Theme(
-        child: Scaffold(
-          drawer: Drawer(
-            child: isMovie ? MovieRecord() : Me(),
-          ),
-          key: q,
-          body: PageView.builder(
-              //要点1
-              physics: NeverScrollableScrollPhysics(),
-              //禁止页面左右滑动切换
-              controller: _pageController,
-              onPageChanged: _pageChanged,
-              //回调函数
-              itemCount: _pages.length,
-              itemBuilder: (context, index) => _pages[index]),
-          bottomNavigationBar: Store.connect<ShelfModel>(
-              builder: (context, ShelfModel shelf, child) {
-            return shelf.sortShelf
-                ? ButtonBar(
-                    alignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      FlatButton(
-                        child: Container(
-                          child: Text(shelf.pickAllFlag ? '全不选' : '全选'),
-                          // width: (Screen.width - 10) / 2,
-                        ),
-                        onPressed: () {
-                          shelf.pickAll();
-                        },
-                      ),
-                      FlatButton(
-                        child: Container(
-                          child: Text(
-                            '删除',
-                            style: TextStyle(
-                                color:
-                                    shelf.hasPick() ? Colors.red : Colors.grey),
+        child: Store.connect<ShelfModel>(
+            builder: (context, ShelfModel shelfModel, child) {
+          return Scaffold(
+            drawer: Drawer(
+              child: isMovie ? MovieRecord() : Me(),
+            ),
+            appBar:  shelfModel.sortShelf
+                  ? AppBar(
+                      title: Text("书架整理"),
+                      elevation: 0,
+                      centerTitle: true,
+                      automaticallyImplyLeading: false,
+                      leading: IconButton(
+                          icon: Icon(Icons.arrow_back),
+                          onPressed: () {
+                            shelfModel.sortShelfModel();
+                          }),
+                    )
+                  : null
+            ,
+            key: q,
+            body: PageView.builder(
+                //要点1
+                physics: NeverScrollableScrollPhysics(),
+                //禁止页面左右滑动切换
+                controller: _pageController,
+                onPageChanged: _pageChanged,
+                //回调函数
+                itemCount: _pages.length,
+                itemBuilder: (context, index) => _pages[index]),
+            bottomNavigationBar: shelfModel.sortShelf
+                  ? ButtonBar(
+                      alignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        FlatButton(
+                          child: Container(
+                            child: Text(shelfModel.pickAllFlag ? '全不选' : '全选'),
+                            // width: (Screen.width - 10) / 2,
                           ),
-                          // width: (Screen.width - 10) / 2,
+                          onPressed: () {
+                            shelfModel.pickAll();
+                          },
                         ),
-                        onPressed: shelf.hasPick()
-                            ? () async {
-                                var _alertDialog = ConfirmDialog(
-                                  "确定要删除所选书籍吗?",
-                                  () {
-                                    // 展示 SnackBar
-                                    Navigator.of(context).pop(true);
-                                  },
-                                  () {
-                                    Navigator.of(context).pop(false);
-                                  },
-                                );
-                                var isDismiss = await showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return _alertDialog;
-                                    });
-                                if (isDismiss) {
-                                  shelf.removePicks();
+                        FlatButton(
+                          child: Container(
+                            child: Text(
+                              '删除',
+                              style: TextStyle(
+                                  color: shelfModel.hasPick()
+                                      ? Colors.red
+                                      : Colors.grey),
+                            ),
+                            // width: (Screen.width - 10) / 2,
+                          ),
+                          onPressed: shelfModel.hasPick()
+                              ? () async {
+                                  var _alertDialog = ConfirmDialog(
+                                    "确定要删除所选书籍吗?",
+                                    () {
+                                      // 展示 SnackBar
+                                      Navigator.of(context).pop(true);
+                                    },
+                                    () {
+                                      Navigator.of(context).pop(false);
+                                    },
+                                  );
+                                  var isDismiss = await showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        return _alertDialog;
+                                      });
+                                  if (isDismiss) {
+                                    shelfModel.removePicks();
+                                  }
                                 }
-                              }
-                            : null,
-                      ),
-                    ],
-                  )
-                // Row(
-                //     children:
-                //     [
-                //       FlatButton(
-                //         child: Container(
-                //           child: Text('全选'),
-                //           width: (Screen.width-10) / 2,
-                //         ),
-                //         onPressed: () {},
-                //       ),
-                //       FlatButton(
-                //         child: Container(
-                //           child: Text(
-                //             '删除',
-                //             style: TextStyle(color: Colors.red),
-                //           ),
-                //             width: (Screen.width-10) / 2,
-                //         ),
-                //         onPressed: () {},
-                //       ),
-                //     ],
-                //   )
-                : BottomNavigationBar(
-                    unselectedItemColor:
-                        model.dark ? Colors.white : Colors.black,
-                    elevation: 0,
-                    items: bottoms,
-                    type: BottomNavigationBarType.fixed,
-                    currentIndex: _tabIndex,
-                    onTap: (index) {
-                      _pageController.jumpToPage(index);
-                    },
-                  );
-          }),
-        ),
+                              : null,
+                        ),
+                      ],
+                    )
+            
+                  : BottomNavigationBar(
+                      unselectedItemColor:
+                          model.dark ? Colors.white : Colors.black,
+                      elevation: 0,
+                      items: bottoms,
+                      type: BottomNavigationBarType.fixed,
+                      currentIndex: _tabIndex,
+                      onTap: (index) {
+                        _pageController.jumpToPage(index);
+                      },
+                    ),
+          );
+        }),
         data: model.theme,
       );
     });

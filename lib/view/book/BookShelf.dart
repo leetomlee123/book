@@ -35,17 +35,7 @@ class _BookShelfState extends State<BookShelf>
         builder: (context, ShelfModel model, child) {
       return Scaffold(
           appBar: model.sortShelf
-              ? AppBar(
-                  title: Text("书架整理"),
-                  elevation: 0,
-                  centerTitle: true,
-                  automaticallyImplyLeading: false,
-                  leading: IconButton(
-                      icon: Icon(Icons.arrow_back),
-                      onPressed: () {
-                        _shelfModel.sortShelfModel();
-                      }),
-                )
+              ? null
               : AppBar(
                   leading: IconButton(
                     icon: Icon(Icons.person),

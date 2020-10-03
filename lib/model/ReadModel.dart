@@ -116,9 +116,15 @@ class ReadModel with ChangeNotifier {
       bookTag = BookTag.fromJson(btg);
       // bookTag = await _dbHelper.getBookProcess(bookInfo.Id);
       chapters = await _dbHelper.getChapters(bookInfo.Id);
+
       // List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
       // chapters = list.map((e) => Chapter.fromJson(e)).toList();
-      getChapters();
+      if (chapters.isEmpty) {
+        await getChapters();
+      } else {
+        getChapters();
+      }
+
       //书的最后一章
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
@@ -342,6 +348,7 @@ class ReadModel with ChangeNotifier {
     }
     SpUtil.putString('${bookInfo.Id}chapters', "");
     _dbHelper.addChapters(list, bookInfo.Id);
+
     notifyListeners();
     print("load cps ok");
   }
@@ -497,25 +504,27 @@ class ReadModel with ChangeNotifier {
                     ),
                   ),
             // color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
-            child: isPage
-                ? PageView.builder(
-                    controller: pageController,
-                    physics: AlwaysScrollableScrollPhysics(),
-                    itemBuilder: (BuildContext context, int index) {
-                      return allContent[index];
-                    },
-                    //条目个数
-                    itemCount: (prePage?.pageOffsets?.length ?? 0) +
-                        (curPage?.pageOffsets?.length ?? 0) +
-                        (nextPage?.pageOffsets?.length ?? 0),
-                    onPageChanged: (idx) => changeChapter(idx),
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    controller: listController,
-                    itemBuilder: (BuildContext context, int index) {
-                      return allContent[index];
-                    })),
+            child:
+                // isPage?
+                PageView.builder(
+              controller: pageController,
+              physics: AlwaysScrollableScrollPhysics(),
+              itemBuilder: (BuildContext context, int index) {
+                return allContent[index];
+              },
+              //条目个数
+              itemCount: (prePage?.pageOffsets?.length ?? 0) +
+                  (curPage?.pageOffsets?.length ?? 0) +
+                  (nextPage?.pageOffsets?.length ?? 0),
+              onPageChanged: (idx) => changeChapter(idx),
+            )
+            // : ListView.builder(
+            //     shrinkWrap: true,
+            //     controller: listController,
+            //     itemBuilder: (BuildContext context, int index) {
+            //       return allContent[index];
+            //     })
+            ),
       );
     });
   }
@@ -705,7 +714,7 @@ class ReadModel with ChangeNotifier {
     bookTag = null;
     allContent = null;
     chapters = [];
-    pageController.dispose();
+    // pageController.dispose();
     loadOk = false;
   }
 
@@ -755,9 +764,8 @@ class ReadModel with ChangeNotifier {
   }
 
   @override
-  void dispose() {
-    // TODO: implement dispose
-    _dbHelper.close();
+  Future<void> dispose() async {
+    await _dbHelper.close();
     super.dispose();
   }
 }
