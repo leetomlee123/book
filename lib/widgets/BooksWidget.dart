@@ -158,18 +158,14 @@ class _BooksWidgetState extends State<BooksWidget> {
           ],
         ),
         onTap: () async {
-          Book temp = _shelfModel.shelf[i];
-
-          _shelfModel.shelf[i].NewChapterCount = 0;
-          _shelfModel.upTotop(temp);
-          
           Routes.navigateTo(
             context,
             Routes.read,
             params: {
-              'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
+              'read': jsonEncode(_shelfModel.shelf[i]),
             },
           );
+          _shelfModel.upTotop(i);
         },
         onLongPress: () {
           Routes.navigateTo(
@@ -190,19 +186,14 @@ class _BooksWidgetState extends State<BooksWidget> {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () async {
-              Book temp = _shelfModel.shelf[i];
-
-              _shelfModel.shelf[i].NewChapterCount = 0;
-          
               Routes.navigateTo(
                 context,
                 Routes.read,
                 params: {
-                  'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
+                  'read': jsonEncode(_shelfModel.shelf[i]),
                 },
               );
-              _shelfModel.upTotop(temp);
-
+              _shelfModel.upTotop(i);
             },
             child: getBookItemView(_shelfModel.shelf[i], i),
             onLongPress: () {

@@ -162,7 +162,7 @@ class DbHelper {
         [lastChapter, newStatus, utime, bookId]);
   }
 
-  Future<Null> delBook(String bookId) async {
+  Future<Null> delBookAndCps(String bookId) async {
     var dbClient = await db1;
     dbClient.rawDelete("delete from $_tableName1  where book_id=?", [bookId]);
     var dbClient1 = await db;
@@ -188,6 +188,13 @@ class DbHelper {
           i['lastChapter']));
     }
     return bks;
+  }
+
+  Future<Null> delBook(String bookId) async {
+    var dbClient = await db1;
+
+    await dbClient
+        .rawDelete('delete from $_tableName1 where book_id=?', [bookId]);
   }
 
   Future<Null> addBooks(List<Book> bks) async {

@@ -142,18 +142,17 @@ class ShelfModel with ChangeNotifier {
     saveShelf();
   }
 
-  upTotop(Book book) async {
+  upTotop(int i) async {
+    Book book = shelf[i];
     await _dbHelper.updBookStatus(book.Id, 0);
-    for (var i = 0; i < shelf.length; i++) {
-      if (shelf[i].Id == book.Id) {
-        shelf.removeAt(i);
-        break;
-      }
-    }
+
+    shelf.removeAt(i);
+
     shelf.insert(0, book);
+    await _dbHelper.delBook(book.Id);
     await _dbHelper.addBooks([book]);
     notifyListeners();
-    saveShelf();
+    // saveShelf();
   }
 
   dropAccountOut() {
@@ -173,7 +172,7 @@ class ShelfModel with ChangeNotifier {
       SpUtil.remove(ids[i]);
       SpUtil.remove('${ids[i]}chapters');
 
-      _dbHelper.delBook(ids[i]);
+      _dbHelper.delBookAndCps(ids[i]);
     }
   }
 
