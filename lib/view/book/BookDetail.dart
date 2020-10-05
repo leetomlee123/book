@@ -454,25 +454,25 @@ class _BookDetailState extends State<BookDetail> {
                         icon: Icon(
                           Icons.clear,
                         ),
-                        label: '移除书架',
+                        title: Text('移除书架'),
                       )
                     : BottomNavigationBarItem(
                         icon: Icon(
                           Icons.playlist_add,
                         ),
-                        label: '加入书架',
+                        title: Text('加入书架'),
                       ),
                 BottomNavigationBarItem(
                   icon: ImageIcon(
                     AssetImage("images/read.png"),
                   ),
-                  label: '立即阅读',
+                  title: Text('立即阅读'),
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(
                     Icons.cloud_download,
                   ),
-                  label: '全本缓存',
+                  title: Text('全本缓存'),
                 ),
               ],
 

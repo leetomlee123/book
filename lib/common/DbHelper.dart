@@ -243,13 +243,15 @@ class DbHelper {
           [chapter.id, chapter.name, "", bookId, chapter.hasContent]);
     }
 
-    batch.commit(noResult: true, continueOnError: true);
+    await batch.commit(noResult: true, continueOnError: true);
 
     print("save cps success");
+
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
     var dbClient = await db;
+
     print('get dbclient hashcode ${dbClient.hashCode}');
     var list = await dbClient
         .rawQuery("select * from $_tableName where book_id=?", [bookId]);

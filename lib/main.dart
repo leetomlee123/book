@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:book/common/DbHelper.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -76,19 +78,19 @@ class _MainPageState extends State<MainPage> {
       icon: ImageIcon(
         AssetImage("images/book_shelf.png"),
       ),
-      label: '书架',
+      title: Text('书架'),
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/good.png"),
       ),
-      label: '精选',
+       title: Text('精选'),
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/video.png"),
       ),
-      label: '美剧',
+       title: Text('美剧'),
     ),
     //  BottomNavigationBarItem(
     //      icon: ImageIcon(

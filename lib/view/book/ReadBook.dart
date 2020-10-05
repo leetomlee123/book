@@ -54,7 +54,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel = Store.value<ReadModel>(context);
       readModel.bookInfo = this.widget._bookInfo;
       readModel.context = context;
-      readModel.dbHelper = DbHelper.instance;
+      
       readModel.getBookRecord();
       if (SpUtil.haveKey('fontSize')) {
         readModel.fontSize = SpUtil.getDouble('fontSize');
