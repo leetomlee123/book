@@ -78,10 +78,10 @@ class _CacheManager extends State<CacheManager> {
               IconButton(
                 icon: Icon(Icons.arrow_downward),
                 onPressed: () {
-                  var value = Store.value<ReadModel>(context);
-                  value.bookTag = bookTag;
-                  value.bookInfo = BookInfo.x(id);
-                  value.downloadAll();
+                  // var value = Store.value<ReadModel>(context);
+                  // value.bookTag = bookTag;
+                  // value.book = BookInfo.x(id);
+                  // value.downloadAll();
                 },
               )
             ],

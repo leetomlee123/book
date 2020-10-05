@@ -31,7 +31,7 @@ class _BookShelfState extends State<BookShelf>
                       eventBus.fire(OpenEvent("p"));
                     },
                   ),
-                  elevation: 0,
+                  // elevation: 0,
                   title: Text(
                     '书架',
                     style: TextStyle(

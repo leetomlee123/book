@@ -480,18 +480,7 @@ class _BookDetailState extends State<BookDetail> {
                 switch (i) {
                   case 0:
                     {
-                      Book book = new Book(
-                          "",
-                          "",
-                          0,
-                          _bookInfo.Id,
-                          _bookInfo.Name,
-                          "",
-                          _bookInfo.Author,
-                          _bookInfo.Img,
-                          _bookInfo.LastChapterId,
-                          _bookInfo.LastChapter,
-                          _bookInfo.LastTime);
+                      Book book = _bookInfo as Book;
                       Store.value<ShelfModel>(context).modifyShelf(book);
                     }
                     break;
@@ -511,7 +500,7 @@ class _BookDetailState extends State<BookDetail> {
                       BotToast.showText(text: "开始下载...");
 
                       var value = Store.value<ReadModel>(context);
-                      value.bookInfo = _bookInfo;
+                      value.book = _bookInfo as Book;
                       value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
                       value.downloadAll();
                     }

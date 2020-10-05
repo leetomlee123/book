@@ -14,9 +14,9 @@ import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 import 'Menu.dart';
 
 class ReadBook extends StatefulWidget {
-  BookInfo _bookInfo;
+  final Book book;
 
-  ReadBook(this._bookInfo);
+  ReadBook(this.book);
 
   @override
   State<StatefulWidget> createState() {
@@ -51,7 +51,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) async {
       readModel = Store.value<ReadModel>(context);
-      readModel.bookInfo = this.widget._bookInfo;
+      readModel.book = this.widget.book;
       readModel.context = context;
       readModel.getBookRecord();
       if (SpUtil.haveKey('fontSize')) {
@@ -75,6 +75,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     await readModel.saveData();
     await readModel.clear();
     WidgetsBinding.instance.removeObserver(this);
+    print('dispose');
   }
 
   @override
@@ -90,7 +91,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               .shelf
               .map((f) => f.Id)
               .toList()
-              .contains(readModel.bookInfo.Id)) {
+              .contains(readModel.book.Id)) {
             var showDialog2 = await showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -99,26 +100,15 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         FlatButton(
                             onPressed: () {
                               Navigator.pop(context);
-                              Book book = new Book(
-                                  "",
-                                  "",
-                                  0,
-                                  readModel.bookInfo.Id,
-                                  readModel.bookInfo.Name,
-                                  "",
-                                  readModel.bookInfo.Author,
-                                  readModel.bookInfo.Img,
-                                  readModel.bookInfo.LastChapterId,
-                                  readModel.bookInfo.LastChapter,
-                                  readModel.bookInfo.LastTime);
+               
                               Store.value<ShelfModel>(context)
-                                  .modifyShelf(book);
+                                  .modifyShelf(this.widget.book);
                             },
                             child: Text('确定')),
                         FlatButton(
                             onPressed: () {
                               Store.value<ShelfModel>(context)
-                                  .delLocalCache([this.widget._bookInfo.Id]);
+                                  .delLocalCache([this.widget.book.Id]);
                               Navigator.pop(context);
                             },
                             child: Text('取消')),

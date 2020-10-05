@@ -21,7 +21,7 @@ class ShelfModel with ChangeNotifier {
   BuildContext context;
   bool model = SpUtil.getBool("shelfModel");
   bool sortShelf = false;
-  DbHelper _dbHelper = DbHelper();
+  DbHelper _dbHelper = DbHelper.instance;
   List<bool> _picks = [];
   ShelfModel();
   bool pickAllFlag = false;
@@ -149,8 +149,11 @@ class ShelfModel with ChangeNotifier {
     shelf.removeAt(i);
 
     shelf.insert(0, book);
+    book = await _dbHelper.getBook(book.Id);
+
     await _dbHelper.delBook(book.Id);
     await _dbHelper.addBooks([book]);
+    // print(book.toString());
     notifyListeners();
     // saveShelf();
   }

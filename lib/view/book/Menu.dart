@@ -71,7 +71,7 @@ class _MenuState extends State<Menu> {
                   IconButton(
                     icon: Icon(Icons.info),
                     onPressed: () async {
-                      String url = Common.detail + '/${_readModel.bookInfo.Id}';
+                      String url = Common.detail + '/${_readModel.book.Id}';
                       Response future = await Util(context).http().get(url);
                       var d = future.data['data'];
                       BookInfo bookInfo = BookInfo.fromJson(d);
@@ -391,30 +391,30 @@ class _MenuState extends State<Menu> {
                     ),
                   ),
                 ),
-                // SizedBox(
-                //   width: 10,
-                // ),
-                // Expanded(
-                //   child: Container(
-                //     child: FlatButton(
-                //       onPressed: () {
-                //         Routes.navigateTo(
-                //           context,
-                //           Routes.fontSet,
-                //         );
-                //       },
-                //       child: Text(
-                //         '字体',
-                //         style: TextStyle(
-                //             color:
-                //                 _colorModel.dark ? Colors.white : Colors.black),
-                //       ),
-                //       shape: RoundedRectangleBorder(
-                //           borderRadius:
-                //               BorderRadius.all(Radius.circular(20.0))),
-                //     ),
-                //   ),
-                // ),
+                SizedBox(
+                  width: 10,
+                ),
+                Expanded(
+                  child: Container(
+                    child: FlatButton(
+                      onPressed: () {
+                        Routes.navigateTo(
+                          context,
+                          Routes.fontSet,
+                        );
+                      },
+                      child: Text(
+                        '字体',
+                        style: TextStyle(
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(20.0))),
+                    ),
+                  ),
+                ),
               ],
             ),
             Row(

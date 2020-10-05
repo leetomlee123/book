@@ -5,15 +5,6 @@ part of 'BookInfo.dart';
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
-double td(String s) {
-  if(s=="null"){
-    s="0.0";
-  }
-  if (!s.contains('.')) {
-    s = s??"0" + '.0';
-  }
-  return double.parse(s??"0.0");
-}
 
 BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
   return BookInfo(
@@ -25,7 +16,7 @@ BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
       json['Id'] as String,
       json['Name'] as String,
       json['Img'] as String,
-      td(json['Rate'].toString()) as double,
+      (json['Rate'] as num)?.toDouble(),
       json['Desc'] as String,
       json['LastChapterId'] as String,
       json['LastChapter'] as String,
@@ -38,15 +29,15 @@ BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _$BookInfoToJson(BookInfo instance) => <String, dynamic>{
-      'Count': instance.Count,
       'Author': instance.Author,
       'BookStatus': instance.BookStatus,
       'CId': instance.CId,
       'CName': instance.CName,
       'Id': instance.Id,
       'Name': instance.Name,
-      'Rate': instance.Rate,
       'Img': instance.Img,
+      'Rate': instance.Rate,
+      'Count': instance.Count,
       'Desc': instance.Desc,
       'LastChapterId': instance.LastChapterId,
       'LastChapter': instance.LastChapter,

@@ -8,6 +8,7 @@ class Book {
   String ChapterName;
   int NewChapterCount;
   String Id;
+  String CId;
   int cur;
   int index;
   String CName;
@@ -24,6 +25,10 @@ class Book {
 
   Book.Id(this.Id);
 
+  @override
+  String toString() {
+    return 'Book{ChapterId: $ChapterId, ChapterName: $ChapterName, NewChapterCount: $NewChapterCount, Id: $Id, CId: $CId, cur: $cur, index: $index, CName: $CName, Name: $Name, Author: $Author, Img: $Img, LastChapterId: $LastChapterId, LastChapter: $LastChapter, UTime: $UTime}';
+  }
 
   Book.fromSql(this.Id, this.Name, this.CName, this.Author, this.UTime,
       this.Img, this.cur, this.index, this.NewChapterCount, this.LastChapter);
@@ -33,6 +38,7 @@ class Book {
       this.ChapterName,
       this.NewChapterCount,
       this.Id,
+      this.CId,
       this.Name,
       this.CName,
       this.Author,

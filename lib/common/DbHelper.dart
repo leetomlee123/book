@@ -77,9 +77,9 @@ class DbHelper {
         "content TEXT,"
         "book_id TEXT,"
         "hasContent INTEGER)");
-    // await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
-    // await db
-    //     .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
+    await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
+    await db
+        .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
   }
 
   void _onCreate1(Database db, int version) async {
@@ -95,7 +95,7 @@ class DbHelper {
         "newChapter INTEGER,"
         "idx INTEGER,"
         "lastChapter TEXT)");
-    // await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
+    await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
   }
 
   void _onCreate2(Database db, int version) async {
@@ -189,7 +189,26 @@ class DbHelper {
     }
     return bks;
   }
-
+  Future<Book> getBook(String bookId) async {
+    var dbClient = await db1;
+    Book bk ;
+    var list = await dbClient
+        .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
+    for (var i in list) {
+     bk= Book.fromSql(
+          i['book_id'],
+          i['name'],
+          i['cname'],
+          i['author'],
+          i['utime'],
+          i['img'],
+          i['cur'],
+          i['idx'],
+          i['newChapter'],
+          i['lastChapter']);
+    }
+    return bk;
+  }
   Future<Null> delBook(String bookId) async {
     var dbClient = await db1;
 
@@ -210,8 +229,8 @@ class DbHelper {
         "author": book.Author,
         "img": book.Img,
         "utime": book.UTime,
-        "cur": 0,
-        "idx": 0,
+        "cur": book.cur,
+        "idx": book.index,
         "newChapter": 0,
         "lastChapter": book.LastChapter
       });
@@ -227,12 +246,14 @@ class DbHelper {
         [cur, idx, bookId]);
   }
 
-  Future<BookTag> getBookProcess(String bookId) async {
+  Future<BookTag> getBookProcess(String bookId, String name) async {
     var dbClient = await db1;
 
     var list = await dbClient
         .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
-
+    if (list.length == 0) {
+      return BookTag(0, 0, name, 0.0);
+    }
     var i = list[0];
 
     return BookTag(i['cur'], i['idx'], i['name'], 0.0);

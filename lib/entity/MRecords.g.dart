@@ -7,14 +7,8 @@ part of 'MRecords.dart';
 // **************************************************************************
 
 MRecords _$MRecordsFromJson(Map<String, dynamic> json) {
-  return MRecords(
-    json['cover'] as String,
-    json['name'] as String,
-    json['cid'] as String,
-    json['cname'] as String,
-    json['mcids'] as String,
-
-  );
+  return MRecords(json['cover'] as String, json['name'] as String,
+      json['cid'] as String, json['cname'] as String, json['mcids'] as String);
 }
 
 Map<String, dynamic> _$MRecordsToJson(MRecords instance) => <String, dynamic>{
@@ -22,5 +16,5 @@ Map<String, dynamic> _$MRecordsToJson(MRecords instance) => <String, dynamic>{
       'name': instance.name,
       'cid': instance.cid,
       'cname': instance.cname,
-      'mcids': instance.mcids,
+      'mcids': instance.mcids
     };

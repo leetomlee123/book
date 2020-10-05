@@ -7,15 +7,12 @@ part of 'Info.dart';
 // **************************************************************************
 
 Info _$InfoFromJson(Map<String, dynamic> json) {
-  return Info(
-    json['Title'] as String,
-    json['Date'] as String,
-    json['Content'] as String,
-  );
+  return Info(json['Title'] as String, json['Date'] as String,
+      json['Content'] as String);
 }
 
 Map<String, dynamic> _$InfoToJson(Info instance) => <String, dynamic>{
-      'Date': instance.Date,
       'Title': instance.Title,
-      'Content': instance.Content,
+      'Date': instance.Date,
+      'Content': instance.Content
     };

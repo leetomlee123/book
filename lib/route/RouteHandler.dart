@@ -1,5 +1,6 @@
 import 'dart:convert' as convert;
 
+import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/main.dart';
@@ -108,7 +109,7 @@ var readHandler =
 //  print('jsonMap: $jsonMap');
 //  UserInfoModel _model = UserInfoModel.fromJson(jsonMap);
 
-  BookInfo _bookInfo = BookInfo.fromJson(convert.jsonDecode(params['read'][0]));
+  Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read'][0]));
 
   return ReadBook(_bookInfo);
 });

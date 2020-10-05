@@ -68,8 +68,8 @@ class ReaderPageAgent {
         text: TextSpan(
             text: text,
             style: TextStyle(
-                // textBaseline: TextBaseline.ideographic,
-                // height: 1.3,
+                textBaseline: TextBaseline.alphabetic,
+                height: 1.5,
                 fontFamily: fontFamily,
                 fontSize: fontSize )),
         locale: Locale('zh_CN'),
