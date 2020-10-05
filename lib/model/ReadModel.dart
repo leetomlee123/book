@@ -92,7 +92,7 @@ class ReadModel with ChangeNotifier {
   double contentH;
   double contentW;
   bool jump = true;
-  DbHelper _dbHelper = DbHelper();
+  DbHelper dbHelper;
 
 //阅读方式
   bool isPage = true;
@@ -110,12 +110,13 @@ class ReadModel with ChangeNotifier {
     offset = 0;
     offsetTag = 0;
     loadOk = false;
-    var string = SpUtil.getString(bookInfo.Id);
-    if (string.isNotEmpty && string != "null") {
-      var btg = await parseJson(string);
-      bookTag = BookTag.fromJson(btg);
-      // bookTag = await _dbHelper.getBookProcess(bookInfo.Id);
-      chapters = await _dbHelper.getChapters(bookInfo.Id);
+    print('dbhelp hashcode ${dbHelper.hashCode}');
+    // var string = SpUtil.getString(bookInfo.Id);
+    if (SpUtil.haveKey(bookInfo.Id)) {
+      // var btg = await parseJson(string);
+      // bookTag = BookTag.fromJson(btg);
+      bookTag = await dbHelper.getBookProcess(bookInfo.Id);
+      chapters = await dbHelper.getChapters(bookInfo.Id);
 
       // List list = await parseJson((SpUtil.getString('${bookInfo.Id}chapters')));
       // chapters = list.map((e) => Chapter.fromJson(e)).toList();
@@ -129,7 +130,7 @@ class ReadModel with ChangeNotifier {
       if (bookInfo.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
-      intiPageContent(bookTag.cur, false);
+      await intiPageContent(bookTag.cur, false);
       // if (isPage) {
       pageController =
           PageController(initialPage: bookTag.index, keepPage: false);
@@ -152,7 +153,7 @@ class ReadModel with ChangeNotifier {
       }
       bookTag = BookTag(cur, 0, bookInfo.Name, 0.0);
       if (SpUtil.haveKey('${bookInfo.Id}chapters')) {
-        chapters = await _dbHelper.getChapters(bookInfo.Id);
+        chapters = await dbHelper.getChapters(bookInfo.Id);
       } else {
         await getChapters();
       }
@@ -215,7 +216,6 @@ class ReadModel with ChangeNotifier {
     );
     prePage = await loadChapter(idx - 1);
     curPage = await loadChapter(idx);
-    print(curPage.chapterName);
     nextPage = await loadChapter(idx + 1);
     Navigator.pop(context);
 
@@ -347,8 +347,7 @@ class ReadModel with ChangeNotifier {
       value = bookTag.cur.toDouble();
     }
     SpUtil.putString('${bookInfo.Id}chapters', "");
-    _dbHelper.addChapters(list, bookInfo.Id);
-
+    dbHelper.addChapters(list, bookInfo.Id);
     notifyListeners();
     print("load cps ok");
   }
@@ -370,18 +369,18 @@ class ReadModel with ChangeNotifier {
 
     r.chapterName = chapters[idx].name;
     String id = chapters[idx].id;
-    var bool = await _dbHelper.getHasContent(id);
+    var bool = await dbHelper.getHasContent(id);
     if (!bool) {
       r.chapterContent = await compute(requestDataWithCompute, id);
 
       if (r.chapterContent.isNotEmpty) {
         // SpUtil.putString(id, r.chapterContent);
-        _dbHelper.udpChapter(r.chapterContent, id);
+        dbHelper.udpChapter(r.chapterContent, id);
         chapters[idx].hasContent = 2;
       }
       // SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
     } else {
-      r.chapterContent = await _dbHelper.getContent(id);
+      r.chapterContent = await dbHelper.getContent(id);
     }
     if (r.chapterContent.isEmpty) {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
@@ -451,16 +450,17 @@ class ReadModel with ChangeNotifier {
   }
 
   saveData() async {
-    // SpUtil.putString(bookInfo.Id, "");
-    SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
-    // _dbHelper.updBookProcess(bookTag.cur, bookTag.index, bookInfo.Id);
-
-    SpUtil.putStringList(
-        '${bookInfo.Id}pages' + prePage.chapterName, prePage.pageOffsets);
-    SpUtil.putStringList(
-        '${bookInfo.Id}pages' + curPage.chapterName, curPage.pageOffsets);
-    SpUtil.putStringList(
-        '${bookInfo.Id}pages' + nextPage.chapterName, nextPage.pageOffsets);
+    SpUtil.putString(bookInfo.Id, "");
+    // SpUtil.putString(bookInfo.Id, jsonEncode(bookTag));
+    await dbHelper.updBookProcess(bookTag.cur, bookTag.index, bookInfo.Id);
+    // await _dbHelper.closeChapter();
+    // await _dbHelper.closeBook();
+    SpUtil.putStringList('${bookInfo.Id}pages' + prePage?.chapterName ?? '',
+        prePage.pageOffsets);
+    SpUtil.putStringList('${bookInfo.Id}pages' + curPage?.chapterName ?? '',
+        curPage.pageOffsets);
+    SpUtil.putStringList('${bookInfo?.Id??''}pages' + nextPage?.chapterName ?? '',
+        nextPage.pageOffsets);
     String userName = SpUtil.getString("username");
     if (userName.isNotEmpty) {
       Util(null)
@@ -543,22 +543,22 @@ class ReadModel with ChangeNotifier {
 //      saveData();
 
     }
-    List<String> ids = [];
-    if (SpUtil.haveKey(Common.downloadlist)) {
-      ids = SpUtil.getStringList(Common.downloadlist);
-    }
-    if (!ids.contains(bookInfo.Id)) {
-      ids.add(bookInfo.Id);
-    }
-    SpUtil.putStringList(Common.downloadlist, ids);
+    // List<String> ids = [];
+    // if (SpUtil.haveKey(Common.downloadlist)) {
+    //   ids = SpUtil.getStringList(Common.downloadlist);
+    // }
+    // if (!ids.contains(bookInfo.Id)) {
+    //   ids.add(bookInfo.Id);
+    // }
+    // SpUtil.putStringList(Common.downloadlist, ids);
     for (var chapter in chapters) {
       var id = chapter.id;
-      var bool = await _dbHelper.getHasContent(id);
+      var bool = await dbHelper.getHasContent(id);
       if (!bool) {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
           // SpUtil.putString(chapter.id, content);
-          _dbHelper.udpChapter(content, id);
+          dbHelper.udpChapter(content, id);
           chapter.hasContent = 2;
         }
       }
@@ -710,17 +710,19 @@ class ReadModel with ChangeNotifier {
     return contents;
   }
 
-  clear() {
+  clear() async {
     bookTag = null;
     allContent = null;
     chapters = [];
+    // await _dbHelper.close();
+
     // pageController.dispose();
     loadOk = false;
   }
 
   Future<void> reloadChapters() async {
     chapters = [];
-    _dbHelper.clearChapters(bookInfo.Id);
+    dbHelper.clearChapters(bookInfo.Id);
 
     // var key = '${bookInfo.Id}chapters';
     // if (SpUtil.haveKey(key)) {
@@ -738,7 +740,7 @@ class ReadModel with ChangeNotifier {
     chapters = data.map((c) => Chapter.fromJson(c)).toList();
 
     // SpUtil.putString('${bookInfo.Id}chapters', jsonEncode(chapters));
-    _dbHelper.addChapters(chapters, bookInfo.Id);
+    dbHelper.addChapters(chapters, bookInfo.Id);
     notifyListeners();
   }
 
@@ -750,7 +752,7 @@ class ReadModel with ChangeNotifier {
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
       // SpUtil.putString(chapter.id, content);
-      _dbHelper.udpChapter(content, chapter.id);
+      dbHelper.udpChapter(content, chapter.id);
       chapters[bookTag.cur].hasContent = 2;
     }
     curPage = await loadChapter(bookTag.cur);
@@ -765,7 +767,7 @@ class ReadModel with ChangeNotifier {
 
   @override
   Future<void> dispose() async {
-    await _dbHelper.close();
     super.dispose();
+    print('readmodel disclose');
   }
 }

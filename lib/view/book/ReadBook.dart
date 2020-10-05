@@ -1,3 +1,4 @@
+import 'package:book/common/DbHelper.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
@@ -10,7 +11,6 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
-
 
 import 'Menu.dart';
 
@@ -54,6 +54,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel = Store.value<ReadModel>(context);
       readModel.bookInfo = this.widget._bookInfo;
       readModel.context = context;
+      readModel.dbHelper = DbHelper.instance;
       readModel.getBookRecord();
       if (SpUtil.haveKey('fontSize')) {
         readModel.fontSize = SpUtil.getDouble('fontSize');
@@ -71,10 +72,10 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     super.dispose();
-    readModel.saveData();
-    readModel.clear();
+    await readModel.saveData();
+    await readModel.clear();
     WidgetsBinding.instance.removeObserver(this);
   }
 

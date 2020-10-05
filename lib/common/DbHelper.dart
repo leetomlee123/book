@@ -8,17 +8,21 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DbHelper {
+  static DbHelper _dbHelper = new DbHelper();
+  static DbHelper instance = _dbHelper;
   final String _tableName = "chapters";
   final String _tableName1 = "books";
   final String _tableName2 = "movies";
 
-  Database _db;
-  Database _db1;
-  Database _db2;
-
+  static Database _db;
+  static Database _db1;
+  static Database _db2;
   Future<Database> get db async {
-    if (_db != null) return _db;
+    if (_db != null) {
+      return _db;
+    }
     _db = await _initDb();
+
     return _db;
   }
 
@@ -36,6 +40,7 @@ class DbHelper {
 
   //初始化数据库
   _initDb1() async {
+    print('init book db');
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/books.db";
@@ -45,6 +50,7 @@ class DbHelper {
 
 //初始化数据库
   _initDb2() async {
+    print('init movie db');
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/movies.db";
@@ -54,6 +60,7 @@ class DbHelper {
 
   //初始化数据库
   _initDb() async {
+    print('init chapter db');
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/chapters.db";
@@ -64,7 +71,7 @@ class DbHelper {
   // When creating the db, create the table
   void _onCreate(Database db, int version) async {
     await db.execute("CREATE TABLE IF NOT EXISTS $_tableName("
-        "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
         "chapter_id TEXT,"
         "name TEXT,"
         "content TEXT,"
@@ -103,9 +110,9 @@ class DbHelper {
 
   Future<Null> addMovies(List<MRecords> ms) async {
     var dbClient = await db2;
-
+    var batch = dbClient.batch();
     for (MRecords mRecords in ms) {
-      await dbClient.rawInsert(
+      batch.rawInsert(
           "insert into  $_tableName2 (cover,name,cid,cname,mcids) values(?,?,?,?,?)",
           [
             mRecords.cover,
@@ -115,6 +122,8 @@ class DbHelper {
             mRecords.mcids
           ]);
     }
+    await batch.commit(noResult: true);
+    // await close();
   }
 
   Future<List<MRecords>> getMovies() async {
@@ -126,6 +135,7 @@ class DbHelper {
       movies.add(
           MRecords(i['cover'], i['name'], i['cid'], i['cname'], i['mcids']));
     }
+    // await close();
     return movies;
   }
 
@@ -133,6 +143,7 @@ class DbHelper {
     var dbClient = await db1;
     var list = await dbClient.rawQuery(
         "select count(*) as cnt from $_tableName1  where book_id=?", [bookId]);
+    // await close();
     return list[0]['cnt'];
   }
 
@@ -140,6 +151,7 @@ class DbHelper {
     var dbClient = await db1;
     dbClient.rawUpdate(
         "update $_tableName1 set newChapter=? where book_id=?", [s, bookId]);
+    // await close();
   }
 
   Future<Null> updBook(
@@ -180,7 +192,9 @@ class DbHelper {
 
   Future<Null> addBooks(List<Book> bks) async {
     var dbClient = await db1;
+
     var batch = dbClient.batch();
+
     for (Book book in bks) {
       batch.insert("$_tableName1", {
         "book_id": book.Id,
@@ -200,6 +214,7 @@ class DbHelper {
 
   Future<Null> updBookProcess(int cur, int idx, String bookId) async {
     var dbClient = await db1;
+
     await dbClient.rawUpdate(
         "update $_tableName1 set cur=?,idx=? where book_id=?",
         [cur, idx, bookId]);
@@ -208,44 +223,40 @@ class DbHelper {
   Future<BookTag> getBookProcess(String bookId) async {
     var dbClient = await db1;
 
-    var list = await dbClient.rawQuery(
-        "select cur,idx,name from $_tableName1 where book_id=?", [bookId]);
+    var list = await dbClient
+        .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
+
     var i = list[0];
+
     return BookTag(i['cur'], i['idx'], i['name'], 0.0);
   }
 
   /// 添加章节
   Future<Null> addChapters(List<Chapter> cps, String bookId) async {
-    print('add book $bookId');
     var dbClient = await db;
+    print('add dbclient hashcode ${dbClient.hashCode}');
     var batch = dbClient.batch();
-    for (Chapter chapter in cps) {
-      // batch.rawInsert("$_tableName", {
-      //   "chapter_id": chapter.id,
-      //   "name": chapter.name,
-      //   "content": "",
-      //   "book_id": bookId,
-      //   "hasContent": chapter.hasContent
-      // });
+    for (var i = 0; i < cps.length; i++) {
+      Chapter chapter = cps[i];
       batch.rawInsert(
           'insert into $_tableName (chapter_id,name,content,book_id,hasContent) values(?,?,?,?,?)',
           [chapter.id, chapter.name, "", bookId, chapter.hasContent]);
     }
-    await batch.commit(noResult: true);
+
+    batch.commit(noResult: true, continueOnError: true);
+
     print("save cps success");
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
-    print('get book $bookId');
     var dbClient = await db;
+    print('get dbclient hashcode ${dbClient.hashCode}');
     var list = await dbClient
         .rawQuery("select * from $_tableName where book_id=?", [bookId]);
     List<Chapter> cps = [];
     for (var i in list) {
       cps.add(Chapter(i['hasContent'], i['chapter_id'], i['name']));
     }
-    // await closeBook();
-
     return cps;
   }
 
@@ -277,97 +288,19 @@ class DbHelper {
         [content, cid]);
   }
 
-  /// 添加书籍到书架
-  Future<int> addBookshelfItem(BookshelfBean item) async {
-    print("addBookshelfItem = ${item.bookId}");
-    var dbClient = await db;
-    int res = await dbClient.insert("$_tableName", item.toMap());
-    return res;
-  }
-
-  /// 根据 id 查询判断书籍是否存在书架
-  Future<BookshelfBean> queryBooks(String bookId) async {
-    var dbClient = await db;
-    var result = await dbClient
-        .query(_tableName, where: "bookId = ?", whereArgs: [bookId]);
-    if (result != null && result.length > 0) {
-      return BookshelfBean.fromMap(result[0]);
-    }
-    return null;
-  }
-
-  /// 查询加入书架的所有书籍
-  Future<List> getTotalList() async {
-    var dbClient = await db;
-    var result = await dbClient.rawQuery("SELECT * FROM $_tableName");
-    return result.toList();
-  }
-
-  /// 更新书籍进度
-  Future<int> updateBooks(BookshelfBean user) async {
-    var dbClient = await db;
-    return await dbClient.update(_tableName, user.toMap(),
-        where: "bookId = ?", whereArgs: [user.bookId]);
-  }
-
   //  关闭
-  Future close() async {
+  Future closeChapter() async {
     await _db?.close();
-    await _db1?.close();
-    await _db2?.close();
+    _db = null;
   }
 
-  //  关闭
   Future closeBook() async {
-    var dbClient = await db1;
-    return dbClient.close();
+    await _db1?.close();
+    _db1 = null;
   }
 
-  //  关闭
-  Future closeMovies() async {
-    var dbClient = await db2;
-    return dbClient.close();
-  }
-}
-
-class BookshelfBean {
-  BookshelfBean(this.title, this.image, this.readProgress, this.bookUrl,
-      this.bookId, this.offset, this.isReversed, this.chaptersIndex);
-
-  /// 书名
-  String title;
-  String image;
-  String readProgress;
-  String bookUrl;
-  String bookId;
-  double offset;
-
-  /// 1是倒序
-  int isReversed;
-  int chaptersIndex;
-
-  BookshelfBean.fromMap(Map<String, dynamic> map) {
-    title = map["title"] as String;
-    image = map["image"] as String;
-    readProgress = map["readProgress"] as String;
-    bookUrl = map["bookUrl"] as String;
-    bookId = map["bookId"] as String;
-    offset = map["offset"] as double;
-    isReversed = map["isReversed"] as int;
-    chaptersIndex = map["chaptersIndex"] as int;
-  }
-
-  Map<String, dynamic> toMap() {
-    var map = <String, dynamic>{
-      "title": title,
-      "image": image,
-      "readProgress": readProgress,
-      "bookUrl": bookUrl,
-      "bookId": bookId,
-      "offset": offset,
-      "isReversed": isReversed,
-      "chaptersIndex": chaptersIndex,
-    };
-    return map;
+  Future closeMovie() async {
+    await _db2?.close();
+    _db2 = null;
   }
 }

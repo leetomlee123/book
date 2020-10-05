@@ -1,20 +1,11 @@
-import 'dart:convert';
-
-import 'package:book/common/PicWidget.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/entity/Book.dart';
-import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/BooksWidget.dart';
-import 'package:book/widgets/ConfirmDialog.dart';
-import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class BookShelf extends StatefulWidget {
   @override

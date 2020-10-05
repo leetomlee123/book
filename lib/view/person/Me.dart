@@ -207,14 +207,14 @@ class Me extends StatelessWidget {
                       builder: (BuildContext context) => Skin()));
                 },
               ),
-              getItem(
-                ImageIcon(AssetImage("images/cache_manager.png")),
-                '缓存管理',
-                () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) => CacheManager()));
-                },
-              ),
+              // getItem(
+              //   ImageIcon(AssetImage("images/cache_manager.png")),
+              //   '缓存管理',
+              //   () {
+              //     Navigator.of(context).push(MaterialPageRoute(
+              //         builder: (BuildContext context) => CacheManager()));
+              //   },
+              // ),
               getItem(
                 ImageIcon(AssetImage("images/fe.png")),
                 '意见反馈',

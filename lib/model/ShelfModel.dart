@@ -107,10 +107,6 @@ class ShelfModel with ChangeNotifier {
     notifyListeners();
   }
 
-  updBookStatus(String bookId) {
-    _dbHelper.updBookStatus(bookId, 0);
-  }
-
   refreshShelf() async {
     Response response2 = await Util(null).http().get(Common.shelf);
     List decode = response2.data['data'];
@@ -146,7 +142,8 @@ class ShelfModel with ChangeNotifier {
     saveShelf();
   }
 
-  upTotop(Book book) {
+  upTotop(Book book) async {
+    await _dbHelper.updBookStatus(book.Id, 0);
     for (var i = 0; i < shelf.length; i++) {
       if (shelf[i].Id == book.Id) {
         shelf.removeAt(i);
@@ -154,8 +151,9 @@ class ShelfModel with ChangeNotifier {
       }
     }
     shelf.insert(0, book);
-    _dbHelper.delBook(book.Id);
-    _dbHelper.addBooks([book]);
+    await _dbHelper.delBook(book.Id);
+    await _dbHelper.addBooks([book]);
+    // await _dbHelper.close();
     notifyListeners();
     saveShelf();
   }

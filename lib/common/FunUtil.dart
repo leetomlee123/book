@@ -12,6 +12,6 @@ class FunUtil {
     if (!mrds.contains(mRecords)) {
       dbHelper.addMovies([mRecords]);
     }
-    await dbHelper.close();
+    // await dbHelper.closeMovie();
   }
 }

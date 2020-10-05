@@ -122,7 +122,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                         ),
                       )
                     : Container(),
-                this.widget.type=="sort"
+                this.widget.type == "sort"
                     ? GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         child: Container(
@@ -161,7 +161,8 @@ class _BooksWidgetState extends State<BooksWidget> {
           Book temp = _shelfModel.shelf[i];
 
           _shelfModel.shelf[i].NewChapterCount = 0;
-          _shelfModel.updBookStatus(temp.Id);
+          _shelfModel.upTotop(temp);
+          
           Routes.navigateTo(
             context,
             Routes.read,
@@ -169,7 +170,6 @@ class _BooksWidgetState extends State<BooksWidget> {
               'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
             },
           );
-          _shelfModel.upTotop(temp);
         },
         onLongPress: () {
           Routes.navigateTo(
@@ -189,11 +189,11 @@ class _BooksWidgetState extends State<BooksWidget> {
         itemBuilder: (context, i) {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
+            onTap: () async {
               Book temp = _shelfModel.shelf[i];
 
               _shelfModel.shelf[i].NewChapterCount = 0;
-              _shelfModel.updBookStatus(temp.Id);
+          
               Routes.navigateTo(
                 context,
                 Routes.read,
@@ -201,8 +201,8 @@ class _BooksWidgetState extends State<BooksWidget> {
                   'read': jsonEncode(BookInfo.id(temp.Id, temp.Name, temp.Img)),
                 },
               );
-
               _shelfModel.upTotop(temp);
+
             },
             child: getBookItemView(_shelfModel.shelf[i], i),
             onLongPress: () {
@@ -284,7 +284,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           ),
           Align(
               alignment: Alignment.topRight,
-              child:this.widget.type=="sort"
+              child: this.widget.type == "sort"
                   ? GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       child: Container(
