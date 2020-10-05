@@ -77,9 +77,9 @@ class DbHelper {
         "content TEXT,"
         "book_id TEXT,"
         "hasContent INTEGER)");
-    await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
-    await db
-        .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
+    // await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
+    // await db
+    //     .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
   }
 
   void _onCreate1(Database db, int version) async {
@@ -95,7 +95,7 @@ class DbHelper {
         "newChapter INTEGER,"
         "idx INTEGER,"
         "lastChapter TEXT)");
-    await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
+    // await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
   }
 
   void _onCreate2(Database db, int version) async {
@@ -243,7 +243,7 @@ class DbHelper {
           [chapter.id, chapter.name, "", bookId, chapter.hasContent]);
     }
 
-    batch.commit(noResult: true, continueOnError: true);
+    await batch.commit(noResult: true);
 
     print("save cps success");
   }

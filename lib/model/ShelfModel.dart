@@ -151,9 +151,7 @@ class ShelfModel with ChangeNotifier {
       }
     }
     shelf.insert(0, book);
-    await _dbHelper.delBook(book.Id);
     await _dbHelper.addBooks([book]);
-    // await _dbHelper.close();
     notifyListeners();
     saveShelf();
   }
