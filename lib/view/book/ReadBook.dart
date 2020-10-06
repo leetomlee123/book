@@ -1,5 +1,4 @@
 import 'package:book/entity/Book.dart';
-import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
@@ -74,6 +73,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     super.dispose();
     await readModel.saveData();
     await readModel.clear();
+    readModel.pageController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     print('dispose');
   }
@@ -100,7 +100,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         FlatButton(
                             onPressed: () {
                               Navigator.pop(context);
-               
+
                               Store.value<ShelfModel>(context)
                                   .modifyShelf(this.widget.book);
                             },

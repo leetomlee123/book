@@ -109,7 +109,7 @@ class ReadModel with ChangeNotifier {
     offset = 0;
     offsetTag = 0;
     loadOk = false;
-    print('dbhelp hashcode ${DbHelper.instance.hashCode}');
+    
     // var string = SpUtil.getString(book.Id);
     if (SpUtil.haveKey(book.Id)) {
       // var btg = await parseJson(string);
@@ -127,7 +127,7 @@ class ReadModel with ChangeNotifier {
       }
 
       //书的最后一章
-      if (book == "-1") {
+      if (book.CId == "-1") {
         bookTag.cur = chapters.length - 1;
       }
       await intiPageContent(bookTag.cur, false);
@@ -466,7 +466,7 @@ class ReadModel with ChangeNotifier {
     if (userName.isNotEmpty) {
       Util(null)
           .http()
-          .patch(Common.process + '/$userName/${book.Id}/${bookTag.cur}');
+          .patch(Common.process + '/$userName/${book.Id}/${bookTag?.cur ?? 0}');
     }
     print("保存成功");
   }

@@ -6,6 +6,7 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/main.dart';
 import 'package:book/view/book/AllTagBook.dart';
 import 'package:book/view/book/BookDetail.dart';
+import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/ReadBook.dart';
 import 'package:book/view/book/Search.dart';
 import 'package:book/view/book/SortShelf.dart';
@@ -113,6 +114,21 @@ var readHandler =
 
   return ReadBook(_bookInfo);
 });
+var chaptersHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+//  print('params: $params');
+//  String model = params['userInfoModel']?.first;
+//  print('model: $model');
+//  // model: {name: yuanzhiying, age: 30, height: 1.78, weight: 74.0}
+//  Map<String, dynamic> jsonMap = convert.jsonDecode(model);
+//  print('jsonMap: $jsonMap');
+//  UserInfoModel _model = UserInfoModel.fromJson(jsonMap);
+
+  // Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read'][0]));
+
+  return ChapterView();
+});
+
 var detailHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   BookInfo _bookInfo =

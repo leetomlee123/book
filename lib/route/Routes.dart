@@ -14,6 +14,7 @@ class Routes {
   static String register = '/register';
   static String modifyPassword = '/modifyPassword';
   static String detail = '/detail';
+  static String chapters = '/chapters';
   static String allTagBook = '/allTagBook';
   static String vDetail = '/vDetail';
   static String lookVideo = '/lookVideo';
@@ -38,6 +39,7 @@ class Routes {
     router.define(register, handler: registerHandler);
     router.define(modifyPassword, handler: modifyPasswordHandler);
     router.define(detail, handler: detailHandler);
+    router.define(chapters, handler: chaptersHandler);
     router.define(allTagBook, handler: allTagBookHandler);
     router.define(vDetail, handler: vDetailHandler);
     router.define(lookVideo, handler: lookVideoHandler);

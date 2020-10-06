@@ -6,14 +6,11 @@ import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
-import 'package:book/entity/BookTag.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -290,7 +287,7 @@ class _BookDetailState extends State<BookDetail> {
                           },
                         ),
                         ListTile(
-                          trailing: Icon(Icons.keyboard_arrow_right),
+                          // trailing: Icon(Icons.keyboard_arrow_right),
                           leading: Container(
                             width: 70,
                             child: Row(
@@ -311,14 +308,18 @@ class _BookDetailState extends State<BookDetail> {
                           ),
                           onTap: () {
                             //标志是从书的最后一章开始看
-                            _bookInfo.CId = "-1";
-                            Routes.navigateTo(
-                              context,
-                              Routes.read,
-                              params: {
-                                'read': jsonEncode(_bookInfo),
-                              },
-                            );
+                            // Routes.navigateTo(
+                            //   context,
+                            //   Routes.chapters,
+                            // );
+                            // _bookInfo.CId = "-1";
+                            // Routes.navigateTo(
+                            //   context,
+                            //   Routes.read,
+                            //   params: {
+                            //     'read': jsonEncode(_bookInfo),
+                            //   },
+                            // );
                           },
                         ),
                       ],
@@ -468,19 +469,31 @@ class _BookDetailState extends State<BookDetail> {
                   ),
                   label: '立即阅读',
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(
-                    Icons.cloud_download,
-                  ),
-                  label: '全本缓存',
-                ),
+                // BottomNavigationBarItem(
+                //   icon: Icon(
+                //     Icons.cloud_download,
+                //   ),
+                //   label: '全本缓存',
+                // ),
               ],
 
               onTap: (int i) {
                 switch (i) {
                   case 0:
                     {
-                      Book book = _bookInfo as Book;
+                      Book book = new Book(
+                          "",
+                          "",
+                          0,
+                          _bookInfo.Id,
+                          '',
+                          _bookInfo.Name,
+                          "",
+                          _bookInfo.Author,
+                          _bookInfo.Img,
+                          _bookInfo.LastChapterId,
+                          _bookInfo.LastChapter,
+                          _bookInfo.LastTime);
                       Store.value<ShelfModel>(context).modifyShelf(book);
                     }
                     break;
@@ -495,16 +508,17 @@ class _BookDetailState extends State<BookDetail> {
                       );
                     }
                     break;
-                  case 2:
-                    {
-                      BotToast.showText(text: "开始下载...");
-
-                      var value = Store.value<ReadModel>(context);
-                      value.book = _bookInfo as Book;
-                      value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
-                      value.downloadAll();
-                    }
-                    break;
+                  // case 2:
+                  //   {
+                  //     BotToast.showText(text: "开始下载...");
+                  //
+                  //     var value = Store.value<ReadModel>(context);
+                  //     value.book = _bookInfo as Book;
+                  //     value.book.UTime = _bookInfo.LastTime;
+                  //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
+                  //     value.downloadAll();
+                  //   }
+                  //   break;
                 }
               },
             );

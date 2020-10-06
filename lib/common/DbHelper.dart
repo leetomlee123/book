@@ -182,8 +182,8 @@ class DbHelper {
           i['author'],
           i['utime'],
           i['img'],
-          i['cur'],
-          i['idx'],
+          i['cur']??0,
+          i['idx']??0,
           i['newChapter'],
           i['lastChapter']));
     }
@@ -202,8 +202,8 @@ class DbHelper {
           i['author'],
           i['utime'],
           i['img'],
-          i['cur'],
-          i['idx'],
+          i['cur']??0,
+          i['idx']??0,
           i['newChapter'],
           i['lastChapter']);
     }
@@ -256,7 +256,7 @@ class DbHelper {
     }
     var i = list[0];
 
-    return BookTag(i['cur'], i['idx'], i['name'], 0.0);
+    return BookTag(i['cur']??0, i['idx']??0, i['name'], 0.0);
   }
 
   /// 添加章节
