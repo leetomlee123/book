@@ -40,7 +40,6 @@ class DbHelper {
 
   //初始化数据库
   _initDb1() async {
-    print('init book db');
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/books.db";
@@ -50,7 +49,6 @@ class DbHelper {
 
 //初始化数据库
   _initDb2() async {
-    print('init movie db');
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/movies.db";
@@ -60,7 +58,6 @@ class DbHelper {
 
   //初始化数据库
   _initDb() async {
-    print('init chapter db');
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/chapters.db";
@@ -262,7 +259,6 @@ class DbHelper {
   /// 添加章节
   Future<Null> addChapters(List<Chapter> cps, String bookId) async {
     var dbClient = await db;
-    print('add dbclient hashcode ${dbClient.hashCode}');
     var batch = dbClient.batch();
     for (var i = 0; i < cps.length; i++) {
       Chapter chapter = cps[i];
@@ -273,12 +269,10 @@ class DbHelper {
 
     await batch.commit(noResult: true);
 
-    print("save cps success");
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
     var dbClient = await db;
-    print('get dbclient hashcode ${dbClient.hashCode}');
     var list = await dbClient
         .rawQuery("select * from $_tableName where book_id=?", [bookId]);
     List<Chapter> cps = [];

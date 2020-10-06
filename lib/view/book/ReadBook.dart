@@ -53,17 +53,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.book = this.widget.book;
       readModel.context = context;
       readModel.getBookRecord();
-      if (SpUtil.haveKey('fontSize')) {
-        readModel.fontSize = SpUtil.getDouble('fontSize');
-      }
+
       if (SpUtil.haveKey('bgIdx')) {
         readModel.bgIdx = SpUtil.getInt('bgIdx');
       }
       readModel.contentH = ScreenUtil.getScreenH(context) -
           ScreenUtil.getStatusBarH(context) -
           60;
-      readModel.contentW =
-          (ScreenUtil.getScreenW(context) - 20).floorToDouble();
+      readModel.contentW = ScreenUtil.getScreenW(context) - 20.0;
     });
     setSystemBar();
   }
@@ -127,12 +124,38 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               return (model?.loadOk ?? false)
                   ? Stack(
                       children: <Widget>[
-                        model.readView(),
+
+                        Positioned(
+                            left: 0,
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Image.asset(
+                                Store.value<ColorModel>(context).dark
+                                    ? 'images/QR_bg_4.jpg'
+                                    : "images/${readModel.bgimg[readModel.bgIdx]}",
+                                fit: BoxFit.cover)),
+                        readView(),
                         model.showMenu ? Menu() : Container()
                       ],
                     )
                   : Container();
             })));
+  }
+
+  Widget readView() {
+    return PageView.builder(
+      controller: readModel.pageController,
+      physics: AlwaysScrollableScrollPhysics(),
+      itemBuilder: (BuildContext context, int index) {
+        return readModel.allContent[index];
+      },
+      //条目个数
+      itemCount: (readModel.prePage?.pageOffsets?.length ?? 0) +
+          (readModel.curPage?.pageOffsets?.length ?? 0) +
+          (readModel.nextPage?.pageOffsets?.length ?? 0),
+      onPageChanged: (idx) => readModel.changeChapter(idx),
+    );
   }
 
   void setSystemBar() {

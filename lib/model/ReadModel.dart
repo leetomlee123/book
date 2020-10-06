@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/LoadDialog.dart';
+import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -67,12 +68,6 @@ class ReadModel with ChangeNotifier {
   ];
   bool refresh = true;
 
-  /// 文本间距
-  double textLineHeight = 3;
-
-  //页面字体大小
-  double fontSize = 32.0;
-
   //显示上层 设置
   bool showMenu = false;
 
@@ -109,7 +104,7 @@ class ReadModel with ChangeNotifier {
     offset = 0;
     offsetTag = 0;
     loadOk = false;
-    
+
     // var string = SpUtil.getString(book.Id);
     if (SpUtil.haveKey(book.Id)) {
       // var btg = await parseJson(string);
@@ -266,23 +261,9 @@ class ReadModel with ChangeNotifier {
         nextPage = null;
         fillAllContent();
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
-        // offset = 1;
-        // offsetTag = 1;
         ReadPage temp = await loadChapter(bookTag.cur + 1);
-        //翻过页后再执行 缓解卡顿
-        // await Future.delayed(Duration(seconds: 1));
-
         nextPage = temp;
         fillAllContent();
-
-        // int realIdx = (prePage?.pageOffsets?.length ?? 0) + offset;
-        // //有可能翻到下一页 又翻回上一页
-        // if (offsetTag > 0) {
-        //   print("加载下一张完成 翻页");
-        //   pageController.jumpToPage(realIdx - 1);
-        //   offset = 0;
-        //   offsetTag = 0;
-        // }
       }
     } else if (idx < preLen) {
       //上一章
@@ -298,26 +279,10 @@ class ReadModel with ChangeNotifier {
         fillAllContent();
         var p = curPage?.pageOffsets?.length ?? 0;
         pageController.jumpToPage(p > 0 ? p - 1 : 0);
-        // offsetTag = -1;
-        // offset = -1;
-        //翻过页后再执行 缓解卡顿
         prePage = await loadChapter(bookTag.cur - 1);
-        // await Future.delayed(Duration(seconds: 1));
-        // print(offsetTag);
         fillAllContent();
-        print("******* idx:$idx preLen:$preLen curLen:$curLen");
         int ix = (prePage?.pageOffsets?.length ?? 0) + idx;
         pageController.jumpToPage(ix);
-        // int ix = (prePage?.pageOffsets?.length ?? 0) +
-        //     curPage.pageOffsets.length +
-        //     offset;
-        // if (offsetTag < 0) {
-        //   pageController.jumpToPage(ix);
-        //   offset = 0;
-        //   offsetTag = 0;
-        // }
-
-//        notifyListeners();
       }
     }
   }
@@ -358,7 +323,7 @@ class ReadModel with ChangeNotifier {
       r.chapterName = "1";
       r.pageOffsets = List(1);
       r.height = Screen.height;
-      r.chapterContent = "感谢APP喵的赞助,请大家关注公众号APP喵!!!";
+      r.chapterContent = "Fall In Love At First Sight ,Miss.Zhang";
       return r;
     } else if (idx == chapters.length) {
       r.chapterName = "-1";
@@ -387,26 +352,26 @@ class ReadModel with ChangeNotifier {
       r.pageOffsets = [r.chapterContent];
       return r;
     }
-    if (isPage) {
-      var k = '${book.Id}pages' + r.chapterName;
-      if (SpUtil.haveKey(k)) {
-        r.pageOffsets = SpUtil.getStringList(k);
-        SpUtil.remove(k);
-      } else {
-        r.pageOffsets = ReaderPageAgent()
-            .getPageOffsets(r.chapterContent, contentH, contentW, fontSize);
-        // SpUtil.putStringList('pages' + id, r.pageOffsets);
-      }
+    // if (isPage) {
+    var k = '${book.Id}pages' + r.chapterName;
+    if (SpUtil.haveKey(k)) {
+      r.pageOffsets = SpUtil.getStringList(k);
+      SpUtil.remove(k);
     } else {
-      r.pageOffsets = [r.chapterContent];
-      if (SpUtil.haveKey('height' + id)) {
-        r.height = SpUtil.getDouble('height' + id);
-      } else {
-        r.height = ReaderPageAgent()
-            .getPageHeight(r.chapterContent, contentH, contentW, fontSize);
-        SpUtil.putDouble('height' + id, r.height);
-      }
+      r.pageOffsets = ReaderPageAgent()
+          .getPageOffsets(r.chapterContent, contentH, contentW);
+      // SpUtil.putStringList('pages' + id, r.pageOffsets);
     }
+    // } else {
+    //   r.pageOffsets = [r.chapterContent];
+    //   if (SpUtil.haveKey('height' + id)) {
+    //     r.height = SpUtil.getDouble('height' + id);
+    //   } else {
+    //     r.height = ReaderPageAgent()
+    //         .getPageHeight(r.chapterContent, contentH, contentW);
+    //     SpUtil.putDouble('height' + id, r.height);
+    //   }
+    // }
     return r;
   }
 
@@ -431,7 +396,8 @@ class ReadModel with ChangeNotifier {
       font = !font;
     }
 
-    SpUtil.putDouble('fontSize', fontSize);
+    // SpUtil.putDouble('fontSize', fontSize);
+
     bookTag.index = 0;
 
     var keys = SpUtil.getKeys();
@@ -451,11 +417,8 @@ class ReadModel with ChangeNotifier {
 
   saveData() async {
     SpUtil.putString(book.Id, "");
-    // SpUtil.putString(book.Id, jsonEncode(bookTag));
     await DbHelper.instance
         .updBookProcess(bookTag?.cur ?? 0, bookTag?.index ?? 0, book.Id);
-    // await _DbHelper.instance.closeChapter();
-    // await _DbHelper.instance.closeBook();
     SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
         prePage?.pageOffsets ?? []);
     SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
@@ -484,50 +447,6 @@ class ReadModel with ChangeNotifier {
       pageController.nextPage(
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }
-  }
-
-  Widget readView() {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel model, child) {
-      return Scaffold(
-        body: Container(
-            decoration: model.dark
-                ? BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("images/QR_bg_4.jpg"),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("images/${bgimg[bgIdx]}"),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-            // color: model.dark ? Color.fromRGBO(31, 31, 31, 1) : null,
-            child:
-                // isPage?
-                PageView.builder(
-              controller: pageController,
-              physics: AlwaysScrollableScrollPhysics(),
-              itemBuilder: (BuildContext context, int index) {
-                return allContent[index];
-              },
-              //条目个数
-              itemCount: (prePage?.pageOffsets?.length ?? 0) +
-                  (curPage?.pageOffsets?.length ?? 0) +
-                  (nextPage?.pageOffsets?.length ?? 0),
-              onPageChanged: (idx) => changeChapter(idx),
-            )
-            // : ListView.builder(
-            //     shrinkWrap: true,
-            //     controller: listController,
-            //     itemBuilder: (BuildContext context, int index) {
-            //       return allContent[index];
-            //     })
-            ),
-      );
-    });
   }
 
   reCalcPages() {
@@ -629,21 +548,27 @@ class ReadModel with ChangeNotifier {
                             ),
                             Expanded(
                                 child: Container(
-                                    padding: EdgeInsets.only(
-                                      right: 5,
-                                      left: 15,
-                                    ),
-                                    child: Text(
-                                      content,
-                                      locale: Locale('zh_CN'),
-                                      style: TextStyle(
-                                          textBaseline: TextBaseline.alphabetic,
-                                          height: 1.5,
-                                          color: model.dark
-                                              ? Colors.white54
-                                              : Colors.black,
-                                          fontSize: fontSize /
-                                              Screen.textScaleFactor),
+                                    padding: EdgeInsets.fromLTRB(
+                                        15, 0, 5, Screen.bottomSafeHeight),
+                                    child: Text.rich(
+                                      TextSpan(children: [
+                                        TextSpan(
+                                            text: content,
+                                            style: TextStyle(
+                                                textBaseline:
+                                                    TextBaseline.ideographic,
+                                                color: model.dark
+                                                    ? Colors.white54
+                                                    : Colors.black,
+                                                fontSize:
+                                                    ReadSetting.getFontSize() /
+                                                        Screen.textScaleFactor,
+                                                // height: ReadSetting
+                                                //     .getLatterHeight(),
+                                                // letterSpacing: ReadSetting
+                                                //     .getLatterSpace()
+                                                    ))
+                                      ]),
                                       textAlign: TextAlign.justify,
                                     ))),
                             Container(
@@ -679,7 +604,8 @@ class ReadModel with ChangeNotifier {
                           Center(
                             child: Text(
                               r.chapterName,
-                              style: TextStyle(fontSize: fontSize + 2.0),
+                              style: TextStyle(
+                                  fontSize: ReadSetting.getFontSize() + 2.0),
                             ),
                           ),
                           Container(
@@ -693,8 +619,8 @@ class ReadModel with ChangeNotifier {
                                     color: model.dark
                                         ? Color.fromRGBO(128, 128, 128, 1)
                                         : null,
-                                    fontSize:
-                                        fontSize / Screen.textScaleFactor),
+                                    fontSize: ReadSetting.getFontSize() /
+                                        Screen.textScaleFactor),
                                 textAlign: TextAlign.justify,
                               ))
                         ],

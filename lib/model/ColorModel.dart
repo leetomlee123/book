@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/store/Store.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';

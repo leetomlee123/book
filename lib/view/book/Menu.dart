@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
@@ -47,14 +48,16 @@ class _MenuState extends State<Menu> {
         child: Column(
           children: <Widget>[
             Container(
-               color: _colorModel.dark?Colors.black: Colors.white,
+              color: _colorModel.dark ? Colors.black : Colors.white,
               height: Screen.topSafeHeight,
             ),
             Container(
-              color: _colorModel.dark?Colors.black: Colors.white,
+              color: _colorModel.dark ? Colors.black : Colors.white,
               child: Row(
                 children: [
-                  SizedBox(width: 10,),
+                  SizedBox(
+                    width: 10,
+                  ),
                   Text(
                     '${_readModel?.bookTag?.bookName ?? ""}',
                     style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
@@ -82,54 +85,6 @@ class _MenuState extends State<Menu> {
                 ],
               ),
             ),
-            // Container(
-            //   // decoration: _colorModel.dark
-            //   //     ? BoxDecoration(
-            //   //   image: DecorationImage(
-            //   //     image: AssetImage("images/QR_bg_4.jpg"),
-            //   //     fit: BoxFit.cover,
-            //   //   ),
-            //   // )
-            //   //     : BoxDecoration(
-            //   //   image: DecorationImage(
-            //   //     image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
-            //   //     fit: BoxFit.cover,
-            //   //   ),
-            //   // ),
-            //
-            //   child: AppBar(
-            //     backgroundColor: Colors.transparent,
-            //     title: Text('${_readModel.bookTag.bookName ?? ""}'),
-            //     centerTitle: true,
-            //     leading: IconButton(
-            //       icon: Icon(Icons.arrow_back),
-            //       onPressed: () {
-            //         _readModel.toggleShowMenu();
-            //       },
-            //     ),
-            //     elevation: 0,
-            //     actions: <Widget>[
-            //       IconButton(
-            //         icon: Icon(Icons.refresh),
-            //         onPressed: () {
-            //           _readModel.reloadCurrentPage();
-            //         },
-            //       ),
-            //       IconButton(
-            //         icon: Icon(Icons.info),
-            //         onPressed: () async {
-            //           String url = Common.detail + '/${_readModel.bookInfo.Id}';
-            //           Response future = await Util(context).http().get(url);
-            //           var d = future.data['data'];
-            //           BookInfo bookInfo = BookInfo.fromJson(d);
-            //           Routes.navigateTo(context, Routes.detail,
-            //               params: {"detail": jsonEncode(bookInfo)});
-            //         },
-            //       )
-            //     ],
-            //   ),
-            // ),
-
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -147,90 +102,77 @@ class _MenuState extends State<Menu> {
                 },
               ),
             ),
-           Container(
-                color: _colorModel.dark?Colors.black: Colors.white,
-                // color: _colorModel.theme.appBarTheme.color,
-                // decoration: _colorModel.dark
-                //     ? BoxDecoration(
-                //         image: DecorationImage(
-                //           image: AssetImage("images/QR_bg_4.jpg"),
-                //           fit: BoxFit.cover,
-                //         ),
-                //       )
-                //     : BoxDecoration(
-                //         image: DecorationImage(
-                //           image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
-                //           fit: BoxFit.cover,
-                //         ),
-                //       ),
-                height: 120,
-                width: double.infinity,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        GestureDetector(
-                          child: Container(
-                            child: Icon(
-                              Icons.arrow_back_ios,
-                              // color: Colors.white,
-                            ),
-                            width: 70,
+            Container(
+              color: _colorModel.dark ? Colors.black : Colors.white,
+              height: 120,
+              width: double.infinity,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      GestureDetector(
+                        child: Container(
+                          child: Icon(
+                            Icons.arrow_back_ios,
+                            // color: Colors.white,
                           ),
-                          onTap: () {
-                            _readModel.bookTag.cur -= 1;
-                            BotToast.showText(text: _readModel.curPage.chapterName);
-                            _readModel.intiPageContent(
-                                _readModel.bookTag.cur, true);
-                          },
+                          width: 70,
                         ),
-                        Expanded(
-                          child: Container(
-                            child: Slider(
-                              // activeColor: Colors.white,
-                              // inactiveColor: Colors.white70,
-                              value: _readModel.value,
-                              max: (_readModel.chapters.length - 1).toDouble(),
-                              min: 0.0,
-                              onChanged: (newValue) {
-                                int temp = newValue.round();
-                                _readModel.bookTag.cur = temp;
-                                _readModel.value = temp.toDouble();
-                                _readModel.intiPageContent(
-                                    _readModel.bookTag.cur, true);
-                              },
-                              label:
-                                  '${_readModel.chapters[_readModel.bookTag.cur].name} ',
-                              semanticFormatterCallback: (newValue) {
-                                return '${newValue.round()} dollars';
-                              },
-                            ),
+                        onTap: () {
+                          _readModel.bookTag.cur -= 1;
+                          BotToast.showText(
+                              text: _readModel.curPage.chapterName);
+                          _readModel.intiPageContent(
+                              _readModel.bookTag.cur, true);
+                        },
+                      ),
+                      Expanded(
+                        child: Container(
+                          child: Slider(
+                            // activeColor: Colors.white,
+                            // inactiveColor: Colors.white70,
+                            value: _readModel.value,
+                            max: (_readModel.chapters.length - 1).toDouble(),
+                            min: 0.0,
+                            onChanged: (newValue) {
+                              int temp = newValue.round();
+                              _readModel.bookTag.cur = temp;
+                              _readModel.value = temp.toDouble();
+                              _readModel.intiPageContent(
+                                  _readModel.bookTag.cur, true);
+                            },
+                            label:
+                                '${_readModel.chapters[_readModel.bookTag.cur].name} ',
+                            semanticFormatterCallback: (newValue) {
+                              return '${newValue.round()} dollars';
+                            },
                           ),
                         ),
-                        GestureDetector(
-                          child: Container(
-                            child: Icon(
-                              Icons.arrow_forward_ios,
-                              // color: Colors.white,
-                            ),
-                            width: 70,
+                      ),
+                      GestureDetector(
+                        child: Container(
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            // color: Colors.white,
                           ),
-                          onTap: () {
-                            _readModel.bookTag.cur += 1;
-                            _readModel.intiPageContent(
-                                _readModel.bookTag.cur, true);
-                                BotToast.showText(text: _readModel.curPage.chapterName);
-                          },
+                          width: 70,
                         ),
-                      ],
-                    ),
-                    buildBottomMenus()
-                  ],
-                ),
+                        onTap: () {
+                          _readModel.bookTag.cur += 1;
+                          _readModel.intiPageContent(
+                              _readModel.bookTag.cur, true);
+                          BotToast.showText(
+                              text: _readModel.curPage.chapterName);
+                        },
+                      ),
+                    ],
+                  ),
+                  buildBottomMenus()
+                ],
               ),
-              
+            ),
           ],
         ),
       ),
@@ -328,20 +270,7 @@ class _MenuState extends State<Menu> {
 
   buildSetting(state) {
     return Container(
-        color: _colorModel.dark?Colors.black: Colors.white,
-      // decoration: _colorModel.dark
-      //     ? BoxDecoration(
-      //         image: DecorationImage(
-      //           image: AssetImage("images/QR_bg_4.jpg"),
-      //           fit: BoxFit.cover,
-      //         ),
-      //       )
-      //     : BoxDecoration(
-      //         image: DecorationImage(
-      //           image: AssetImage("images/${bgimg[_readModel.bgIdx]}"),
-      //           fit: BoxFit.cover,
-      //         ),
-      //       ),
+      color: _colorModel.dark ? Colors.black : Colors.white,
       height: 120,
       child: Padding(
         child: Column(
@@ -357,7 +286,8 @@ class _MenuState extends State<Menu> {
                     child: FlatButton(
                       // color: Colors.white,
                       onPressed: () {
-                        _readModel.fontSize -= 1.0;
+                        // _readModel.fontSize -= 1.0;
+                        ReadSetting.calcFontSize(-1.0);
                         _readModel.modifyFont();
                       },
                       child: ImageIcon(
@@ -378,7 +308,8 @@ class _MenuState extends State<Menu> {
                     child: FlatButton(
                       // color: Colors.white,
                       onPressed: () {
-                        _readModel.fontSize += 1.0;
+                        // _readModel.fontSize += 1.0;
+                        ReadSetting.calcFontSize(1.0);
                         _readModel.modifyFont();
                       },
                       child: ImageIcon(
