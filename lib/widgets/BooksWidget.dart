@@ -159,7 +159,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           ],
         ),
         onTap: () async {
-          await goRead(book, i);
+          await goRead(_shelfModel.shelf[i], i);
         },
         onLongPress: () {
           Routes.navigateTo(
@@ -172,17 +172,7 @@ class _BooksWidgetState extends State<BooksWidget> {
     return wds;
   }
 
-  Future goRead(Book book, int i) async {
-    Book b = await DbHelper.instance.getBook(book.Id);
-    Routes.navigateTo(
-      context,
-      Routes.read,
-      params: {
-        'read': jsonEncode(b),
-      },
-    );
-    _shelfModel.upTotop(b, i);
-  }
+
 
   //书架列表模式
   Widget listModel() {
@@ -204,7 +194,17 @@ class _BooksWidgetState extends State<BooksWidget> {
           );
         });
   }
-
+  Future goRead(Book book, int i) async {
+    Book b = await DbHelper.instance.getBook(book.Id);
+    Routes.navigateTo(
+      context,
+      Routes.read,
+      params: {
+        'read': jsonEncode(b),
+      },
+    );
+    _shelfModel.upTotop(b, i);
+  }
   getBookItemView(Book item, int i) {
     return Dismissible(
       key: Key(item.Id.toString()),
@@ -357,46 +357,3 @@ class _BooksWidgetState extends State<BooksWidget> {
   }
 }
 
-// //整理书架悬浮层
-//   Widget pickWidget() {
-//     return Container(
-//       width: Screen.width,
-//       height: Screen.height,
-//       child: Column(
-//         children: [
-//           AppBar(
-//             title: Text("书架整理"),
-//             elevation: 0,
-//             centerTitle: true,
-//             automaticallyImplyLeading: false,
-//             leading: IconButton(
-//                 icon: Icon(Icons.arrow_back),
-//                 onPressed: () {
-//                   _shelfModel.sortShelfModel();
-//                 }),
-//           ),
-//           Expanded(
-//             child: Opacity(
-//               opacity: 0.0,
-//               child: Container(
-//                 width: double.infinity,
-//               ),
-//             ),
-//           ),
-//           Row(
-//             children: [
-//               GestureDetector(
-//                 child: Text("全选"),
-//               ),
-//               GestureDetector(
-//                 child: Text(
-//                   "删除",
-//                   style: TextStyle(color: Colors.red),
-//                 ),
-//               ),
-//             ],
-//           )
-//         ],
-//       ),
-//     );
-//   }
