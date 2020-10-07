@@ -99,7 +99,8 @@ class ReadModel with ChangeNotifier {
     loadOk = false;
 
     if (SpUtil.haveKey(book.Id)) {
-      bookTag = await DbHelper.instance.getBookProcess(book.Id, book.Name);
+      bookTag = BookTag(book?.cur??0, book?.index??0, book.Name, 0.0);
+      // bookTag = await DbHelper.instance.getBookProcess(book.Id, book.Name);
       chapters = await DbHelper.instance.getChapters(book.Id);
 
       if (chapters.isEmpty) {

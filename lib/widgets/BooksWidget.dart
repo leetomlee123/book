@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
@@ -158,14 +159,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           ],
         ),
         onTap: () async {
-          Routes.navigateTo(
-            context,
-            Routes.read,
-            params: {
-              'read': jsonEncode(_shelfModel.shelf[i]),
-            },
-          );
-          _shelfModel.upTotop(i);
+          await goRead(book, i);
         },
         onLongPress: () {
           Routes.navigateTo(
@@ -178,6 +172,18 @@ class _BooksWidgetState extends State<BooksWidget> {
     return wds;
   }
 
+  Future goRead(Book book, int i) async {
+    Book b = await DbHelper.instance.getBook(book.Id);
+    Routes.navigateTo(
+      context,
+      Routes.read,
+      params: {
+        'read': jsonEncode(b),
+      },
+    );
+    _shelfModel.upTotop(b, i);
+  }
+
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
@@ -186,14 +192,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () async {
-              Routes.navigateTo(
-                context,
-                Routes.read,
-                params: {
-                  'read': jsonEncode(_shelfModel.shelf[i]),
-                },
-              );
-              _shelfModel.upTotop(i);
+              await goRead(_shelfModel.shelf[i], i);
             },
             child: getBookItemView(_shelfModel.shelf[i], i),
             onLongPress: () {

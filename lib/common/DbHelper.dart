@@ -179,8 +179,8 @@ class DbHelper {
           i['author'],
           i['utime'],
           i['img'],
-          i['cur']??0,
-          i['idx']??0,
+          i['cur'],
+          i['idx'],
           i['newChapter'],
           i['lastChapter']));
     }
