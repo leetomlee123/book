@@ -9,6 +9,7 @@ class Book {
   int NewChapterCount;
   String Id;
   String CId;
+  
   int cur;
   int index;
   String CName;

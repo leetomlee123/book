@@ -16,6 +16,7 @@ import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -57,15 +58,7 @@ class ReadModel with ChangeNotifier {
   //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/theme_3_bg.31237.png",
   //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme5_bg.85f0d.png",
   // ];
-  List<String> bgimg = [
-    "QR_bg_1.jpg",
-    "QR_bg_2.jpg",
-    "QR_bg_3.jpg",
-    // "QR_bg_4.jpg",
-    "QR_bg_5.jpg",
-    "QR_bg_7.png",
-    "QR_bg_8.png",
-  ];
+
   bool refresh = true;
 
   //显示上层 设置
@@ -105,16 +98,10 @@ class ReadModel with ChangeNotifier {
     offsetTag = 0;
     loadOk = false;
 
-    // var string = SpUtil.getString(book.Id);
     if (SpUtil.haveKey(book.Id)) {
-      // var btg = await parseJson(string);
-      // bookTag = BookTag.fromJson(btg);
-
       bookTag = await DbHelper.instance.getBookProcess(book.Id, book.Name);
       chapters = await DbHelper.instance.getChapters(book.Id);
 
-      // List list = await parseJson((SpUtil.getString('${book.Id}chapters')));
-      // chapters = list.map((e) => Chapter.fromJson(e)).toList();
       if (chapters.isEmpty) {
         await getChapters();
       } else {
@@ -128,7 +115,7 @@ class ReadModel with ChangeNotifier {
       await intiPageContent(bookTag.cur, false);
       // if (isPage) {
       pageController =
-          PageController(initialPage: bookTag.index, keepPage: false);
+          new PageController(initialPage: bookTag.index, keepPage: false);
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
       // }
@@ -160,7 +147,7 @@ class ReadModel with ChangeNotifier {
       await intiPageContent(bookTag.cur, false);
       int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
       // if (isPage) {
-      pageController = PageController(initialPage: idx, keepPage: false);
+      pageController = new PageController(initialPage: idx, keepPage: false);
       // } else {
       //   listController = ScrollController(initialScrollOffset: 0.0);
       // }
@@ -182,6 +169,8 @@ class ReadModel with ChangeNotifier {
 //        }
 //      });
 //    }
+    notifyListeners();
+    print('pagecontroller hashcode ${pageController.hashCode}');
   }
 
   nextChapter() async {
@@ -214,7 +203,7 @@ class ReadModel with ChangeNotifier {
     nextPage = await loadChapter(idx + 1);
     Navigator.pop(context);
 
-    fillAllContent();
+    fillAllContent(notify: jump);
     value = bookTag.cur.toDouble();
     if (jump) {
       int ix = prePage?.pageOffsets?.length ?? 0;
@@ -375,7 +364,7 @@ class ReadModel with ChangeNotifier {
     return r;
   }
 
-  fillAllContent() {
+  fillAllContent({bool notify = true}) {
     allContent = [];
     if (prePage != null) {
       allContent.addAll(chapterContent(prePage));
@@ -386,7 +375,9 @@ class ReadModel with ChangeNotifier {
     if (nextPage != null) {
       allContent.addAll(chapterContent(nextPage));
     }
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
   }
 
 //  Color.fromRGBO(122, 122, 122, 1)
@@ -457,7 +448,7 @@ class ReadModel with ChangeNotifier {
     });
   }
 
-  downloadAll() async {
+  downloadAll(int start) async {
     if (chapters?.isEmpty ?? 0 == 0) {
       await getChapters();
 //      saveData();
@@ -471,7 +462,8 @@ class ReadModel with ChangeNotifier {
     //   ids.add(book.Id);
     // }
     // SpUtil.putStringList(Common.downloadlist, ids);
-    for (var chapter in chapters) {
+    for (var i = start; i < chapters.length; i++) {
+      Chapter chapter = chapters[i];
       var id = chapter.id;
       var bool = await DbHelper.instance.getHasContent(id);
       if (!bool) {
@@ -482,7 +474,9 @@ class ReadModel with ChangeNotifier {
           chapter.hasContent = 2;
         }
       }
+      await Future.delayed(Duration(seconds: 1));
     }
+
     BotToast.showText(text: "${book?.Name ?? ""}下载完成");
     // SpUtil.putString('${book.Id}chapters', jsonEncode(chapters));
   }
@@ -499,6 +493,53 @@ class ReadModel with ChangeNotifier {
     } catch (e) {
       print(e);
     }
+  }
+
+  Widget firstPage() {
+    return Container(
+      padding: EdgeInsets.only(top: 150),
+      child: Center(
+        child: Column(
+          children: [
+            CachedNetworkImage(
+              imageUrl: book.Img,
+              width: 150,
+              height: 160,
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Text(
+              book.Name,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+              overflow: TextOverflow.clip,
+            ),
+            SizedBox(
+              height: 5,
+            ),
+            Text(
+              book.Author,
+              style: TextStyle(
+                fontWeight: FontWeight.w100,
+                fontSize: 10,
+              ),
+            ),
+            SizedBox(
+              height: 45,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget noMorePage() {
+    return Container(
+      child: Text('曾经沧海难为水,除却巫山不是云'),
+    );
   }
 
   List<Widget> chapterContent(ReadPage r) {
@@ -519,11 +560,7 @@ class ReadModel with ChangeNotifier {
               }
             },
             child: (r.chapterName == "-1" || r.chapterName == "1")
-                ? Container(
-                    child: Text(r.chapterContent),
-                    alignment: Alignment.center,
-                    height: Screen.height,
-                  )
+                ? (r.chapterName == "1" ? firstPage() : noMorePage())
                 : isPage
                     ? Container(
                         child: Column(
@@ -555,19 +592,19 @@ class ReadModel with ChangeNotifier {
                                         TextSpan(
                                             text: content,
                                             style: TextStyle(
-                                                textBaseline:
-                                                    TextBaseline.ideographic,
-                                                color: model.dark
-                                                    ? Colors.white54
-                                                    : Colors.black,
-                                                fontSize:
-                                                    ReadSetting.getFontSize() /
-                                                        Screen.textScaleFactor,
-                                                // height: ReadSetting
-                                                //     .getLatterHeight(),
-                                                // letterSpacing: ReadSetting
-                                                //     .getLatterSpace()
-                                                    ))
+                                              textBaseline:
+                                                  TextBaseline.ideographic,
+                                              color: model.dark
+                                                  ? Colors.white54
+                                                  : Colors.black,
+                                              fontSize:
+                                                  ReadSetting.getFontSize() /
+                                                      Screen.textScaleFactor,
+                                              // height: ReadSetting
+                                              //     .getLatterHeight(),
+                                              // letterSpacing: ReadSetting
+                                              //     .getLatterSpace()
+                                            ))
                                       ]),
                                       textAlign: TextAlign.justify,
                                     ))),

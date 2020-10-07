@@ -1,9 +1,9 @@
+import 'package:book/common/ReadSetting.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/person/CacheManager.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
 import 'package:flustars/flustars.dart';
@@ -246,7 +246,7 @@ class Me extends StatelessWidget {
                       builder: (context) => AlertDialog(
                             title: Text(('清阅揽胜  ')),
                             content: Text(
-                              '世人为荣利缠缚，动曰尘世苦海，不知云白山青，川行石立，花迎鸟笑，谷答樵讴，世亦不尘、海亦不苦、彼自尘苦其心尔',
+                              ReadSetting.poet,
                             ),
                             actions: <Widget>[
                               FlatButton(

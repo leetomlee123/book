@@ -10,7 +10,6 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/system/MyBottomSheet.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -21,17 +20,20 @@ class Menu extends StatefulWidget {
   _MenuState createState() => _MenuState();
 }
 
+enum Type { SLIDE, MORE_SETTING, DOWNLOAD }
+
 class _MenuState extends State<Menu> {
+  Type type = Type.SLIDE;
   ReadModel _readModel;
   ColorModel _colorModel;
   List<String> bgimg = [
     "QR_bg_1.jpg",
     "QR_bg_2.jpg",
     "QR_bg_3.jpg",
-    // "QR_bg_4.jpg",
     "QR_bg_5.jpg",
     "QR_bg_7.png",
     "QR_bg_8.png",
+    // "QR_bg_4.jpg",
   ];
 
   @override
@@ -41,138 +43,341 @@ class _MenuState extends State<Menu> {
     _colorModel = Store.value<ColorModel>(context);
   }
 
+  Widget head() {
+    return Container(
+      color: _colorModel.dark ? Colors.black : Colors.white,
+      padding: EdgeInsets.symmetric(horizontal: 15.0),
+      child: Row(
+        children: [
+          Text(
+            '${_readModel?.bookTag?.bookName ?? ""}',
+            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
+          ),
+          Expanded(
+            child: Container(),
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              _readModel.reloadCurrentPage();
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.info),
+            onPressed: () async {
+              _readModel.saveData();
+              _readModel.clear();
+              String url = Common.detail + '/${_readModel.book.Id}';
+              Response future = await Util(context).http().get(url);
+              var d = future.data['data'];
+              BookInfo bookInfo = BookInfo.fromJson(d);
+
+              Routes.navigateTo(context, Routes.detail,
+                  params: {"detail": jsonEncode(bookInfo)});
+            },
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget midTranspant() {
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        child: Opacity(
+          opacity: 0.0,
+          child: Container(
+            width: double.infinity,
+          ),
+        ),
+        onTap: () {
+          _readModel.toggleShowMenu();
+          if (_readModel.font) {
+            _readModel.reCalcPages();
+          }
+        },
+      ),
+    );
+  }
+
+  Widget chapterSilde() {
+    return Container(
+        padding: EdgeInsets.symmetric(horizontal: 15.0),
+        child: Row(
+          children: <Widget>[
+            GestureDetector(
+              child: Container(child: Text('上一章')),
+              onTap: () async {
+                _readModel.bookTag.cur -= 1;
+                await _readModel.intiPageContent(_readModel.bookTag.cur, true);
+                BotToast.showText(text: _readModel.curPage.chapterName);
+              },
+            ),
+            Expanded(
+              child: Container(
+                child: Slider(
+                  // activeColor: Colors.white,
+                  // inactiveColor: Colors.white70,
+                  value: _readModel.value,
+                  max: (_readModel.chapters.length - 1).toDouble(),
+                  min: 0.0,
+                  onChanged: (newValue) {
+                    int temp = newValue.round();
+                    _readModel.bookTag.cur = temp;
+                    _readModel.value = temp.toDouble();
+                    _readModel.intiPageContent(_readModel.bookTag.cur, true);
+                  },
+                  label: '${_readModel.chapters[_readModel.bookTag.cur].name} ',
+                  semanticFormatterCallback: (newValue) {
+                    return '${newValue.round()} dollars';
+                  },
+                ),
+              ),
+            ),
+            GestureDetector(
+              child: Container(child: Text('下一章')),
+              onTap: () async {
+                _readModel.bookTag.cur += 1;
+                await _readModel.intiPageContent(_readModel.bookTag.cur, true);
+                BotToast.showText(text: _readModel.curPage.chapterName);
+              },
+            ),
+          ],
+        ));
+  }
+
+  Widget fontOperate(String imgName, func) {
+    return Container(
+      decoration:
+          BoxDecoration(color: _colorModel.dark ? Colors.black : Colors.white),
+      height: 40,
+      width: 120,
+      margin: EdgeInsets.only(top: 15, bottom: 15),
+      child: GestureDetector(
+        onTap: func,
+        child: Container(
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(25.0)),
+              border: Border.all(
+                width: 1,
+                color: _colorModel.dark ? Colors.white : Colors.black,
+              )),
+          alignment: Alignment(0, 0),
+          child: ImageIcon(
+            AssetImage(imgName),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget downloadWidget() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _colorModel.dark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
+      height: 70,
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: <Widget>[
+                Container(
+                  decoration: BoxDecoration(
+                      color: _colorModel.dark ? Colors.black : Colors.white),
+                  height: 40,
+                  width: (Screen.width - 40) / 2,
+                  margin: EdgeInsets.only(top: 15, bottom: 15),
+                  child: GestureDetector(
+                    onTap: () {
+                      BotToast.showText(text: '从当前章节开始下载...');
+
+                      _readModel.downloadAll(_readModel.bookTag.cur);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                          border: Border.all(
+                            width: 1,
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black,
+                          )),
+                      alignment: Alignment(0, 0),
+                      child: Text(
+                        '从当前章节缓存',
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 20,
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                      color: _colorModel.dark ? Colors.black : Colors.white),
+                  height: 40,
+                  width: (Screen.width - 40) / 2,
+                  margin: EdgeInsets.only(top: 15, bottom: 15),
+                  child: GestureDetector(
+                    onTap: () {
+                      BotToast.showText(text: '开始全本下载...');
+
+                      _readModel.downloadAll(0);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                          border: Border.all(
+                            width: 1,
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black,
+                          )),
+                      alignment: Alignment(0, 0),
+                      child: Text(
+                        '全本缓存',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(left: 15.0),
+    );
+  }
+
+  Widget moreSetting() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _colorModel.dark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
+      height: 130,
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: <Widget>[
+                Container(
+                  child: Center(
+                    child: Text('字号', style: TextStyle(fontSize: 13.0)),
+                  ),
+                  height: 40,
+                  width: 40,
+                ),
+
+                SizedBox(
+                  width: 10,
+                ),
+                fontOperate("images/fontsmall.png", () {
+                  ReadSetting.calcFontSize(-1.0);
+                  _readModel.modifyFont();
+                }),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 5.0),
+                  child: Center(
+                    child: Text(ReadSetting.getFontSize().toString(),
+                        style: TextStyle(fontSize: 12.0)),
+                  ),
+                  height: 40,
+                  width: 50,
+                ),
+                fontOperate("images/fontbig.png", () {
+                  ReadSetting.calcFontSize(1.0);
+                  _readModel.modifyFont();
+                }),
+
+                // SizedBox(
+                //   width: 10,
+                // ),
+                // Expanded(
+                //   child: Container(
+                //     child: FlatButton(
+                //       onPressed: () {
+                //         Routes.navigateTo(
+                //           context,
+                //           Routes.fontSet,
+                //         );
+                //       },
+                //       child: Text(
+                //         '字体',
+                //         style: TextStyle(
+                //             color:
+                //                 _colorModel.dark ? Colors.white : Colors.black),
+                //       ),
+                //       shape: RoundedRectangleBorder(
+                //           borderRadius:
+                //               BorderRadius.all(Radius.circular(20.0))),
+                //     ),
+                //   ),
+                // ),
+              ],
+            ),
+          ),
+          Expanded(
+              child: ListView(
+            children: bgThemes(),
+            scrollDirection: Axis.horizontal,
+          ))
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+          //   children: bgThemes(),
+          // ),
+        ],
+      ),
+      padding: EdgeInsets.only(left: 15.0),
+    );
+  }
+
+  Widget bottomHead() {
+    switch (type) {
+      case Type.MORE_SETTING:
+        return moreSetting();
+        break;
+      case Type.DOWNLOAD:
+        return downloadWidget();
+        break;
+      default:
+        return chapterSilde();
+    }
+  }
+
+  Widget bottom() {
+    return Opacity(opacity: 0.99999,child: 
+    Container(
+      decoration: BoxDecoration(
+        color: _colorModel.dark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
+      // height: 140,
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[bottomHead(), buildBottomMenus()],
+      ),
+    ),);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       child: Container(
         child: Column(
           children: <Widget>[
-            Container(
-              color: _colorModel.dark ? Colors.black : Colors.white,
-              height: Screen.topSafeHeight,
-            ),
-            Container(
-              color: _colorModel.dark ? Colors.black : Colors.white,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Text(
-                    '${_readModel?.bookTag?.bookName ?? ""}',
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
-                  ),
-                  Expanded(
-                    child: Container(),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.refresh),
-                    onPressed: () {
-                      _readModel.reloadCurrentPage();
-                    },
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.info),
-                    onPressed: () async {
-                      String url = Common.detail + '/${_readModel.book.Id}';
-                      Response future = await Util(context).http().get(url);
-                      var d = future.data['data'];
-                      BookInfo bookInfo = BookInfo.fromJson(d);
-                      Routes.navigateTo(context, Routes.detail,
-                          params: {"detail": jsonEncode(bookInfo)});
-                    },
-                  )
-                ],
-              ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                child: Opacity(
-                  opacity: 0.0,
-                  child: Container(
-                    width: double.infinity,
-                  ),
-                ),
-                onTap: () {
-                  _readModel.toggleShowMenu();
-                  if (_readModel.font) {
-                    _readModel.reCalcPages();
-                  }
-                },
-              ),
-            ),
-            Container(
-              color: _colorModel.dark ? Colors.black : Colors.white,
-              height: 120,
-              width: double.infinity,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      GestureDetector(
-                        child: Container(
-                          child: Icon(
-                            Icons.arrow_back_ios,
-                            // color: Colors.white,
-                          ),
-                          width: 70,
-                        ),
-                        onTap: () {
-                          _readModel.bookTag.cur -= 1;
-                          BotToast.showText(
-                              text: _readModel.curPage.chapterName);
-                          _readModel.intiPageContent(
-                              _readModel.bookTag.cur, true);
-                        },
-                      ),
-                      Expanded(
-                        child: Container(
-                          child: Slider(
-                            // activeColor: Colors.white,
-                            // inactiveColor: Colors.white70,
-                            value: _readModel.value,
-                            max: (_readModel.chapters.length - 1).toDouble(),
-                            min: 0.0,
-                            onChanged: (newValue) {
-                              int temp = newValue.round();
-                              _readModel.bookTag.cur = temp;
-                              _readModel.value = temp.toDouble();
-                              _readModel.intiPageContent(
-                                  _readModel.bookTag.cur, true);
-                            },
-                            label:
-                                '${_readModel.chapters[_readModel.bookTag.cur].name} ',
-                            semanticFormatterCallback: (newValue) {
-                              return '${newValue.round()} dollars';
-                            },
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        child: Container(
-                          child: Icon(
-                            Icons.arrow_forward_ios,
-                            // color: Colors.white,
-                          ),
-                          width: 70,
-                        ),
-                        onTap: () {
-                          _readModel.bookTag.cur += 1;
-                          _readModel.intiPageContent(
-                              _readModel.bookTag.cur, true);
-                          BotToast.showText(
-                              text: _readModel.curPage.chapterName);
-                        },
-                      ),
-                    ],
-                  ),
-                  buildBottomMenus()
-                ],
-              ),
-            ),
+            // Container(
+            //   color: _colorModel.dark ? Colors.black : Colors.white,
+            //   height: Screen.topSafeHeight,
+            // ),
+            // head(),
+            midTranspant(),
+            bottom(),
+          
           ],
         ),
       ),
@@ -209,8 +414,6 @@ class _MenuState extends State<Menu> {
               ),
               onTap: () {
                 Store.value<ColorModel>(context).switchModel();
-
-                _readModel.toggleShowMenu();
               }),
           buildBottomItem('缓存', Icons.cloud_download),
           buildBottomItem('设置', Icons.settings),
@@ -243,24 +446,30 @@ class _MenuState extends State<Menu> {
           case '目录':
             {
               eventBus.fire(OpenChapters("dd"));
-              // _globalKey.currentState.openDrawer();
+
               _readModel.toggleShowMenu();
             }
             break;
           case '缓存':
             {
-              BotToast.showText(text: '开始下载...');
-              _readModel.downloadAll();
+              setState(() {
+                if (type == Type.DOWNLOAD) {
+                  type = Type.SLIDE;
+                } else {
+                  type = Type.DOWNLOAD;
+                }
+              });
             }
             break;
           case '设置':
             {
-              myshowModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext bc) {
-                    return StatefulBuilder(
-                        builder: (context, state) => buildSetting(state));
-                  });
+              setState(() {
+                if (type == Type.MORE_SETTING) {
+                  type = Type.SLIDE;
+                } else {
+                  type = Type.MORE_SETTING;
+                }
+              });
             }
             break;
         }
@@ -268,126 +477,43 @@ class _MenuState extends State<Menu> {
     );
   }
 
-  buildSetting(state) {
-    return Container(
-      color: _colorModel.dark ? Colors.black : Colors.white,
-      height: 120,
-      child: Padding(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Container(
-                    child: FlatButton(
-                      // color: Colors.white,
-                      onPressed: () {
-                        // _readModel.fontSize -= 1.0;
-                        ReadSetting.calcFontSize(-1.0);
-                        _readModel.modifyFont();
-                      },
-                      child: ImageIcon(
-                        AssetImage("images/fontsmall.png"),
-                        // color: Colors.black,
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Container(
-                    child: FlatButton(
-                      // color: Colors.white,
-                      onPressed: () {
-                        // _readModel.fontSize += 1.0;
-                        ReadSetting.calcFontSize(1.0);
-                        _readModel.modifyFont();
-                      },
-                      child: ImageIcon(
-                        AssetImage("images/fontbig.png"),
-                        // color: Colors.black,
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                Expanded(
-                  child: Container(
-                    child: FlatButton(
-                      onPressed: () {
-                        Routes.navigateTo(
-                          context,
-                          Routes.fontSet,
-                        );
-                      },
-                      child: Text(
-                        '字体',
-                        style: TextStyle(
-                            color:
-                                _colorModel.dark ? Colors.white : Colors.black),
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: readThemes(state),
-            ),
-          ],
-        ),
-        padding: EdgeInsets.only(left: 10, right: 10),
-      ),
-    );
-  }
-
-  List<Widget> readThemes(state) {
+  List<Widget> bgThemes() {
     List<Widget> wds = [];
+    wds.add(Container(
+      width: 40.0,
+      height: 40.0,
+      child: Center(
+        child: Text(
+          '背景',
+          style: TextStyle(fontSize: 13.0),
+        ),
+      ),
+    ));
     for (var i = 0; i < bgimg.length; i++) {
       var f = "images/${bgimg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () {
-          _readModel.switchBgColor(i);
-//          __readModel.saveData();
-          state(() {});
+          setState(() {
+            _readModel.switchBgColor(i);
+          });
         },
         constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
         child: Container(
             margin: EdgeInsets.only(top: 5.0, bottom: 5.0),
-            width: 40.0,
-            height: 40.0,
+            width: 45.0,
+            height: 45.0,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.all(Radius.circular(25.0)),
+              border: Border.all(
+                  width: 1.5,
+                  color: _readModel.bgIdx == i
+                      ? _colorModel.theme.primaryColor
+                      : Colors.white10),
               image: DecorationImage(
                 image: AssetImage(f),
                 fit: BoxFit.cover,
               ),
-            )
-            // decoration: BoxDecoration(
-            //     color: Color.fromRGBO(f[0], f[1], f[2], 0.8),
-            //     borderRadius: BorderRadius.all(Radius.circular(25.0)),
-            //     border: __readModel.bgIdx == i
-            //         ? Border.all(color: Theme.of(context).primaryColor, width: 2)
-            //         : Border.all(color: Colors.white30)),
-            ),
+            )),
       ));
     }
     wds.add(SizedBox(

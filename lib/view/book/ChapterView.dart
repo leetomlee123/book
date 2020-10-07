@@ -1,6 +1,14 @@
+import 'dart:convert';
+
+import 'package:book/common/common.dart';
+import 'package:book/common/net.dart';
+import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
+import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -60,74 +68,160 @@ class _ChapterViewItem extends State<ChapterView> {
 
   @override
   Widget build(BuildContext context) {
-
     return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
       var value = Store.value<ColorModel>(context);
-      return Theme(
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(
-              data.bookTag.bookName ?? '',
-              style: TextStyle(fontSize: 16.0),
-            ),
-            centerTitle: true,
-            automaticallyImplyLeading: false,
-            elevation: 0,
-          ),
-          body: Scrollbar(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemExtent: ITEM_HEIGH,
-              itemBuilder: (context, index) {
-                var title = data.chapters[index].name;
-                var has = data.chapters[index].hasContent;
-                return ListTile(
-                  title: Text(
-                    title,
-                    style: TextStyle(fontSize: 13),
+      return Scaffold(
+        appBar: PreferredSize(
+          child: Container(
+            padding: EdgeInsets.only(left: 10, top: 30),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      child: CachedNetworkImage(
+                        imageUrl: data.book.Img,
+                        width: 80,
+                        height: 90,
+                      ),
+                      onTap: () async {
+                        await goDetail(data, context);
+                      },
+                    ),
+                    SizedBox(
+                      width: 15,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 10,
+                        ),
+                        Text(
+                          data.book.Name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          overflow: TextOverflow.clip,
+                        ),
+                        Text(
+                          data.book.Author,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w100,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: 5,
+                ),
+                Padding(
+                  padding: EdgeInsets.only(left: 5, right: 15),
+                  child: Row(
+                    children: [
+                      Text(
+                        '共${data.chapters.length}章',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      Expanded(child: Container()),
+                      GestureDetector(
+                        child: Text(
+                          '简介',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        onTap: () async {
+                          await goDetail(data, context);
+                        },
+                      )
+                    ],
                   ),
-                  trailing: Text(
-                    has == 2 ? "已缓存" : "",
-                    style: TextStyle(fontSize: 8),
-                  ),
-                  selected: index == data.bookTag.cur,
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    //不是卷目录
-                    Future.delayed(Duration(microseconds: 500));
-                    data.bookTag.cur = index;
-                    await Future.delayed(Duration(microseconds: 1000));
-                    data.intiPageContent(index, true);
-                  },
-                );
-              },
-              itemCount: data.chapters.length,
+                ),
+                Divider()
+              ],
             ),
           ),
-          floatingActionButton: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              FloatingActionButton(
-                  backgroundColor:
-                      value.dark ? Colors.white : value.theme.primaryColor,
-                  onPressed: refresh,
-                  child: Icon(Icons.refresh)),
-              SizedBox(
-                height: 10.0,
-              ),
-              FloatingActionButton(
-                  backgroundColor:
-                      value.dark ? Colors.white : value.theme.primaryColor,
-                  onPressed: topOrBottom,
-                  child: Icon(
-                    showToTopBtn ? Icons.arrow_upward : Icons.arrow_downward,
-                  ))
-            ],
-          ),
+          preferredSize: Size.fromHeight(150),
         ),
-        data: value.theme,
+        body: Column(
+          children: [
+            Expanded(
+              child: Scrollbar(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  itemExtent: ITEM_HEIGH,
+                  itemBuilder: (context, index) {
+                    var title = data.chapters[index].name;
+                    var has = data.chapters[index].hasContent;
+                    return ListTile(
+                      title: Text(
+                        title,
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      trailing: Text(
+                        has == 2 ? "已缓存" : "",
+                        style: TextStyle(fontSize: 8),
+                      ),
+                      selected: index == data.bookTag.cur,
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        //不是卷目录
+                        data.bookTag.cur = index;
+                        await Future.delayed(Duration(microseconds: 1000));
+                        data.intiPageContent(index, true);
+                      },
+                    );
+                  },
+                  itemCount: data.chapters.length,
+                ),
+              ),
+            ),
+            // ButtonBar(children: [
+            //   Text('a'),
+            //   Text('a'),
+            // ],)
+          ],
+        ),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            FloatingActionButton(
+                heroTag: "refresh",
+                backgroundColor:
+                    value.dark ? Colors.white : value.theme.primaryColor,
+                onPressed: refresh,
+                child: Icon(Icons.refresh)),
+            SizedBox(
+              height: 10.0,
+            ),
+            FloatingActionButton(
+                heroTag: "tree",
+                backgroundColor:
+                    value.dark ? Colors.white : value.theme.primaryColor,
+                onPressed: topOrBottom,
+                child: Icon(
+                  showToTopBtn ? Icons.arrow_upward : Icons.arrow_downward,
+                ))
+          ],
+        ),
       );
     });
+  }
+
+  Future goDetail(ReadModel data, context) async {
+    String url = Common.detail + '/${data.book.Id}';
+    Response future = await Util(context).http().get(url);
+    var d = future.data['data'];
+    BookInfo bookInfo = BookInfo.fromJson(d);
+
+    Routes.navigateTo(context, Routes.detail,
+        params: {"detail": jsonEncode(bookInfo)});
+    data.saveData();
+    data.loadOk = false;
+    // data.clear();
   }
 
   topOrBottom() async {

@@ -35,7 +35,15 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   //   [245, 228, 228],
   // ];
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
-
+  List<String> bgimg = [
+    "QR_bg_1.jpg",
+    "QR_bg_2.jpg",
+    "QR_bg_3.jpg",
+    "QR_bg_5.jpg",
+    "QR_bg_7.png",
+    "QR_bg_8.png",
+    "QR_bg_4.jpg",
+  ];
   @override
   void initState() {
     eventBus.on<ReadRefresh>().listen((event) {
@@ -70,7 +78,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     super.dispose();
     await readModel.saveData();
     await readModel.clear();
-    readModel.pageController?.dispose();
+    // readModel.pageController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     print('dispose');
   }
@@ -124,7 +132,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               return (model?.loadOk ?? false)
                   ? Stack(
                       children: <Widget>[
-
                         Positioned(
                             left: 0,
                             top: 0,
@@ -133,28 +140,54 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             child: Image.asset(
                                 Store.value<ColorModel>(context).dark
                                     ? 'images/QR_bg_4.jpg'
-                                    : "images/${readModel.bgimg[readModel.bgIdx]}",
+                                    : "images/${bgimg[readModel?.bgIdx ?? 0]}",
                                 fit: BoxFit.cover)),
-                        readView(),
-                        model.showMenu ? Menu() : Container()
+                        PageView.builder(
+                          controller: model.pageController,
+                          physics: AlwaysScrollableScrollPhysics(),
+                          itemBuilder: (BuildContext context, int index) {
+                            return readModel.allContent[index];
+                          },
+                          //条目个数
+                          itemCount: (readModel.prePage?.pageOffsets?.length ??
+                                  0) +
+                              (readModel.curPage?.pageOffsets?.length ?? 0) +
+                              (readModel.nextPage?.pageOffsets?.length ?? 0),
+                          onPageChanged: (idx) => readModel.changeChapter(idx),
+                        ),
+                        model.showMenu ? Menu() : Container(),
+                        model.showMenu
+                            ? Positioned(
+                                child: reloadCurChapterWidget(),
+                                bottom: 250,
+                                right: 20,
+                              )
+                            : Container()
                       ],
                     )
                   : Container();
             })));
   }
 
-  Widget readView() {
-    return PageView.builder(
-      controller: readModel.pageController,
-      physics: AlwaysScrollableScrollPhysics(),
-      itemBuilder: (BuildContext context, int index) {
-        return readModel.allContent[index];
-      },
-      //条目个数
-      itemCount: (readModel.prePage?.pageOffsets?.length ?? 0) +
-          (readModel.curPage?.pageOffsets?.length ?? 0) +
-          (readModel.nextPage?.pageOffsets?.length ?? 0),
-      onPageChanged: (idx) => readModel.changeChapter(idx),
+  Widget reloadCurChapterWidget() {
+    return Opacity(
+      opacity: 0.9,
+      child: GestureDetector(
+        child: Container(
+          width: 50,
+          height: 50,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: Colors.grey, borderRadius: BorderRadius.circular(25)),
+          child: Icon(
+            Icons.refresh,
+            color: Colors.white,
+          ),
+        ),
+        onTap: () {
+          readModel.reloadCurrentPage();
+        },
+      ),
     );
   }
 

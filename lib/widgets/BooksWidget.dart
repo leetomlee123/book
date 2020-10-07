@@ -265,7 +265,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                     ),
                     Container(
                       padding: const EdgeInsets.only(left: 10.0, top: 22.0),
-                      child: Text(item?.UTime??'',
+                      child: Text(item?.UTime ?? '',
                           style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ),
                   ],

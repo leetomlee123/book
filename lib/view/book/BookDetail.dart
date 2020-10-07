@@ -62,13 +62,9 @@ class _BookDetailState extends State<BookDetail> {
               )
             ],
           ),
-          body: Column(
-            children: <Widget>[
-              Expanded(
-                child: ListView(
+          body: ListView(
                   children: <Widget>[
-                    Container(
-                      child: Row(children: <Widget>[
+                    Row(children: <Widget>[
                         Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: <Widget>[
@@ -159,7 +155,7 @@ class _BookDetailState extends State<BookDetail> {
                           ],
                         ),
                       ]),
-                    ),
+                    
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.max,
@@ -224,19 +220,7 @@ class _BookDetailState extends State<BookDetail> {
                       ],
                     ),
                     Divider(),
-//                    Center(
-//                      child: GestureDetector(
-//                        child: Text("更多"),
-//                        onTap: () {
-//                          if (maxLines == 3) {
-//                            maxLines = 100;
-//                          } else {
-//                            maxLines = 3;
-//                          }
-//                          setState(() {});
-//                        },
-//                      ),
-//                    ),
+
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.max,
@@ -335,6 +319,7 @@ class _BookDetailState extends State<BookDetail> {
                                     const EdgeInsets.only(left: 17.0, top: 5.0),
                                 child: new Text(
                                   '${_bookInfo.Author}  还写过',
+                  
                                   style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold),
@@ -344,105 +329,59 @@ class _BookDetailState extends State<BookDetail> {
                           )
                         : Container(),
                     _bookInfo.SameAuthorBooks != null
-                        ? ListView.builder(
-                            shrinkWrap: true, //解决无限高度问题
-                            physics: NeverScrollableScrollPhysics(), //禁用滑动事件
-                            itemBuilder: (context, i) {
-                              return GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                child: Container(
-                                  child: Row(
+                        ? Row(children: [Expanded(
+                            child: Container(
+                            height: 250,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemBuilder: (context, i) {
+                                return GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     children: <Widget>[
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: <Widget>[
-                                          Container(
-                                            padding: const EdgeInsets.only(
-                                                left: 10.0, top: 10.0),
-                                            child: PicWidget(
-                                              _bookInfo.SameAuthorBooks[i].Img,
-                                            ),
-                                          )
-                                        ],
+                                      Container(
+                                        padding: const EdgeInsets.only(
+                                            left: 10.0, top: 10.0),
+                                        child: PicWidget(
+                                          _bookInfo.SameAuthorBooks[i].Img,
+                                        ),
                                       ),
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.max,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        verticalDirection:
-                                            VerticalDirection.down,
-                                        // textDirection:,
-                                        textBaseline: TextBaseline.alphabetic,
-
-                                        children: <Widget>[
-                                          Container(
-                                              width: ScreenUtil.getScreenW(
-                                                      context) -
-                                                  120,
-                                              padding: const EdgeInsets.only(
-                                                  left: 10.0, top: 10.0),
-                                              child: Text(
-                                                _bookInfo
-                                                    .SameAuthorBooks[i].Name,
-                                                overflow: TextOverflow.ellipsis,
-                                                style:
-                                                    TextStyle(fontSize: 18.0),
-                                              )),
-                                          Container(
-                                            padding: const EdgeInsets.only(
-                                                left: 10.0, top: 10.0),
-                                            child: Text(
-                                              _bookInfo
-                                                  .SameAuthorBooks[i].Author,
-                                              style: TextStyle(fontSize: 12),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          Container(
-                                            width:
-                                                ScreenUtil.getScreenW(context) -
-                                                    120,
-                                            padding: const EdgeInsets.only(
-                                                left: 10.0, top: 10.0),
-                                            child: Text(
-                                                _bookInfo.SameAuthorBooks[i]
-                                                    .LastChapter,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                    color: Colors.grey,
-                                                    fontSize: 11)),
-                                          ),
-                                        ],
+                                      Container(
+                                        width: 97,
+                                        padding: const EdgeInsets.only(
+                                            left: 10.0, top: 10.0),
+                                        child: Text(
+                                          
+                                          _bookInfo.SameAuthorBooks[i].Name,
+                                          maxLines: 2,
+                                          style: TextStyle(fontSize: 13.0),
+                                          textAlign: TextAlign.center,
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                                onTap: () async {
-                                  String url = Common.detail +
-                                      '/${_bookInfo.SameAuthorBooks[i].Id}';
-                                  Response future =
-                                      await Util(context).http().get(url);
-                                  var d = future.data['data'];
-                                  BookInfo bookInfo = BookInfo.fromJson(d);
-                                  Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              BookDetail(bookInfo)));
-                                },
-                              );
-                            },
-                            itemCount: _bookInfo.SameAuthorBooks.length,
-                          )
-                        : Container(),
+                                  onTap: () async {
+                                    String url = Common.detail +
+                                        '/${_bookInfo.SameAuthorBooks[i].Id}';
+                                    Response future =
+                                        await Util(context).http().get(url);
+                                    var d = future.data['data'];
+                                    BookInfo bookInfo = BookInfo.fromJson(d);
+                                    Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) =>
+                                                BookDetail(bookInfo)));
+                                  },
+                                );
+                              },
+                              itemCount: _bookInfo.SameAuthorBooks.length,
+                            ),
+                          ))
+                        ],): Container(),
                   ],
                 ),
-              )
-            ],
-          ),
           bottomNavigationBar: Store.connect<ShelfModel>(
               builder: (context, ShelfModel d, child) {
             return BottomNavigationBar(
@@ -478,22 +417,22 @@ class _BookDetailState extends State<BookDetail> {
               ],
 
               onTap: (int i) {
+                Book book = new Book(
+                    "",
+                    "",
+                    0,
+                    _bookInfo.Id,
+                    '',
+                    _bookInfo.Name,
+                    "",
+                    _bookInfo.Author,
+                    _bookInfo.Img,
+                    _bookInfo.LastChapterId,
+                    _bookInfo.LastChapter,
+                    _bookInfo.LastTime);
                 switch (i) {
                   case 0:
                     {
-                      Book book = new Book(
-                          "",
-                          "",
-                          0,
-                          _bookInfo.Id,
-                          '',
-                          _bookInfo.Name,
-                          "",
-                          _bookInfo.Author,
-                          _bookInfo.Img,
-                          _bookInfo.LastChapterId,
-                          _bookInfo.LastChapter,
-                          _bookInfo.LastTime);
                       Store.value<ShelfModel>(context).modifyShelf(book);
                     }
                     break;
@@ -503,7 +442,7 @@ class _BookDetailState extends State<BookDetail> {
                         context,
                         Routes.read,
                         params: {
-                          'read': jsonEncode(_bookInfo),
+                          'read': jsonEncode(book),
                         },
                       );
                     }

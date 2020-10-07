@@ -143,20 +143,19 @@ class ShelfModel with ChangeNotifier {
   }
 
   upTotop(int i) async {
-    if (i != 0) {
-      Book book = shelf[i];
-      await _dbHelper.updBookStatus(book.Id, 0);
+    Book book = shelf[i];
+    await _dbHelper.updBookStatus(book.Id, 0);
 
-      shelf.removeAt(i);
+    shelf.removeAt(i);
 
-      shelf.insert(0, book);
-      book = await _dbHelper.getBook(book.Id);
+    shelf.insert(0, book);
+    book = await _dbHelper.getBook(book.Id);
 
-      await _dbHelper.delBook(book.Id);
-      await _dbHelper.addBooks([book]);
-      // print(book.toString());
-      notifyListeners();
-    }
+    await _dbHelper.delBook(book.Id);
+    await _dbHelper.addBooks([book]);
+    // print(book.toString());
+    notifyListeners();
+
     // saveShelf();
   }
 
