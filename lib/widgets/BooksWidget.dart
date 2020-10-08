@@ -25,7 +25,7 @@ class BooksWidget extends StatefulWidget {
 class _BooksWidgetState extends State<BooksWidget> {
   Widget body;
   RefreshController _refreshController =
-      RefreshController(initialRefresh: SpUtil.haveKey('login'));
+      RefreshController(initialRefresh: SpUtil.haveKey('auth'));
   ShelfModel _shelfModel;
   @override
   void initState() {
@@ -72,7 +72,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //刷新书架
   freshShelf() async {
     if (SpUtil.haveKey('auth')) {
-      _shelfModel.refreshShelf();
+      await _shelfModel.refreshShelf();
     }
     _refreshController.refreshCompleted();
   }
@@ -172,8 +172,6 @@ class _BooksWidgetState extends State<BooksWidget> {
     return wds;
   }
 
-
-
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
@@ -194,6 +192,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           );
         });
   }
+
   Future goRead(Book book, int i) async {
     Book b = await DbHelper.instance.getBook(book.Id);
     Routes.navigateTo(
@@ -205,6 +204,7 @@ class _BooksWidgetState extends State<BooksWidget> {
     );
     _shelfModel.upTotop(b, i);
   }
+
   getBookItemView(Book item, int i) {
     return Dismissible(
       key: Key(item.Id.toString()),
@@ -356,4 +356,3 @@ class _BooksWidgetState extends State<BooksWidget> {
     );
   }
 }
-

@@ -142,9 +142,7 @@ class ShelfModel with ChangeNotifier {
     saveShelf();
   }
 
-  upTotop(Book book,int i) async {
-  
-
+  upTotop(Book book, int i) async {
     await _dbHelper.updBookStatus(book.Id, 0);
     shelf.removeAt(i);
 

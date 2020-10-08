@@ -82,7 +82,7 @@ class _ChapterViewItem extends State<ChapterView> {
                       child: CachedNetworkImage(
                         imageUrl: data.book.Img,
                         width: 80,
-                        height: 90,
+                        height: 80,
                       ),
                       onTap: () async {
                         await goDetail(data, context);
@@ -144,7 +144,7 @@ class _ChapterViewItem extends State<ChapterView> {
               ],
             ),
           ),
-          preferredSize: Size.fromHeight(150),
+          preferredSize: Size.fromHeight(130),
         ),
         body: Column(
           children: [

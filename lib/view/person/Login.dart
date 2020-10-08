@@ -55,8 +55,7 @@ class Login extends StatelessWidget {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: CachedNetworkImageProvider(
-                "http://p1.pstatp.com/large/pgc-image/233886d2dc95432bbd004aacb7d311c4"),
+            image: AssetImage('images/bg.png'),
             fit: BoxFit.cover,
           ),
         ),
@@ -68,6 +67,7 @@ class Login extends StatelessWidget {
               SizedBox(height: 48.0),
               TextFormField(
                 autofocus: false,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintStyle: TextStyle(color: Colors.white),
                   hintText: '账号',
@@ -82,6 +82,7 @@ class Login extends StatelessWidget {
               TextFormField(
                 autofocus: false,
                 obscureText: true,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintStyle: TextStyle(color: Colors.white),
                   hintText: '密码',

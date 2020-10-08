@@ -12,7 +12,7 @@
     <application
         
         android:icon="@mipmap/ic_launcher"
-        android:label="小鹿文娱">
+        android:label="小书屋">
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"

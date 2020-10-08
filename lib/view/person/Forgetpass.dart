@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 class ForgetPass extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return new _ForgetPassState();
   }
 }
@@ -28,8 +27,7 @@ class _ForgetPassState extends State<ForgetPass> {
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: CachedNetworkImageProvider(
-                "http://p1.pstatp.com/large/pgc-image/233886d2dc95432bbd004aacb7d311c4"),
+            image: AssetImage('images/bg.png'),
             fit: BoxFit.cover,
           ),
         ),
@@ -41,6 +39,7 @@ class _ForgetPassState extends State<ForgetPass> {
               TextFormField(
                 keyboardType: TextInputType.phone,
                 autofocus: false,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '账号',
                   hintStyle: TextStyle(color: Colors.white),
@@ -55,6 +54,7 @@ class _ForgetPassState extends State<ForgetPass> {
               SizedBox(height: 8.0),
               TextFormField(
                 autofocus: false,
+                style: TextStyle(color: Colors.white),
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: '邮箱',
@@ -71,6 +71,7 @@ class _ForgetPassState extends State<ForgetPass> {
               TextFormField(
                 autofocus: false,
                 obscureText: true,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '输入新密码',
                   hintStyle: TextStyle(color: Colors.white),
@@ -86,6 +87,7 @@ class _ForgetPassState extends State<ForgetPass> {
               TextFormField(
                 obscureText: true,
                 autofocus: false,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '重复新密码',
                   hintStyle: TextStyle(color: Colors.white),
