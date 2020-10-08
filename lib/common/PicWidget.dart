@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
 class PicWidget extends StatelessWidget {
   final Uint8List kTransparentImage = new Uint8List.fromList([
     0x89,
@@ -79,25 +80,33 @@ class PicWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CachedNetworkImage(
-      imageUrl: url,
-      imageBuilder: (context, imageProvider) => ClipRRect(
+    return Container(
+       decoration: BoxDecoration(shape: BoxShape.rectangle, boxShadow: [
+      BoxShadow(color: Colors.grey[300],offset: Offset(1, 1),blurRadius: 5,),
+      BoxShadow(color: Colors.grey[300], offset: Offset(-1, -1), blurRadius: 5),
+      BoxShadow(color: Colors.grey[300], offset: Offset(1, -1), blurRadius: 5),
+      BoxShadow(color: Colors.grey[300], offset: Offset(-1, 1), blurRadius: 5)
+    ]),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        imageBuilder: (context, imageProvider) => ClipRRect(
 //        borderRadius: BorderRadius.circular(5),
-        child: Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: imageProvider,
-              fit: BoxFit.cover,
+          child: Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: imageProvider,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
-      ),
-      errorWidget: (context, url, error) => Image.asset(
-        "images/nocover.jpg",
-        width: width,
-        height: height,
+        errorWidget: (context, url, error) => Image.asset(
+          "images/nocover.jpg",
+          width: width,
+          height: height,
+        ),
       ),
     );
   }

@@ -25,6 +25,7 @@ class _BookShelfState extends State<BookShelf>
           appBar: shelfModel.sortShelf
               ? null
               : AppBar(
+                
                   leading: IconButton(
                     icon: Icon(Icons.person),
                     onPressed: () {

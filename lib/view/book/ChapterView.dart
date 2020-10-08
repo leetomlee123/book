@@ -89,13 +89,13 @@ class _ChapterViewItem extends State<ChapterView> {
                       },
                     ),
                     SizedBox(
-                      width: 15,
+                      width: 5,
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
-                          height: 10,
+                          height: 5,
                         ),
                         Text(
                           data.book.Name,

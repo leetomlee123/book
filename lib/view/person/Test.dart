@@ -32,17 +32,7 @@ class _MyPageViewState extends State<MyPageView> {
 //          onPageChanged: (idx) => readModel.changeChapter(idx),),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            FlatButton(
-              onPressed: () => _reverse(),
-              child: Text('Reverse items'),
-            ),
-          ],
-        ),
-      ),
+
     );
   }
 }

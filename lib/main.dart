@@ -11,6 +11,7 @@ import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/view/person/Test.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:fluro/fluro.dart ' as fluro;
 import 'package:flustars/flustars.dart';
@@ -90,13 +91,12 @@ class _MainPageState extends State<MainPage> {
       ),
       label: '美剧',
     ),
-    //  BottomNavigationBarItem(
-    //      icon: ImageIcon(
-    //        AssetImage("images/video.png"),
-    //      ),
-    //      title: Text(
-    //        '美剧',
-    //      )),
+    // BottomNavigationBarItem(
+    //   icon: ImageIcon(
+    //     AssetImage("images/video.png"),
+    //   ),
+    //   label: '美剧',
+    // ),
   ];
 
   /*

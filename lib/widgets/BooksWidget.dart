@@ -24,11 +24,14 @@ class BooksWidget extends StatefulWidget {
 
 class _BooksWidgetState extends State<BooksWidget> {
   Widget body;
-  RefreshController _refreshController =
-      RefreshController(initialRefresh: SpUtil.haveKey('auth'));
+  RefreshController _refreshController;
   ShelfModel _shelfModel;
+  bool isShelf;
   @override
   void initState() {
+    isShelf = this.widget.type == '';
+    _refreshController =
+        RefreshController(initialRefresh: SpUtil.haveKey('auth') && isShelf);
     _shelfModel = Store.value<ShelfModel>(context);
     eventBus
         .on<SyncShelfEvent>()
@@ -38,7 +41,9 @@ class _BooksWidgetState extends State<BooksWidget> {
     widgetsBinding.addPostFrameCallback((callback) {
       _shelfModel.context = context;
       _shelfModel.setShelf();
-      _shelfModel.freshToken();
+      if (isShelf) {
+        _shelfModel.freshToken();
+      }
     });
   }
 
@@ -84,9 +89,9 @@ class _BooksWidgetState extends State<BooksWidget> {
       padding: EdgeInsets.all(10.0),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          mainAxisSpacing: 1.0,
+          mainAxisSpacing: 5.0,
           crossAxisSpacing: 10.0,
-          childAspectRatio: 0.7),
+          childAspectRatio: 0.8),
       children: cover(),
     );
   }
@@ -102,17 +107,18 @@ class _BooksWidgetState extends State<BooksWidget> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Stack(
+              alignment : AlignmentDirectional.topCenter,
               children: <Widget>[
                 PicWidget(
                   book.Img,
-                  width: (ScreenUtil.getScreenW(context) - 80) / 3,
-                  height: ((ScreenUtil.getScreenW(context) - 80) / 3) * 1.2,
+                  width: (ScreenUtil.getScreenW(context) - 100) / 3,
+                  height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.2,
                 ),
                 book.NewChapterCount == 1
                     ? Container(
-                        width: (ScreenUtil.getScreenW(context) - 80) / 3,
+                        width: (ScreenUtil.getScreenW(context) - 100) / 3,
                         height:
-                            ((ScreenUtil.getScreenW(context) - 80) / 3) * 1.2,
+                            ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.2,
                         child: Align(
                           alignment: Alignment.topRight,
                           child: Image.asset(
@@ -258,7 +264,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                         item.LastChapter,
                         style: TextStyle(fontSize: 12),
                         overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+                        maxLines: 2,
                       ),
                       width: ScreenUtil.getScreenW(context) - 115,
                     ),

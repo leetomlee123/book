@@ -61,7 +61,7 @@ class StateGoodBook extends State<GoodBook>
               tabs: tabs,
             ),
             centerTitle: true,
-            elevation: 0,
+            // elevation: 0,
             automaticallyImplyLeading: false,
           ),
           body: TabBarView(
@@ -136,7 +136,7 @@ class StateTabItem extends State<TabItem>
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey, fontSize: 14.0),
+                      style: TextStyle(color: Colors.grey, fontSize: 12.0),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,
