@@ -62,7 +62,7 @@ class SearchModel with ChangeNotifier {
     if (temp == "") {
       temp = word;
     } else {
-      if (temp != word) {
+      if (temp != word&&page<=1) {
         page = 1;
       }
     }
@@ -75,7 +75,7 @@ class SearchModel with ChangeNotifier {
     if (isBookSearch) {
 //      var url = '${Common.search}/$word/$page';
       var url = '${Common.search}?key=$word&page=$page&size=$size';
-
+      print(url);
       Response res = await Util(ctx).http().get(url);
       var d = res.data;
       List data = d['data'];
@@ -88,6 +88,7 @@ class SearchModel with ChangeNotifier {
         }
         refreshController.loadComplete();
       }
+      print(bks.length);
     } else {
 //    /movies
       var url = '${Common.movie_search}/$word/search/$page/tv';

@@ -143,6 +143,7 @@ class ShelfModel with ChangeNotifier {
   }
 
   upTotop(Book book, int i) async {
+    shelf[i].NewChapterCount = 0;
     await _dbHelper.updBookStatus(book.Id, 0);
     shelf.removeAt(i);
 

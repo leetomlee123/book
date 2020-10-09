@@ -119,13 +119,13 @@ class _MenuState extends State<Menu> {
                 child: Slider(
                   // activeColor: Colors.white,
                   // inactiveColor: Colors.white70,
-                  value: _readModel.value,
+                  value: _readModel.bookTag.cur.toDouble(),
                   max: (_readModel.chapters.length - 1).toDouble(),
                   min: 0.0,
                   onChanged: (newValue) {
                     int temp = newValue.round();
                     _readModel.bookTag.cur = temp;
-                    _readModel.value = temp.toDouble();
+                    
                     _readModel.intiPageContent(_readModel.bookTag.cur, true);
                   },
                   label: '${_readModel.chapters[_readModel.bookTag.cur].name} ',

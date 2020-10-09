@@ -39,9 +39,6 @@ class ReadModel with ChangeNotifier {
   PageController pageController;
   ScrollController listController;
 
-  //章节slider value
-  double value;
-
   //背景色数据
   List<List> bgs = [
     [250, 245, 235],
@@ -63,12 +60,6 @@ class ReadModel with ChangeNotifier {
 
   //显示上层 设置
   bool showMenu = false;
-
-  //章节切换过程中 页面切换数
-  int offset = 0;
-
-  //offset tag 上一章 -1 下一张 +1
-  int offsetTag = 0;
 
   //背景色索引
   int bgIdx = 0;
@@ -94,8 +85,6 @@ class ReadModel with ChangeNotifier {
   getBookRecord() async {
     showMenu = false;
     font = false;
-    offset = 0;
-    offsetTag = 0;
     loadOk = false;
 
     if (SpUtil.haveKey(book.Id)) {
@@ -120,7 +109,6 @@ class ReadModel with ChangeNotifier {
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
       // }
-      value = bookTag.cur.toDouble();
       loadOk = true;
       //本书已读过
     } else {
@@ -184,7 +172,6 @@ class ReadModel with ChangeNotifier {
     curPage = await loadChapter(idx);
     nextPage = await loadChapter(idx + 1);
     fillAllContent();
-    value = bookTag.cur.toDouble();
     listController.jumpTo(prePage.height + d);
   }
 
@@ -199,22 +186,21 @@ class ReadModel with ChangeNotifier {
         return LoadingDialog();
       },
     );
+    // BotToast.showLoading();
     prePage = await loadChapter(idx - 1);
     curPage = await loadChapter(idx);
     nextPage = await loadChapter(idx + 1);
-    Navigator.pop(context);
-
+    // BotToast.closeAllLoading();
     fillAllContent(notify: jump);
-    value = bookTag.cur.toDouble();
     if (jump) {
       int ix = prePage?.pageOffsets?.length ?? 0;
       pageController.jumpToPage(ix);
     }
+    Navigator.pop(context);
   }
 
   changeChapter(int idx) async {
     bookTag.index = idx;
-    offset = offset + offsetTag;
     int preLen = prePage?.pageOffsets?.length ?? 0;
     int curLen = curPage?.pageOffsets?.length ?? 0;
 
@@ -299,7 +285,6 @@ class ReadModel with ChangeNotifier {
     //书的最后一章
     if (book.CId == "-1") {
       bookTag.cur = chapters.length - 1;
-      value = bookTag.cur.toDouble();
     }
     SpUtil.putString('${book.Id}chapters', "");
     DbHelper.instance.addChapters(list, book.Id);
