@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/entity/Book.dart';
-import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
