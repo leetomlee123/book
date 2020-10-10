@@ -125,7 +125,7 @@ class _MenuState extends State<Menu> {
                   onChanged: (newValue) {
                     int temp = newValue.round();
                     _readModel.bookTag.cur = temp;
-                    
+
                     _readModel.intiPageContent(_readModel.bookTag.cur, true);
                   },
                   label: '${_readModel.chapters[_readModel.bookTag.cur].name} ',
@@ -152,7 +152,7 @@ class _MenuState extends State<Menu> {
       decoration:
           BoxDecoration(color: _colorModel.dark ? Colors.black : Colors.white),
       height: 40,
-      width: 120,
+      width: 140,
       margin: EdgeInsets.only(top: 15, bottom: 15),
       child: GestureDetector(
         onTap: func,
@@ -271,7 +271,6 @@ class _MenuState extends State<Menu> {
                   height: 40,
                   width: 40,
                 ),
-
                 SizedBox(
                   width: 10,
                 ),
@@ -292,31 +291,35 @@ class _MenuState extends State<Menu> {
                   ReadSetting.calcFontSize(1.0);
                   _readModel.modifyFont();
                 }),
-
-                // SizedBox(
-                //   width: 10,
-                // ),
-                // Expanded(
-                //   child: Container(
-                //     child: FlatButton(
-                //       onPressed: () {
-                //         Routes.navigateTo(
-                //           context,
-                //           Routes.fontSet,
-                //         );
-                //       },
-                //       child: Text(
-                //         '字体',
-                //         style: TextStyle(
-                //             color:
-                //                 _colorModel.dark ? Colors.white : Colors.black),
-                //       ),
-                //       shape: RoundedRectangleBorder(
-                //           borderRadius:
-                //               BorderRadius.all(Radius.circular(20.0))),
-                //     ),
-                //   ),
-                // ),
+              //   SizedBox(
+              //     width: 10,
+              //   ),
+              //  Container(
+              //       child: FlatButton(
+              //         onPressed: () {
+              //           Routes.navigateTo(
+              //             context,
+              //             Routes.fontSet,
+              //           );
+              //         },
+              //         child: Row(
+              //           children: [
+              //             Text(
+              //               '字体',
+              //               style: TextStyle(
+              //                   color: _colorModel.dark
+              //                       ? Colors.white
+              //                       : Colors.black),
+              //             ),
+              //             Icon(Icons.arrow_forward_ios,size: 12,)
+              //           ],
+              //         ),
+              //         shape: RoundedRectangleBorder(
+              //             borderRadius:
+              //                 BorderRadius.all(Radius.circular(20.0))),
+              //       ),
+              //     ),
+               
               ],
             ),
           ),
@@ -349,19 +352,21 @@ class _MenuState extends State<Menu> {
   }
 
   Widget bottom() {
-    return Opacity(opacity: 0.99999,child: 
-    Container(
-      decoration: BoxDecoration(
-        color: _colorModel.dark ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+    return Opacity(
+      opacity: 0.99999,
+      child: Container(
+        decoration: BoxDecoration(
+          color: _colorModel.dark ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+        ),
+        // height: 140,
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[bottomHead(), buildBottomMenus()],
+        ),
       ),
-      // height: 140,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[bottomHead(), buildBottomMenus()],
-      ),
-    ),);
+    );
   }
 
   @override
@@ -377,7 +382,6 @@ class _MenuState extends State<Menu> {
             // head(),
             midTranspant(),
             bottom(),
-          
           ],
         ),
       ),

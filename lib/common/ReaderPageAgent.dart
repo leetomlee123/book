@@ -1,5 +1,4 @@
 import 'package:book/common/ReadSetting.dart';
-import 'package:book/common/Screen.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -83,7 +82,7 @@ class ReaderPageAgent {
         style: TextStyle(
           locale: Locale('zh_CN'),
           fontSize: ReadSetting.getFontSize(),
-          // height: ReadSetting.getLatterHeight(),
+          height: ReadSetting.getLatterHeight(),
           // letterSpacing: ReadSetting.getLatterSpace()
         ));
     // TextPainter textPainter = TextPainter(

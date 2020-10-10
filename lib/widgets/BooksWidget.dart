@@ -50,7 +50,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   Widget build(BuildContext context) {
     return SmartRefresher(
         enablePullDown: true,
-        header: WaterDropHeader(),
+        
         footer: CustomFooter(
           builder: (BuildContext context, LoadStatus mode) {
             if (mode == LoadStatus.idle) {

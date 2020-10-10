@@ -82,10 +82,10 @@ class PicWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
        decoration: BoxDecoration(shape: BoxShape.rectangle, boxShadow: [
-      BoxShadow(color: Colors.grey[300],offset: Offset(1, 1),blurRadius: 5,),
-      BoxShadow(color: Colors.grey[300], offset: Offset(-1, -1), blurRadius: 5),
-      BoxShadow(color: Colors.grey[300], offset: Offset(1, -1), blurRadius: 5),
-      BoxShadow(color: Colors.grey[300], offset: Offset(-1, 1), blurRadius: 5)
+      BoxShadow(color: Colors.grey[300],offset: Offset(1, 1),blurRadius: 3,),
+      BoxShadow(color: Colors.grey[300], offset: Offset(-1, -1), blurRadius: 3),
+      BoxShadow(color: Colors.grey[300], offset: Offset(1, -1), blurRadius: 3),
+      BoxShadow(color: Colors.grey[300], offset: Offset(-1, 1), blurRadius: 3)
     ]),
       child: CachedNetworkImage(
         imageUrl: url,

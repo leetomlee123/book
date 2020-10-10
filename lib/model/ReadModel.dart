@@ -574,9 +574,11 @@ class ReadModel with ChangeNotifier {
                                     padding: EdgeInsets.fromLTRB(
                                         15, 0, 5, Screen.bottomSafeHeight),
                                     child: Text.rich(
+                                      
                                       TextSpan(children: [
                                         TextSpan(
                                             text: content,
+                                            
                                             style: TextStyle(
                                               textBaseline:
                                                   TextBaseline.ideographic,

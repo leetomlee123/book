@@ -66,7 +66,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         readModel.bgIdx = SpUtil.getInt('bgIdx');
       }
       readModel.contentH = ScreenUtil.getScreenH(context) -
-          ScreenUtil.getStatusBarH(context) -
+          ScreenUtil.getStatusBarH(context) -ScreenUtil.getBottomBarH(context)-
           60;
       readModel.contentW = ScreenUtil.getScreenW(context) - 20.0;
     });
