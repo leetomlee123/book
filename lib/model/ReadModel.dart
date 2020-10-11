@@ -483,7 +483,7 @@ class ReadModel with ChangeNotifier {
 
   Widget firstPage() {
     return Container(
-      padding: EdgeInsets.only(top: 150),
+      padding: EdgeInsets.only(top: 100),
       child: Center(
         child: Column(
           children: [
@@ -514,8 +514,18 @@ class ReadModel with ChangeNotifier {
               ),
             ),
             SizedBox(
-              height: 45,
+              height: 15,
             ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                book.Desc,
+                style: TextStyle(
+                  fontWeight: FontWeight.w100,
+                  fontSize: 11,
+                ),
+              ),
+            )
           ],
         ),
       ),

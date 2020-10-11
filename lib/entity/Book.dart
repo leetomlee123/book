@@ -9,13 +9,14 @@ class Book {
   int NewChapterCount;
   String Id;
   String CId;
-  
   int cur;
   int index;
   String CName;
   String Name;
   String Author;
   String Img;
+  String Desc;
+
   String LastChapterId;
   String LastChapter;
   String UTime;
@@ -32,7 +33,7 @@ class Book {
   }
 
   Book.fromSql(this.Id, this.Name, this.CName, this.Author, this.UTime,
-      this.Img, this.cur, this.index, this.NewChapterCount, this.LastChapter);
+      this.Img,this.Desc, this.cur, this.index, this.NewChapterCount, this.LastChapter);
 
   Book(
       this.ChapterId,
@@ -44,6 +45,7 @@ class Book {
       this.CName,
       this.Author,
       this.Img,
+      this.Desc,
       this.LastChapterId,
       this.LastChapter,
       this.UTime);

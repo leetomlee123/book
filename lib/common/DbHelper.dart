@@ -88,6 +88,7 @@ class DbHelper {
         "author TEXT,"
         "utime TEXT,"
         "img TEXT,"
+        "intro TEXT,"
         "cur INTEGER,"
         "newChapter INTEGER,"
         "idx INTEGER,"
@@ -179,6 +180,7 @@ class DbHelper {
           i['author'],
           i['utime'],
           i['img'],
+          i['intro'],
           i['cur'],
           i['idx'],
           i['newChapter'],
@@ -199,6 +201,7 @@ class DbHelper {
           i['author'],
           i['utime'],
           i['img'],
+          i['intro'],
           i['cur']??0,
           i['idx']??0,
           i['newChapter'],
@@ -225,6 +228,7 @@ class DbHelper {
         "cname": book.CName,
         "author": book.Author,
         "img": book.Img,
+        "intro": book.Desc,
         "utime": book.UTime,
         "cur": book.cur,
         "idx": book.index,

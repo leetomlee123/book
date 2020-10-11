@@ -427,6 +427,7 @@ class _BookDetailState extends State<BookDetail> {
                     "",
                     _bookInfo.Author,
                     _bookInfo.Img,
+                    _bookInfo.Desc,
                     _bookInfo.LastChapterId,
                     _bookInfo.LastChapter,
                     _bookInfo.LastTime);
