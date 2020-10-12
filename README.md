@@ -1,13 +1,16 @@
 
 
 # 清阅
-一款网络小说阅读器📕,采用纯flutter编写，支持追书、看书等功能
+一款网络小说阅读器📕,采用纯flutter编写，支持追书、看书等功能 
+# About me
+Javaer一枚 第一次做移动开发 请多多给些建议 和bug反馈 谢谢
 ## 使用技术 
 dart,provider,eventbus,dio等
+## 项目已经获得Jetbrain免费license 
+如有兴趣参与本项目 可获赠Jetbrain全家桶license
 ## QQ群
 953457248
 ## TIP
-
 * 服务器是阿里云1Core2G弱鸡服务器,请各位大神手下留情不要攻击或者爬取数据,供大家学习使用。。
 ## 待解决问题
 [小说分页卡顿](https://github.com/flutter/flutter/issues/30604)
