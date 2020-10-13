@@ -50,7 +50,7 @@ class _MenuState extends State<Menu> {
       child: Row(
         children: [
           Text(
-            '${_readModel?.bookTag?.bookName ?? ""}',
+            '${_readModel?.book?.Name ?? ""}',
             style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
           ),
           Expanded(
@@ -109,8 +109,8 @@ class _MenuState extends State<Menu> {
             GestureDetector(
               child: Container(child: Text('上一章')),
               onTap: () async {
-                _readModel.bookTag.cur -= 1;
-                await _readModel.intiPageContent(_readModel.bookTag.cur, true);
+                _readModel.book.cur -= 1;
+                await _readModel.intiPageContent(_readModel.book.cur, true);
                 BotToast.showText(text: _readModel.curPage.chapterName);
               },
             ),
@@ -119,16 +119,16 @@ class _MenuState extends State<Menu> {
                 child: Slider(
                   // activeColor: Colors.white,
                   // inactiveColor: Colors.white70,
-                  value: _readModel.bookTag.cur.toDouble(),
+                  value: _readModel.book.cur.toDouble(),
                   max: (_readModel.chapters.length - 1).toDouble(),
                   min: 0.0,
                   onChanged: (newValue) {
                     int temp = newValue.round();
-                    _readModel.bookTag.cur = temp;
+                    _readModel.book.cur = temp;
 
-                    _readModel.intiPageContent(_readModel.bookTag.cur, true);
+                    _readModel.intiPageContent(_readModel.book.cur, true);
                   },
-                  label: '${_readModel.chapters[_readModel.bookTag.cur].name} ',
+                  label: '${_readModel.chapters[_readModel.book.cur].name} ',
                   semanticFormatterCallback: (newValue) {
                     return '${newValue.round()} dollars';
                   },
@@ -138,8 +138,8 @@ class _MenuState extends State<Menu> {
             GestureDetector(
               child: Container(child: Text('下一章')),
               onTap: () async {
-                _readModel.bookTag.cur += 1;
-                await _readModel.intiPageContent(_readModel.bookTag.cur, true);
+                _readModel.book.cur += 1;
+                await _readModel.intiPageContent(_readModel.book.cur, true);
                 BotToast.showText(text: _readModel.curPage.chapterName);
               },
             ),
@@ -195,7 +195,7 @@ class _MenuState extends State<Menu> {
                     onTap: () {
                       BotToast.showText(text: '从当前章节开始下载...');
 
-                      _readModel.downloadAll(_readModel.bookTag.cur);
+                      _readModel.downloadAll(_readModel.book.cur);
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -291,34 +291,34 @@ class _MenuState extends State<Menu> {
                   ReadSetting.calcFontSize(1.0);
                   _readModel.modifyFont();
                 }),
-              //   SizedBox(
-              //     width: 10,
-              //   ),
-              //  Container(
-              //       child: FlatButton(
-              //         onPressed: () {
-              //           Routes.navigateTo(
-              //             context,
-              //             Routes.fontSet,
-              //           );
-              //         },
-              //         child: Row(
-              //           children: [
-              //             Text(
-              //               '字体',
-              //               style: TextStyle(
-              //                   color: _colorModel.dark
-              //                       ? Colors.white
-              //                       : Colors.black),
-              //             ),
-              //             Icon(Icons.arrow_forward_ios,size: 12,)
-              //           ],
-              //         ),
-              //         shape: RoundedRectangleBorder(
-              //             borderRadius:
-              //                 BorderRadius.all(Radius.circular(20.0))),
-              //       ),
-              //     ),
+                SizedBox(
+                  width: 10,
+                ),
+               Container(
+                    child: FlatButton(
+                      onPressed: () {
+                        Routes.navigateTo(
+                          context,
+                          Routes.fontSet,
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            '字体',
+                            style: TextStyle(
+                                color: _colorModel.dark
+                                    ? Colors.white
+                                    : Colors.black),
+                          ),
+                          Icon(Icons.arrow_forward_ios,size: 12,)
+                        ],
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(20.0))),
+                    ),
+                  ),
                
               ],
             ),

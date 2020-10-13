@@ -48,7 +48,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   void initState() {
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
-      readModel.intiPageContent(readModel.bookTag.cur, false);
+      readModel.intiPageContent(readModel.book.cur, false);
     });
     eventBus.on<OpenChapters>().listen((event) {
       _globalKey.currentState?.openDrawer();

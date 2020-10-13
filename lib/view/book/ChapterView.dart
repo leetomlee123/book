@@ -58,9 +58,9 @@ class _ChapterViewItem extends State<ChapterView> {
 //滚动到当前阅读位置
   scrollTo() async {
     if (_scrollController.hasClients) {
-      curIndex = Store.value<ReadModel>(context).bookTag.cur - 8;
+      curIndex = Store.value<ReadModel>(context).book.cur - 8;
       await _scrollController.animateTo(
-          (Store.value<ReadModel>(context).bookTag.cur - 8) * ITEM_HEIGH,
+          (Store.value<ReadModel>(context).book.cur - 8) * ITEM_HEIGH,
           duration: Duration(microseconds: 1),
           curve: Curves.ease);
     }
@@ -81,7 +81,7 @@ class _ChapterViewItem extends State<ChapterView> {
                     GestureDetector(
                       child: CachedNetworkImage(
                         imageUrl: data.book.Img,
-                        width: 80,
+                        width: 85,
                         height: 80,
                       ),
                       onTap: () async {
@@ -165,11 +165,11 @@ class _ChapterViewItem extends State<ChapterView> {
                         has == 2 ? "已缓存" : "",
                         style: TextStyle(fontSize: 8),
                       ),
-                      selected: index == data.bookTag.cur,
+                      selected: index == data.book.cur,
                       onTap: () async {
                         Navigator.of(context).pop();
                         //不是卷目录
-                        data.bookTag.cur = index;
+                        data.book.cur = index;
                         await Future.delayed(Duration(microseconds: 3000));
                         data.intiPageContent(index, true);
                       },
