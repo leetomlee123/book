@@ -36,6 +36,7 @@ class Book {
       this.Img,this.Desc, this.cur, this.index, this.NewChapterCount, this.LastChapter);
 
   Book(
+    this.cur,this.index,
       this.ChapterId,
       this.ChapterName,
       this.NewChapterCount,

@@ -120,7 +120,7 @@ class ReadModel with ChangeNotifier {
         }
       }
       // bookTag = BookTag(cur, 0, book.Name, 0.0);
-
+      book.cur = cur;
       if (SpUtil.haveKey('${book.Id}chapters')) {
         chapters = await DbHelper.instance.getChapters(book.Id);
       } else {
@@ -131,7 +131,7 @@ class ReadModel with ChangeNotifier {
         book.cur = chapters.length - 1;
       }
 
-      await intiPageContent(book.cur, false);
+      await intiPageContent(book?.cur ?? 0, false);
       int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
       // if (isPage) {
       pageController = new PageController(initialPage: idx, keepPage: false);
@@ -184,6 +184,46 @@ class ReadModel with ChangeNotifier {
         return LoadingDialog();
       },
     );
+    // List<Future<Response>> reqst = [];
+    // if (idx - 1 > 0) {
+    //   reqst.add(Util(null)
+    //       .http()
+    //       .get(Common.bookContentUrl + '/${chapters[idx - 1].id}'));
+    // }
+    // if (idx + 1 < chapters.length) {
+    //   reqst.add(Util(null)
+    //       .http()
+    //       .get(Common.bookContentUrl + '/${chapters[idx + 1].id}'));
+    // }
+
+    // reqst.add(
+    //     Util(null).http().get(Common.bookContentUrl + '/${chapters[idx].id}'));
+    // List<Response> responses = await Future.wait(reqst);
+    // if ((idx - 1 > 0) && (idx + 1 < chapters.length)) {
+    //   var content1 = responses[0].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content1, chapters[idx - 1].id);
+    //   chapters[idx - 1].hasContent = 2;
+    //   var content2 = responses[1].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content2, chapters[idx].id);
+    //   chapters[idx].hasContent = 2;
+    //   var content3 = responses[2].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content3, chapters[idx + 1].id);
+    //   chapters[idx + 1].hasContent = 2;
+    // } else if (idx - 1 < 0) {
+    //   var content2 = responses[0].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content2, chapters[idx].id);
+    //   chapters[idx].hasContent = 2;
+    //   var content3 = responses[1].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content3, chapters[idx + 1].id);
+    //   chapters[idx + 1].hasContent = 2;
+    // } else if (idx + 1 >= chapters.length) {
+    //   var content2 = responses[0].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content2, chapters[idx-1].id);
+    //   chapters[idx-1].hasContent = 2;
+    //   var content3 = responses[1].data['data']['content'];
+    //   DbHelper.instance.udpChapter(content3, chapters[idx ].id);
+    //   chapters[idx ].hasContent = 2;
+    // }
     // BotToast.showLoading();
     prePage = await loadChapter(idx - 1);
     curPage = await loadChapter(idx);
@@ -205,8 +245,8 @@ class ReadModel with ChangeNotifier {
     // print("idx:$idx preLen:$preLen curLen:$curLen");
     if ((idx + 1 - preLen) > (curLen)) {
       //下一章
-      int temp = book.cur + 1;
-      if (temp >= chapters.length) {
+      int tempCur = book.cur + 1;
+      if (tempCur >= chapters.length) {
         BotToast.showText(text: "已经是最后一页");
         pageController.previousPage(
             duration: Duration(microseconds: 1), curve: Curves.ease);
@@ -235,15 +275,19 @@ class ReadModel with ChangeNotifier {
         nextPage = null;
         fillAllContent();
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
+        print('load next ok');
         ReadPage temp = await loadChapter(book.cur + 1);
-        nextPage = temp;
-        fillAllContent();
+        if (book.cur == tempCur) {
+          print('next init');
+          nextPage = temp;
+          fillAllContent();
+        }
       }
     } else if (idx < preLen) {
       //上一章
       print('上一张');
-      int temp = book.cur - 1;
-      if (temp < 0) {
+      int tempCur = book.cur - 1;
+      if (tempCur < 0) {
         return;
       } else {
         book.cur -= 1;
@@ -253,10 +297,13 @@ class ReadModel with ChangeNotifier {
         fillAllContent();
         var p = curPage?.pageOffsets?.length ?? 0;
         pageController.jumpToPage(p > 0 ? p - 1 : 0);
-        prePage = await loadChapter(book.cur - 1);
-        fillAllContent();
-        int ix = (prePage?.pageOffsets?.length ?? 0) + idx;
-        pageController.jumpToPage(ix);
+        ReadPage temp = await loadChapter(book.cur - 1);
+        if (tempCur == book.cur) {
+          prePage = temp;
+          fillAllContent();
+          int ix = (prePage?.pageOffsets?.length ?? 0) + idx;
+          pageController.jumpToPage(ix);
+        }
       }
     }
   }
@@ -571,7 +618,7 @@ class ReadModel with ChangeNotifier {
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: model.dark
-                                      ? Colors.white38
+                                      ? Colors.white30
                                       : Colors.black,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -582,16 +629,14 @@ class ReadModel with ChangeNotifier {
                                     padding: EdgeInsets.fromLTRB(
                                         15, 0, 5, Screen.bottomSafeHeight),
                                     child: Text.rich(
-                                      
                                       TextSpan(children: [
                                         TextSpan(
                                             text: content,
-                                            
                                             style: TextStyle(
                                               textBaseline:
                                                   TextBaseline.ideographic,
                                               color: model.dark
-                                                  ? Colors.white70
+                                                  ? Colors.white30
                                                   : Colors.black,
                                               fontSize:
                                                   ReadSetting.getFontSize() /
@@ -618,7 +663,7 @@ class ReadModel with ChangeNotifier {
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: model.dark
-                                          ? Colors.white38
+                                          ? Colors.white30
                                           : Colors.black,
                                     ),
                                     textAlign: TextAlign.center,
