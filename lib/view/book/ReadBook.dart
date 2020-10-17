@@ -66,7 +66,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         readModel.bgIdx = SpUtil.getInt('bgIdx');
       }
       readModel.contentH = ScreenUtil.getScreenH(context) -
-          ScreenUtil.getStatusBarH(context) -ScreenUtil.getBottomBarH(context)-
+          ScreenUtil.getStatusBarH(context) -
+          ScreenUtil.getBottomBarH(context) -
           60;
       readModel.contentW = ScreenUtil.getScreenW(context) - 20.0;
     });
@@ -105,7 +106,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         FlatButton(
                             onPressed: () {
                               Navigator.pop(context);
-
+                              readModel.sSave = true;
                               Store.value<ShelfModel>(context)
                                   .modifyShelf(this.widget.book);
                             },
@@ -142,19 +143,39 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     ? 'images/QR_bg_4.jpg'
                                     : "images/${bgimg[readModel?.bgIdx ?? 0]}",
                                 fit: BoxFit.cover)),
-                        PageView.builder(
-                          controller: model.pageController,
-                          physics: AlwaysScrollableScrollPhysics(),
-                          itemBuilder: (BuildContext context, int index) {
-                            return readModel.allContent[index];
-                          },
-                          //条目个数
-                          itemCount: (readModel.prePage?.pageOffsets?.length ??
-                                  0) +
-                              (readModel.curPage?.pageOffsets?.length ?? 0) +
-                              (readModel.nextPage?.pageOffsets?.length ?? 0),
-                          onPageChanged: (idx) => readModel.changeChapter(idx),
-                        ),
+                        readModel.isPage
+                            ? PageView.builder(
+                                controller: model.pageController,
+                                physics: AlwaysScrollableScrollPhysics(),
+                                itemBuilder: (BuildContext context, int index) {
+                                  return readModel.allContent[index];
+                                },
+                                //条目个数
+                                itemCount: (readModel
+                                            .prePage?.pageOffsets?.length ??
+                                        0) +
+                                    (readModel.curPage?.pageOffsets?.length ??
+                                        0) +
+                                    (readModel.nextPage?.pageOffsets?.length ??
+                                        0),
+                                onPageChanged: (idx) =>
+                                    readModel.changeChapter(idx),
+                              )
+                            : LayoutBuilder(builder: (context, constraints) {
+                                return NotificationListener(
+                                  onNotification: (ScrollNotification note) {
+                                    readModel.checkPosition(note.metrics.pixels); // 滚动位置。
+                                  },
+                                  child: ListView.builder(
+                                    controller: readModel.listController,
+                                    itemCount: readModel.allContent.length,
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return readModel.allContent[index];
+                                    },
+                                  ),
+                                );
+                              }),
                         model.showMenu ? Menu() : Container(),
                         model.showMenu
                             ? Positioned(

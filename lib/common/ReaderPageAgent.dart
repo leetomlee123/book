@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class ReaderPageAgent {
   /// 文本间距
   double getPageHeight(
-      String content, double height, double width, double fontSize) {
+      String content,  double width) {
     TextPainter textPainter = layout1(content, width);
     textPainter.layout(maxWidth: width, minWidth: width);
     return textPainter.height;
