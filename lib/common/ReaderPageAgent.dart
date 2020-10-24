@@ -134,7 +134,7 @@ class ReaderPageAgent {
     textPainter.text = TextSpan(
         text: text,
         style: TextStyle(
-          locale: Locale('zh_CN'),
+          
           fontSize: ReadSetting.getFontSize(),
         ));
     // height: ReadSetting.getLatterHeight(),

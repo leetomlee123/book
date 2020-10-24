@@ -403,6 +403,8 @@ class _BookDetailState extends State<BookDetail> {
                       break;
                     case 1:
                       {
+                        Navigator.of(context).popUntil(ModalRoute.withName("/read"));
+                        
                         Routes.navigateTo(
                           context,
                           Routes.read,

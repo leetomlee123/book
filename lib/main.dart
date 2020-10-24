@@ -11,15 +11,13 @@ import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
 import 'package:book/view/person/Me.dart';
-import 'package:book/view/person/Test.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:fluro/fluro.dart ' as fluro;
+import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 GetIt locator = GetIt.instance;
 
@@ -28,7 +26,7 @@ void main() async {
   await SpUtil.getInstance();
 
   locator.registerSingleton(TelAndSmsService());
-  final router = fluro.Router();
+  final router = FluroRouter();
   Routes.configureRoutes(router);
   Routes.router = router;
   runApp(Store.init(child: MyApp()));

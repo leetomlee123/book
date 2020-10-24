@@ -21,7 +21,7 @@ dependencies:
   chewie: ^0.9.10
   video_player: ^0.10.12+2
   flutter_swiper: ^1.1.6
-  fluro: ^1.6.3
+  fluro: ^1.7.6
   shared_preferences: ^0.5.10
   cached_network_image: ^2.2.0+1
   path_provider: ^1.6.16

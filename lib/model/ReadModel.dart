@@ -106,8 +106,7 @@ class ReadModel with ChangeNotifier {
       }
       await intiPageContent(book.cur, false);
       // if (isPage) {
-      pageController =
-          new PageController(initialPage: book.index, keepPage: false);
+      pageController = PageController(initialPage: book.index);
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
       // }
@@ -135,11 +134,10 @@ class ReadModel with ChangeNotifier {
       if (book.CId == "-1") {
         book.cur = chapters.length - 1;
       }
-
       await intiPageContent(book?.cur ?? 0, false);
       int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
       if (isPage) {
-        pageController = new PageController(initialPage: idx, keepPage: false);
+        pageController = PageController(initialPage: idx);
       } else {
         listController = ScrollController(initialScrollOffset: 0.0);
       }
@@ -392,7 +390,7 @@ class ReadModel with ChangeNotifier {
         SpUtil.remove(k);
       } else {
         r.pageOffsets = ReaderPageAgent()
-          .getPageOffsets(r.chapterContent, contentH, contentW);
+            .getPageOffsets(r.chapterContent, contentH, contentW);
         // SpUtil.putStringList('pages' + id, r.pageOffsets);
       }
     } else {
@@ -585,7 +583,7 @@ class ReadModel with ChangeNotifier {
                                 //     forceStrutHeight: true,
                                 //     height: textLineHeight),
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12 / Screen.textScaleFactor,
                                   color: model.dark
                                       ? Colors.white30
                                       : Colors.black,
@@ -637,7 +635,7 @@ class ReadModel with ChangeNotifier {
                                     //     forceStrutHeight: true,
                                     //     height: textLineHeight),
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 12 / Screen.textScaleFactor,
                                       color: model.dark
                                           ? Colors.white30
                                           : Colors.black,
@@ -736,6 +734,7 @@ class ReadModel with ChangeNotifier {
     curPage = null;
     nextPage = null;
   }
+
 
   downloadAll(int start) async {
     if (chapters?.isEmpty ?? 0 == 0) {

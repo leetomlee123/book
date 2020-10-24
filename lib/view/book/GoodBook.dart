@@ -61,7 +61,7 @@ class StateGoodBook extends State<GoodBook>
               tabs: tabs,
             ),
             centerTitle: true,
-            // elevation: 0,
+            elevation: 0,
             automaticallyImplyLeading: false,
           ),
           body: TabBarView(
