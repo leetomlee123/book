@@ -74,7 +74,7 @@ class ReadModel with ChangeNotifier {
   bool jump = true;
 
 //阅读方式
-  bool isPage = false;
+  bool isPage = true;
 
   //页面上下文
   BuildContext context;
@@ -89,7 +89,7 @@ class ReadModel with ChangeNotifier {
     showMenu = false;
     font = false;
     loadOk = false;
-    sSave = false;
+    sSave = true;
     load = Load.Done;
     if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
@@ -111,7 +111,6 @@ class ReadModel with ChangeNotifier {
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
       // }
-      sSave = true;
       loadOk = true;
       //本书已读过
     } else {
@@ -234,9 +233,15 @@ class ReadModel with ChangeNotifier {
         return LoadingDialog();
       },
     );
+    // await Future.wait([
+    //   loadChapter(idx - 1).then((value) => {prePage = value}),
+    //   loadChapter(idx).then((value) => {curPage = value}),
+    //   loadChapter(idx + 1).then((value) => {nextPage = value}),
+    // ]);
     prePage = await loadChapter(idx - 1);
     curPage = await loadChapter(idx);
     nextPage = await loadChapter(idx + 1);
+
     fillAllContent(notify: jump);
     if (isPage && jump) {
       int ix = prePage?.pageOffsets?.length ?? 0;
@@ -387,7 +392,7 @@ class ReadModel with ChangeNotifier {
         SpUtil.remove(k);
       } else {
         r.pageOffsets = ReaderPageAgent()
-            .getPageOffsets(r.chapterContent, contentH, contentW);
+          .getPageOffsets(r.chapterContent, contentH, contentW);
         // SpUtil.putStringList('pages' + id, r.pageOffsets);
       }
     } else {
@@ -534,9 +539,9 @@ class ReadModel with ChangeNotifier {
                 ),
               ),
             ),
-            SizedBox(
-              height: Screen.height / 2,
-            )
+            // SizedBox(
+            //   height: Screen.height / 2,
+            // )
           ],
         ),
       ),
@@ -590,21 +595,28 @@ class ReadModel with ChangeNotifier {
                             ),
                             Expanded(
                                 child: Container(
-                                    padding: EdgeInsets.fromLTRB(
-                                        15, 0, 5, Screen.bottomSafeHeight),
+                                    padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
                                     child: Text.rich(
                                       TextSpan(children: [
                                         TextSpan(
                                             text: content,
                                             style: TextStyle(
+                                              locale: Locale('zh_CN'),
+                                              fontSize:
+                                                  ReadSetting.getFontSize() /
+                                                      Screen.textScaleFactor,
+                                              // height:
+                                              //     ReadSetting.getLatterHeight()/ReadSetting.getFontSize() ,
+                                              // letterSpacing:
+                                              //     ReadSetting.getLatterSpace(),
                                               textBaseline:
                                                   TextBaseline.ideographic,
                                               color: model.dark
                                                   ? Colors.white30
                                                   : Colors.black,
-                                              fontSize:
-                                                  ReadSetting.getFontSize() /
-                                                      Screen.textScaleFactor,
+                                              // fontSize:
+                                              //     ReadSetting.getFontSize() /
+                                              //         Screen.textScaleFactor,
                                               // height: ReadSetting
                                               //     .getLatterHeight(),
                                               // letterSpacing: ReadSetting
@@ -712,7 +724,6 @@ class ReadModel with ChangeNotifier {
         await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
-      // SpUtil.putString(chapter.id, content);
       DbHelper.instance.udpChapter(content, chapter.id);
       chapters[book.cur].hasContent = 2;
     }

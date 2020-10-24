@@ -106,13 +106,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         FlatButton(
                             onPressed: () {
                               Navigator.pop(context);
-                              readModel.sSave = true;
                               Store.value<ShelfModel>(context)
                                   .modifyShelf(this.widget.book);
                             },
                             child: Text('确定')),
                         FlatButton(
                             onPressed: () {
+                              readModel.sSave = false;
+
                               Store.value<ShelfModel>(context)
                                   .delLocalCache([this.widget.book.Id]);
                               Navigator.pop(context);
