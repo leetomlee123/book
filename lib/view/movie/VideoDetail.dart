@@ -21,7 +21,6 @@ class VideoDetail extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return VideoDetailState();
   }
 }
@@ -29,18 +28,34 @@ class VideoDetail extends StatefulWidget {
 class VideoDetailState extends State<VideoDetail> {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Store.connect<ColorModel>(
-      builder: (context, ColorModel model, child) => Theme(
-        child: Scaffold(
+      builder: (context, ColorModel model, child) => Scaffold(
             appBar: AppBar(
-              title: Text(this.widget.gBook.name),
+              backgroundColor: Colors.transparent,
+              title: Text(
+                this.widget.gBook.name,
+                style: TextStyle(
+                  color: model.dark ? Colors.white : Colors.black,
+                ),
+              ),
+                        leading: IconButton(
+            color:model.dark ? Colors.white : Colors.black,
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
               elevation: 0,
               centerTitle: true,
               actions: <Widget>[
                 GestureDetector(
                   child: Center(
-                    child: Text('美剧'),
+                    child: Text(
+                      '美剧',
+                      style: TextStyle(
+                        color: model.dark ? Colors.white : Colors.black,
+                      ),
+                    ),
                   ),
                   onTap: () {
                     Navigator.of(context).popUntil(ModalRoute.withName('/'));
@@ -115,6 +130,7 @@ class VideoDetailState extends State<VideoDetail> {
                             ],
                           ),
                           Wrap(
+                            runAlignment: WrapAlignment.spaceAround,
                             spacing: 3, //主轴上子控件的间距
                             runSpacing: 5, //交叉轴上子控件之间的间
                             children: mItems(data[1]),
@@ -172,8 +188,7 @@ class VideoDetailState extends State<VideoDetail> {
                 }
               },
             )),
-        data: model.theme,
-      ),
+       
     );
   }
 
@@ -193,6 +208,7 @@ class VideoDetailState extends State<VideoDetail> {
           map.values.elementAt(0),
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.white),
         ),
         onPressed: () {
           var jsonEncode2 = jsonEncode(list);
@@ -205,7 +221,7 @@ class VideoDetailState extends State<VideoDetail> {
 
           Routes.navigateTo(context, Routes.lookVideo, params: {
             "name": this.widget.gBook.name,
-            "cover":this.widget.gBook.cover,
+            "cover": this.widget.gBook.cover,
             "id": map.keys.elementAt(0),
             "mcids": jsonEncode2
           });

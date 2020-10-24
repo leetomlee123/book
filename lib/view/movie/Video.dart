@@ -40,11 +40,12 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
     return gbks.isEmpty
         ? Scaffold()
         : Scaffold(
-      drawer: MHistory(),
       appBar: AppBar(
-        title: Text("美剧"),
+        backgroundColor: Colors.transparent,
+        title: Text("美剧",style: TextStyle(color:value.dark ? Colors.white : Colors.black,),),
         centerTitle: true,
         leading: IconButton(
+          color:value.dark ? Colors.white : Colors.black,
           icon: Icon(Icons.history),
           onPressed: () {
             eventBus.fire(OpenEvent("m"));
@@ -53,6 +54,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
         elevation: 0,
         actions: <Widget>[
           IconButton(
+            color:value.dark ? Colors.white : Colors.black,
             icon: Icon(Icons.search),
             onPressed: () {
               Routes.navigateTo(context, Routes.search,
@@ -198,7 +200,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   Widget img(GBook gbk) {
     return GestureDetector(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           PicWidget(
             gbk.cover,
@@ -226,16 +228,3 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   bool get wantKeepAlive => true;
 }
 
-class MHistory extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel model, child) =>
-            Theme(
-              child: ListView(
-                children: <Widget>[],
-              ),
-              data: model.theme,
-            ));
-  }
-}

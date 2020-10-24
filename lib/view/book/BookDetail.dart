@@ -59,7 +59,9 @@ class _BookDetailState extends State<BookDetail> {
     return Scaffold(
 
         appBar: AppBar(
+          backgroundColor: Colors.transparent,
           leading: IconButton(
+            color:value.dark ? Colors.white : Colors.black,
             icon: Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pop();
@@ -69,7 +71,7 @@ class _BookDetailState extends State<BookDetail> {
           actions: <Widget>[
             GestureDetector(
               child: Center(
-                child: Text('书架'),
+                child: Text('书架',style: TextStyle(color:value.dark ? Colors.white : Colors.black,),),
               ),
               onTap: () {
                 Navigator.of(context).popUntil(ModalRoute.withName('/'));
@@ -403,8 +405,6 @@ class _BookDetailState extends State<BookDetail> {
                       break;
                     case 1:
                       {
-                        Navigator.of(context).popUntil(ModalRoute.withName("/read"));
-                        
                         Routes.navigateTo(
                           context,
                           Routes.read,

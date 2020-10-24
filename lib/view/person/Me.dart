@@ -201,7 +201,7 @@ class Me extends StatelessWidget {
               ),
               getItem(
                 ImageIcon(AssetImage("images/skin.png")),
-                '换肤',
+                '主题',
                 () {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (BuildContext context) => Skin()));

@@ -29,16 +29,16 @@ class StateGoodBook extends State<GoodBook>
 
     tabs = [
       Tab(
-        text: "男生",
+        // text: "男生",
+        child: Text("男生",style: TextStyle(fontSize: 20),),
       ),
       Tab(
-        text: "女生",
+         child: Text("女生",style: TextStyle(fontSize: 20),),
       ),
     ];
     //initialIndex初始选中第几个
     controller =
-        TabController(initialIndex: 0, length: tabs.length, vsync: this)
-;
+        TabController(initialIndex: 0, length: tabs.length, vsync: this);
   }
 
   @override
@@ -50,13 +50,17 @@ class StateGoodBook extends State<GoodBook>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ColorModel value = Store.value<ColorModel>(context);
     return DefaultTabController(
       length: tabs.length,
       child: Scaffold(
           appBar: AppBar(
+            backgroundColor: Colors.transparent,
             title: TabBar(
+              unselectedLabelStyle:TextStyle(fontSize: 10),
+              labelColor: value.dark ? Colors.white : Colors.black,
               indicatorColor: Theme.of(context).primaryColor,
-              indicatorSize: TabBarIndicatorSize.label,
+              indicatorSize: TabBarIndicatorSize.tab,
               controller: controller,
               tabs: tabs,
             ),
