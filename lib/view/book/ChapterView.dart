@@ -227,7 +227,7 @@ class _ChapterViewItem extends State<ChapterView> {
   topOrBottom() async {
     if (_scrollController.hasClients) {
       int temp = showToTopBtn
-          ? 1
+          ? 0
           : Store.value<ReadModel>(context).chapters.length - 8;
       await _scrollController.animateTo(temp * ITEM_HEIGH,
           duration: Duration(microseconds: 1), curve: Curves.ease);
