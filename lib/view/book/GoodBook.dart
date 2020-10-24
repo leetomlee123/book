@@ -29,11 +29,10 @@ class StateGoodBook extends State<GoodBook>
 
     tabs = [
       Tab(
-        // text: "男生",
-        child: Text("男生",style: TextStyle(fontSize: 20),),
+        text: "男生",
       ),
       Tab(
-         child: Text("女生",style: TextStyle(fontSize: 20),),
+        text: "女生",
       ),
     ];
     //initialIndex初始选中第几个
@@ -57,10 +56,9 @@ class StateGoodBook extends State<GoodBook>
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             title: TabBar(
-              unselectedLabelStyle:TextStyle(fontSize: 10),
               labelColor: value.dark ? Colors.white : Colors.black,
               indicatorColor: Theme.of(context).primaryColor,
-              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorSize: TabBarIndicatorSize.label,
               controller: controller,
               tabs: tabs,
             ),
