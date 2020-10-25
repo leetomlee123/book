@@ -231,14 +231,14 @@ class ReadModel with ChangeNotifier {
         return LoadingDialog();
       },
     );
-    // await Future.wait([
-    //   loadChapter(idx - 1).then((value) => {prePage = value}),
-    //   loadChapter(idx).then((value) => {curPage = value}),
-    //   loadChapter(idx + 1).then((value) => {nextPage = value}),
-    // ]);
-    prePage = await loadChapter(idx - 1);
-    curPage = await loadChapter(idx);
-    nextPage = await loadChapter(idx + 1);
+    await Future.wait([
+      loadChapter(idx - 1).then((value) => {prePage = value}),
+      loadChapter(idx).then((value) => {curPage = value}),
+      loadChapter(idx + 1).then((value) => {nextPage = value}),
+    ]);
+    // prePage = await loadChapter(idx - 1);
+    // curPage = await loadChapter(idx);
+    // nextPage = await loadChapter(idx + 1);
 
     fillAllContent(notify: jump);
     if (isPage && jump) {
