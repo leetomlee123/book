@@ -722,11 +722,11 @@ class ReadModel with ChangeNotifier {
         await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
-      DbHelper.instance.udpChapter(content, chapter.id);
+      await DbHelper.instance.udpChapter(content, chapter.id);
       chapters[book.cur].hasContent = 2;
+      curPage = await loadChapter(book.cur);
+      fillAllContent();
     }
-    curPage = await loadChapter(book.cur);
-    fillAllContent();
   }
 
   reSetPages() {
@@ -734,7 +734,6 @@ class ReadModel with ChangeNotifier {
     curPage = null;
     nextPage = null;
   }
-
 
   downloadAll(int start) async {
     if (chapters?.isEmpty ?? 0 == 0) {

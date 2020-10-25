@@ -188,13 +188,14 @@ class DbHelper {
     }
     return bks;
   }
+
   Future<Book> getBook(String bookId) async {
     var dbClient = await db1;
-    Book bk ;
+    Book bk;
     var list = await dbClient
         .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
     for (var i in list) {
-     bk= Book.fromSql(
+      bk = Book.fromSql(
           i['book_id'],
           i['name'],
           i['cname'],
@@ -202,13 +203,14 @@ class DbHelper {
           i['utime'],
           i['img'],
           i['intro'],
-          i['cur']??0,
-          i['idx']??0,
+          i['cur'] ?? 0,
+          i['idx'] ?? 0,
           i['newChapter'],
           i['lastChapter']);
     }
     return bk;
   }
+
   Future<Null> delBook(String bookId) async {
     var dbClient = await db1;
 
@@ -257,7 +259,7 @@ class DbHelper {
     }
     var i = list[0];
 
-    return BookTag(i['cur']??0, i['idx']??0, i['name'], 0.0);
+    return BookTag(i['cur'] ?? 0, i['idx'] ?? 0, i['name'], 0.0);
   }
 
   /// 添加章节
@@ -272,7 +274,6 @@ class DbHelper {
     }
 
     await batch.commit(noResult: true);
-
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
@@ -309,7 +310,7 @@ class DbHelper {
 
   Future<Null> udpChapter(String content, String cid) async {
     var dbClient = await db;
-    dbClient.rawUpdate(
+    await dbClient.rawUpdate(
         "update $_tableName set content=?,hasContent=2 where chapter_id=?",
         [content, cid]);
   }
