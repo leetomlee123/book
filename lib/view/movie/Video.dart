@@ -35,38 +35,46 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     value = Store.value<ColorModel>(context);
-    return gbks.isEmpty
-        ? Scaffold()
-        : Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text("美剧",style: TextStyle(color:value.dark ? Colors.white : Colors.black,),),
-        centerTitle: true,
-        leading: IconButton(
-          color:value.dark ? Colors.white : Colors.black,
-          icon: Icon(Icons.history),
-          onPressed: () {
-            eventBus.fire(OpenEvent("m"));
-          },
-        ),
-        elevation: 0,
-        actions: <Widget>[
-          IconButton(
-            color:value.dark ? Colors.white : Colors.black,
-            icon: Icon(Icons.search),
-            onPressed: () {
-              Routes.navigateTo(context, Routes.search,
-                  params: {"type": "movie", "name": ""});
-            },
-          )
-        ],
-      ),
-      body: ListView(
-        children: wds,
-      ),
-    );
+    super.build(context);
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel value, child) {
+      return gbks.isEmpty
+          ? Scaffold()
+          : Scaffold(
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                title: Text(
+                  "美剧",
+                  style: TextStyle(
+                    color: value.dark ? Colors.white : Colors.black,
+                  ),
+                ),
+                centerTitle: true,
+                leading: IconButton(
+                  color: value.dark ? Colors.white : Colors.black,
+                  icon: Icon(Icons.history),
+                  onPressed: () {
+                    eventBus.fire(OpenEvent("m"));
+                  },
+                ),
+                elevation: 0,
+                actions: <Widget>[
+                  IconButton(
+                    color: value.dark ? Colors.white : Colors.black,
+                    icon: Icon(Icons.search),
+                    onPressed: () {
+                      Routes.navigateTo(context, Routes.search,
+                          params: {"type": "movie", "name": ""});
+                    },
+                  )
+                ],
+              ),
+              body: ListView(
+                children: wds,
+              ),
+            );
+    });
   }
 
   @override
@@ -85,7 +93,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
       formatData(objectList);
     }
     Response res =
-    await Util(haveKey ? null : context).http().get(Common.index);
+        await Util(haveKey ? null : context).http().get(Common.index);
     List data = res.data;
     if (haveKey) {
       SpUtil.remove(Common.cache_index);
@@ -200,7 +208,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   Widget img(GBook gbk) {
     return GestureDetector(
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           PicWidget(
             gbk.cover,
@@ -227,4 +235,3 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 }
-

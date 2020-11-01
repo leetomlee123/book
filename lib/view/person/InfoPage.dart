@@ -28,8 +28,10 @@ class InfoState extends State<InfoPage> {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel data, child) => Theme(
               child: Scaffold(
+               
                 appBar: AppBar(
-                  title: Text("公告"),
+                   backgroundColor: Colors.transparent,
+                  title: Text("公告",style: TextStyle(color: data.dark ? Colors.white : Colors.black),),
                   centerTitle: true,
                   elevation: 0,
                 ),

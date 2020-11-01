@@ -141,6 +141,7 @@ class ReadModel with ChangeNotifier {
       } else {
         listController = ScrollController(initialScrollOffset: 0.0);
       }
+      book.index = idx;
       loadOk = true;
     }
 //      if (pageController.hasClients) {
@@ -365,8 +366,7 @@ class ReadModel with ChangeNotifier {
 
     r.chapterName = chapters[idx].name;
     String id = chapters[idx].id;
-    var bool = await DbHelper.instance.getHasContent(id);
-    if (!bool) {
+    if (chapters[idx].hasContent != 2) {
       r.chapterContent = await compute(requestDataWithCompute, id);
 
       if (r.chapterContent.isNotEmpty) {
@@ -385,9 +385,10 @@ class ReadModel with ChangeNotifier {
     }
     if (isPage) {
       var k = '${book.Id}pages' + r.chapterName;
-      if (SpUtil.haveKey(k)) {
-        r.pageOffsets = SpUtil.getStringList(k);
-        SpUtil.remove(k);
+      bool has = await DbHelper.instance.hasContents(k);
+      if (has) {
+        r.pageOffsets = await DbHelper.instance.getContents(k);
+        await DbHelper.instance.delContents(k);
       } else {
         r.pageOffsets = ReaderPageAgent()
             .getPageOffsets(r.chapterContent, contentH, contentW);
@@ -451,12 +452,21 @@ class ReadModel with ChangeNotifier {
       SpUtil.putString(book.Id, "");
       await DbHelper.instance
           .updBookProcess(book?.cur ?? 0, book?.index ?? 0, book.Id);
-      SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+      await DbHelper.instance.addCords(
+          '${book.Id}pages${prePage?.chapterName ?? ' '}',
           prePage?.pageOffsets ?? []);
-      SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
+      await DbHelper.instance.addCords(
+          '${book.Id}pages${curPage?.chapterName ?? ' '}',
           curPage?.pageOffsets ?? []);
-      SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+      await DbHelper.instance.addCords(
+          '${book.Id}pages${nextPage?.chapterName ?? ' '}',
           nextPage?.pageOffsets ?? []);
+      // SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+      //     prePage?.pageOffsets ?? []);
+      // SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
+      //     curPage?.pageOffsets ?? []);
+      // SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+      //     nextPage?.pageOffsets ?? []);
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
         Util(null)
@@ -742,16 +752,13 @@ class ReadModel with ChangeNotifier {
     for (var i = start; i < chapters.length; i++) {
       Chapter chapter = chapters[i];
       var id = chapter.id;
-      var bool = await DbHelper.instance.getHasContent(id);
-      if (!bool) {
+      if (chapter.hasContent != 2) {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
-          // SpUtil.putString(chapter.id, content);
           DbHelper.instance.udpChapter(content, id);
-          chapter.hasContent = 2;
+          chapters[i].hasContent = 2;
         }
       }
-      await Future.delayed(Duration(seconds: 1));
     }
     BotToast.showText(text: "${book?.Name ?? ""}下载完成");
   }

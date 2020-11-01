@@ -41,7 +41,6 @@ class _BookShelfState extends State<BookShelf>
                       '书架',
                       style: TextStyle(
                         color: _colorModel.dark ? Colors.white : Colors.black,
-                        fontSize: 18,
                       ),
                     ),
                     centerTitle: true,

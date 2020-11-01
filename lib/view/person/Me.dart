@@ -38,7 +38,6 @@ class Me extends StatelessWidget {
                     height: 80,
                     width: 80,
                     child: CircleAvatar(
-                      backgroundColor: Colors.white,
                       backgroundImage: AssetImage(SpUtil.haveKey("username")
                           ? "images/fu.png"
                           : "images/account.png"),
@@ -57,7 +56,6 @@ class Me extends StatelessWidget {
                           ? SpUtil.getString('username')
                           : "登陆/注册",
                       style: TextStyle(
-                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 18),
                     ),
@@ -74,7 +72,7 @@ class Me extends StatelessWidget {
               }
             },
           ),
-          color: Theme.of(context).primaryColor,
+          
         ),
       ),
       body: Container(

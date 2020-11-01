@@ -217,7 +217,7 @@ class _ChapterViewItem extends State<ChapterView> {
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);
     Routes.navigateTo(context, Routes.detail,
-        params: {"detail": jsonEncode(bookInfo)});
+        params: {"detail": jsonEncode(bookInfo)},replace: true);
     data.saveData();
     data.loadOk = false;
     // data.clear();

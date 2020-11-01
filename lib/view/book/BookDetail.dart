@@ -91,7 +91,7 @@ class _BookDetailState extends State<BookDetail> {
                 children: <Widget>[
                   Container(
                     padding: const EdgeInsets.only(
-                        left: 10.0, top: 5.0, bottom: 10.0),
+                        left: 15.0, top: 5.0, bottom: 10.0),
                     child: PicWidget(book.Img),
                   )
                 ],

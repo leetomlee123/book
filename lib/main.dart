@@ -63,7 +63,6 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  String debugLable = 'Unknown';
   int _tabIndex = 0;
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
@@ -72,18 +71,21 @@ class _MainPageState extends State<MainPage> {
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/book_shelf.png"),
+        size: 26,
       ),
       label: '书架',
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/good.png"),
+        size: 26,
       ),
       label: '精选',
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/video.png"),
+        size: 26,
       ),
       label: '美剧',
     ),
@@ -94,6 +96,15 @@ class _MainPageState extends State<MainPage> {
     //   label: '美剧',
     // ),
   ];
+  imgIcon(String src, String title) {
+    return BottomNavigationBarItem(
+      icon: ImageIcon(
+        AssetImage(src),
+        size: 25,
+      ),
+      label: title,
+    );
+  }
 
   /*
    * 存储的四个页面，和Fragment一样
