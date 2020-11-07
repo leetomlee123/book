@@ -385,10 +385,12 @@ class ReadModel with ChangeNotifier {
     }
     if (isPage) {
       var k = '${book.Id}pages' + r.chapterName;
-      bool has = await DbHelper.instance.hasContents(k);
-      if (has) {
-        r.pageOffsets = await DbHelper.instance.getContents(k);
-        await DbHelper.instance.delContents(k);
+      // bool has = await DbHelper.instance.hasContents(k);
+      if (SpUtil.haveKey(k)) {
+        r.pageOffsets = SpUtil.getStringList(k);
+        SpUtil.remove(k);
+        // r.pageOffsets = await DbHelper.instance.getContents(k);
+        // await DbHelper.instance.delContents(k);
       } else {
         r.pageOffsets = ReaderPageAgent()
             .getPageOffsets(r.chapterContent, contentH, contentW);
@@ -452,21 +454,21 @@ class ReadModel with ChangeNotifier {
       SpUtil.putString(book.Id, "");
       await DbHelper.instance
           .updBookProcess(book?.cur ?? 0, book?.index ?? 0, book.Id);
-      await DbHelper.instance.addCords(
-          '${book.Id}pages${prePage?.chapterName ?? ' '}',
-          prePage?.pageOffsets ?? []);
-      await DbHelper.instance.addCords(
-          '${book.Id}pages${curPage?.chapterName ?? ' '}',
-          curPage?.pageOffsets ?? []);
-      await DbHelper.instance.addCords(
-          '${book.Id}pages${nextPage?.chapterName ?? ' '}',
-          nextPage?.pageOffsets ?? []);
-      // SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+      // await DbHelper.instance.addCords(
+      //     '${book.Id}pages${prePage?.chapterName ?? ' '}',
       //     prePage?.pageOffsets ?? []);
-      // SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
+      // await DbHelper.instance.addCords(
+      //     '${book.Id}pages${curPage?.chapterName ?? ' '}',
       //     curPage?.pageOffsets ?? []);
-      // SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+      // await DbHelper.instance.addCords(
+      //     '${book.Id}pages${nextPage?.chapterName ?? ' '}',
       //     nextPage?.pageOffsets ?? []);
+      SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+          prePage?.pageOffsets ?? []);
+      SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
+          curPage?.pageOffsets ?? []);
+      SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+          nextPage?.pageOffsets ?? []);
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
         Util(null)
@@ -558,139 +560,152 @@ class ReadModel with ChangeNotifier {
 
   Widget noMorePage() {
     return Container(
-      child: Text('曾经沧海难为水,除却巫山不是云'),
+      child: Center(
+        child: Text('曾经沧海难为水,除却巫山不是云'),
+      ),
     );
   }
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
-    for (var i = 0; i < r.pageOffsets.length; i++) {
-      var content = r.pageOffsets[i];
-//      if (content.startsWith("\n")) {
-//        content = content.substring(1);
-//      }
+    String cts=r.chapterContent;
+    if (r.chapterName == "-1" || r.chapterName == "1") {
+      contents.add(GestureDetector(
+        child: r.chapterName == "1" ? firstPage() : noMorePage(),
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (TapDownDetails details) {
+          tapPage(context, details);
+        },
+      ));
+    } else {
+      for (var i = 0; i < r.pageOffsets.length; i++) {
+        int end = int.parse(r.pageOffsets[i]);
+        String content=cts.substring(0,end);
+        cts = cts.substring(end, cts.length);
 
-      contents.add(Store.connect<ColorModel>(
-          builder: (context, ColorModel model, child) {
-        return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (TapDownDetails details) {
-              tapPage(context, details);
-            },
-            child: (r.chapterName == "-1" || r.chapterName == "1")
-                ? (r.chapterName == "1" ? firstPage() : noMorePage())
-                : isPage
-                    ? Container(
-                        child: Column(
-                          children: <Widget>[
-                            SizedBox(height: ScreenUtil.getStatusBarH(context)),
-                            Container(
-                              height: 30,
-                              padding: EdgeInsets.only(left: 3),
-                              child: Text(
-                                r.chapterName,
-                                // strutStyle: StrutStyle(
-                                //     forceStrutHeight: true,
-                                //     height: textLineHeight),
-                                style: TextStyle(
-                                  fontSize: 12 / Screen.textScaleFactor,
-                                  color: model.dark
-                                      ? Colors.white30
-                                      : Colors.black,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Expanded(
-                                child: Container(
-                                    padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
-                                    child: Text.rich(
-                                      TextSpan(children: [
-                                        TextSpan(
-                                            text: content,
-                                            style: TextStyle(
-                                              locale: Locale('zh_CN'),
-                                              fontSize:
-                                                  ReadSetting.getFontSize() /
-                                                      Screen.textScaleFactor,
-                                              // height:
-                                              //     ReadSetting.getLatterHeight()/ReadSetting.getFontSize() ,
-                                              // letterSpacing:
-                                              //     ReadSetting.getLatterSpace(),
-                                              textBaseline:
-                                                  TextBaseline.ideographic,
-                                              color: model.dark
-                                                  ? Colors.white30
-                                                  : Colors.black,
-                                              // fontSize:
-                                              //     ReadSetting.getFontSize() /
-                                              //         Screen.textScaleFactor,
-                                              // height: ReadSetting
-                                              //     .getLatterHeight(),
-                                              // letterSpacing: ReadSetting
-                                              //     .getLatterSpace()
-                                            ))
-                                      ]),
-                                      textAlign: TextAlign.justify,
-                                    ))),
-                            Container(
-                              height: 30,
-                              padding: EdgeInsets.only(right: 8),
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(child: Container()),
-                                  Text(
-                                    '第${i + 1}/${r.pageOffsets.length}页',
-                                    // strutStyle: StrutStyle(
-                                    //     forceStrutHeight: true,
-                                    //     height: textLineHeight),
-                                    style: TextStyle(
-                                      fontSize: 12 / Screen.textScaleFactor,
-                                      color: model.dark
-                                          ? Colors.white30
-                                          : Colors.black,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                        ),
-                        width: double.infinity,
-                        height: double.infinity,
-                      )
-                    : Column(
-                        children: [
-                          Center(
+        while (cts.startsWith("\n")) {
+          cts = cts.substring(1);
+        }
+
+        contents.add(Store.connect<ColorModel>(
+            builder: (context, ColorModel model, child) {
+          return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (TapDownDetails details) {
+                tapPage(context, details);
+              },
+              child: isPage
+                  ? Container(
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(height: ScreenUtil.getStatusBarH(context)),
+                          Container(
+                            height: 30,
+                            padding: EdgeInsets.only(left: 3),
                             child: Text(
                               r.chapterName,
+                              // strutStyle: StrutStyle(
+                              //     forceStrutHeight: true,
+                              //     height: textLineHeight),
                               style: TextStyle(
-                                  fontSize: ReadSetting.getFontSize() + 2.0),
+                                fontSize: 12 / Screen.textScaleFactor,
+                                color:
+                                    model.dark ? Colors.white30 : Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          Expanded(
+                              child: Container(
+                                  padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
+                                  child: Text.rich(
+                                    TextSpan(children: [
+                                      TextSpan(
+                                          text: content,
+                                          style: TextStyle(
+                                            locale: Locale('zh_CN'),
+                                            fontSize:
+                                                ReadSetting.getFontSize() /
+                                                    Screen.textScaleFactor,
+                                            // height:
+                                            //     ReadSetting.getLatterHeight()/ReadSetting.getFontSize() ,
+                                            // letterSpacing:
+                                            //     ReadSetting.getLatterSpace(),
+                                            textBaseline:
+                                                TextBaseline.ideographic,
+                                            color: model.dark
+                                                ? Colors.white30
+                                                : Colors.black,
+                                            // fontSize:
+                                            //     ReadSetting.getFontSize() /
+                                            //         Screen.textScaleFactor,
+                                            // height: ReadSetting
+                                            //     .getLatterHeight(),
+                                            // letterSpacing: ReadSetting
+                                            //     .getLatterSpace()
+                                          ))
+                                    ]),
+                                    textAlign: TextAlign.justify,
+                                  ))),
                           Container(
-                              padding: EdgeInsets.only(
-                                right: 5,
-                                left: 15,
-                              ),
-                              child: Text(
-                                content,
-                                style: TextStyle(
+                            height: 30,
+                            padding: EdgeInsets.only(right: 8),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(child: Container()),
+                                Text(
+                                  '第${i + 1}/${r.pageOffsets.length}页',
+                                  // strutStyle: StrutStyle(
+                                  //     forceStrutHeight: true,
+                                  //     height: textLineHeight),
+                                  style: TextStyle(
+                                    fontSize: 12 / Screen.textScaleFactor,
                                     color: model.dark
-                                        ? Color.fromRGBO(128, 128, 128, 1)
-                                        : null,
-                                    fontSize: ReadSetting.getFontSize() /
-                                        Screen.textScaleFactor),
-                                textAlign: TextAlign.justify,
-                              )),
-                          SizedBox(
-                            height: Screen.height / 2,
-                          )
+                                        ? Colors.white30
+                                        : Colors.black,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                      ));
-      }));
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                  : Column(
+                      children: [
+                        Center(
+                          child: Text(
+                            r.chapterName,
+                            style: TextStyle(
+                                fontSize: ReadSetting.getFontSize() + 2.0),
+                          ),
+                        ),
+                        Container(
+                            padding: EdgeInsets.only(
+                              right: 5,
+                              left: 15,
+                            ),
+                            child: Text(
+                              content,
+                              style: TextStyle(
+                                  color: model.dark
+                                      ? Color.fromRGBO(128, 128, 128, 1)
+                                      : null,
+                                  fontSize: ReadSetting.getFontSize() /
+                                      Screen.textScaleFactor),
+                              textAlign: TextAlign.justify,
+                            )),
+                        SizedBox(
+                          height: Screen.height / 2,
+                        )
+                      ],
+                    ));
+        }));
+      }
     }
     return contents;
   }

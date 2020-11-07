@@ -92,7 +92,6 @@ class ReaderPageAgent {
     if (content.isEmpty) {
       return pageConfig;
     }
-    int last = 0;
     String key = ReadSetting.getFontSize().toString();
     TextPainter textPainter = layout1(tempStr, width);
     double textLineHeight = (textPainter.preferredLineHeight);
@@ -114,16 +113,15 @@ class ReaderPageAgent {
       if (end == 0) {
         break;
       }
-      String pageText = tempStr.substring(0, end);
 
-      pageConfig.add(pageText);
+      pageConfig.add(end.toString());
 
       tempStr = tempStr.substring(end, tempStr.length);
 
       while (tempStr.startsWith("\n")) {
         tempStr = tempStr.substring(1);
       }
-      last = last + end;
+
     }
     return pageConfig;
   }
