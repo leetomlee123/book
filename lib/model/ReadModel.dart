@@ -380,7 +380,7 @@ class ReadModel with ChangeNotifier {
     }
     if (r.chapterContent.isEmpty) {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
-      r.pageOffsets = [r.chapterContent];
+      r.pageOffsets = [(r.chapterContent.length-1).toString()];
       return r;
     }
     if (isPage) {
@@ -578,8 +578,8 @@ class ReadModel with ChangeNotifier {
         },
       ));
     } else {
-      int sum= r.pageOffsets.length;
-      for (var i = 0; i <sum; i++) {
+      int sum = r.pageOffsets.length;
+      for (var i = 0; i < sum; i++) {
         int end = int.parse(r.pageOffsets[i]);
         String content = cts.substring(0, end);
         cts = cts.substring(end, cts.length);
@@ -620,7 +620,9 @@ class ReadModel with ChangeNotifier {
                           Expanded(
                               child: Container(
                                   padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
-                                  alignment: i==(sum-1)?Alignment.topLeft:Alignment.centerLeft,
+                                  alignment: i == (sum - 1)
+                                      ? Alignment.topLeft
+                                      : Alignment.centerLeft,
                                   child: Text.rich(
                                     TextSpan(children: [
                                       TextSpan(

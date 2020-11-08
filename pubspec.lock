@@ -35,7 +35,7 @@ packages:
       name: bot_toast
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "3.0.4"
+    version: "3.0.5"
   build:
     dependency: transitive
     description:
