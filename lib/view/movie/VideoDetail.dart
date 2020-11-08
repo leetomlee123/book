@@ -30,165 +30,163 @@ class VideoDetailState extends State<VideoDetail> {
   Widget build(BuildContext context) {
     return Store.connect<ColorModel>(
       builder: (context, ColorModel model, child) => Scaffold(
-            appBar: AppBar(
-              backgroundColor: Colors.transparent,
-              title: Text(
-                this.widget.gBook.name,
-                style: TextStyle(
-                  color: model.dark ? Colors.white : Colors.black,
-                ),
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            title: Text(
+              this.widget.gBook.name,
+              style: TextStyle(
+                color: model.dark ? Colors.white : Colors.black,
               ),
-                        leading: IconButton(
-            color:model.dark ? Colors.white : Colors.black,
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-              elevation: 0,
-              centerTitle: true,
-              actions: <Widget>[
-                GestureDetector(
-                  child: Center(
-                    child: Text(
-                      '美剧',
-                      style: TextStyle(
-                        color: model.dark ? Colors.white : Colors.black,
-                      ),
+            ),
+            leading: IconButton(
+              color: model.dark ? Colors.white : Colors.black,
+              icon: Icon(Icons.arrow_back),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            elevation: 0,
+            centerTitle: true,
+            actions: <Widget>[
+              GestureDetector(
+                child: Center(
+                  child: Text(
+                    '美剧',
+                    style: TextStyle(
+                      color: model.dark ? Colors.white : Colors.black,
                     ),
                   ),
-                  onTap: () {
-                    Navigator.of(context).popUntil(ModalRoute.withName('/'));
-                    eventBus.fire(new NavEvent(2));
-                  },
                 ),
-                SizedBox(
-                  width: 20,
-                )
-              ],
-            ),
-            body: FutureBuilder(
-              future: getData(),
-              builder:
-                  (BuildContext context, AsyncSnapshot<Response> snapshot) {
-                /*表示数据成功返回*/
-                if (snapshot.hasData) {
-                  List data = snapshot.data.data;
+                onTap: () {
+                  Navigator.of(context).popUntil(ModalRoute.withName('/'));
+                  eventBus.fire(new NavEvent(2));
+                },
+              ),
+              SizedBox(
+                width: 20,
+              )
+            ],
+          ),
+          body: FutureBuilder(
+            future: getData(),
+            builder: (BuildContext context, AsyncSnapshot<Response> snapshot) {
+              /*表示数据成功返回*/
+              if (snapshot.hasData) {
+                List data = snapshot.data.data;
 
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.all(5.0),
-                      child: Column(
-                        children: <Widget>[
-                          Container(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                PicWidget(
-                                  this.widget.gBook.cover,
-                                  width: 160,
-                                  height: 200,
-                                ),
-                                SizedBox(
-                                  width: 5,
-                                ),
-                                Expanded(
-                                  child: Container(
-                                    child: Scrollbar(
-                                      child: SingleChildScrollView(
-                                        child: Text(data[0]),
-                                      ),
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.all(5.0),
+                    child: Column(
+                      children: <Widget>[
+                        Container(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              PicWidget(
+                                this.widget.gBook.cover,
+                                width: 160,
+                                height: 200,
+                              ),
+                              SizedBox(
+                                width: 5,
+                              ),
+                              Expanded(
+                                child: Container(
+                                  child: Scrollbar(
+                                    child: SingleChildScrollView(
+                                      child: Text(data[0]),
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
+                            ],
+                          ),
+                          height: 200,
+                        ),
+                        SizedBox(
+                          height: 5.0,
+                        ),
+                        Row(
+                          children: <Widget>[
+                            Padding(
+                              child: Container(
+                                width: 4,
+                                height: 20,
+                                color: model.dark
+                                    ? model.theme.textTheme.body1.color
+                                    : model.theme.primaryColor,
+                              ),
+                              padding: EdgeInsets.only(left: 5.0, right: 3.0),
                             ),
-                            height: 200,
-                          ),
-                          SizedBox(
-                            height: 5.0,
-                          ),
-                          Row(
-                            children: <Widget>[
-                              Padding(
-                                child: Container(
-                                  width: 4,
-                                  height: 20,
-                                  color: model.dark
-                                      ? model.theme.textTheme.body1.color
-                                      : model.theme.primaryColor,
-                                ),
-                                padding: EdgeInsets.only(left: 5.0, right: 3.0),
+                            Text(
+                              "在线播放:",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: Container(),
+                            ),
+                          ],
+                        ),
+                        Wrap(
+                          runAlignment: WrapAlignment.spaceAround,
+                          spacing: 10, //主轴上子控件的间距
+                          runSpacing: 5, //交叉轴上子控件之间的间
+                          children: mItems(data[1]),
+                        ),
+                        Row(
+                          children: <Widget>[
+                            Padding(
+                              child: Container(
+                                width: 4,
+                                height: 20,
+                                color: model.dark
+                                    ? model.theme.textTheme.body1.color
+                                    : model.theme.primaryColor,
                               ),
-                              Text(
-                                "在线播放:",
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              padding: EdgeInsets.only(left: 5.0, right: 3.0),
+                            ),
+                            Text(
+                              "剧情简介:",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: Container(),
+                            ),
+                          ],
+                        ),
+                        Text(data[2]),
+                        Row(
+                          children: <Widget>[
+                            Padding(
+                              child: Container(
+                                width: 4,
+                                height: 20,
+                                color: model.dark
+                                    ? model.theme.textTheme.body1.color
+                                    : model.theme.primaryColor,
                               ),
-                              Expanded(
-                                child: Container(),
-                              ),
-                            ],
-                          ),
-                          Wrap(
-                            runAlignment: WrapAlignment.spaceAround,
-                            spacing: 3, //主轴上子控件的间距
-                            runSpacing: 5, //交叉轴上子控件之间的间
-                            children: mItems(data[1]),
-                          ),
-                          Row(
-                            children: <Widget>[
-                              Padding(
-                                child: Container(
-                                  width: 4,
-                                  height: 20,
-                                  color: model.dark
-                                      ? model.theme.textTheme.body1.color
-                                      : model.theme.primaryColor,
-                                ),
-                                padding: EdgeInsets.only(left: 5.0, right: 3.0),
-                              ),
-                              Text(
-                                "剧情简介:",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Expanded(
-                                child: Container(),
-                              ),
-                            ],
-                          ),
-                          Text(data[2]),
-                          Row(
-                            children: <Widget>[
-                              Padding(
-                                child: Container(
-                                  width: 4,
-                                  height: 20,
-                                  color: model.dark
-                                      ? model.theme.textTheme.body1.color
-                                      : model.theme.primaryColor,
-                                ),
-                                padding: EdgeInsets.only(left: 5.0, right: 3.0),
-                              ),
-                              Text(
-                                "影片截图:",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Expanded(
-                                child: Container(),
-                              ),
-                            ],
-                          ),
-                          showShutPic(data[3])
-                        ],
-                      ),
+                              padding: EdgeInsets.only(left: 5.0, right: 3.0),
+                            ),
+                            Text(
+                              "影片截图:",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: Container(),
+                            ),
+                          ],
+                        ),
+                        showShutPic(data[3])
+                      ],
                     ),
-                  );
-                } else {
-                  return LoadingDialog();
-                }
-              },
-            )),
-       
+                  ),
+                );
+              } else {
+                return LoadingDialog();
+              }
+            },
+          )),
     );
   }
 
@@ -200,17 +198,28 @@ class VideoDetailState extends State<VideoDetail> {
 
   List<Widget> mItems(List<dynamic> list) {
     List<Widget> wds = [];
+    ColorModel v = Store.value<ColorModel>(context);
 
     for (var value in list) {
       Map map = Map.castFrom(value);
-      wds.add(FlatButton(
-        child: Text(
-          map.values.elementAt(0),
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: Colors.white),
+      wds.add(GestureDetector(
+        child: Container(
+          child: Text(
+            map.values.elementAt(0),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(
+            //灰色的一层边框
+            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+            border: Border.all(
+                color: v.dark ? Colors.white : Colors.black, width: 0.5),
+
+            // color: data.dark ? Colors.white : Colors.black,
+          ),
         ),
-        onPressed: () {
+        onTap: () {
           var jsonEncode2 = jsonEncode(list);
           FunUtil.saveMoviesRecord(
               this.widget.gBook.cover,
@@ -226,7 +235,6 @@ class VideoDetailState extends State<VideoDetail> {
             "mcids": jsonEncode2
           });
         },
-        color: Store.value<ColorModel>(context).theme.primaryColor,
       ));
     }
     return wds;

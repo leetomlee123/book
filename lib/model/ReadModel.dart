@@ -568,7 +568,7 @@ class ReadModel with ChangeNotifier {
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
-    String cts=r.chapterContent;
+    String cts = r.chapterContent;
     if (r.chapterName == "-1" || r.chapterName == "1") {
       contents.add(GestureDetector(
         child: r.chapterName == "1" ? firstPage() : noMorePage(),
@@ -578,9 +578,10 @@ class ReadModel with ChangeNotifier {
         },
       ));
     } else {
-      for (var i = 0; i < r.pageOffsets.length; i++) {
+      int sum= r.pageOffsets.length;
+      for (var i = 0; i <sum; i++) {
         int end = int.parse(r.pageOffsets[i]);
-        String content=cts.substring(0,end);
+        String content = cts.substring(0, end);
         cts = cts.substring(end, cts.length);
 
         while (cts.startsWith("\n")) {
@@ -601,6 +602,7 @@ class ReadModel with ChangeNotifier {
                           SizedBox(height: ScreenUtil.getStatusBarH(context)),
                           Container(
                             height: 30,
+                            alignment: Alignment.centerLeft,
                             padding: EdgeInsets.only(left: 3),
                             child: Text(
                               r.chapterName,
@@ -618,6 +620,7 @@ class ReadModel with ChangeNotifier {
                           Expanded(
                               child: Container(
                                   padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
+                                  alignment: i==(sum-1)?Alignment.topLeft:Alignment.centerLeft,
                                   child: Text.rich(
                                     TextSpan(children: [
                                       TextSpan(
@@ -779,17 +782,13 @@ class ReadModel with ChangeNotifier {
   }
 
   static Future<String> requestDataWithCompute(String id) async {
-    try {
-      var url = Common.bookContentUrl + '/$id';
-      var client = new HttpClient();
-      var request = await client.getUrl(Uri.parse(url));
-      var response = await request.close();
-      var responseBody = await response.transform(utf8.decoder).join();
-      var dataList = await parseJson(responseBody);
-      return dataList['data']['content'];
-    } catch (e) {
-      print(e);
-    }
+    var url = Common.bookContentUrl + '/$id';
+    var client = new HttpClient();
+    var request = await client.getUrl(Uri.parse(url));
+    var response = await request.close();
+    var responseBody = await response.transform(utf8.decoder).join();
+    var dataList = await parseJson(responseBody);
+    return dataList['data']['content'];
   }
 
   @override

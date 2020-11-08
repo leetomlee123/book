@@ -39,8 +39,8 @@ class ReaderPageAgent {
         /// 配置画笔 ///
         textPainter.text = TextSpan(
             text: tempContent,
-            style:
-                TextStyle(fontSize: fontSize.toDouble(), height: lineHeight / fontSize));
+            style: TextStyle(
+                fontSize: fontSize.toDouble(), height: lineHeight / fontSize));
         textPainter.layout(maxWidth: width);
 
         /// 当前段落内容计算偏移量
@@ -71,7 +71,7 @@ class ReaderPageAgent {
           currentHeight = height;
         } else {
           paragraphs.removeAt(0);
-          currentHeight += lineHeight* lineMetrics.length;
+          currentHeight += lineHeight * lineMetrics.length;
           currentHeight += paragraphSpacing;
         }
         pageContents.add(currentParagraphContent);
@@ -99,7 +99,7 @@ class ReaderPageAgent {
     if (SpUtil.haveKey(key)) {
       pageHeight = SpUtil.getDouble(key);
     } else {
-      pageHeight = (height ~/ textLineHeight) * textLineHeight;
+      pageHeight =( (height ~/ textLineHeight)-1) * textLineHeight;
       SpUtil.putDouble(key, pageHeight);
     }
 
@@ -121,7 +121,6 @@ class ReaderPageAgent {
       while (tempStr.startsWith("\n")) {
         tempStr = tempStr.substring(1);
       }
-
     }
     return pageConfig;
   }
@@ -132,7 +131,6 @@ class ReaderPageAgent {
     textPainter.text = TextSpan(
         text: text,
         style: TextStyle(
-          
           fontSize: ReadSetting.getFontSize(),
         ));
     // height: ReadSetting.getLatterHeight(),

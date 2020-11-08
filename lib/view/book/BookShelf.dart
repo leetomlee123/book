@@ -24,66 +24,78 @@ class _BookShelfState extends State<BookShelf>
         builder: (context, ShelfModel shelfModel, child) {
       return Store.connect<ColorModel>(
           builder: (context, ColorModel _colorModel, child) {
-        return Scaffold(
-            appBar: shelfModel.sortShelf
-                ? null
-                : AppBar(
-                    backgroundColor: Colors.transparent,
-                    leading: IconButton(
-                      color: _colorModel.dark ? Colors.white : Colors.black,
-                      icon: Icon(Icons.person),
-                      onPressed: () {
-                        eventBus.fire(OpenEvent("p"));
-                      },
-                    ),
-                    elevation: 0,
-                    title: Text(
-                      '书架',
-                      style: TextStyle(
-                        color: _colorModel.dark ? Colors.white : Colors.black,
+        return Container(
+            height: double.infinity,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(_colorModel.dark?"images/QR_bg_4.jpg":"images/QR_bg_1.jpg"),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: shelfModel.sortShelf
+                    ? null
+                    : AppBar(
+                        backgroundColor: Colors.transparent,
+                        leading: IconButton(
+                          color: _colorModel.dark ? Colors.white : Colors.black,
+                          icon: Icon(Icons.person),
+                          onPressed: () {
+                            eventBus.fire(OpenEvent("p"));
+                          },
+                        ),
+                        elevation: 0,
+                        title: Text(
+                          '书架',
+                          style: TextStyle(
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        centerTitle: true,
+                        actions: <Widget>[
+                          IconButton(
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black,
+                            icon: Icon(Icons.search),
+                            onPressed: () {
+                              Routes.navigateTo(context, Routes.search,
+                                  params: {"type": "book", "name": ""});
+                            },
+                          ),
+                          IconButton(
+                            color:
+                                _colorModel.dark ? Colors.white : Colors.black,
+                            icon: Icon(Icons.more_vert),
+                            onPressed: () async {
+                              String shelfModelName =
+                                  shelfModel.model ? "列表模式" : "封面模式";
+                              final result = await showMenu(
+                                  context: context,
+                                  position: RelativeRect.fromLTRB(2000.0,
+                                      Screen.navigationBarHeight, 0.0, 0.0),
+                                  items: <PopupMenuItem<String>>[
+                                    PopupMenuItem(
+                                        value: shelfModelName,
+                                        child: Text(shelfModelName)),
+                                    PopupMenuItem(
+                                        value: "书架整理", child: Text("书架整理"))
+                                  ]);
+                              if (result == "封面模式" || result == "列表模式") {
+                                shelfModel.toggleModel();
+                              } else if (result == "书架整理") {
+                                // shelfModel.sortShelfModel();
+                                Routes.navigateTo(
+                                  context,
+                                  Routes.sortShelf,
+                                );
+                              }
+                            },
+                          )
+                        ],
                       ),
-                    ),
-                    centerTitle: true,
-                    actions: <Widget>[
-                      IconButton(
-                        color: _colorModel.dark ? Colors.white : Colors.black,
-                        icon: Icon(Icons.search),
-                        onPressed: () {
-                          Routes.navigateTo(context, Routes.search,
-                              params: {"type": "book", "name": ""});
-                        },
-                      ),
-                      IconButton(
-                        color: _colorModel.dark ? Colors.white : Colors.black,
-                        icon: Icon(Icons.more_vert),
-                        onPressed: () async {
-                          String shelfModelName =
-                              shelfModel.model ? "列表模式" : "封面模式";
-                          final result = await showMenu(
-                              context: context,
-                              position: RelativeRect.fromLTRB(
-                                  2000.0, Screen.navigationBarHeight, 0.0, 0.0),
-                              items: <PopupMenuItem<String>>[
-                                PopupMenuItem(
-                                    value: shelfModelName,
-                                    child: Text(shelfModelName)),
-                                PopupMenuItem(
-                                    value: "书架整理", child: Text("书架整理"))
-                              ]);
-                          if (result == "封面模式" || result == "列表模式") {
-                            shelfModel.toggleModel();
-                          } else if (result == "书架整理") {
-                            // shelfModel.sortShelfModel();
-                            Routes.navigateTo(
-                              context,
-                              Routes.sortShelf,
-                            );
-                          }
-                        },
-                      )
-                    ],
-                  ),
-            body: BooksWidget(""));
+                body: BooksWidget("")));
       });
     });
   }
