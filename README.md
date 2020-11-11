@@ -8,10 +8,12 @@ Javaer一枚 第一次做移动开发 请多多给些建议 和bug反馈 谢谢
 dart,provider,eventbus,dio等
 ## 项目已经获得Jetbrain免费license 
 感谢Jetbrain 的支持 😀😀😀
-## QQ群
+## QQ群 会发Release包
 953457248
+## 有机场需要的朋友 低至1元每月哦
+[邀请链接](https://www.googo.ml/auth/register?code=5nrE)
 ## TIP
-* 服务器是阿里云1Core2G弱鸡服务器,请各位大神手下留情不要攻击或者爬取数据,供大家学习使用。。
+服务器是阿里云1Core2G弱鸡服务器,请各位大神手下留情不要攻击或者爬取数据,供大家学习使用
 ## 待解决问题
 [小说分页卡顿](https://github.com/flutter/flutter/issues/30604)  如有遇到同样问题的可以去issue下声援  也许能提高待解决的优先级 毕竟这个问题超过一年未解决 😄
 
