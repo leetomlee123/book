@@ -49,6 +49,6 @@ class LottieSplashScreen : SplashScreen{
     }
 
     override fun transitionToFlutter(onTransitionComplete: Runnable) {
-        Handler(Looper.getMainLooper()).postDelayed(onTransitionComplete,1000)
+        Handler(Looper.getMainLooper()).postDelayed(onTransitionComplete,800)
     }
 }
