@@ -56,11 +56,13 @@ class StateGoodBook extends State<GoodBook>
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             title: TabBar(
+              unselectedLabelColor: Colors.black38,
               labelColor: value.dark ? Colors.white : Colors.black,
               indicatorColor: Theme.of(context).primaryColor,
               indicatorSize: TabBarIndicatorSize.label,
               controller: controller,
               tabs: tabs,
+              labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
             elevation: 0,
@@ -97,7 +99,6 @@ class StateTabItem extends State<TabItem>
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getData();
   }
@@ -138,7 +139,7 @@ class StateTabItem extends State<TabItem>
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                      style: TextStyle(color: Colors.grey, fontSize: 11.0),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,
@@ -207,18 +208,18 @@ class StateTabItem extends State<TabItem>
 
   getData() async {
     Map d;
-    var key = Common.toplist + this.widget.type;
-    var haveKey = SpUtil.haveKey(key);
-    if (haveKey) {
-      d = SpUtil.getObject(key);
-      formatData(d);
-    }
+    // var key = Common.toplist + this.widget.type;
+    // var haveKey = SpUtil.haveKey(key);
+    // if (haveKey) {
+    //   d = SpUtil.getObject(key);
+    //   formatData(d);
+    // }
     String url = Common.rank + "/${this.widget.type}";
-    Response future = await Util(haveKey ? null : context).http().get(url);
+    Response future = await Util(null).http().get(url);
     d = future.data['data'];
-    if (d != null) {
-      SpUtil.putObject(key, d);
-    }
+    // if (d != null) {
+    //   SpUtil.putObject(key, d);
+    // }
     formatData(d);
   }
 

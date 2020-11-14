@@ -83,10 +83,14 @@ class VideoDetailState extends State<VideoDetail> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
+                              Padding(
+                                child: Container(),
+                                padding: EdgeInsets.only(left: 5.0, right: 3.0),
+                              ),
                               PicWidget(
                                 this.widget.gBook.cover,
-                                width: 160,
-                                height: 200,
+                                width: 150,
+                                height: 190,
                               ),
                               SizedBox(
                                 width: 5,
@@ -172,9 +176,10 @@ class VideoDetailState extends State<VideoDetail> {
                               "影片截图:",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            Expanded(
-                              child: Container(),
-                            ),
+                            Spacer()
+                            // Expanded(
+                            //   child: Container(),
+                            // ),
                           ],
                         ),
                         showShutPic(data[3])

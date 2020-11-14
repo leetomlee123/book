@@ -30,7 +30,6 @@ class LookVideo extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return LookVideoState();
   }
 }
@@ -254,7 +253,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
         },
         color: map.keys.elementAt(0) == urlKey
-            ? (colorModel.dark ? Colors.black : Colors.white)
+            ?Colors.black
             : colorModel.theme.primaryColor,
       ));
     }

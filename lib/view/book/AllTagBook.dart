@@ -56,7 +56,6 @@ class AllTagBook extends StatelessWidget {
       );
     }
 
-    // TODO: implement build
     return Store.connect<ColorModel>(
         builder: (context, ColorModel data, child) => Theme(
           data: data.theme,

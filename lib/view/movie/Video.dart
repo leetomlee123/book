@@ -87,17 +87,17 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   }
 
   getIndex() async {
-    bool haveKey = SpUtil.haveKey(Common.cache_index);
-    if (haveKey) {
-      List objectList = jsonDecode(SpUtil.getString(Common.cache_index));
-      formatData(objectList);
-    }
+    // bool haveKey = SpUtil.haveKey(Common.cache_index);
+    // if (haveKey) {
+    //   List objectList = jsonDecode(SpUtil.getString(Common.cache_index));
+    //   formatData(objectList);
+    // }
     Response res =
-        await Util(haveKey ? null : context).http().get(Common.index);
+        await Util(null ).http().get(Common.index);
     List data = res.data;
-    if (haveKey) {
-      SpUtil.remove(Common.cache_index);
-    }
+    // if (haveKey) {
+    //   SpUtil.remove(Common.cache_index);
+    // }
     SpUtil.putString(Common.cache_index, jsonEncode(data));
     formatData(data);
   }

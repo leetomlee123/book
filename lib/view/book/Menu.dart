@@ -53,6 +53,7 @@ class _MenuState extends State<Menu> {
             '${_readModel?.book?.Name ?? ""}',
             style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
           ),
+          // Spacer(),
           Expanded(
             child: Container(),
           ),

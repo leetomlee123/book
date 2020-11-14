@@ -24,15 +24,7 @@ class _BookShelfState extends State<BookShelf>
         builder: (context, ShelfModel shelfModel, child) {
       return Store.connect<ColorModel>(
           builder: (context, ColorModel _colorModel, child) {
-        return Container(
-            height: double.infinity,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(_colorModel.dark?"images/QR_bg_4.jpg":"images/QR_bg_1.jpg"),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Scaffold(
+        return Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: shelfModel.sortShelf
                     ? null
@@ -95,7 +87,7 @@ class _BookShelfState extends State<BookShelf>
                           )
                         ],
                       ),
-                body: BooksWidget("")));
+                body: BooksWidget(""));
       });
     });
   }
