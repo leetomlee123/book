@@ -208,18 +208,18 @@ class StateTabItem extends State<TabItem>
 
   getData() async {
     Map d;
-    // var key = Common.toplist + this.widget.type;
-    // var haveKey = SpUtil.haveKey(key);
-    // if (haveKey) {
-    //   d = SpUtil.getObject(key);
-    //   formatData(d);
-    // }
+    var key = Common.toplist + this.widget.type;
+    var haveKey = SpUtil.haveKey(key);
+    if (haveKey) {
+      d = SpUtil.getObject(key);
+      formatData(d);
+    }
     String url = Common.rank + "/${this.widget.type}";
     Response future = await Util(null).http().get(url);
     d = future.data['data'];
-    // if (d != null) {
-    //   SpUtil.putObject(key, d);
-    // }
+    if (d != null) {
+      SpUtil.putObject(key, d);
+    }
     formatData(d);
   }
 
