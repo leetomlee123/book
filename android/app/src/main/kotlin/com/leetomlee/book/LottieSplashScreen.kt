@@ -23,14 +23,7 @@ import kotlin.random.Random
 class LottieSplashScreen : SplashScreen{
 
     private val lottieRawIds = arrayOf(
-            R.raw.lottie1,
-            R.raw.lottie2,
-            R.raw.lottie3,
-            R.raw.lottie4,
-            R.raw.lottie5,
-            R.raw.lottie6,
-            R.raw.lottie7,
-            R.raw.lottie8
+            R.raw.lottie
     )
 
     override fun createSplashView(context: Context, savedInstanceState: Bundle?): View? {
