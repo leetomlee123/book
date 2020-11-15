@@ -18,24 +18,27 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SpUtil.getInstance();
+  if (await Permission.storage.request().isGranted) {
+    await SpUtil.getInstance();
 
-  locator.registerSingleton(TelAndSmsService());
-  final router = FluroRouter();
-  Routes.configureRoutes(router);
-  Routes.router = router;
-  runApp(Store.init(child: MyApp()));
-  await DirectoryUtil.getInstance();
+    locator.registerSingleton(TelAndSmsService());
+    final router = FluroRouter();
+    Routes.configureRoutes(router);
+    Routes.router = router;
+    runApp(Store.init(child: MyApp()));
+    await DirectoryUtil.getInstance();
 
-  if (Platform.isAndroid) {
-    SystemUiOverlayStyle systemUiOverlayStyle =
-        SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-    SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+    if (Platform.isAndroid) {
+      SystemUiOverlayStyle systemUiOverlayStyle =
+          SystemUiOverlayStyle(statusBarColor: Colors.transparent);
+      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+    }
   }
 }
 

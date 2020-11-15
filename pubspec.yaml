@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  permission_handler: ^5.0.1+1
   flutter_rating_bar: ^3.0.1+1
   chewie: ^0.9.10
   video_player: ^0.10.12+2
