@@ -2,7 +2,6 @@ import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/route/Routes.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 

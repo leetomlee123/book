@@ -1,11 +1,9 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';

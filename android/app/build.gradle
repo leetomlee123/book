@@ -51,11 +51,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
 
-        manifestPlaceholders = [
-                JPUSH_PKGNAME: applicationId,
-                JPUSH_APPKEY : "f90562283a6e6bffa036d5dd", // NOTE: JPush 上注册的包名对应的 Appkey.
-                JPUSH_CHANNEL: "developer-default", //暂时填写默认值即可.
-        ]
+        // manifestPlaceholders = [
+        //         JPUSH_PKGNAME: applicationId,
+        //         JPUSH_APPKEY : "f90562283a6e6bffa036d5dd", // NOTE: JPush 上注册的包名对应的 Appkey.
+        //         JPUSH_CHANNEL: "developer-default", //暂时填写默认值即可.
+        // ]
     }
 
     signingConfigs {
@@ -83,6 +83,7 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.airbnb.android:lottie:$lottieVersion"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'

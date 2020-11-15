@@ -23,7 +23,6 @@ class Search extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return _SearchState();
   }
 }
@@ -31,39 +30,35 @@ class Search extends StatefulWidget {
 class _SearchState extends State<Search> {
   bool isBookSearch = false;
   SearchModel searchModel;
+  ColorModel value;
   Widget body;
   TextEditingController controller = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-              child: Scaffold(
-                appBar: AppBar(
-                  title: buildSearchWidget(),
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                ),
-                body: Store.connect<SearchModel>(
-                    builder: (context, SearchModel d, child) {
-                  return d.showResult ? resultWidget() : suggestionWidget(d);
-                }),
-              ),
-              data: data.theme,
-            ));
+    value = Store.value<ColorModel>(context);
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: buildSearchWidget(),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+      ),
+      body:
+          Store.connect<SearchModel>(builder: (context, SearchModel d, child) {
+        return d.showResult ? resultWidget() : suggestionWidget(d);
+      }),
+    );
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     searchModel.clear();
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     isBookSearch = this.widget.type == "book";
     if (this.widget.type == "book" && this.widget.name != "") {
@@ -96,12 +91,14 @@ class _SearchState extends State<Search> {
     return Row(
       children: <Widget>[
         Expanded(
-          child: Store.connect<ColorModel>(
-              builder: (context, ColorModel data, child) => Container(
+          child: Container(
                   //修饰黑色背景与圆角
                   decoration: BoxDecoration(
                     //灰色的一层边框
-                    color: data.dark ? Colors.black : Colors.white,
+                    border: Border.all(
+                        color: value.dark ? Colors.white : Colors.black,
+                        width: 0.5),
+                    // color: data.dark ? Colors.white : Colors.black,
                     borderRadius: BorderRadius.all(Radius.circular(25.0)),
                   ),
                   alignment: Alignment.center,
@@ -126,7 +123,7 @@ class _SearchState extends State<Search> {
                         hintText: isBookSearch ? "书籍/作者名" : "美剧/作者",
                       ),
                     ),
-                  ))),
+                  )),
           flex: 5,
         ),
         SizedBox(
@@ -136,7 +133,11 @@ class _SearchState extends State<Search> {
           child: Center(
             child: Padding(
               child: GestureDetector(
-                child: Text('搜索'),
+                child: Text(
+                  '搜索',
+                  style:
+                      TextStyle(color: value.dark ? Colors.white : Colors.black),
+                ),
                 onTap: () {
                   searchModel.search(controller.text);
                 },
@@ -187,7 +188,7 @@ class _SearchState extends State<Search> {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: <Widget>[
-                           Container(
+                          Container(
                             padding:
                                 const EdgeInsets.only(left: 10.0, top: 10.0),
                             child: ClipRRect(
@@ -331,10 +332,9 @@ class _SearchState extends State<Search> {
 //            children: data.getHistory(),
 //          ),
             Wrap(
-              children: searchModel?.getHistory()??[],
-              spacing: 3, //主轴上子控件的间距
-              runSpacing: 5,
-              alignment: WrapAlignment.start,//交叉轴上子控件之间的间距
+              children: searchModel?.getHistory() ?? [],
+              spacing: 10, //主轴上子控件的间距
+              alignment: WrapAlignment.start, //交叉轴上子控件之间的间距
             ),
             Row(
               children: <Widget>[
@@ -354,9 +354,8 @@ class _SearchState extends State<Search> {
               ],
             ),
             Wrap(
-              children: searchModel?.showHot ?? [], spacing: 2, //主轴上子控件的间距
+              children: searchModel?.showHot ?? [], spacing: 10, //主轴上子控件的间距
             ),
-
           ],
         ),
       ),

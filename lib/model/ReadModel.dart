@@ -23,6 +23,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
+enum Load { Loading, Done }
+
 class ReadModel with ChangeNotifier {
   Book book;
   List<Chapter> chapters = [];
@@ -80,12 +82,15 @@ class ReadModel with ChangeNotifier {
 //是否修改font
   bool font = false;
 
+  bool sSave;
+  Load load;
   //获取本书记录
   getBookRecord() async {
     showMenu = false;
     font = false;
     loadOk = false;
-
+    sSave = true;
+    load = Load.Done;
     if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
 
@@ -101,8 +106,7 @@ class ReadModel with ChangeNotifier {
       }
       await intiPageContent(book.cur, false);
       // if (isPage) {
-      pageController =
-          new PageController(initialPage: book.index, keepPage: false);
+      pageController = PageController(initialPage: book.index);
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
       // }
@@ -130,47 +134,91 @@ class ReadModel with ChangeNotifier {
       if (book.CId == "-1") {
         book.cur = chapters.length - 1;
       }
-
       await intiPageContent(book?.cur ?? 0, false);
       int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
-      // if (isPage) {
-      pageController = new PageController(initialPage: idx, keepPage: false);
-      // } else {
-      //   listController = ScrollController(initialScrollOffset: 0.0);
-      // }
+      if (isPage) {
+        pageController = PageController(initialPage: idx);
+      } else {
+        listController = ScrollController(initialScrollOffset: 0.0);
+      }
+      book.index = idx;
       loadOk = true;
-
-//      notifyListeners();
     }
 //      if (pageController.hasClients) {
 //        pageController.jumpToPage(idx);
 //      }
-//    if (!isPage) {
-//      listController.addListener(() {
-//        double offset = listController.offset;
-//        if (offset > (prePage.height + curPage.height)) {
-//          print("next chapter");
-//          if (!chapterLoading) {
-//            nextChapter();
-//          }
-//        }
-//      });
-//    }
+    // if (!isPage) {
+    //   listController.addListener(() {
+    //     double offset = listController.offset;
+    //     print(offset);
+    // if (offset > (prePage.height + curPage.height)) {
+    //   print('准备下一章');
+    //   //  print("next chapter");
+    //   //  if (!chapterLoading) {
+    //   //    nextChapter();
+    //   //  }
+    // }
+    //   });
+    // }
     notifyListeners();
-    print('pagecontroller hashcode ${pageController.hashCode}');
+  }
+
+  checkPosition(double offset) {
+    if ((Load.Done == load) && (offset > (prePage.height + curPage.height))) {
+      print('准备下一章');
+      nextChapter();
+    }
   }
 
   nextChapter() async {
-    book.cur += 1;
-    int idx = book.cur;
-    double offset = listController.offset;
-
-    var d = offset - prePage.height - curPage.height;
-    prePage = await loadChapter(idx - 1);
-    curPage = await loadChapter(idx);
-    nextPage = await loadChapter(idx + 1);
-    fillAllContent();
-    listController.jumpTo(prePage.height + d);
+    load = Load.Loading;
+    double hs = prePage.height + curPage.height + Screen.height;
+    int tempCur = book.cur + 1;
+    if (tempCur >= chapters.length) {
+      BotToast.showText(text: "已经是最后一页");
+      pageController.previousPage(
+          duration: Duration(microseconds: 1), curve: Curves.ease);
+    } else {
+      book.cur += 1;
+      prePage = curPage;
+      if (nextPage.chapterName == "-1") {
+        showGeneralDialog(
+          context: context,
+          barrierLabel: "",
+          barrierDismissible: true,
+          transitionDuration: Duration(milliseconds: 300),
+          pageBuilder: (BuildContext context, Animation animation,
+              Animation secondaryAnimation) {
+            return LoadingDialog();
+          },
+        );
+        curPage = await loadChapter(book.cur);
+        int preLen = prePage?.pageOffsets?.length ?? 0;
+        int curLen = curPage?.pageOffsets?.length ?? 0;
+        book.index = preLen + curLen - 1;
+        Navigator.pop(context);
+      } else {
+        curPage = nextPage;
+      }
+      nextPage = null;
+      fillAllContent();
+      double offset = listController.offset;
+      var d = offset - hs;
+      // listController.animateTo(
+      //   d,
+      //   duration: new Duration(milliseconds: 300), // 300ms
+      //   curve: Curves.bounceIn,
+      // );
+      listController.jumpTo(d);
+      print('load next ok');
+      ReadPage temp = await loadChapter(book.cur + 1);
+      if (book.cur == tempCur) {
+        print('next init');
+        nextPage = temp;
+        fillAllContent();
+      }
+    }
+    load = Load.Done;
   }
 
   Future intiPageContent(int idx, bool jump) async {
@@ -184,53 +232,17 @@ class ReadModel with ChangeNotifier {
         return LoadingDialog();
       },
     );
-    // List<Future<Response>> reqst = [];
-    // if (idx - 1 > 0) {
-    //   reqst.add(Util(null)
-    //       .http()
-    //       .get(Common.bookContentUrl + '/${chapters[idx - 1].id}'));
-    // }
-    // if (idx + 1 < chapters.length) {
-    //   reqst.add(Util(null)
-    //       .http()
-    //       .get(Common.bookContentUrl + '/${chapters[idx + 1].id}'));
-    // }
+    await Future.wait([
+      loadChapter(idx - 1).then((value) => {prePage = value}),
+      loadChapter(idx).then((value) => {curPage = value}),
+      loadChapter(idx + 1).then((value) => {nextPage = value}),
+    ]);
+    // prePage = await loadChapter(idx - 1);
+    // curPage = await loadChapter(idx);
+    // nextPage = await loadChapter(idx + 1);
 
-    // reqst.add(
-    //     Util(null).http().get(Common.bookContentUrl + '/${chapters[idx].id}'));
-    // List<Response> responses = await Future.wait(reqst);
-    // if ((idx - 1 > 0) && (idx + 1 < chapters.length)) {
-    //   var content1 = responses[0].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content1, chapters[idx - 1].id);
-    //   chapters[idx - 1].hasContent = 2;
-    //   var content2 = responses[1].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content2, chapters[idx].id);
-    //   chapters[idx].hasContent = 2;
-    //   var content3 = responses[2].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content3, chapters[idx + 1].id);
-    //   chapters[idx + 1].hasContent = 2;
-    // } else if (idx - 1 < 0) {
-    //   var content2 = responses[0].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content2, chapters[idx].id);
-    //   chapters[idx].hasContent = 2;
-    //   var content3 = responses[1].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content3, chapters[idx + 1].id);
-    //   chapters[idx + 1].hasContent = 2;
-    // } else if (idx + 1 >= chapters.length) {
-    //   var content2 = responses[0].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content2, chapters[idx-1].id);
-    //   chapters[idx-1].hasContent = 2;
-    //   var content3 = responses[1].data['data']['content'];
-    //   DbHelper.instance.udpChapter(content3, chapters[idx ].id);
-    //   chapters[idx ].hasContent = 2;
-    // }
-    // BotToast.showLoading();
-    prePage = await loadChapter(idx - 1);
-    curPage = await loadChapter(idx);
-    nextPage = await loadChapter(idx + 1);
-    // BotToast.closeAllLoading();
     fillAllContent(notify: jump);
-    if (jump) {
+    if (isPage && jump) {
       int ix = prePage?.pageOffsets?.length ?? 0;
       pageController.jumpToPage(ix);
     }
@@ -354,8 +366,7 @@ class ReadModel with ChangeNotifier {
 
     r.chapterName = chapters[idx].name;
     String id = chapters[idx].id;
-    var bool = await DbHelper.instance.getHasContent(id);
-    if (!bool) {
+    if (chapters[idx].hasContent != 2) {
       r.chapterContent = await compute(requestDataWithCompute, id);
 
       if (r.chapterContent.isNotEmpty) {
@@ -369,29 +380,30 @@ class ReadModel with ChangeNotifier {
     }
     if (r.chapterContent.isEmpty) {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
-      r.pageOffsets = [r.chapterContent];
+      r.pageOffsets = [(r.chapterContent.length-1).toString()];
       return r;
     }
-    // if (isPage) {
-    var k = '${book.Id}pages' + r.chapterName;
-    if (SpUtil.haveKey(k)) {
-      r.pageOffsets = SpUtil.getStringList(k);
-      SpUtil.remove(k);
+    if (isPage) {
+      var k = '${book.Id}pages' + r.chapterName;
+      // bool has = await DbHelper.instance.hasContents(k);
+      if (SpUtil.haveKey(k)) {
+        r.pageOffsets = SpUtil.getStringList(k);
+        SpUtil.remove(k);
+        // r.pageOffsets = await DbHelper.instance.getContents(k);
+        // await DbHelper.instance.delContents(k);
+      } else {
+        r.pageOffsets = ReaderPageAgent()
+            .getPageOffsets(r.chapterContent, contentH, contentW);
+        // SpUtil.putStringList('pages' + id, r.pageOffsets);
+      }
     } else {
-      r.pageOffsets = ReaderPageAgent()
-          .getPageOffsets(r.chapterContent, contentH, contentW);
-      // SpUtil.putStringList('pages' + id, r.pageOffsets);
+      r.pageOffsets = [r.chapterContent];
+      if (SpUtil.haveKey('height' + id)) {
+        r.height = SpUtil.getDouble('height' + id);
+      } else {
+        r.height = ReaderPageAgent().getPageHeight(r.chapterContent, contentW);
+      }
     }
-    // } else {
-    //   r.pageOffsets = [r.chapterContent];
-    //   if (SpUtil.haveKey('height' + id)) {
-    //     r.height = SpUtil.getDouble('height' + id);
-    //   } else {
-    //     r.height = ReaderPageAgent()
-    //         .getPageHeight(r.chapterContent, contentH, contentW);
-    //     SpUtil.putDouble('height' + id, r.height);
-    //   }
-    // }
     return r;
   }
 
@@ -438,36 +450,49 @@ class ReadModel with ChangeNotifier {
   }
 
   saveData() async {
-    SpUtil.putString(book.Id, "");
-    await DbHelper.instance
-        .updBookProcess(book?.cur ?? 0, book?.index ?? 0, book.Id);
-    SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
-        prePage?.pageOffsets ?? []);
-    SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
-        curPage?.pageOffsets ?? []);
-    SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
-        nextPage?.pageOffsets ?? []);
-    String userName = SpUtil.getString("username");
-    if (userName.isNotEmpty) {
-      Util(null)
-          .http()
-          .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
+    if (sSave) {
+      SpUtil.putString(book.Id, "");
+      await DbHelper.instance
+          .updBookProcess(book?.cur ?? 0, book?.index ?? 0, book.Id);
+      // await DbHelper.instance.addCords(
+      //     '${book.Id}pages${prePage?.chapterName ?? ' '}',
+      //     prePage?.pageOffsets ?? []);
+      // await DbHelper.instance.addCords(
+      //     '${book.Id}pages${curPage?.chapterName ?? ' '}',
+      //     curPage?.pageOffsets ?? []);
+      // await DbHelper.instance.addCords(
+      //     '${book.Id}pages${nextPage?.chapterName ?? ' '}',
+      //     nextPage?.pageOffsets ?? []);
+      SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+          prePage?.pageOffsets ?? []);
+      SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
+          curPage?.pageOffsets ?? []);
+      SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+          nextPage?.pageOffsets ?? []);
+      String userName = SpUtil.getString("username");
+      if (userName.isNotEmpty) {
+        Util(null)
+            .http()
+            .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
+      }
+      print("保存成功");
     }
-    print("保存成功");
   }
 
   void tapPage(BuildContext context, TapDownDetails details) {
     var wid = ScreenUtil.getScreenW(context);
     var space = wid / 3;
     var curWid = details.localPosition.dx;
-    if (curWid > 0 && curWid < space) {
+    if (isPage && (curWid > 0 && curWid < space)) {
       pageController.previousPage(
           duration: Duration(microseconds: 1), curve: Curves.ease);
     } else if (curWid > space && curWid < 2 * space) {
       toggleShowMenu();
     } else {
-      pageController.nextPage(
-          duration: Duration(microseconds: 1), curve: Curves.ease);
+      if (isPage) {
+        pageController.nextPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
+      }
     }
   }
 
@@ -477,53 +502,6 @@ class ReadModel with ChangeNotifier {
         SpUtil.remove(f);
       }
     });
-  }
-
-  downloadAll(int start) async {
-    if (chapters?.isEmpty ?? 0 == 0) {
-      await getChapters();
-//      saveData();
-
-    }
-    // List<String> ids = [];
-    // if (SpUtil.haveKey(Common.downloadlist)) {
-    //   ids = SpUtil.getStringList(Common.downloadlist);
-    // }
-    // if (!ids.contains(book.Id)) {
-    //   ids.add(book.Id);
-    // }
-    // SpUtil.putStringList(Common.downloadlist, ids);
-    for (var i = start; i < chapters.length; i++) {
-      Chapter chapter = chapters[i];
-      var id = chapter.id;
-      var bool = await DbHelper.instance.getHasContent(id);
-      if (!bool) {
-        String content = await compute(requestDataWithCompute, id);
-        if (content.isNotEmpty) {
-          // SpUtil.putString(chapter.id, content);
-          DbHelper.instance.udpChapter(content, id);
-          chapter.hasContent = 2;
-        }
-      }
-      await Future.delayed(Duration(seconds: 1));
-    }
-
-    BotToast.showText(text: "${book?.Name ?? ""}下载完成");
-    // SpUtil.putString('${book.Id}chapters', jsonEncode(chapters));
-  }
-
-  static Future<String> requestDataWithCompute(String id) async {
-    try {
-      var url = Common.bookContentUrl + '/$id';
-      var client = new HttpClient();
-      var request = await client.getUrl(Uri.parse(url));
-      var response = await request.close();
-      var responseBody = await response.transform(utf8.decoder).join();
-      var dataList = await parseJson(responseBody);
-      return dataList['data']['content'];
-    } catch (e) {
-      print(e);
-    }
   }
 
   Widget firstPage() {
@@ -570,7 +548,10 @@ class ReadModel with ChangeNotifier {
                   fontSize: 11,
                 ),
               ),
-            )
+            ),
+            // SizedBox(
+            //   height: Screen.height / 2,
+            // )
           ],
         ),
       ),
@@ -579,131 +560,157 @@ class ReadModel with ChangeNotifier {
 
   Widget noMorePage() {
     return Container(
-      child: Text('曾经沧海难为水,除却巫山不是云'),
+      child: Center(
+        child: Text('曾经沧海难为水,除却巫山不是云'),
+      ),
     );
   }
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
-    for (var i = 0; i < r.pageOffsets.length; i++) {
-      var content = r.pageOffsets[i];
-//      if (content.startsWith("\n")) {
-//        content = content.substring(1);
-//      }
+    String cts = r.chapterContent;
+    if (r.chapterName == "-1" || r.chapterName == "1") {
+      contents.add(GestureDetector(
+        child: r.chapterName == "1" ? firstPage() : noMorePage(),
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (TapDownDetails details) {
+          tapPage(context, details);
+        },
+      ));
+    } else {
+      int sum = r.pageOffsets.length;
+      for (var i = 0; i < sum; i++) {
+        int end = int.parse(r.pageOffsets[i]);
+        String content = cts.substring(0, end);
+        cts = cts.substring(end, cts.length);
 
-      contents.add(Store.connect<ColorModel>(
-          builder: (context, ColorModel model, child) {
-        return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (TapDownDetails details) {
-              if (isPage) {
+        while (cts.startsWith("\n")) {
+          cts = cts.substring(1);
+        }
+
+        contents.add(Store.connect<ColorModel>(
+            builder: (context, ColorModel model, child) {
+          return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (TapDownDetails details) {
                 tapPage(context, details);
-              }
-            },
-            child: (r.chapterName == "-1" || r.chapterName == "1")
-                ? (r.chapterName == "1" ? firstPage() : noMorePage())
-                : isPage
-                    ? Container(
-                        child: Column(
-                          children: <Widget>[
-                            SizedBox(height: ScreenUtil.getStatusBarH(context)),
-                            Container(
-                              height: 30,
-                              padding: EdgeInsets.only(left: 3),
-                              child: Text(
-                                r.chapterName,
-                                // strutStyle: StrutStyle(
-                                //     forceStrutHeight: true,
-                                //     height: textLineHeight),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: model.dark
-                                      ? Colors.white30
-                                      : Colors.black,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Expanded(
-                                child: Container(
-                                    padding: EdgeInsets.fromLTRB(
-                                        15, 0, 5, Screen.bottomSafeHeight),
-                                    child: Text.rich(
-                                      TextSpan(children: [
-                                        TextSpan(
-                                            text: content,
-                                            style: TextStyle(
-                                              textBaseline:
-                                                  TextBaseline.ideographic,
-                                              color: model.dark
-                                                  ? Colors.white30
-                                                  : Colors.black,
-                                              fontSize:
-                                                  ReadSetting.getFontSize() /
-                                                      Screen.textScaleFactor,
-                                              // height: ReadSetting
-                                              //     .getLatterHeight(),
-                                              // letterSpacing: ReadSetting
-                                              //     .getLatterSpace()
-                                            ))
-                                      ]),
-                                      textAlign: TextAlign.justify,
-                                    ))),
-                            Container(
-                              height: 30,
-                              padding: EdgeInsets.only(right: 8),
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(child: Container()),
-                                  Text(
-                                    '第${i + 1}/${r.pageOffsets.length}页',
-                                    // strutStyle: StrutStyle(
-                                    //     forceStrutHeight: true,
-                                    //     height: textLineHeight),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: model.dark
-                                          ? Colors.white30
-                                          : Colors.black,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                        ),
-                        width: double.infinity,
-                        height: double.infinity,
-                      )
-                    : Column(
-                        children: [
-                          Center(
+              },
+              child: isPage
+                  ? Container(
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(height: ScreenUtil.getStatusBarH(context)),
+                          Container(
+                            height: 30,
+                            alignment: Alignment.centerLeft,
+                            padding: EdgeInsets.only(left: 3),
                             child: Text(
                               r.chapterName,
+                              // strutStyle: StrutStyle(
+                              //     forceStrutHeight: true,
+                              //     height: textLineHeight),
                               style: TextStyle(
-                                  fontSize: ReadSetting.getFontSize() + 2.0),
+                                fontSize: 12 / Screen.textScaleFactor,
+                                color:
+                                    model.dark ? Colors.white30 : Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          Expanded(
+                              child: Container(
+                                  padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
+                                  alignment: i == (sum - 1)
+                                      ? Alignment.topLeft
+                                      : Alignment.centerLeft,
+                                  child: Text.rich(
+                                    TextSpan(children: [
+                                      TextSpan(
+                                          text: content,
+                                          style: TextStyle(
+                                            locale: Locale('zh_CN'),
+                                            fontSize:
+                                                ReadSetting.getFontSize() /
+                                                    Screen.textScaleFactor,
+                                            // height:
+                                            //     ReadSetting.getLatterHeight()/ReadSetting.getFontSize() ,
+                                            // letterSpacing:
+                                            //     ReadSetting.getLatterSpace(),
+                                            textBaseline:
+                                                TextBaseline.ideographic,
+                                            color: model.dark
+                                                ? Colors.white30
+                                                : Colors.black,
+                                            // fontSize:
+                                            //     ReadSetting.getFontSize() /
+                                            //         Screen.textScaleFactor,
+                                            // height: ReadSetting
+                                            //     .getLatterHeight(),
+                                            // letterSpacing: ReadSetting
+                                            //     .getLatterSpace()
+                                          ))
+                                    ]),
+                                    textAlign: TextAlign.justify,
+                                  ))),
                           Container(
-                              padding: EdgeInsets.only(
-                                right: 5,
-                                left: 15,
-                              ),
-                              child: Text(
-                                content,
-                                style: TextStyle(
+                            height: 30,
+                            padding: EdgeInsets.only(right: 8),
+                            child: Row(
+                              children: <Widget>[
+                                Expanded(child: Container()),
+                                Text(
+                                  '第${i + 1}/${r.pageOffsets.length}页',
+                                  // strutStyle: StrutStyle(
+                                  //     forceStrutHeight: true,
+                                  //     height: textLineHeight),
+                                  style: TextStyle(
+                                    fontSize: 12 / Screen.textScaleFactor,
                                     color: model.dark
-                                        ? Color.fromRGBO(128, 128, 128, 1)
-                                        : null,
-                                    fontSize: ReadSetting.getFontSize() /
-                                        Screen.textScaleFactor),
-                                textAlign: TextAlign.justify,
-                              ))
+                                        ? Colors.white30
+                                        : Colors.black,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
-                      ));
-      }));
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                  : Column(
+                      children: [
+                        Center(
+                          child: Text(
+                            r.chapterName,
+                            style: TextStyle(
+                                fontSize: ReadSetting.getFontSize() + 2.0),
+                          ),
+                        ),
+                        Container(
+                            padding: EdgeInsets.only(
+                              right: 5,
+                              left: 15,
+                            ),
+                            child: Text(
+                              content,
+                              style: TextStyle(
+                                  color: model.dark
+                                      ? Color.fromRGBO(128, 128, 128, 1)
+                                      : null,
+                                  fontSize: ReadSetting.getFontSize() /
+                                      Screen.textScaleFactor),
+                              textAlign: TextAlign.justify,
+                            )),
+                        SizedBox(
+                          height: Screen.height / 2,
+                        )
+                      ],
+                    ));
+        }));
+      }
     }
     return contents;
   }
@@ -745,18 +752,45 @@ class ReadModel with ChangeNotifier {
         await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
-      // SpUtil.putString(chapter.id, content);
-      DbHelper.instance.udpChapter(content, chapter.id);
+      await DbHelper.instance.udpChapter(content, chapter.id);
       chapters[book.cur].hasContent = 2;
+      curPage = await loadChapter(book.cur);
+      fillAllContent();
     }
-    curPage = await loadChapter(book.cur);
-    fillAllContent();
   }
 
   reSetPages() {
     prePage = null;
     curPage = null;
     nextPage = null;
+  }
+
+  downloadAll(int start) async {
+    if (chapters?.isEmpty ?? 0 == 0) {
+      await getChapters();
+    }
+    for (var i = start; i < chapters.length; i++) {
+      Chapter chapter = chapters[i];
+      var id = chapter.id;
+      if (chapter.hasContent != 2) {
+        String content = await compute(requestDataWithCompute, id);
+        if (content.isNotEmpty) {
+          DbHelper.instance.udpChapter(content, id);
+          chapters[i].hasContent = 2;
+        }
+      }
+    }
+    BotToast.showText(text: "${book?.Name ?? ""}下载完成");
+  }
+
+  static Future<String> requestDataWithCompute(String id) async {
+    var url = Common.bookContentUrl + '/$id';
+    var client = new HttpClient();
+    var request = await client.getUrl(Uri.parse(url));
+    var response = await request.close();
+    var responseBody = await response.transform(utf8.decoder).join();
+    var dataList = await parseJson(responseBody);
+    return dataList['data']['content'];
   }
 
   @override

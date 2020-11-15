@@ -37,8 +37,7 @@ class StateGoodBook extends State<GoodBook>
     ];
     //initialIndex初始选中第几个
     controller =
-        TabController(initialIndex: 0, length: tabs.length, vsync: this)
-;
+        TabController(initialIndex: 0, length: tabs.length, vsync: this);
   }
 
   @override
@@ -50,18 +49,23 @@ class StateGoodBook extends State<GoodBook>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ColorModel value = Store.value<ColorModel>(context);
     return DefaultTabController(
       length: tabs.length,
       child: Scaffold(
           appBar: AppBar(
+            backgroundColor: Colors.transparent,
             title: TabBar(
+              unselectedLabelColor: Colors.black38,
+              labelColor: value.dark ? Colors.white : Colors.black,
               indicatorColor: Theme.of(context).primaryColor,
               indicatorSize: TabBarIndicatorSize.label,
               controller: controller,
               tabs: tabs,
+              labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             centerTitle: true,
-            // elevation: 0,
+            elevation: 0,
             automaticallyImplyLeading: false,
           ),
           body: TabBarView(
@@ -95,7 +99,6 @@ class StateTabItem extends State<TabItem>
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getData();
   }
@@ -136,7 +139,7 @@ class StateTabItem extends State<TabItem>
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey, fontSize: 12.0),
+                      style: TextStyle(color: Colors.grey, fontSize: 11.0),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,
@@ -212,7 +215,7 @@ class StateTabItem extends State<TabItem>
       formatData(d);
     }
     String url = Common.rank + "/${this.widget.type}";
-    Response future = await Util(haveKey ? null : context).http().get(url);
+    Response future = await Util(null).http().get(url);
     d = future.data['data'];
     if (d != null) {
       SpUtil.putObject(key, d);

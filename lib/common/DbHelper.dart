@@ -13,10 +13,12 @@ class DbHelper {
   final String _tableName = "chapters";
   final String _tableName1 = "books";
   final String _tableName2 = "movies";
+  final String _tableName3 = "cord";
 
   static Database _db;
   static Database _db1;
   static Database _db2;
+  static Database _db3;
   Future<Database> get db async {
     if (_db != null) {
       return _db;
@@ -38,6 +40,12 @@ class DbHelper {
     return _db2;
   }
 
+  Future<Database> get db3 async {
+    if (_db3 != null) return _db3;
+    _db3 = await _initDb3();
+    return _db3;
+  }
+
   //初始化数据库
   _initDb1() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
@@ -53,6 +61,15 @@ class DbHelper {
 
     String path = documentsDirectory.path + "/movies.db";
     var db = await openDatabase(path, version: 1, onCreate: _onCreate2);
+    return db;
+  }
+
+  //初始化数据库
+  _initDb3() async {
+    Directory documentsDirectory = await getApplicationDocumentsDirectory();
+
+    String path = documentsDirectory.path + "/cord.db";
+    var db = await openDatabase(path, version: 1, onCreate: _onCreate3);
     return db;
   }
 
@@ -104,6 +121,47 @@ class DbHelper {
         "cid TEXT,"
         "mcids TEXT,"
         "cname TEXT)");
+  }
+
+  void _onCreate3(Database db, int version) async {
+    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName3("
+        "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
+        "key TEXT,"
+        "content TEXT)");
+    await db.execute("CREATE INDEX key_idx ON $_tableName3 (key);");
+  }
+
+  Future<Null> addCords(String key, List<String> contents) async {
+    var dbClient = await db3;
+    var batch = dbClient.batch();
+    for (String content in contents) {
+      batch.rawInsert("insert into  $_tableName3 (key,content) values(?,?)",
+          [key, content]);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<List<String>> getContents(String key) async {
+    var dbClient = await db3;
+    List<String> contents = [];
+    var list = await dbClient
+        .rawQuery("select content from $_tableName3 where key=?", [key]);
+    for (var i in list) {
+      contents.add(i['content'].toString());
+    }
+    return contents;
+  }
+
+  Future<bool> hasContents(String key) async {
+    var dbClient = await db3;
+    List list = await dbClient
+        .rawQuery("select id from $_tableName3 where key=?", [key]);
+    return list.length > 0;
+  }
+
+  Future<Null> delContents(String key) async {
+    var dbClient = await db3;
+    await dbClient.rawDelete("delete from $_tableName3 where key=?", [key]);
   }
 
   Future<Null> addMovies(List<MRecords> ms) async {
@@ -188,13 +246,14 @@ class DbHelper {
     }
     return bks;
   }
+
   Future<Book> getBook(String bookId) async {
     var dbClient = await db1;
-    Book bk ;
+    Book bk;
     var list = await dbClient
         .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
     for (var i in list) {
-     bk= Book.fromSql(
+      bk = Book.fromSql(
           i['book_id'],
           i['name'],
           i['cname'],
@@ -202,13 +261,14 @@ class DbHelper {
           i['utime'],
           i['img'],
           i['intro'],
-          i['cur']??0,
-          i['idx']??0,
+          i['cur'] ?? 0,
+          i['idx'] ?? 0,
           i['newChapter'],
           i['lastChapter']);
     }
     return bk;
   }
+
   Future<Null> delBook(String bookId) async {
     var dbClient = await db1;
 
@@ -257,7 +317,7 @@ class DbHelper {
     }
     var i = list[0];
 
-    return BookTag(i['cur']??0, i['idx']??0, i['name'], 0.0);
+    return BookTag(i['cur'] ?? 0, i['idx'] ?? 0, i['name'], 0.0);
   }
 
   /// 添加章节
@@ -272,7 +332,6 @@ class DbHelper {
     }
 
     await batch.commit(noResult: true);
-
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {
@@ -309,7 +368,7 @@ class DbHelper {
 
   Future<Null> udpChapter(String content, String cid) async {
     var dbClient = await db;
-    dbClient.rawUpdate(
+    await dbClient.rawUpdate(
         "update $_tableName set content=?,hasContent=2 where chapter_id=?",
         [content, cid]);
   }

@@ -1,7 +1,9 @@
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/entity/MRecords.dart';
+import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
+import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
 
 class MovieRecord extends StatefulWidget {
@@ -52,12 +54,14 @@ class _MovieRecordState extends State<MovieRecord> {
 
   @override
   Widget build(BuildContext context) {
+    var dark=Store.value<ColorModel>(context).dark;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('观看记录'),
+        title: Text('观看记录',style: TextStyle(color: dark?Colors.white:Colors.black),),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
       body: wds.isEmpty
           ? Center(

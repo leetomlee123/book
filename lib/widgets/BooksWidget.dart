@@ -50,7 +50,6 @@ class _BooksWidgetState extends State<BooksWidget> {
   Widget build(BuildContext context) {
     return SmartRefresher(
         enablePullDown: true,
-        
         footer: CustomFooter(
           builder: (BuildContext context, LoadStatus mode) {
             if (mode == LoadStatus.idle) {
@@ -106,7 +105,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             Stack(
-              alignment : AlignmentDirectional.topCenter,
+              alignment: AlignmentDirectional.topCenter,
               children: <Widget>[
                 PicWidget(
                   book.Img,
@@ -174,6 +173,7 @@ class _BooksWidgetState extends State<BooksWidget> {
         },
       ));
     }
+
     return wds;
   }
 

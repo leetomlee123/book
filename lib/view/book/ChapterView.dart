@@ -216,9 +216,8 @@ class _ChapterViewItem extends State<ChapterView> {
     Response future = await Util(context).http().get(url);
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);
-
     Routes.navigateTo(context, Routes.detail,
-        params: {"detail": jsonEncode(bookInfo)});
+        params: {"detail": jsonEncode(bookInfo)},replace: true);
     data.saveData();
     data.loadOk = false;
     // data.clear();
@@ -227,7 +226,7 @@ class _ChapterViewItem extends State<ChapterView> {
   topOrBottom() async {
     if (_scrollController.hasClients) {
       int temp = showToTopBtn
-          ? 1
+          ? 0
           : Store.value<ReadModel>(context).chapters.length - 8;
       await _scrollController.animateTo(temp * ITEM_HEIGH,
           duration: Duration(microseconds: 1), curve: Curves.ease);

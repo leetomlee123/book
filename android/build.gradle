@@ -1,7 +1,9 @@
 buildscript {
     ext.kotlin_version = '1.3.50'
+    ext.lottieVersion = "3.4.1"
     repositories {
         google()
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
     }
 
@@ -14,6 +16,7 @@ buildscript {
 allprojects {
     repositories {
         google()
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
     }
 }

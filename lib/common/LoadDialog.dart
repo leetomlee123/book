@@ -14,7 +14,7 @@ class LoadingDialog extends Dialog {
       return Center(
           child: Container(
         child: SpinKitCircle(
-          color: model.dark ? Colors.white : model.theme.primaryColor,
+          color: Colors.white ,
           size: 70,
         ),
       ));

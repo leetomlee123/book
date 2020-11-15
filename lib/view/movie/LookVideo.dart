@@ -30,7 +30,6 @@ class LookVideo extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    // TODO: implement createState
     return LookVideoState();
   }
 }
@@ -50,21 +49,20 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     urlKey = this.widget.id;
-    // TODO: implement initState
+
     super.initState();
     getData();
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     if (videoPlayerController != null) {
       videoPlayerController.removeListener(_videoListener);
-      videoPlayerController.dispose();
+      videoPlayerController?.dispose();
     }
 
-    chewieController.dispose();
+    chewieController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
 
     saveRecord(videoPlayerController.value.position);
@@ -89,7 +87,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     colorModel = Store.value<ColorModel>(context);
-    // TODO: implement build
+    
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) => Theme(
               child: wds.isNotEmpty
@@ -241,6 +239,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           map.values.elementAt(0),
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.white),
         ),
         onPressed: () {
           var jsonEncode2 = jsonEncode(list);
@@ -254,7 +253,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
         },
         color: map.keys.elementAt(0) == urlKey
-            ? (colorModel.dark ? Colors.black : Colors.white)
+            ?Colors.black
             : colorModel.theme.primaryColor,
       ));
     }
