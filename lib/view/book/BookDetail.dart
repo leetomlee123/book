@@ -12,6 +12,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/SliverAppbar.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -56,12 +57,12 @@ class _BookDetailState extends State<BookDetail> {
   @override
   Widget build(BuildContext context) {
     ColorModel value = Store.value<ColorModel>(context);
+    // return SliverAppBarDemo(this.widget._bookInfo);
     return Scaffold(
-
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            color:value.dark ? Colors.white : Colors.black,
+            color: value.dark ? Colors.white : Colors.black,
             icon: Icon(Icons.arrow_back),
             onPressed: () {
               Navigator.of(context).pop();
@@ -71,7 +72,12 @@ class _BookDetailState extends State<BookDetail> {
           actions: <Widget>[
             GestureDetector(
               child: Center(
-                child: Text('书架',style: TextStyle(color:value.dark ? Colors.white : Colors.black,),),
+                child: Text(
+                  '书架',
+                  style: TextStyle(
+                    color: value.dark ? Colors.white : Colors.black,
+                  ),
+                ),
               ),
               onTap: () {
                 Navigator.of(context).popUntil(ModalRoute.withName('/'));
@@ -141,8 +147,7 @@ class _BookDetailState extends State<BookDetail> {
                             direction: Axis.horizontal,
                             allowHalfRating: true,
                             itemCount: 5,
-                            itemPadding:
-                            EdgeInsets.symmetric(horizontal: 4.0),
+                            itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
                             itemBuilder: (context, _) => Icon(
                               Icons.star,
                               color: Colors.amber,
@@ -184,8 +189,7 @@ class _BookDetailState extends State<BookDetail> {
                   padding: const EdgeInsets.only(left: 17.0, top: 5.0),
                   child: Text(
                     '简介',
-                    style:
-                    TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Padding(
@@ -201,22 +205,22 @@ class _BookDetailState extends State<BookDetail> {
                       ),
                       Center(
                           child: GestureDetector(
-                            child: Image.asset(
-                              maxLine <= 3
-                                  ? "images/more_info.png"
-                                  : "images/add_collapse.png",
-                              width: 30,
-                              height: 30,
-                              color: value.dark ? Colors.white : Colors.black,
-                            ),
-                            onTap: () {
-                              if (mounted) {
-                                setState(() {
-                                  maxLine = maxLine > 3 ? 3 : 100;
-                                });
-                              }
-                            },
-                          )
+                        child: Image.asset(
+                          maxLine <= 3
+                              ? "images/more_info.png"
+                              : "images/add_collapse.png",
+                          width: 30,
+                          height: 30,
+                          color: value.dark ? Colors.white : Colors.black,
+                        ),
+                        onTap: () {
+                          if (mounted) {
+                            setState(() {
+                              maxLine = maxLine > 3 ? 3 : 100;
+                            });
+                          }
+                        },
+                      )
 //                                child: IconButton(
 //                                  padding: EdgeInsets.all(0.0),
 //                                  icon: Icon(Icons.expand_more),
@@ -228,7 +232,7 @@ class _BookDetailState extends State<BookDetail> {
 //                                    }
 //                                  },
 //                                ),
-                      )
+                          )
                     ],
                   ),
                 ),
@@ -247,8 +251,7 @@ class _BookDetailState extends State<BookDetail> {
                   padding: const EdgeInsets.only(left: 17.0, top: 15.0),
                   child: new Text(
                     '目录',
-                    style:
-                    TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ),
                 ListTile(
@@ -284,150 +287,177 @@ class _BookDetailState extends State<BookDetail> {
                     );
                   },
                 ),
-
               ],
             ),
             Divider(),
             this.widget._bookInfo.SameAuthorBooks != null
-                ? Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(left: 17.0, top: 5.0),
-                  child: new Text(
-                    '${this.widget._bookInfo.Author}  还写过',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            )
-                : Container(),
-            this.widget. _bookInfo.SameAuthorBooks != null
-                ? Row(
-              children: [
-                Expanded(
-                    child: Container(
-                      padding: EdgeInsets.only(left: 10),
-                      height: 250,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, i) {
-                          return GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: <Widget>[
-                                Container(
-                                  padding: const EdgeInsets.only(
-                                      left: 10.0, top: 10.0),
-                                  child: PicWidget(
-                                    this.widget. _bookInfo.SameAuthorBooks[i].Img,
+                ? ListView.builder(
+                    shrinkWrap: true, //解决无限高度问题
+                    physics: NeverScrollableScrollPhysics(), //禁用滑动事件
+                    itemBuilder: (context, i) {
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          child: Row(
+                            children: <Widget>[
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: <Widget>[
+                                  Container(
+                                    padding: const EdgeInsets.only(
+                                        left: 10.0, top: 10.0),
+                                    child: PicWidget(
+                                      this
+                                          .widget
+                                          ._bookInfo
+                                          .SameAuthorBooks[i]
+                                          .Img,
+                                    ),
+                                  )
+                                ],
+                              ),
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.max,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                verticalDirection: VerticalDirection.down,
+                                // textDirection:,
+                                textBaseline: TextBaseline.alphabetic,
+
+                                children: <Widget>[
+                                  Container(
+                                      width:
+                                          ScreenUtil.getScreenW(context) - 120,
+                                      padding: const EdgeInsets.only(
+                                          left: 10.0, top: 10.0),
+                                      child: Text(
+                                        this
+                                            .widget
+                                            ._bookInfo
+                                            .SameAuthorBooks[i]
+                                            .Name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 18.0),
+                                      )),
+                                  Container(
+                                    padding: const EdgeInsets.only(
+                                        left: 10.0, top: 10.0),
+                                    child: Text(
+                                      this
+                                          .widget
+                                          ._bookInfo
+                                          .SameAuthorBooks[i]
+                                          .Author,
+                                      style: TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                                Container(
-                                  width: 97,
-                                  padding: const EdgeInsets.only(
-                                      left: 10.0, top: 10.0),
-                                  child: Text(
-                                    this.widget.  _bookInfo.SameAuthorBooks[i].Name,
-                                    maxLines: 2,
-                                    style: TextStyle(fontSize: 13.0),
-                                    textAlign: TextAlign.center,
+                                  Container(
+                                    width: ScreenUtil.getScreenW(context) - 120,
+                                    padding: const EdgeInsets.only(
+                                        left: 10.0, top: 10.0),
+                                    child: Text(
+                                        this
+                                            .widget
+                                            ._bookInfo
+                                            .SameAuthorBooks[i]
+                                            .LastChapter,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                            color: Colors.grey, fontSize: 11)),
                                   ),
-                                ),
-                              ],
-                            ),
-                            onTap: () async {
-                              String url = Common.detail +
-                                  '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
-                              Response future =
-                              await Util(context).http().get(url);
-                              var d = future.data['data'];
-                              BookInfo bookInfo = BookInfo.fromJson(d);
-                              Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          BookDetail(bookInfo)));
-                            },
-                          );
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        onTap: () async {
+                          String url = Common.detail +
+                              '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
+                          Response future = await Util(context).http().get(url);
+                          var d = future.data['data'];
+                          BookInfo bookInfo = BookInfo.fromJson(d);
+                          Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => BookDetail(bookInfo)));
                         },
-                        itemCount: this.widget._bookInfo.SameAuthorBooks.length,
-                      ),
-                    ))
-              ],
-            )
+                      );
+                    },
+                    itemCount: this.widget._bookInfo.SameAuthorBooks.length,
+                  )
                 : Container(),
           ],
         ),
-        bottomNavigationBar: Store.connect<ShelfModel>(
-            builder: (context, ShelfModel d, child) {
-              return BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                unselectedItemColor: value.dark ? Colors.white : null,
-                //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
-                items: [
-                  d.shelf.map((f) => f.Id).toList().contains(this.widget._bookInfo.Id)
-                      ? BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.clear,
+        bottomNavigationBar:
+            Store.connect<ShelfModel>(builder: (context, ShelfModel d, child) {
+          return BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            unselectedItemColor: value.dark ? Colors.white : null,
+            //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
+            items: [
+              d.shelf
+                      .map((f) => f.Id)
+                      .toList()
+                      .contains(this.widget._bookInfo.Id)
+                  ? BottomNavigationBarItem(
+                      icon: Icon(
+                        Icons.clear,
+                      ),
+                      label: '移除书架',
+                    )
+                  : BottomNavigationBarItem(
+                      icon: Icon(
+                        Icons.playlist_add,
+                      ),
+                      label: '加入书架',
                     ),
-                    label: '移除书架',
-                  )
-                      : BottomNavigationBarItem(
-                    icon: Icon(
-                      Icons.playlist_add,
-                    ),
-                    label: '加入书架',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: ImageIcon(
-                      AssetImage("images/read.png"),
-                    ),
-                    label: '立即阅读',
-                  ),
-                  // BottomNavigationBarItem(
-                  //   icon: Icon(
-                  //     Icons.cloud_download,
-                  //   ),
-                  //   label: '全本缓存',
-                  // ),
-                ],
+              BottomNavigationBarItem(
+                icon: ImageIcon(
+                  AssetImage("images/read.png"),
+                ),
+                label: '立即阅读',
+              ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(
+              //     Icons.cloud_download,
+              //   ),
+              //   label: '全本缓存',
+              // ),
+            ],
 
-                onTap: (int i) {
-                  switch (i) {
-                    case 0:
-                      {
-                        Store.value<ShelfModel>(context).modifyShelf(book);
-                      }
-                      break;
-                    case 1:
-                      {
-                        Routes.navigateTo(
-                          context,
-                          Routes.read,
-                          params: {
-                            'read': jsonEncode(book),
-                          },
-                        );
-                      }
-                      break;
-                  // case 2:
-                  //   {
-                  //     BotToast.showText(text: "开始下载...");
-                  //
-                  //     var value = Store.value<ReadModel>(context);
-                  //     value.book = _bookInfo as Book;
-                  //     value.book.UTime = _bookInfo.LastTime;
-                  //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
-                  //     value.downloadAll();
-                  //   }
-                  //   break;
+            onTap: (int i) {
+              switch (i) {
+                case 0:
+                  {
+                    Store.value<ShelfModel>(context).modifyShelf(book);
                   }
-                },
-              );
-            }));
+                  break;
+                case 1:
+                  {
+                    Routes.navigateTo(
+                      context,
+                      Routes.read,
+                      params: {
+                        'read': jsonEncode(book),
+                      },
+                    );
+                  }
+                  break;
+                // case 2:
+                //   {
+                //     BotToast.showText(text: "开始下载...");
+                //
+                //     var value = Store.value<ReadModel>(context);
+                //     value.book = _bookInfo as Book;
+                //     value.book.UTime = _bookInfo.LastTime;
+                //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
+                //     value.downloadAll();
+                //   }
+                //   break;
+              }
+            },
+          );
+        }));
   }
 }
