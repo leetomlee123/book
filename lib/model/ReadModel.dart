@@ -11,6 +11,7 @@ import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
+import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
@@ -56,7 +57,8 @@ class ReadModel with ChangeNotifier {
   //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/theme_3_bg.31237.png",
   //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme5_bg.85f0d.png",
   // ];
-
+  //缓存批量提交大小
+  int BATCH_NUM = 100;
   bool refresh = true;
 
   //显示上层 设置
@@ -371,7 +373,8 @@ class ReadModel with ChangeNotifier {
 
       if (r.chapterContent.isNotEmpty) {
         // SpUtil.putString(id, r.chapterContent);
-        DbHelper.instance.udpChapter(r.chapterContent, id);
+        var temp = [ChapterNode(r.chapterContent, id)];
+        DbHelper.instance.udpChapter(temp);
         chapters[idx].hasContent = 2;
       }
       // SpUtil.putString('${book.Id}chapters', jsonEncode(chapters));
@@ -380,7 +383,7 @@ class ReadModel with ChangeNotifier {
     }
     if (r.chapterContent.isEmpty) {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
-      r.pageOffsets = [(r.chapterContent.length-1).toString()];
+      r.pageOffsets = [(r.chapterContent.length - 1).toString()];
       return r;
     }
     if (isPage) {
@@ -752,7 +755,8 @@ class ReadModel with ChangeNotifier {
         await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
-      await DbHelper.instance.udpChapter(content, chapter.id);
+      var temp = [ChapterNode(content, chapter.id)];
+      await DbHelper.instance.udpChapter(temp);
       chapters[book.cur].hasContent = 2;
       curPage = await loadChapter(book.cur);
       fillAllContent();
@@ -769,16 +773,25 @@ class ReadModel with ChangeNotifier {
     if (chapters?.isEmpty ?? 0 == 0) {
       await getChapters();
     }
+    List<ChapterNode> cpNodes = [];
     for (var i = start; i < chapters.length; i++) {
       Chapter chapter = chapters[i];
       var id = chapter.id;
       if (chapter.hasContent != 2) {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
-          DbHelper.instance.udpChapter(content, id);
+          cpNodes.add(ChapterNode(content, id));
           chapters[i].hasContent = 2;
         }
       }
+      if (cpNodes.length % BATCH_NUM == 0) {
+        await DbHelper.instance.udpChapter(cpNodes);
+        cpNodes.clear();
+      }
+    }
+    if (cpNodes.isNotEmpty) {
+      await DbHelper.instance.udpChapter(cpNodes);
+      cpNodes.clear();
     }
     BotToast.showText(text: "${book?.Name ?? ""}下载完成");
   }

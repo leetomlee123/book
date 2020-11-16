@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
+import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/MRecords.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -310,8 +311,8 @@ class DbHelper {
   Future<BookTag> getBookProcess(String bookId, String name) async {
     var dbClient = await db1;
 
-    var list = await dbClient
-        .rawQuery("select cur,idx,name from $_tableName1 where book_id=?", [bookId]);
+    var list = await dbClient.rawQuery(
+        "select cur,idx,name from $_tableName1 where book_id=?", [bookId]);
     if (list.length == 0) {
       return BookTag(0, 0, name, 0.0);
     }
@@ -336,8 +337,9 @@ class DbHelper {
 
   Future<List<Chapter>> getChapters(String bookId) async {
     var dbClient = await db;
-    var list = await dbClient
-        .rawQuery("select hasContent,chapter_id,name from $_tableName where book_id=?", [bookId]);
+    var list = await dbClient.rawQuery(
+        "select hasContent,chapter_id,name from $_tableName where book_id=?",
+        [bookId]);
     List<Chapter> cps = [];
     for (var i in list) {
       cps.add(Chapter(i['hasContent'], i['chapter_id'], i['name']));
@@ -366,11 +368,16 @@ class DbHelper {
     return 2 == list[0]['hasContent'];
   }
 
-  Future<Null> udpChapter(String content, String cid) async {
+  Future<Null> udpChapter(List<ChapterNode> cpnodes) async {
     var dbClient = await db;
-    await dbClient.rawUpdate(
-        "update $_tableName set content=?,hasContent=2 where chapter_id=?",
-        [content, cid]);
+    var batch = dbClient.batch();
+    cpnodes.forEach((cpnode) {
+      batch.rawUpdate(
+          "update $_tableName set content=?,hasContent=2 where chapter_id=?",
+          [cpnode.content, cpnode.id]);
+    });
+
+    await batch.commit(noResult: true);
   }
 
   //  关闭
