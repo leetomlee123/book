@@ -103,7 +103,7 @@ class PicWidget extends StatelessWidget {
           ),
         ),
         errorWidget: (context, url, error) => Image.asset(
-          "images/nocover.jpg",
+          "images/bg.png",
           width: width,
           height: height,
         ),
