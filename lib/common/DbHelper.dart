@@ -311,7 +311,7 @@ class DbHelper {
     var dbClient = await db1;
 
     var list = await dbClient
-        .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
+        .rawQuery("select cur,idx,name from $_tableName1 where book_id=?", [bookId]);
     if (list.length == 0) {
       return BookTag(0, 0, name, 0.0);
     }
@@ -337,7 +337,7 @@ class DbHelper {
   Future<List<Chapter>> getChapters(String bookId) async {
     var dbClient = await db;
     var list = await dbClient
-        .rawQuery("select * from $_tableName where book_id=?", [bookId]);
+        .rawQuery("select hasContent,chapter_id,name from $_tableName where book_id=?", [bookId]);
     List<Chapter> cps = [];
     for (var i in list) {
       cps.add(Chapter(i['hasContent'], i['chapter_id'], i['name']));
