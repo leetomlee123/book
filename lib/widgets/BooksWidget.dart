@@ -284,10 +284,11 @@ class _BooksWidgetState extends State<BooksWidget> {
                       behavior: HitTestBehavior.opaque,
                       child: Container(
                         // color: Colors.red,
+                        margin: EdgeInsets.only(right: 20),
                         height: 115,
                         width: ScreenUtil.getScreenW(context),
                         child: Align(
-                          alignment: Alignment.topRight,
+                          alignment: Alignment.centerRight,
                           child: Image.asset(
                             'images/pick.png',
                             color: !_shelfModel.picks(i)

@@ -5,6 +5,7 @@ import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/MRecords.dart';
+import 'package:flustars/flustars.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -85,51 +86,63 @@ class DbHelper {
 
   // When creating the db, create the table
   void _onCreate(Database db, int version) async {
-    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "chapter_id TEXT,"
-        "name TEXT,"
-        "content TEXT,"
-        "book_id TEXT,"
-        "hasContent INTEGER)");
-    await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
-    await db
-        .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
+    if (!SpUtil.haveKey(_tableName)) {
+      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName("
+          "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+          "chapter_id TEXT,"
+          "name TEXT,"
+          "content TEXT,"
+          "book_id TEXT,"
+          "hasContent INTEGER)");
+      await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
+      await db
+          .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
+      SpUtil.putString(_tableName, "");
+    }
   }
 
   void _onCreate1(Database db, int version) async {
-    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName1("
-        "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-        "book_id TEXT,"
-        "name TEXT,"
-        "cname TEXT,"
-        "author TEXT,"
-        "utime TEXT,"
-        "img TEXT,"
-        "intro TEXT,"
-        "cur INTEGER,"
-        "newChapter INTEGER,"
-        "idx INTEGER,"
-        "lastChapter TEXT)");
-    await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
+    if (!SpUtil.haveKey(_tableName1)) {
+      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName1("
+          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
+          "book_id TEXT,"
+          "name TEXT,"
+          "cname TEXT,"
+          "author TEXT,"
+          "utime TEXT,"
+          "img TEXT,"
+          "intro TEXT,"
+          "cur INTEGER,"
+          "newChapter INTEGER,"
+          "idx INTEGER,"
+          "lastChapter TEXT)");
+      await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
+      SpUtil.putString(_tableName1, "");
+    }
   }
 
   void _onCreate2(Database db, int version) async {
-    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName2("
-        "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-        "cover TEXT,"
-        "name TEXT,"
-        "cid TEXT,"
-        "mcids TEXT,"
-        "cname TEXT)");
+    if (!SpUtil.haveKey(_tableName2)) {
+      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName2("
+          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
+          "cover TEXT,"
+          "name TEXT,"
+          "cid TEXT,"
+          "mcids TEXT,"
+          "cname TEXT)");
+      SpUtil.putString(_tableName2, "");
+    }
   }
 
   void _onCreate3(Database db, int version) async {
-    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName3("
-        "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-        "key TEXT,"
-        "content TEXT)");
-    await db.execute("CREATE INDEX key_idx ON $_tableName3 (key);");
+    if (!SpUtil.haveKey(_tableName3)) {
+      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName3("
+          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
+          "key TEXT,"
+          "content TEXT)");
+      await db.execute("CREATE INDEX key_idx ON $_tableName3 (key);");
+      SpUtil.putString(_tableName3, "");
+    }
   }
 
   Future<Null> addCords(String key, List<String> contents) async {
@@ -333,6 +346,13 @@ class DbHelper {
     }
 
     await batch.commit(noResult: true);
+  }
+
+  Future<int> getChaptersLen(String bookId) async {
+    var dbClient = await db;
+    var list = await dbClient.rawQuery(
+        "select count(*) as cnt from $_tableName where book_id=?", [bookId]);
+    return list[0]['cnt'];
   }
 
   Future<List<Chapter>> getChapters(String bookId) async {

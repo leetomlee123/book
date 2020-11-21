@@ -125,7 +125,6 @@ class ReadModel with ChangeNotifier {
           cur = int.parse(data);
         }
       }
-      // bookTag = BookTag(cur, 0, book.Name, 0.0);
       book.cur = cur;
       if (SpUtil.haveKey('${book.Id}chapters')) {
         chapters = await DbHelper.instance.getChapters(book.Id);

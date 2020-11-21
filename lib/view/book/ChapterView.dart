@@ -120,7 +120,7 @@ class _ChapterViewItem extends State<ChapterView> {
                   height: 5,
                 ),
                 Padding(
-                  padding: EdgeInsets.only(left: 5, right: 15),
+                  padding: EdgeInsets.only(left: 10, right: 15),
                   child: Row(
                     children: [
                       Text(
