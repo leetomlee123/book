@@ -133,7 +133,7 @@ class VideoDetailState extends State<VideoDetail> {
                           ],
                         ),
                         Wrap(
-                          runAlignment: WrapAlignment.spaceAround,
+                          runAlignment: WrapAlignment.start,
                           spacing: 10, //主轴上子控件的间距
                           runSpacing: 5, //交叉轴上子控件之间的间
                           children: mItems(data[1]),
@@ -209,12 +209,13 @@ class VideoDetailState extends State<VideoDetail> {
       Map map = Map.castFrom(value);
       wds.add(GestureDetector(
         child: Container(
+          margin: EdgeInsets.only(top: 8),
           child: Text(
             map.values.elementAt(0),
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
           ),
-          padding: EdgeInsets.symmetric(horizontal: 15),
+          padding: EdgeInsets.symmetric(horizontal: 30,vertical: 5),
           decoration: BoxDecoration(
             //灰色的一层边框
             borderRadius: BorderRadius.all(Radius.circular(25.0)),

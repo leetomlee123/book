@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/event/event.dart';
@@ -24,12 +26,13 @@ class Login extends StatelessWidget {
       BotToast.showText(text: data['msg']);
     } else {
       //收起键盘
-//        SpUtil.putString('email', data['data']['email']);
+      SpUtil.putString('email', data['data']['email']);
+      // SpUtil.putString('vip', data['data']['vip']);
 //        SpUtil.putString('pwd', pwd);
       SpUtil.putString('username', username);
       // SpUtil.putBool('login', true);
       SpUtil.putString("auth", data['data']['token']);
-      eventBus.fire(new SyncShelfEvent(""));
+      eventBus.fire(SyncShelfEvent(""));
 
       //书架同步
       var shelf2 = Store.value<ShelfModel>(context).shelf;

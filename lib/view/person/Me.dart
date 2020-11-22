@@ -21,10 +21,31 @@ class Me extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: PreferredSize(
+  PreferredSizeWidget _appBar(BuildContext context) {
+    if (SpUtil.haveKey("username")) {
+      return PreferredSize(
+          preferredSize: Size.fromHeight(170),
+          child: UserAccountsDrawerHeader(
+            accountEmail: Text(SpUtil.getString('email')),
+            accountName: Text(SpUtil.getString('username')),
+            currentAccountPicture: CircleAvatar(
+              backgroundImage: AssetImage("images/fu.png"),
+            ),
+            otherAccountsPictures: [
+              // CircleAvatar(
+              //   backgroundImage: AssetImage("images/vip.png"),
+              // )
+            ],
+            decoration: BoxDecoration(
+              //用一个BoxDecoration装饰器提供背景图片
+              image: DecorationImage(
+                fit: BoxFit.fill,
+                image: AssetImage('images/bg.png'),
+              ),
+            ),
+          ));
+    } else {
+      return PreferredSize(
         preferredSize: Size.fromHeight(100),
         child: Container(
           child: GestureDetector(
@@ -38,9 +59,7 @@ class Me extends StatelessWidget {
                     height: 80,
                     width: 80,
                     child: CircleAvatar(
-                      backgroundImage: AssetImage(SpUtil.haveKey("username")
-                          ? "images/fu.png"
-                          : "images/account.png"),
+                      backgroundImage: AssetImage("images/account.png"),
                     ),
                   ),
                   padding:
@@ -52,12 +71,9 @@ class Me extends StatelessWidget {
                 Center(
                   child: Padding(
                     child: Text(
-                      SpUtil.haveKey("username")
-                          ? SpUtil.getString('username')
-                          : "登陆/注册",
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18),
+                      "登陆/注册",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
                     padding: EdgeInsets.only(top: 30),
                   ),
@@ -72,9 +88,15 @@ class Me extends StatelessWidget {
               }
             },
           ),
-          
         ),
-      ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _appBar(context),
       body: Container(
         width: ScreenUtil.getScreenW(context),
         child: Padding(
