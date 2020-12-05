@@ -10,6 +10,11 @@ class OpenEvent {
 
   OpenEvent(this.name);
 }
+class PlayEvent {
+  String name;
+
+  PlayEvent(this.name);
+}
 
 class OpenChapters {
   String name;

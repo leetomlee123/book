@@ -164,7 +164,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             : LayoutBuilder(builder: (context, constraints) {
                                 return NotificationListener(
                                   onNotification: (ScrollNotification note) {
-                                    readModel.checkPosition(note.metrics.pixels); // 滚动位置。
+                                    readModel.checkPosition(
+                                        note.metrics.pixels); // 滚动位置。
                                   },
                                   child: ListView.builder(
                                     controller: readModel.listController,
@@ -188,6 +189,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                     )
                   : Container();
             })));
+  }
+
+  Widget _loadingPage() {
+    return Center(
+      child: Text("正在加载..."),
+    );
   }
 
   Widget reloadCurChapterWidget() {

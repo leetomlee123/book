@@ -6,6 +6,7 @@ import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/GBook.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -36,6 +37,7 @@ class LookVideo extends StatefulWidget {
 
 class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   ColorModel _colorModel;
+  int idx = 0;
   VideoPlayerController videoPlayerController;
   String source;
   ChewieController chewieController;
@@ -50,7 +52,13 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     _colorModel = Store.value<ColorModel>(context);
     WidgetsBinding.instance.addObserver(this);
     urlKey = this.widget.id;
-
+    eventBus.on<PlayEvent>().listen((openEvent) {
+      var v = this.widget.mcids[idx + 1];
+      Map map = Map.castFrom(v);
+      chewieController.exitFullScreen();
+      _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
+      chewieController.enterFullScreen();
+    });
     super.initState();
     getData();
   }
@@ -92,6 +100,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
               child: wds.isNotEmpty
                   ? Scaffold(
                       body: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Container(
                             height: ScreenUtil.getStatusBarH(context),
@@ -113,10 +122,15 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                                     ),
                                   )),
                                 ),
-                          SizedBox(
-                            height: 20,
+                          Container(
+                            padding:
+                                EdgeInsets.only(top: 20, bottom: 10, left: 10),
+                            child: Text(this.widget.name),
                           ),
                           cps,
+                          SizedBox(
+                            height: 10,
+                          ),
                           Expanded(
                             child: ListView(
                               shrinkWrap: true,
@@ -161,6 +175,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
         children: mItems(this.widget.mcids),
       ),
     );
+
     for (var i = 0; i < 2; i++) {
       List list = future.data[i];
       if (list.isNotEmpty) {
@@ -184,7 +199,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     }
   }
 
-  void _urlChange(url, name) async {
+  void _urlChange(url, name, {autoPlay = true, allowFullScreen = true}) async {
     saveRecord(videoPlayerController.value.position);
 
     if (videoPlayerController != null) {
@@ -217,9 +232,10 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           customControls: MyControls(name),
           videoPlayerController: videoPlayerController,
           aspectRatio: videoPlayerController.value.aspectRatio,
-          autoPlay: false,
+          autoPlay: autoPlay,
           allowedScreenSleep: false,
           looping: false,
+          allowFullScreen: allowFullScreen,
           placeholder: CachedNetworkImage(
               imageUrl:
                   'https://tva2.sinaimg.cn/large/007UW77jly1g5elwuwv4rj30sg0g0wfo.jpg'));
@@ -238,11 +254,13 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
 
   List<Widget> mItems(List<dynamic> list) {
     List<Widget> wds = [];
-    for (var value in list) {
-      Map map = Map.castFrom(value);
+    for (var i = 0; i < list.length; i++) {
+      Map map = Map.castFrom(list[i]);
+      if (map.keys.elementAt(0) == urlKey) {
+        idx = i;
+      }
       wds.add(GestureDetector(
           onTap: () {
-            print("log");
             var jsonEncode2 = jsonEncode(list);
             FunUtil.saveMoviesRecord(this.widget.cover, this.widget.name,
                 map.keys.elementAt(0), map.values.elementAt(0), jsonEncode2);
@@ -250,19 +268,28 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
             _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
           },
           child: Container(
-                   margin: EdgeInsets.only(top: 8),
+            margin: EdgeInsets.only(top: 8),
             child: Text(
               map.values.elementAt(0),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: map.keys.elementAt(0) == urlKey?(_colorModel.dark?Colors.white:_colorModel.theme.primaryColor):(_colorModel.dark?Colors.black:null)),
+              style: TextStyle(
+                  color: map.keys.elementAt(0) == urlKey
+                      ? (_colorModel.dark
+                          ? Colors.white
+                          : _colorModel.theme.primaryColor)
+                      : (_colorModel.dark ? Colors.black : null)),
             ),
-            padding: EdgeInsets.symmetric(horizontal: 20,vertical: 5),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
             decoration: BoxDecoration(
               //灰色的一层边框
               borderRadius: BorderRadius.all(Radius.circular(25.0)),
               border: Border.all(
-                  color: _colorModel.dark ? Colors.white : Colors.black,
+                  color: map.keys.elementAt(0) == urlKey
+                      ? (_colorModel.dark
+                          ? Colors.white
+                          : _colorModel.theme.primaryColor)
+                      : Colors.black,
                   width: 0.75),
 
               // color: data.dark ? Colors.white : Colors.black,

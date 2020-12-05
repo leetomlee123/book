@@ -96,9 +96,10 @@ class StateTabItem extends State<TabItem>
   List<List<GBook>> values = [];
   List<String> keys = [];
   ColorModel value;
-
+  ColorModel _colorModel;
   @override
   void initState() {
+    _colorModel = Store.value<ColorModel>(context);
     super.initState();
     getData();
   }
@@ -115,21 +116,20 @@ class StateTabItem extends State<TabItem>
           Row(
             children: <Widget>[
               Padding(
-                child: Store.connect<ColorModel>(
-                    builder: (context, ColorModel data, child) {
-                  return Container(
-                    width: 4,
-                    height: 20,
-                    color: data.dark
-                        ? data.theme.textTheme.body1.color
-                        : data.theme.primaryColor,
-                  );
-                }),
+                child: Container(
+                  width: 4,
+                  height: 20,
+                  color: _colorModel.dark
+                      ? Colors.white
+                      : _colorModel.theme.primaryColor,
+                ),
                 padding: EdgeInsets.only(left: 5.0, right: 3.0),
               ),
               Text(
                 title,
-                style: TextStyle(fontSize: 16.0),
+                style: TextStyle(
+                    fontSize: 16.0,
+                   ),
               ),
               Expanded(
                 child: Container(),
