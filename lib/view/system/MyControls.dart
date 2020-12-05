@@ -73,7 +73,9 @@ class _MyMaterialControlsState extends State<MyControls> {
               children: [
                 Column(
                   children: <Widget>[
-                    _buildHeader(context, this.widget.title),
+                    chewieController.isFullScreen
+                        ? _buildHeader(context, this.widget.title)
+                        : Container(),
                     _latestValue != null &&
                                 !_latestValue.isPlaying &&
                                 _latestValue.duration == null ||
@@ -91,7 +93,7 @@ class _MyMaterialControlsState extends State<MyControls> {
                   child: (_hideStuff && !chewieController.isFullScreen)
                       ? Container(
                           color: darkColor,
-                          height: 3,
+                          height: 0,
                           child: Row(
                             children: [_buildProgressBar()],
                           ),
@@ -182,9 +184,9 @@ class _MyMaterialControlsState extends State<MyControls> {
                   ))
                 : _buildPosition(iconColor),
             chewieController.isLive ? const SizedBox() : _buildProgressBar(),
-            chewieController.allowMuting
-                ? _buildMuteButton(controller)
-                : Container(),
+            // chewieController.allowMuting
+            //     ? _buildMuteButton(controller)
+            //     : Container(),
             chewieController.allowFullScreen
                 ? _buildExpandButton()
                 : Container(),
@@ -507,7 +509,7 @@ class _MyMaterialControlsState extends State<MyControls> {
             _startHideTimer();
           },
           colors: chewieController.materialProgressColors ??
-              new ChewieProgressColors(
+              ChewieProgressColors(
                 playedColor: _colorModel.theme.primaryColor,
                 handleColor: lightColor,
                 bufferedColor: Colors.white60,
