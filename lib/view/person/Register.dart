@@ -37,10 +37,10 @@ class _RegisterState extends State<Register> {
               TextFormField(
                 keyboardType: TextInputType.phone,
                 autofocus: false,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '账号',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -53,10 +53,10 @@ class _RegisterState extends State<Register> {
               TextFormField(
                 autofocus: false,
                 obscureText: true,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '密码',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -69,10 +69,10 @@ class _RegisterState extends State<Register> {
               TextFormField(
                 autofocus: false,
                 obscureText: true,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '重复密码',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -85,9 +85,9 @@ class _RegisterState extends State<Register> {
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
                 autofocus: false,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   hintText: '邮箱 找回密码的唯一凭证,请谨慎输入...',
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(

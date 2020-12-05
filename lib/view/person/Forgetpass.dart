@@ -39,10 +39,10 @@ class _ForgetPassState extends State<ForgetPass> {
               TextFormField(
                 keyboardType: TextInputType.phone,
                 autofocus: false,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '账号',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -54,11 +54,11 @@ class _ForgetPassState extends State<ForgetPass> {
               SizedBox(height: 8.0),
               TextFormField(
                 autofocus: false,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   hintText: '邮箱',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -71,10 +71,10 @@ class _ForgetPassState extends State<ForgetPass> {
               TextFormField(
                 autofocus: false,
                 obscureText: true,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '输入新密码',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
@@ -87,10 +87,10 @@ class _ForgetPassState extends State<ForgetPass> {
               TextFormField(
                 obscureText: true,
                 autofocus: false,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: '重复新密码',
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),

@@ -36,7 +36,11 @@ class _BookShelfState extends State<BookShelf>
                     // ),
                     leading: IconButton(
                       color: _colorModel.dark ? Colors.white : Colors.black,
-                      icon: Icon(Icons.person),
+                      icon: ImageIcon(
+                        AssetImage("images/account.png"),
+                        size: 32.0,
+                        color: _colorModel.dark ? Colors.white : Colors.black,
+                      ),
                       onPressed: () {
                         eventBus.fire(OpenEvent("p"));
                       },
@@ -52,7 +56,11 @@ class _BookShelfState extends State<BookShelf>
                     actions: <Widget>[
                       IconButton(
                         color: _colorModel.dark ? Colors.white : Colors.black,
-                        icon: Icon(Icons.search),
+                        icon: ImageIcon(
+                          AssetImage("images/search.png"),
+                          size: 20.0,
+                          color: _colorModel.dark ? Colors.white : Colors.black,
+                        ),
                         onPressed: () {
                           Routes.navigateTo(context, Routes.search,
                               params: {"type": "book", "name": ""});

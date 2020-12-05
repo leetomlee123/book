@@ -26,8 +26,14 @@ class Me extends StatelessWidget {
       return PreferredSize(
           preferredSize: Size.fromHeight(170),
           child: UserAccountsDrawerHeader(
-            accountEmail: Text(SpUtil.getString('email')??""),
-            accountName: Text(SpUtil.getString('username')??""),
+            accountEmail: Text(
+              SpUtil.getString('email') ?? "",
+              style: TextStyle(color: Colors.black),
+            ),
+            accountName: Text(
+              SpUtil.getString('username') ?? "",
+              style: TextStyle(color: Colors.black),
+            ),
             currentAccountPicture: CircleAvatar(
               backgroundImage: AssetImage("images/fu.png"),
             ),

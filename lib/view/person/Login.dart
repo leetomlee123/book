@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/event/event.dart';
@@ -69,9 +67,9 @@ class Login extends StatelessWidget {
               SizedBox(height: 48.0),
               TextFormField(
                 autofocus: false,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   hintText: '账号',
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
@@ -84,9 +82,9 @@ class Login extends StatelessWidget {
               TextFormField(
                 autofocus: false,
                 obscureText: true,
-                style: TextStyle(color: Colors.white),
+                // style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintStyle: TextStyle(color: Colors.white),
+                  // hintStyle: TextStyle(color: Colors.white),
                   hintText: '密码',
                   contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
@@ -116,7 +114,7 @@ class Login extends StatelessWidget {
                   FlatButton(
                     child: Text(
                       '忘记密码',
-                      style: TextStyle(color: Colors.white),
+                      // style: TextStyle(color: Colors.white),
                     ),
                     onPressed: () {
                       Routes.navigateTo(context, Routes.modifyPassword);
@@ -125,7 +123,7 @@ class Login extends StatelessWidget {
                   FlatButton(
                     child: Text(
                       '注册',
-                      style: TextStyle(color: Colors.white),
+                      // style: TextStyle(color: Colors.white),
                     ),
                     onPressed: () {
                       Routes.navigateTo(context, Routes.register);
