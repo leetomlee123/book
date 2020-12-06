@@ -70,15 +70,15 @@ class _VoiceDetailState extends State<VoiceDetailView>
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     saveRecord();
 
-    if (state == AppLifecycleState.inactive) {
-      if (_audioPlayer.state == AudioPlayerState.PLAYING) {
-        _audioPlayer.pause();
-      }
-    } else if (state == AppLifecycleState.resumed) {
-      if (_audioPlayer.state == AudioPlayerState.PAUSED) {
-        _audioPlayer.resume();
-      }
-    }
+    // if (state == AppLifecycleState.inactive) {
+    //   if (_audioPlayer.state == AudioPlayerState.PLAYING) {
+    //     _audioPlayer.pause();
+    //   }
+    // } else if (state == AppLifecycleState.resumed) {
+    //   if (_audioPlayer.state == AudioPlayerState.PAUSED) {
+    //     _audioPlayer.resume();
+    //   }
+    // }
   }
 
   init() async {
@@ -276,7 +276,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
                         ]);
                   }),
                   SizedBox(
-                    height: 20,
+                    height: 40,
                   ),
                   Store.connect<VoiceModel>(
                       builder: (context, VoiceModel model, child) {
@@ -302,6 +302,9 @@ class _VoiceDetailState extends State<VoiceDetailView>
                       ),
                     );
                   }),
+                  SizedBox(
+                    height: 20,
+                  ),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
                     child: Row(

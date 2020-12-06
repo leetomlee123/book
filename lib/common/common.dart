@@ -9,7 +9,7 @@ class Common {
 //
   static String domain = "http://23.91.100.230:8090/book/v1";
 //  static String domain = "https://newbook.leetomlee.xyz/v1";
-//  static String video_domain = "http://192.168.0.107:8082";
+//  static String video_domain = "http://192.168.0.111:8085";
   static String video_domain = "http://23.91.100.230:8090/movie";
 //  static String video_domain = "https://movie.leetomlee.xyz";
 
@@ -44,6 +44,9 @@ class Common {
 //  static String video_domain = "http://192.168.3.56:8082";
 
   static String index = video_domain + '/index';
+  static String voiceIndex = video_domain + '/voice/index';
+  static String voiceDetail = video_domain + '/voice/detail';
+  static String voiceUrl = video_domain + '/voice';
   static String m_detail = video_domain + '/movies';
   static String look_m = video_domain + '/movies/tv/';
   static String cache_index = "movie_cache_index";
