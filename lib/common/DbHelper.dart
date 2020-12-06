@@ -16,11 +16,13 @@ class DbHelper {
   final String _tableName1 = "books";
   final String _tableName2 = "movies";
   final String _tableName3 = "cord";
+  final String _tableName4 = "voice";
 
   static Database _db;
   static Database _db1;
   static Database _db2;
   static Database _db3;
+  static Database _db4;
   Future<Database> get db async {
     if (_db != null) {
       return _db;
@@ -48,6 +50,12 @@ class DbHelper {
     return _db3;
   }
 
+  Future<Database> get db4 async {
+    if (_db4 != null) return _db4;
+    _db4 = await _initDb4();
+    return _db4;
+  }
+
   //初始化数据库
   _initDb1() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
@@ -72,6 +80,15 @@ class DbHelper {
 
     String path = documentsDirectory.path + "/cord.db";
     var db = await openDatabase(path, version: 1, onCreate: _onCreate3);
+    return db;
+  }
+
+  //初始化数据库
+  _initDb4() async {
+    Directory documentsDirectory = await getApplicationDocumentsDirectory();
+
+    String path = documentsDirectory.path + "/voice.db";
+    var db = await openDatabase(path, version: 2, onCreate: _onCreate4);
     return db;
   }
 
@@ -142,6 +159,48 @@ class DbHelper {
           "content TEXT)");
       await db.execute("CREATE INDEX key_idx ON $_tableName3 (key);");
       SpUtil.putString(_tableName3, "");
+    }
+  }
+
+  void _onCreate4(Database db, int version) async {
+    if (!SpUtil.haveKey(_tableName4)) {
+      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName4("
+          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
+          "title TEXT,"
+          "cover TEXT,"
+          "author TEXT,"
+          "position INTEGER,"
+          "idx INTEGER,"
+          "key TEXT)");
+      await db.execute("CREATE INDEX key_idx ON $_tableName4 (key);");
+      SpUtil.putString(_tableName4, "");
+    }
+  }
+
+  Future<Map<String, int>> getVoiceRecord(String key) async {
+    var dbClient = await db4;
+    List list = await dbClient
+        .rawQuery("select * from $_tableName4 where key=?", [key]);
+    if (list.isEmpty) {
+      return {'idx': -1, 'position': 1};
+    } else {
+      return {'idx': list[0]['idx'] ?? 0, 'position': list[0]['position']};
+    }
+  }
+
+  Future<int> saveVoiceRecord(String key, String cover, String title,
+      String author, int position,int idx) async {
+    var dbClient = await db4;
+    var list = await dbClient.rawQuery(
+        "select count(*) as cnt from $_tableName4 where key=?", [key]);
+    int cnt = list[0]['cnt'];
+    if (cnt > 0) {
+      await dbClient.rawUpdate(
+          "update $_tableName4 set position=? where key=?", [position, key]);
+    } else {
+      await dbClient.rawInsert(
+          "insert into $_tableName4(title,key,cover,author,position,idx) values(?,?,?,?,?,?)",
+          [title, key, cover, author, position,idx]);
     }
   }
 

@@ -22,19 +22,17 @@ Book _$BookFromJson(Map<String, dynamic> json) {
       json['Desc'] as String,
       json['LastChapterId'] as String,
       json['LastChapter'] as String,
-      json['UTime'] as String)
-    ..cur = json['cur'] as int
-    ..index = json['index'] as int;
+      json['UTime'] as String);
 }
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
-      'cur': instance.cur,
-      'index': instance.index,
       'ChapterId': instance.ChapterId,
       'ChapterName': instance.ChapterName,
       'NewChapterCount': instance.NewChapterCount,
       'Id': instance.Id,
       'CId': instance.CId,
+      'cur': instance.cur,
+      'index': instance.index,
       'CName': instance.CName,
       'Name': instance.Name,
       'Author': instance.Author,

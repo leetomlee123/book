@@ -60,6 +60,9 @@ class Util {
       if (_buildContext != null) {
         Navigator.pop(_buildContext);
       }
+      // if (response.data['code'] != 200) {
+      //   BotToast.showText(text: response.data['msg']);
+      // }
       return response; // continue
     }, onError: (DioError e) async {
       // Do something with response error

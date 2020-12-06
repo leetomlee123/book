@@ -60,14 +60,19 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                 ),
                 elevation: 0,
                 actions: <Widget>[
-                  IconButton(
-                    color: value.dark ? Colors.white : Colors.black,
-                    icon: Icon(Icons.search),
-                    onPressed: () {
-                      Routes.navigateTo(context, Routes.search,
+                       IconButton(
+                        color: value.dark ? Colors.white : Colors.black,
+                        icon: ImageIcon(
+                          AssetImage("images/search.png"),
+                          size: 20.0,
+                          color: value.dark ? Colors.white : Colors.black,
+                        ),
+                        onPressed: () {
+                           Routes.navigateTo(context, Routes.search,
                           params: {"type": "movie", "name": ""});
-                    },
-                  )
+                        },
+                      ),
+
                 ],
               ),
               body: ListView(

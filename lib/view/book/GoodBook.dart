@@ -8,6 +8,7 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/Voice/Voice.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,9 @@ class StateGoodBook extends State<GoodBook>
     super.initState();
 
     tabs = [
+      Tab(
+        text: "听书",
+      ),
       Tab(
         text: "男生",
       ),
@@ -70,8 +74,7 @@ class StateGoodBook extends State<GoodBook>
           ),
           body: TabBarView(
             controller: controller,
-            children:
-                tabs.map((f) => TabItem(f.text == "男生" ? "1" : "2")).toList(),
+            children: [VoiceBook(), TabItem("1"), TabItem("2")],
           )),
     );
   }
@@ -128,8 +131,8 @@ class StateTabItem extends State<TabItem>
               Text(
                 title,
                 style: TextStyle(
-                    fontSize: 16.0,
-                   ),
+                  fontSize: 16.0,
+                ),
               ),
               Expanded(
                 child: Container(),

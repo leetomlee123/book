@@ -4,6 +4,7 @@ import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/main.dart';
+import 'package:book/view/Voice/VoiceDetailView.dart';
 import 'package:book/view/book/AllTagBook.dart';
 import 'package:book/view/book/BookDetail.dart';
 import 'package:book/view/book/ChapterView.dart';
@@ -32,7 +33,7 @@ var searchHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String type = (params['type'][0]);
   String name = (params['name'][0]);
-  return Search(type,name);
+  return Search(type, name);
 });
 var loginHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
@@ -71,8 +72,15 @@ var lookVideoHandler =
   String cover = (params['cover'][0]);
   List mcids = convert.jsonDecode(params['mcids'][0]);
 
-  return LookVideo(id, mcids, name,cover);
+  return LookVideo(id, mcids, name, cover);
 });
+var voiceDetailHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  String link = (params['link'][0]);
+
+  return VoiceDetailView(link);
+});
+
 var tagVideoHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String category = (params['category'][0]);
@@ -82,8 +90,6 @@ var tagVideoHandler =
 });
 var sortShelfHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-
-
   return SortShelf();
 });
 
