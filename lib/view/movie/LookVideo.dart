@@ -278,7 +278,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                       ? (_colorModel.dark
                           ? Colors.white
                           : _colorModel.theme.primaryColor)
-                      : (_colorModel.dark ? Colors.black : null)),
+                      : (_colorModel.dark ? Colors.white38 : null)),
             ),
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
             decoration: BoxDecoration(
@@ -289,7 +289,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                       ? (_colorModel.dark
                           ? Colors.white
                           : _colorModel.theme.primaryColor)
-                      : Colors.black,
+                      : (_colorModel.dark ? Colors.white38 : Colors.black),
                   width: 0.75),
 
               // color: data.dark ? Colors.white : Colors.black,

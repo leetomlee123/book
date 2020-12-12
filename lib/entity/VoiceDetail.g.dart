@@ -8,14 +8,14 @@ part of 'VoiceDetail.dart';
 
 VoiceDetail _$VoiceDetailFromJson(Map<String, dynamic> json) {
   return VoiceDetail(
-      json['author'] as String,
-      json['bookDesc'] as String,
+      json['author']??'',
+      json['bookDesc']??'',
       (json['chapters'] as List)
           ?.map((e) =>
               e == null ? null : DetailVO.fromJson(e as Map<String, dynamic>))
           ?.toList(),
-      json['title'] as String,
-        json['cover'] as String);
+      json['title']??'',
+        json['cover']??'');
 }
 
 Map<String, dynamic> _$VoiceDetailToJson(VoiceDetail instance) =>

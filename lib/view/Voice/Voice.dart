@@ -8,6 +8,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
 class VoiceBook extends StatefulWidget {
@@ -15,7 +16,7 @@ class VoiceBook extends StatefulWidget {
   _VoiceBookState createState() => _VoiceBookState();
 }
 
-class _VoiceBookState extends State<VoiceBook>  with WidgetsBindingObserver{
+class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
   List<VoiceIdx> _voiceIdxs = [];
   ColorModel _colorModel;
   @override
@@ -91,7 +92,7 @@ class _VoiceBookState extends State<VoiceBook>  with WidgetsBindingObserver{
                       trailing: Text(e.date),
                       onTap: () {
                         Routes.navigateTo(context, Routes.voiceDetail,
-                            params: {"link": e.link});
+                            params: {"link": e.link, "idx": "0"});
                       },
                     ))
                 .toList(),
@@ -102,11 +103,22 @@ class _VoiceBookState extends State<VoiceBook>  with WidgetsBindingObserver{
   }
 
   getData() async {
-    Response resp = await Util(context).http().get(Common.voiceIndex);
+    String k = "voice_idx";
+    if (SpUtil.haveKey(k)) {
+      List json = SpUtil.getObjectList(k);
+      for (var d in json) {
+        _voiceIdxs.add(VoiceIdx.fromJson(d));
+      }
+      if (mounted) {
+        setState(() {});
+      }
+    }
+    Response resp = await Util(null).http().get(Common.voiceIndex);
     List data = resp.data;
     for (var d in data) {
       _voiceIdxs.add(VoiceIdx.fromJson(d));
     }
+    SpUtil.putObjectList(k, data);
     if (mounted) {
       setState(() {});
     }

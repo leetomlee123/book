@@ -1,14 +1,15 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
+import 'package:book/service/CustomCacheManager.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
-import 'package:path_provider/path_provider.dart';
 
 class ColorModel with ChangeNotifier {
   BuildContext buildContext;
@@ -16,7 +17,7 @@ class ColorModel with ChangeNotifier {
   List<Color> skins = Colors.accents;
   String savePath = "";
   Map fonts = {
-    "默认字体": "",
+    "Roboto": "默认字体",
     "方正新楷体": "https://oss-asq-download.11222.cn/font/package/FZXKTK.TTF",
     "方正稚艺": "http://oss-asq-download.11222.cn/font/package/FZZHYK.TTF",
     "方正魏碑": "http://oss-asq-download.11222.cn/font/package/FZWBK.TTF",
@@ -26,10 +27,10 @@ class ColorModel with ChangeNotifier {
   };
   int idx = SpUtil.getInt('skin');
   ThemeData _theme;
-  String font = SpUtil.getString("fontName");
+  String font = SpUtil.getString("fontName", defValue: "Roboto");
 
   ThemeData get theme {
-    if (font != "") {
+    if (font != "Roboto" && font != "") {
       readFont(font);
     }
     if (SpUtil.haveKey("dark")) {
@@ -102,22 +103,21 @@ class ColorModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> readFont(String name) async {
-    var path = (await getApplicationDocumentsDirectory()).path +
-        "/font" +
-        "/" +
-        name +
-        '.TTF';
-    var fontLoader = FontLoader(name); //自定义名字
-    fontLoader.addFont(getCustomFont(path));
+  Future<void> readFont(String fontName) async {
+    FileInfo file =
+        await CustomCacheManager.instance.getFileFromCache(fontName);
+    var fontLoader = FontLoader(fontName);
+    Uint8List readAsBytes = file.file.readAsBytesSync();
+
+    fontLoader.addFont(Future.value(ByteData.view(readAsBytes.buffer)));
     await fontLoader.load();
   }
-
-  Future<ByteData> getCustomFont(String path) async {
-    File file = File(path);
-    var uint8list = await file.readAsBytes();
-
-    ByteData asByteData = uint8list.buffer.asByteData();
-    return Future.value(asByteData);
-  }
+//
+// Future<ByteData> getCustomFont(String path) async {
+//   File file = File(path);
+//   var uint8list = await file.readAsBytes();
+//
+//   ByteData asByteData = uint8list.buffer.asByteData();
+//   return Future.value(asByteData);
+// }
 }

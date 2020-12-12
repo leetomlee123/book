@@ -166,7 +166,7 @@ class ReadModel with ChangeNotifier {
 
   checkPosition(double offset) {
     if ((Load.Done == load) && (offset > (prePage.height + curPage.height))) {
-      print('准备下一章');
+      // print('准备下一章');
       nextChapter();
     }
   }
@@ -211,10 +211,10 @@ class ReadModel with ChangeNotifier {
       //   curve: Curves.bounceIn,
       // );
       listController.jumpTo(d);
-      print('load next ok');
+      // print('load next ok');
       ReadPage temp = await loadChapter(book.cur + 1);
       if (book.cur == tempCur) {
-        print('next init');
+        // print('next init');
         nextPage = temp;
         fillAllContent();
       }
@@ -233,11 +233,21 @@ class ReadModel with ChangeNotifier {
         return LoadingDialog();
       },
     );
-    await Future.wait([
-      loadChapter(idx - 1).then((value) => {prePage = value}),
-      loadChapter(idx).then((value) => {curPage = value}),
-      loadChapter(idx + 1).then((value) => {nextPage = value}),
-    ]);
+    await Future.wait<dynamic>(
+            [loadChapter(idx - 1), loadChapter(idx), loadChapter(idx + 1)])
+        .then((e) {
+      prePage = e[0];
+      curPage = e[1];
+      nextPage = e[2];
+      // print(e); //[true,true,false]
+    }).catchError((e) {
+      print(e);
+    });
+    // await Future.wait([
+    //   loadChapter(idx - 1).then((value) => {prePage = value}),
+    //   loadChapter(idx).then((value) => {curPage = value}),
+    //   loadChapter(idx + 1).then((value) => {nextPage = value}),
+    // ]);
     // prePage = await loadChapter(idx - 1);
     // curPage = await loadChapter(idx);
     // nextPage = await loadChapter(idx + 1);
@@ -288,10 +298,10 @@ class ReadModel with ChangeNotifier {
         nextPage = null;
         fillAllContent();
         pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
-        print('load next ok');
+        // print('load next ok');
         ReadPage temp = await loadChapter(book.cur + 1);
         if (book.cur == tempCur) {
-          print('next init');
+          // print('next init');
           nextPage = temp;
           fillAllContent();
         }
@@ -334,7 +344,7 @@ class ReadModel with ChangeNotifier {
 
     List data = response.data['data'];
     if (data == null) {
-      print("load cps ok");
+      // print("load cps ok");
       return;
     }
 
@@ -368,8 +378,8 @@ class ReadModel with ChangeNotifier {
     r.chapterName = chapters[idx].name;
     String id = chapters[idx].id;
     if (chapters[idx].hasContent != 2) {
-      r.chapterContent = await compute(requestDataWithCompute, id);
 
+      r.chapterContent = await compute(requestDataWithCompute, id);
       if (r.chapterContent.isNotEmpty) {
         // SpUtil.putString(id, r.chapterContent);
         var temp = [ChapterNode(r.chapterContent, id)];
@@ -406,6 +416,7 @@ class ReadModel with ChangeNotifier {
         r.height = ReaderPageAgent().getPageHeight(r.chapterContent, contentW);
       }
     }
+    print("xx $idx");
     return r;
   }
 
@@ -477,7 +488,7 @@ class ReadModel with ChangeNotifier {
             .http()
             .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
       }
-      print("保存成功");
+      // print("保存成功");
     }
   }
 
@@ -736,7 +747,7 @@ class ReadModel with ChangeNotifier {
 
     List data = response.data['data'];
     if (data == null) {
-      print("load cps ok");
+      // print("load cps ok");
       return;
     }
 
@@ -798,8 +809,10 @@ class ReadModel with ChangeNotifier {
   static Future<String> requestDataWithCompute(String id) async {
     var url = Common.bookContentUrl + '/$id';
     var client = new HttpClient();
+    // print('download $url');
     var request = await client.getUrl(Uri.parse(url));
     var response = await request.close();
+    // print('download $url ok');
     var responseBody = await response.transform(utf8.decoder).join();
     var dataList = await parseJson(responseBody);
     return dataList['data']['content'];

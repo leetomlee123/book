@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  flutter_cache_manager: ^2.0.0
   permission_handler: ^5.0.1+1
   flutter_rating_bar: ^3.0.1+1
   chewie: ^0.9.10
@@ -85,6 +86,11 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: fonts/iconfont.ttf
+
+  # fonts:
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf
@@ -98,3 +104,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+

@@ -5,6 +5,7 @@ import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/MRecords.dart';
+import 'package:book/entity/VoiceHs.dart';
 import 'package:flustars/flustars.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -23,6 +24,7 @@ class DbHelper {
   static Database _db2;
   static Database _db3;
   static Database _db4;
+
   Future<Database> get db async {
     if (_db != null) {
       return _db;
@@ -169,18 +171,20 @@ class DbHelper {
           "title TEXT,"
           "cover TEXT,"
           "author TEXT,"
+          "chapter TEXT,"
           "position INTEGER,"
           "idx INTEGER,"
+          "tm INTEGER,"
           "key TEXT)");
       await db.execute("CREATE INDEX key_idx ON $_tableName4 (key);");
       SpUtil.putString(_tableName4, "");
     }
   }
 
-  Future<Map<String, int>> getVoiceRecord(String key) async {
+  Future<Map<String, int>> getVoiceRecord(String key, int idx) async {
     var dbClient = await db4;
-    List list = await dbClient
-        .rawQuery("select * from $_tableName4 where key=?", [key]);
+    List list = await dbClient.rawQuery(
+        "select * from $_tableName4 where key=? and idx=?", [key, idx]);
     if (list.isEmpty) {
       return {'idx': -1, 'position': 1};
     } else {
@@ -188,19 +192,44 @@ class DbHelper {
     }
   }
 
+  Future<List<VocieHs>> voices() async {
+    List<VocieHs> data = [];
+    var dbClient = await db4;
+    List list = await dbClient.rawQuery(
+        "select title,author,cover,position,key,idx ,chapter from $_tableName4 order by tm desc ",
+        []);
+    list.forEach((e) {
+      //   VocieHs(this.title, this.cover, this.author, this.position, this.key,
+      // this.chapter,this.idx);
+      data.add(VocieHs(e['title'], e['cover'], e['author'], e['position'],
+          e['key'], e['chapter'], e['idx']));
+    });
+    return data;
+  }
+
   Future<int> saveVoiceRecord(String key, String cover, String title,
-      String author, int position,int idx) async {
+      String author, int position, int idx, String chapter) async {
     var dbClient = await db4;
     var list = await dbClient.rawQuery(
         "select count(*) as cnt from $_tableName4 where key=?", [key]);
     int cnt = list[0]['cnt'];
     if (cnt > 0) {
       await dbClient.rawUpdate(
-          "update $_tableName4 set position=? where key=?", [position, key]);
+          "update $_tableName4 set position=? , tm=? ,chapter=? ,idx=? where key=?",
+          [position, DateUtil.getNowDateMs(), chapter, idx, key]);
     } else {
       await dbClient.rawInsert(
-          "insert into $_tableName4(title,key,cover,author,position,idx) values(?,?,?,?,?,?)",
-          [title, key, cover, author, position,idx]);
+          "insert into $_tableName4(title,key,cover,author,position,idx,tm,chapter) values(?,?,?,?,?,?,?,?)",
+          [
+            title,
+            key,
+            cover,
+            author,
+            position,
+            idx,
+            DateUtil.getNowDateMs(),
+            chapter
+          ]);
     }
   }
 

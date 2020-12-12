@@ -11,6 +11,7 @@ import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/widgets/TextTest.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';

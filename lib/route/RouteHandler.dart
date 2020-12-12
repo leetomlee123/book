@@ -76,9 +76,11 @@ var lookVideoHandler =
 });
 var voiceDetailHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String link = (params['link'][0]);
+  String link = params['link'][0];
+  int idx = int.parse(params['idx'][0]);
+  // int position = params['position'][0];
 
-  return VoiceDetailView(link);
+  return VoiceDetailView(link, idx);
 });
 
 var tagVideoHandler =

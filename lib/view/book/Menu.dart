@@ -153,8 +153,8 @@ class _MenuState extends State<Menu> {
       decoration:
           BoxDecoration(color: _colorModel.dark ? Colors.black : Colors.white),
       height: 40,
-      width: 140,
-      margin: EdgeInsets.only(top: 15, bottom: 15),
+      width: Screen.width / 4,
+      padding: EdgeInsets.only(top: 18, bottom: 15),
       child: GestureDetector(
         onTap: func,
         child: Container(
@@ -295,32 +295,33 @@ class _MenuState extends State<Menu> {
                 SizedBox(
                   width: 10,
                 ),
-               Container(
-                    child: FlatButton(
-                      onPressed: () {
-                        Routes.navigateTo(
-                          context,
-                          Routes.fontSet,
-                        );
-                      },
-                      child: Row(
-                        children: [
-                          Text(
-                            '字体',
-                            style: TextStyle(
-                                color: _colorModel.dark
-                                    ? Colors.white
-                                    : Colors.black),
-                          ),
-                          Icon(Icons.arrow_forward_ios,size: 12,)
-                        ],
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.all(Radius.circular(20.0))),
+                Container(
+                  child: FlatButton(
+                    onPressed: () {
+                      Routes.navigateTo(
+                        context,
+                        Routes.fontSet,
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          '字体',
+                          style: TextStyle(
+                              color: _colorModel.dark
+                                  ? Colors.white
+                                  : Colors.black),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                        )
+                      ],
                     ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20.0))),
                   ),
-               
+                ),
               ],
             ),
           ),

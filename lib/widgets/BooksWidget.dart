@@ -225,11 +225,11 @@ class _BooksWidgetState extends State<BooksWidget> {
                       padding: const EdgeInsets.only(left: 10.0, top: 10.0),
                       child: Stack(
                         children: <Widget>[
-                          PicWidget(item.Img),
+                          PicWidget(item.Img,height: 115,width: 98,),
                           item.NewChapterCount == 1
                               ? Container(
                                   height: 115,
-                                  width: 97,
+                                  width: 98,
                                   child: Align(
                                     alignment: Alignment.topRight,
                                     child: Image.asset(
@@ -247,10 +247,11 @@ class _BooksWidgetState extends State<BooksWidget> {
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  
                   children: <Widget>[
                     Container(
                       width: ScreenUtil.getScreenW(context) - 115,
-                      padding: const EdgeInsets.only(left: 10.0, top: 8.0),
+                      padding: const EdgeInsets.only(left: 10.0, top: 5.0),
                       child: Text(
                         item.Name,
                         style: TextStyle(
@@ -258,7 +259,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 12.0),
+                      padding: const EdgeInsets.only(left: 10.0, top: 22.0),
                       child: Text(
                         item.LastChapter,
                         style: TextStyle(fontSize: 12),

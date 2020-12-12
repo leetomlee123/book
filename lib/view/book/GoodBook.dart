@@ -9,6 +9,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/Voice/Voice.dart';
+import 'package:book/view/voice/VoiceList.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,9 @@ class StateGoodBook extends State<GoodBook>
     super.initState();
 
     tabs = [
+      Tab(
+        text: "历史",
+      ),
       Tab(
         text: "听书",
       ),
@@ -60,9 +64,11 @@ class StateGoodBook extends State<GoodBook>
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             title: TabBar(
-              unselectedLabelColor: Colors.black38,
+              unselectedLabelColor:
+                  !value.dark ? Colors.black38 : Colors.white38,
               labelColor: value.dark ? Colors.white : Colors.black,
-              indicatorColor: Theme.of(context).primaryColor,
+              indicatorColor:
+                  value.dark ? Colors.white : Theme.of(context).primaryColor,
               indicatorSize: TabBarIndicatorSize.label,
               controller: controller,
               tabs: tabs,
@@ -74,7 +80,7 @@ class StateGoodBook extends State<GoodBook>
           ),
           body: TabBarView(
             controller: controller,
-            children: [VoiceBook(), TabItem("1"), TabItem("2")],
+            children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
           )),
     );
   }
