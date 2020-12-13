@@ -38,14 +38,19 @@ class _VoiceDetailState extends State<VoiceDetailView>
     if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
       if (this.widget.link != _voiceModel.link) {
         _voiceModel.link = widget.link;
-
+        _voiceModel.idx = widget?.idx??0;
         _voiceModel.init();
+
       }
     } else {
+      _voiceModel.idx = widget?.idx??0;
       _voiceModel.link = widget.link;
       _voiceModel.init();
     }
     _voiceModel.hasEntity = true;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
 //旋转
@@ -65,7 +70,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
-    _voiceModel.saveRecord();
+    await _voiceModel.saveRecord();
 
     // if (state == AppLifecycleState.inactive) {
     //   if (_audioPlayer.state == AudioPlayerState.PLAYING) {
@@ -79,14 +84,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
   }
 
   @override
-  void dispose() {
-    // voiceDetail = null;
-    // if (_voiceModel.link == link) {
-    _voiceModel.saveRecord();
-    // }
-    // _audioPlayer.dispose();
-    // _voiceModel.audioPlayer.dispose();
-    // controller.dispose();
+  void dispose() async {
     super.dispose();
   }
 
@@ -106,113 +104,118 @@ class _VoiceDetailState extends State<VoiceDetailView>
 
   @override
   Widget build(BuildContext context) {
-    return _voiceModel.voiceDetail == null
-        ? Scaffold()
-        : Scaffold(body: Store.connect<VoiceModel>(
-            builder: (context, VoiceModel model, child) {
-            return ListView(
-              shrinkWrap: true,
-              children: [
-                Column(
-                  children: [
-                    SizedBox(
-                      height: Screen.topSafeHeight,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        buildRotationTransition(),
-                      ],
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Column(
-                        children: [
-                          Text(
-                            _voiceModel.voiceDetail?.title ?? '',
-                            style: TextStyle(
-                                color: _colorModel.dark
-                                    ? Colors.white
-                                    : Colors.black,
-                                fontSize: 25),
-                          ),
-                          Text(
-                            _voiceModel.voiceDetail?.author ?? '',
-                            style: TextStyle(
-                                color: _colorModel.dark
-                                    ? Colors.white
-                                    : Colors.black,
-                                fontSize: 14),
-                          ),
-                          Text(
-                            _voiceModel.voiceDetail?.chapters[_voiceModel.idx]
-                                    .name ??
-                                '',
-                            style: TextStyle(
-                                color: _colorModel.dark
-                                    ? Colors.white
-                                    : Colors.black,
-                                fontSize: 14),
-                          ),
-                        ],
-                      )
-                    ]),
-                    SizedBox(
-                      height: 40,
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 15),
-                      child: Row(
+    return Store.connect<VoiceModel>(
+        builder: (context, VoiceModel model, child) {
+      return model.voiceDetail == null
+          ? Scaffold()
+          : Scaffold(body: Store.connect<VoiceModel>(
+              builder: (context, VoiceModel model, child) {
+              return ListView(
+                shrinkWrap: true,
+                children: [
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: Screen.topSafeHeight,
+                      ),
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(model.start),
-                          Expanded(
-                              child: Slider(
-                            value: model.position,
-                            max: model.len,
-                            min: 0.0,
-                            onChanged: (v) {
-                              _voiceModel.audioPlayer
-                                  .seek(Duration(milliseconds: v.floor()));
-                            },
-                            activeColor: _colorModel.dark
-                                ? Colors.white
-                                : _colorModel.theme.primaryColor,
-                          )),
-                          Text(model.end),
+                          buildRotationTransition(),
                         ],
                       ),
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _listCps(),
-                          _tap("btx", () {
-                            _voiceModel.changeUrl(-1);
-                          }),
-                          _tap(_voiceModel.stateImg, () async {
-                            _voiceModel.toggleState();
-                          }),
-                          _tap("btu", () {
-                            _voiceModel.changeUrl(1);
-                          }),
-                          _fast(),
-                        ],
+                      SizedBox(
+                        height: 20,
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }));
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Column(
+                              children: [
+                                Text(
+                                  _voiceModel.voiceDetail?.title ?? '',
+                                  style: TextStyle(
+                                      color: _colorModel.dark
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontSize: 25),
+                                ),
+                                Text(
+                                  _voiceModel.voiceDetail?.author ?? '',
+                                  style: TextStyle(
+                                      color: _colorModel.dark
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontSize: 14),
+                                ),
+                                Text(
+                                  _voiceModel.voiceDetail
+                                          ?.chapters[_voiceModel.idx].name ??
+                                      '',
+                                  style: TextStyle(
+                                      color: _colorModel.dark
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontSize: 14),
+                                ),
+                              ],
+                            )
+                          ]),
+                      SizedBox(
+                        height: 40,
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 15),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(model.start),
+                            Expanded(
+                                child: Slider(
+                              value: model.position,
+                              max: model.len,
+                              min: 0.0,
+                              onChanged: (v) {
+                                _voiceModel.audioPlayer
+                                    .seek(Duration(milliseconds: v.floor()));
+                              },
+                              activeColor: _colorModel.dark
+                                  ? Colors.white
+                                  : _colorModel.theme.primaryColor,
+                            )),
+                            Text(model.end),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Container(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _listCps(),
+                            _tap("btx", () {
+                              _voiceModel.changeUrl(-1);
+                            }),
+                            _tap(_voiceModel.stateImg, () async {
+                              _voiceModel.toggleState();
+                            }),
+                            _tap("btu", () {
+                              _voiceModel.changeUrl(1);
+                            }),
+                            _fast(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }));
+    });
   }
 
   Widget _listCps() {
@@ -238,14 +241,16 @@ class _VoiceDetailState extends State<VoiceDetailView>
               return Container(
                   child: ListView.builder(
                       scrollDirection: Axis.vertical,
-                      itemBuilder: (BuildContext context, int idx) {
+                      itemBuilder: (BuildContext context, int ix) {
                         return ListTile(
                           title: GestureDetector(
-                            child: Text(
-                                _voiceModel.voiceDetail.chapters[idx].name),
+                            child:
+                                Text(_voiceModel.voiceDetail.chapters[ix].name),
                             onTap: () {
-                              _voiceModel.changeUrl(idx, flag: false);
-                              Navigator.pop(context);
+                              if (_voiceModel.idx != ix) {
+                                _voiceModel.changeUrl(ix, flag: false);
+                                Navigator.pop(context);
+                              }
                             },
                           ),
                         );

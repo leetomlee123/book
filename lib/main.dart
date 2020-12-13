@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
@@ -23,7 +24,6 @@ import 'package:get_it/get_it.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (await Permission.storage.request().isGranted) {
@@ -67,7 +67,7 @@ class MainPage extends StatefulWidget {
   _MainPageState createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _tabIndex = 0;
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
@@ -102,6 +102,7 @@ class _MainPageState extends State<MainPage> {
       label: '听书',
     ),
   ];
+
   // imgIcon(String src, String title) {
   //   return BottomNavigationBarItem(
   //     icon: ImageIcon(
@@ -115,11 +116,12 @@ class _MainPageState extends State<MainPage> {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video(),VoiceBook()];
+  var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     eventBus.on<OpenEvent>().listen((openEvent) {
       if (openEvent.name == "m") {
         isMovie = true;
@@ -172,6 +174,11 @@ class _MainPageState extends State<MainPage> {
         data: model.theme,
       );
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    Store.value<VoiceModel>(context).saveHis();
   }
 
   void _pageChanged(int index) {

@@ -19,7 +19,7 @@ import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/system/FontSet.dart';
 import 'package:book/view/voice/CateVoices.dart';
-
+import 'package:book/view/voice/VoiceList.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
@@ -89,6 +89,12 @@ var voicesHandler =
   // int position = params['position'][0];
 
   return CateVoices(url);
+});
+var voiceListHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  // int position = params['position'][0];
+
+  return VoiceList();
 });
 
 var tagVideoHandler =

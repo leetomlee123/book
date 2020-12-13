@@ -57,11 +57,13 @@ class AllTagBook extends StatelessWidget {
     }
 
     return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-          data: data.theme,
-          child: Scaffold(
+        builder: (context, ColorModel data, child) =>  Scaffold(
+              // backgroundColor: Colors.transparent,
               appBar: AppBar(
-                title: Text(title),
+                backgroundColor: Colors.transparent,
+                title: Text(title,style: TextStyle(
+                  color: data.dark ? Colors.white : Colors.black,
+                ),),
                 centerTitle: true,
                 elevation: 0,
               ),
@@ -80,6 +82,6 @@ class AllTagBook extends StatelessWidget {
                   )
                 ],
               )),
-        ));
+        );
   }
 }

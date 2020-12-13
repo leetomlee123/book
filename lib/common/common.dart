@@ -47,6 +47,7 @@ class Common {
   static String voiceIndex = video_domain + '/voice/index';
   static String voiceDetail = video_domain + '/voice/detail';
   static String voiceMore = video_domain + '/voice/more';
+  static String voiceSearch = video_domain + '/voice/search';
   static String voiceUrl = video_domain + '/voice';
   static String m_detail = video_domain + '/movies';
   static String look_m = video_domain + '/movies/tv/';

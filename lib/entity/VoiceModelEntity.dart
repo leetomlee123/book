@@ -1,19 +1,17 @@
-import 'package:book/entity/VoiceDetail.dart';
-import 'package:flustars/flustars.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'VoiceModelEntity.g.dart';
+
+@JsonSerializable()
 class VoiceModelEntity {
-  bool hasEntity=false;
-  bool showMenu = false;
-  bool getAllTime = false;
-  VoiceDetail voiceDetail;
+  String cover;
+  String link;
+  int idx;
 
-  String link = '';
-  String url = '';
-  double fast = SpUtil.getDouble("voiceFast", defValue: 1.0);
-  double position = 0.1;
-  String start = "00:00";
-  String end = "00:00";
-  double len = 100.0;
-  String stateImg = "btw";
-  int idx = 0;
+  VoiceModelEntity(this.cover, this.link, this.idx);
+
+  factory VoiceModelEntity.fromJson(Map<String, dynamic> json) =>
+      _$VoiceModelEntityFromJson(json);
+
+  Map<String, dynamic> toJson() => _$VoiceModelEntityToJson(this);
 }

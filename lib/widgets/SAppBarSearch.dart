@@ -1,4 +1,7 @@
 import 'package:book/common/Screen.dart';
+import 'package:book/model/ColorModel.dart';
+import 'package:book/model/VoiceModel.dart';
+import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
 
 class SAppBarSearch extends StatefulWidget implements PreferredSizeWidget {
@@ -60,9 +63,10 @@ class SAppBarSearch extends StatefulWidget implements PreferredSizeWidget {
 class _SAppBarSearchState extends State<SAppBarSearch> {
   TextEditingController _controller;
   FocusNode _focusNode;
-
+  VoiceModel _voiceModel;
   @override
   void initState() {
+    _voiceModel = Store.value<VoiceModel>(context);
     _controller = widget.controller ?? TextEditingController();
     _focusNode = widget.focusNode ?? FocusNode();
     if (widget.value != null) _controller.text = widget.value;
@@ -71,6 +75,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
 
   // 清除输入框内容
   void _onClearInput() {
+    _voiceModel.setIsVoiceIdx(true);
     setState(() {
       _controller.clear();
     });
@@ -79,6 +84,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
 
   // 取消输入框编辑
   void _onCancelInput() {
+    _voiceModel.setIsVoiceIdx(true);
     setState(() {
       _controller.clear();
       _focusNode.unfocus();
@@ -131,6 +137,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
 
   @override
   Widget build(BuildContext context) {
+    ColorModel _colorModel = Store.value<ColorModel>(context);
     final ScaffoldState scaffold = Scaffold.of(context, nullOk: true);
     final ModalRoute<dynamic> parentRoute = ModalRoute.of(context);
     final bool canPop = parentRoute?.canPop ?? false;
@@ -140,67 +147,73 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
     if (!canPop && !hasDrawer && widget.leading == null) left = 5;
     if (_controller.text.isEmpty && widget.actions.isEmpty) right = 5;
     return AppBar(
-      backgroundColor: Colors.white,
+      // backgroundColor: !_colorModel.dark ? Colors.white : Colors.black,
+      backgroundColor: Colors.transparent,
       titleSpacing: 0,
+      elevation: 0,
       leading: widget.leading,
       centerTitle: true,
-      bottom: PreferredSize(
-        child: Column(
-          children: [
-            SizedBox(
-              height: Screen.topSafeHeight,
+      toolbarHeight: 80,
+      title: Column(
+        children: [
+          // SizedBox(
+          //   height: Screen.topSafeHeight,
+          // ),
+          Text(
+            "听书",
+            style: TextStyle(
+              color: _colorModel.dark ? Colors.white : Colors.black,
             ),
-            Container(
-              margin: EdgeInsets.only(right: right, left: left),
-              decoration: BoxDecoration(
-                color: Color(0xFFF2F2F2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: Icon(
-                      Icons.search,
-                      size: 22,
-                      color: Color(0xFF999999),
-                    ),
+          ),
+          Container(
+            margin: EdgeInsets.only(right: right, left: left),
+            decoration: BoxDecoration(
+              color: Color(0xFFF2F2F2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Icon(
+                    Icons.search,
+                    size: 22,
+                    color: Color(0xFF999999),
                   ),
-                  Expanded(
-                    child: TextField(
-                      autofocus: widget.autoFocus,
-                      focusNode: _focusNode,
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        isDense: true,
-                        hintText: widget.hintText ?? '请输入关键字',
-                        hintStyle: TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF999999),
-                        ),
-                      ),
-                      style: TextStyle(
+                ),
+                Expanded(
+                  child: TextField(
+                    autofocus: widget.autoFocus,
+                    focusNode: _focusNode,
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      isDense: true,
+                      hintText: widget.hintText ?? '请输入关键字',
+                      hintStyle: TextStyle(
                         fontSize: 15,
-                        color: Color(0xFF333333),
-                        height: 1.3,
+                        color: Color(0xFF999999),
                       ),
-                      textInputAction: TextInputAction.search,
-                      onTap: widget.onTap,
-                      onChanged: _onInputChanged,
-                      onSubmitted: widget.onSearch,
                     ),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF333333),
+                      height: 1.3,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onTap: widget.onTap,
+                    onChanged: _onInputChanged,
+                    onSubmitted: widget.onSearch,
                   ),
-                  _suffix(),
-                ],
-              ),
-            )
-          ],
-        ),
-        preferredSize: Size.fromHeight(40),
+                ),
+                _suffix(),
+              ],
+            ),
+          )
+        ],
       ),
-      actions: _actions(),
+      // actions: _actions(),
     );
   }
 }

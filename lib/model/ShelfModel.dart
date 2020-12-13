@@ -23,8 +23,11 @@ class ShelfModel with ChangeNotifier {
   bool sortShelf = false;
   DbHelper _dbHelper = DbHelper.instance;
   List<bool> _picks = [];
+
   ShelfModel();
+
   bool pickAllFlag = false;
+
   initPicks() {
     pickAllFlag = false;
     _picks = [];

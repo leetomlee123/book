@@ -3,7 +3,9 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/VoiceDetail.dart';
+import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceModelEntity.dart';
+import 'package:book/entity/VoiceMore.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -11,8 +13,52 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-class VoiceModel with ChangeNotifier, VoiceModelEntity {
-  AudioPlayer audioPlayer = AudioPlayer();
+class VoiceModel with ChangeNotifier {
+  String modelJsonKey = "Voice_History";
+  bool hasEntity = false;
+  bool isVoiceIdx = true;
+  List<VoiceMore> voiceMores = [];
+  bool showMenu = false;
+  bool getAllTime = false;
+  VoiceDetail voiceDetail;
+  List<VoiceIdx> voiceIdxs = [];
+  String link = '';
+  String url = '';
+  double fast = SpUtil.getDouble("voiceFast", defValue: 1.0);
+  double position = 0.1;
+  String start = "00:00";
+  String end = "00:00";
+  double len = 10000000000.0;
+  String stateImg = "btw";
+  int idx = 0;
+  AudioPlayer audioPlayer;
+
+  setIsVoiceIdx(bool x) {
+    isVoiceIdx = x;
+    notifyListeners();
+  }
+
+  showMenuFun(bool v) {
+    showMenu = v;
+    notifyListeners();
+  }
+
+  VoiceModel() {
+    if (audioPlayer == null) {
+      audioPlayer = AudioPlayer();
+      // audioPlayer.setReleaseMode(ReleaseMode.RELEASE);
+    }
+    print("init voiceModel");
+    if (SpUtil.haveKey(modelJsonKey)) {
+      hasEntity = true;
+      SpUtil.getObj(modelJsonKey, (v) {
+        VoiceModelEntity voiceModelEntity = VoiceModelEntity.fromJson(v);
+        voiceDetail = VoiceDetail("", "", null, "", voiceModelEntity.cover);
+        idx = voiceModelEntity.idx;
+        link = voiceModelEntity.link;
+      });
+    }
+  }
 
   init() async {
     Response resp =
@@ -47,6 +93,7 @@ class VoiceModel with ChangeNotifier, VoiceModelEntity {
   }
 
   changeUrl(int ix, {bool flag = true}) async {
+    int temp = 0;
     if (flag) {
       if (idx + ix < 0) {
         BotToast.showText(text: "已经是第一节");
@@ -57,26 +104,35 @@ class VoiceModel with ChangeNotifier, VoiceModelEntity {
         return;
       }
       audioPlayer.release();
-
-      setIdx(ix);
+//计算赋值
+      temp = idx + ix;
+      // setIdx(ix);
     } else {
       await saveRecord();
       audioPlayer.release();
-
-      setIdx1(ix);
+//全量赋值
+      if (ix < 0 || ix >= voiceDetail.chapters.length) {
+        return;
+      }
+      temp = ix;
+      // setIdx1(ix);
     }
 
-    var ux = voiceDetail.chapters[idx].link;
+    var ux = voiceDetail.chapters[temp].link;
 
     Response resp1 = await Util(null).http().get(Common.voiceUrl + "?url=$ux");
 
     url = resp1.data['url'];
-    initAudio(0);
+    int i = await initAudio(0);
+    if (i == 1) {
+      idx = temp;
+    }
+    notifyListeners();
   }
 
-  initAudio(int p) async {
+  Future<int> initAudio(int p) async {
     if (kIsWeb) {
-      return;
+      return -1;
     }
 
     int result = await audioPlayer.play(url,
@@ -87,25 +143,29 @@ class VoiceModel with ChangeNotifier, VoiceModelEntity {
 
       link = link;
       stateImg = 'btv';
+
+      // controller.forward();
+
+      audioPlayer.onDurationChanged.listen((Duration d) {
+        if (!getAllTime) {
+          len = d.inMilliseconds.toDouble();
+          end = DateUtil.formatDateMs(d.inMilliseconds, format: "mm:ss");
+          getAllTime = true;
+        }
+      });
+
+      audioPlayer.onAudioPositionChanged.listen((Duration p) {
+        change(p.inMilliseconds);
+      });
+      audioPlayer.onPlayerCompletion.listen((event) {
+        // controller.dispose();
+        // controller.didUnregisterListener();
+        changeUrl(1);
+      });
+      return 1;
+    } else {
+      return -1;
     }
-    // controller.forward();
-
-    audioPlayer.onDurationChanged.listen((Duration d) {
-      if (!getAllTime) {
-        len = d.inMilliseconds.toDouble();
-        end = DateUtil.formatDateMs(d.inMilliseconds, format: "mm:ss");
-        getAllTime = true;
-      }
-    });
-
-    audioPlayer.onAudioPositionChanged.listen((Duration p) {
-      change(p.inMilliseconds);
-    });
-    audioPlayer.onPlayerCompletion.listen((event) {
-      // controller.dispose();
-      // controller.didUnregisterListener();
-      changeUrl(1);
-    });
   }
 
   change(int p) {
@@ -115,6 +175,9 @@ class VoiceModel with ChangeNotifier, VoiceModelEntity {
   }
 
   toggleState() async {
+    if (url == "" || (voiceDetail?.chapters?.isEmpty ?? true)) {
+      await init();
+    }
     if (stateImg == "btw") {
       audioPlayer.resume();
       setStateImg("btv");
@@ -170,10 +233,46 @@ class VoiceModel with ChangeNotifier, VoiceModelEntity {
     notifyListeners();
   }
 
+  getSearch(var k) async {
+    voiceMores = [];
+    Response resp = await Util(null).http().get(Common.voiceSearch + "?key=$k");
+    List data = resp.data;
+    for (var d in data) {
+      voiceMores.add(VoiceMore.fromJson(d));
+    }
+    isVoiceIdx = false;
+    notifyListeners();
+  }
+
+  getData() async {
+    String k = "voice_idx";
+    if (SpUtil.haveKey(k)) {
+      List json = SpUtil.getObjectList(k);
+      for (var d in json) {
+        voiceIdxs.add(VoiceIdx.fromJson(d));
+      }
+    }
+    Response resp = await Util(null).http().get(Common.voiceIndex);
+    List data = resp.data;
+    for (var d in data) {
+      voiceIdxs.add(VoiceIdx.fromJson(d));
+    }
+    notifyListeners();
+
+    SpUtil.putObjectList(k, data);
+  }
+
   @override
   void dispose() {
     audioPlayer.dispose();
-
+    saveHis();
     super.dispose();
+  }
+
+  saveHis() async {
+    print("save voice model data");
+    await saveRecord();
+    SpUtil.putObject(
+        modelJsonKey, VoiceModelEntity(voiceDetail.cover, link, idx).toJson());
   }
 }

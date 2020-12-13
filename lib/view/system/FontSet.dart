@@ -1,13 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:book/common/LoadDialog.dart';
-import 'package:book/common/net.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -38,7 +35,13 @@ class StateFontSet extends State<FontSet> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('阅读字体'),
+        backgroundColor: Colors.transparent,
+        title: Text(
+          "字体",
+          style: TextStyle(
+            color: _colorModel.dark ? Colors.white : Colors.black,
+          ),
+        ),
         elevation: 0,
         centerTitle: true,
       ),
@@ -146,41 +149,41 @@ class StateFontSet extends State<FontSet> {
     return await CustomCacheManager.instanceFont.getFileFromCache(key);
   }
 
-  // Future<bool> isDirectoryExist(String path) async {
-  //   File file = File(path);
-  //   return await file.exists();
-  // }
+// Future<bool> isDirectoryExist(String path) async {
+//   File file = File(path);
+//   return await file.exists();
+// }
 
-  // Future<void> createDirectory(String path) async {
-  //   Directory directory = Directory(path);
-  //   directory.create();
-  // }
+// Future<void> createDirectory(String path) async {
+//   Directory directory = Directory(path);
+//   directory.create();
+// }
 
-  // Future<void> download(String name, String url) async {
-  //   bool exist = await isDirectoryExist(_fontPath); //判定目录是否存在 - 不存在就创建
-  //   if (!exist) {
-  //     await createDirectory(_fontPath);
-  //   }
-  //   var path = _fontPath + "/" + name + '.TTF';
-  //   var bool2 = await isDirectoryExist(path);
-  //   if (bool2) {
-  //     print("已存在");
-  //     return;
-  //   }
-  //   showGeneralDialog(
-  //     context: context,
-  //     barrierLabel: "",
-  //     barrierDismissible: true,
-  //     transitionDuration: Duration(milliseconds: 300),
-  //     pageBuilder: (BuildContext context, Animation animation,
-  //         Animation secondaryAnimation) {
-  //       return LoadingDialog();
-  //     },
-  //   );
-  //   await Util(null).http().download(url, path);
-  //   Navigator.pop(context);
-  //   SpUtil.putString(name, "1");
+// Future<void> download(String name, String url) async {
+//   bool exist = await isDirectoryExist(_fontPath); //判定目录是否存在 - 不存在就创建
+//   if (!exist) {
+//     await createDirectory(_fontPath);
+//   }
+//   var path = _fontPath + "/" + name + '.TTF';
+//   var bool2 = await isDirectoryExist(path);
+//   if (bool2) {
+//     print("已存在");
+//     return;
+//   }
+//   showGeneralDialog(
+//     context: context,
+//     barrierLabel: "",
+//     barrierDismissible: true,
+//     transitionDuration: Duration(milliseconds: 300),
+//     pageBuilder: (BuildContext context, Animation animation,
+//         Animation secondaryAnimation) {
+//       return LoadingDialog();
+//     },
+//   );
+//   await Util(null).http().download(url, path);
+//   Navigator.pop(context);
+//   SpUtil.putString(name, "1");
 
-  //   BotToast.showText(text: "$name 字体下载完成");
-  // }
+//   BotToast.showText(text: "$name 字体下载完成");
+// }
 }
