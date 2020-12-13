@@ -1,20 +1,9 @@
-import 'dart:io';
-
 import 'package:audioplayers/audioplayers.dart';
-import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
-import 'package:book/entity/VoiceDetail.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/VoiceModel.dart';
-import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class VoiceDetailView extends StatefulWidget {
@@ -31,164 +20,52 @@ class VoiceDetailView extends StatefulWidget {
 class _VoiceDetailState extends State<VoiceDetailView>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   ColorModel _colorModel;
-
-  // AnimationController controller;
-  // VoiceDetail _voiceDetail;
   VoiceModel _voiceModel;
-  double position = 0.1;
-  String start = "00:00";
-  String end = "00:00";
-
-  double len = 1000000.0;
   List<double> fasts = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5];
-  String link = '';
-  String url = '';
-  bool getAllTime = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // controller = AnimationController(
-    //     duration: const Duration(seconds: 100), vsync: this);
-    // var widgetsBinding = WidgetsBinding.instance;
-    // widgetsBinding.addPostFrameCallback((callback) async {
+
     _colorModel = Store.value<ColorModel>(context);
     _voiceModel = Store.value<VoiceModel>(context);
-    // _voiceModel.audioPlayer.stop();
-    //   _voiceModel.init(this.widget.link);
-    // });
-    if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
-      if (this.widget.link != _voiceModel.link) {
-        init();
-      }
-    } else {
-      init();
-    }
-  }
 
-  init() async {
-    Response resp = await Util(null)
-        .http()
-        .get(Common.voiceDetail + "?key=${this.widget.link}");
-    var data = resp.data;
-    _voiceModel.voiceDetail = VoiceDetail.fromJson(data);
-    link = this.widget.link;
-
-    Map<String, int> x =
-        await DbHelper().getVoiceRecord(this.widget.link, _voiceModel.idx);
-
-    if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
-      saveRecord();
+    if (_voiceModel.voiceDetail == null &&
+        (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING)) {
       _voiceModel.audioPlayer.release();
     }
-    print('get link ${this.widget.link}');
+    if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
+      if (this.widget.link != _voiceModel.link) {
+        _voiceModel.link = widget.link;
 
-    _voiceModel.setFast(SpUtil.getDouble("voice_fast") ?? 1.0);
-
-    _voiceModel.setIdx1(x['idx'] == -1 ? 0 : x['idx']);
-
-    Response resp1 = await Util(null).http().get(Common.voiceUrl +
-        "?url=${_voiceModel.voiceDetail.chapters[_voiceModel.idx].link}");
-
-    url = resp1.data['url'];
-    int p = 0;
-    if (_voiceModel.idx >= 0) {
-      p = x['position'];
-      _voiceModel.position = p.toDouble();
-    }
-    if(mounted){
-      setState(() {
-        
-      });
-    }
-    initAudio(p);
-  }
-
-  initAudio(int p) async {
-    if (kIsWeb) {
-      return;
-    }
-
-    int result = await _voiceModel.audioPlayer
-        .play(url, position: Duration(milliseconds: p), stayAwake: true);
-    _voiceModel.audioPlayer.setPlaybackRate(playbackRate: _voiceModel.fast);
-    if (result == 1) {
-      print("success");
-
-      _voiceModel.link = link;
-      _voiceModel.stateImg = 'btv';
-    }
-    // controller.forward();
-
-    _voiceModel.audioPlayer.onDurationChanged.listen((Duration d) {
-      if (!getAllTime) {
-        len = d.inMilliseconds.toDouble();
-        _voiceModel.len = len;
-        end = DateUtil.formatDateMs(d.inMilliseconds, format: "mm:ss");
-        _voiceModel.end = end;
-        getAllTime = true;
+        _voiceModel.init();
       }
-    });
-
-    _voiceModel.audioPlayer.onAudioPositionChanged.listen((Duration p) {
-      _voiceModel.change(p.inMilliseconds);
-    });
-    _voiceModel.audioPlayer.onPlayerCompletion.listen((event) {
-      // controller.dispose();
-      // controller.didUnregisterListener();
-      changeUrl(1);
-    });
+    } else {
+      _voiceModel.link = widget.link;
+      _voiceModel.init();
+    }
+    _voiceModel.hasEntity = true;
   }
 
 //旋转
   Widget buildRotationTransition() {
     return Center(
-      child: _voiceModel.voiceDetail.cover.isEmpty
-          ? Container(
-              width: 160,
-              height: 220,
-              decoration: BoxDecoration(
-                  // color: Colors.green,
-                  // borderRadius: BorderRadius.circular(150),
-                  // 圆形图片
-                  image: DecorationImage(
-                      image: AssetImage("images/nocover.jpg"),
-                      fit: BoxFit.cover)),
-            )
-          : Container(
-              width: 160,
-              height: 220,
-              decoration: BoxDecoration(
-                  // color: Colors.green,
-                  // borderRadius: BorderRadius.circular(150),
-                  // 圆形图片
-                  image: DecorationImage(
-                      image: CachedNetworkImageProvider(
-                          _voiceModel.voiceDetail.cover),
-                      fit: BoxFit.cover)),
-            ),
-    );
-  }
-
-  saveRecord() async {
-    int position = await _voiceModel?.audioPlayer?.getCurrentPosition() ?? 0;
-    print(
-        "save ${_voiceModel.voiceDetail?.title} position is $position key is ${_voiceModel.link} idx is ${_voiceModel.idx}");
-    DbHelper().saveVoiceRecord(
-        _voiceModel.link,
-        _voiceModel.voiceDetail?.cover ?? '',
-        _voiceModel.voiceDetail?.title ?? '',
-        _voiceModel.voiceDetail?.author ?? '',
-        _voiceModel.position.toInt() ?? 0,
-        _voiceModel.idx,
-        _voiceModel.voiceDetail.chapters[_voiceModel.idx].name);
-    // DbHelper().voices();
+        child: Container(
+      width: 160,
+      height: 220,
+      decoration: BoxDecoration(
+          image: DecorationImage(
+              image: _voiceModel.voiceDetail.cover.isEmpty
+                  ? AssetImage("images/nocover.jpg")
+                  : CachedNetworkImageProvider(_voiceModel.voiceDetail.cover),
+              fit: BoxFit.cover)),
+    ));
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
-    saveRecord();
+    _voiceModel.saveRecord();
 
     // if (state == AppLifecycleState.inactive) {
     //   if (_audioPlayer.state == AudioPlayerState.PLAYING) {
@@ -205,40 +82,12 @@ class _VoiceDetailState extends State<VoiceDetailView>
   void dispose() {
     // voiceDetail = null;
     // if (_voiceModel.link == link) {
-    saveRecord();
+    _voiceModel.saveRecord();
     // }
     // _audioPlayer.dispose();
     // _voiceModel.audioPlayer.dispose();
     // controller.dispose();
     super.dispose();
-  }
-
-  changeUrl(int idx, {bool flag = true}) async {
-    if (flag) {
-      if (_voiceModel.idx + idx < 0) {
-        BotToast.showText(text: "已经是第一节");
-        return;
-      }
-      if (_voiceModel.idx + idx >= _voiceModel.voiceDetail.chapters.length) {
-        BotToast.showText(text: "已经是最后一节");
-        return;
-      }
-      _voiceModel.audioPlayer.release();
-
-      _voiceModel.setIdx(idx);
-    } else {
-      saveRecord();
-      _voiceModel.audioPlayer.release();
-
-      _voiceModel.setIdx1(idx);
-    }
-
-    var ux = _voiceModel.voiceDetail.chapters[_voiceModel.idx].link;
-
-    Response resp1 = await Util(null).http().get(Common.voiceUrl + "?url=$ux");
-
-    url = resp1.data['url'];
-    initAudio(0);
   }
 
   Widget _tap(img, func) {
@@ -347,22 +196,13 @@ class _VoiceDetailState extends State<VoiceDetailView>
                         children: [
                           _listCps(),
                           _tap("btx", () {
-                            changeUrl(-1);
+                            _voiceModel.changeUrl(-1);
                           }),
                           _tap(_voiceModel.stateImg, () async {
-                            if (_voiceModel.stateImg == "btw") {
-                              _voiceModel.audioPlayer.resume();
-                              _voiceModel.setStateImg("btv");
-                              print("stop");
-                            } else {
-                              print("restart");
-                              await saveRecord();
-                              _voiceModel.audioPlayer.pause();
-                              _voiceModel.setStateImg("btw");
-                            }
+                            _voiceModel.toggleState();
                           }),
                           _tap("btu", () {
-                            changeUrl(1);
+                            _voiceModel.changeUrl(1);
                           }),
                           _fast(),
                         ],
@@ -404,7 +244,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
                             child: Text(
                                 _voiceModel.voiceDetail.chapters[idx].name),
                             onTap: () {
-                              changeUrl(idx, flag: false);
+                              _voiceModel.changeUrl(idx, flag: false);
                               Navigator.pop(context);
                             },
                           ),

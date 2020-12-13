@@ -1,15 +1,11 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceOV.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/system/AnimationImages.dart';
 import 'package:book/view/voice/VoiceDance.dart';
-import 'package:book/view/voice/VoiceSearch.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +18,7 @@ class VoiceBook extends StatefulWidget {
 class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
   List<VoiceIdx> _voiceIdxs = [];
   ColorModel _colorModel;
+
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
@@ -32,30 +29,17 @@ class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: Text(
-            '听书',
-            style: TextStyle(
-              color: _colorModel.dark ? Colors.white : Colors.black,
-            ),
-          ),
-          centerTitle: true,
-          // actions: <Widget>[
-          //   IconButton(
-          //     color: _colorModel.dark ? Colors.white : Colors.black,
-          //     icon: ImageIcon(
-          //       AssetImage("images/search.png"),
-          //       size: 20.0,
-          //       color: _colorModel.dark ? Colors.white : Colors.black,
-          //     ),
-          //     onPressed: () {
-          //       showSearch(context: context, delegate: searchBarDelegate());
-          //     },
-          //   ),
-          // ]
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        title: Text("听书",style: TextStyle( color: _colorModel.dark ? Colors.white : Colors.black,),),
+        centerTitle: true,
       ),
+      // appBar: PreferredSize(
+      //   child: SAppBarSearch(),
+      //   preferredSize: Size.fromHeight(100),
+      // ),
       body: Stack(
         children: [
           Container(

@@ -3,6 +3,7 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/VoiceDetail.dart';
+import 'package:book/entity/VoiceModelEntity.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -10,21 +11,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-class VoiceModel with ChangeNotifier {
-  VoiceDetail voiceDetail;
+class VoiceModel with ChangeNotifier, VoiceModelEntity {
   AudioPlayer audioPlayer = AudioPlayer();
-  bool showMenu = false;
-  bool getAllTime = false;
-
-  String link = '';
-  String url = '';
-  double fast = SpUtil.getDouble("voiceFast", defValue: 1.0);
-  double position = 0.1;
-  String start = "00:00";
-  String end = "00:00";
-  double len = 100000000.0;
-  String stateImg = "btw";
-  int idx = 0;
 
   init() async {
     Response resp =
