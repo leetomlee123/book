@@ -197,10 +197,10 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
           GridView(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.all(5.0),
+            padding: EdgeInsets.all(10.0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                mainAxisSpacing: 1.0,
+                mainAxisSpacing: 20.0,
                 crossAxisSpacing: 10.0,
                 childAspectRatio: 0.7),
             children: bks.map((i) => img(i)).toList(),

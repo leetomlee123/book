@@ -105,7 +105,7 @@ class ColorModel with ChangeNotifier {
 
   Future<void> readFont(String fontName) async {
     FileInfo file =
-        await CustomCacheManager.instance.getFileFromCache(fontName);
+        await CustomCacheManager.instanceFont.getFileFromCache(fontName);
     var fontLoader = FontLoader(fontName);
     Uint8List readAsBytes = file.file.readAsBytesSync();
 

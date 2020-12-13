@@ -1,4 +1,3 @@
-import 'package:audioplayers/audio_cache.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:book/entity/VoiceDetail.dart';
 import 'package:flustars/flustars.dart';
@@ -8,13 +7,11 @@ import 'package:flutter/material.dart';
 
 class VoiceModel with ChangeNotifier {
   VoiceDetail voiceDetail;
-  AudioCache audioCache = AudioCache();
   AudioPlayer audioPlayer = AudioPlayer();
-  bool showMenu = false;
 
   String link = '';
   String url = '';
-  double fast = 1.0;
+  double fast = SpUtil.getDouble("voiceFast", defValue: 1.0);
   double position = 0.1;
   String start = "00:00";
   String end = "00:00";
@@ -44,6 +41,7 @@ class VoiceModel with ChangeNotifier {
   }
 
   setFast(double f) {
+    SpUtil.putDouble("voiceFast", f);
     fast = f;
     notifyListeners();
   }

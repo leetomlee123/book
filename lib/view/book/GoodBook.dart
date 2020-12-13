@@ -30,12 +30,12 @@ class StateGoodBook extends State<GoodBook>
     super.initState();
 
     tabs = [
-      Tab(
-        text: "历史",
-      ),
-      Tab(
-        text: "听书",
-      ),
+      // Tab(
+      //   text: "历史",
+      // ),
+      // Tab(
+      //   text: "听书",
+      // ),
       Tab(
         text: "男生",
       ),
@@ -80,7 +80,8 @@ class StateGoodBook extends State<GoodBook>
           ),
           body: TabBarView(
             controller: controller,
-            children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
+            children: [TabItem("1"), TabItem("2")],
+            // children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
           )),
     );
   }

@@ -1,12 +1,14 @@
-import 'dart:convert';
-
+import 'package:audioplayers/audioplayers.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceOV.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/system/AnimationImages.dart';
+import 'package:book/view/voice/VoiceSearch.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -19,19 +21,81 @@ class VoiceBook extends StatefulWidget {
 class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
   List<VoiceIdx> _voiceIdxs = [];
   ColorModel _colorModel;
+  VoiceModel _voiceModel;
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
+    _voiceModel = Store.value<VoiceModel>(context);
     super.initState();
     getData();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: ListView(
-          children:
-              _voiceIdxs.map((e) => item(e.cate, e.link, e.voices)).toList()),
+    return Scaffold(
+      appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            '听书',
+            style: TextStyle(
+              color: _colorModel.dark ? Colors.white : Colors.black,
+            ),
+          ),
+          centerTitle: true,
+          actions: <Widget>[
+            IconButton(
+              color: _colorModel.dark ? Colors.white : Colors.black,
+              icon: ImageIcon(
+                AssetImage("images/search.png"),
+                size: 20.0,
+                color: _colorModel.dark ? Colors.white : Colors.black,
+              ),
+              onPressed: () {
+                showSearch(context: context, delegate: searchBarDelegate());
+              },
+            ),
+          ]),
+      body: Stack(
+        children: [
+          Container(
+            child: ListView(
+                children: _voiceIdxs
+                    .map((e) => item(e.cate, e.link, e.voices))
+                    .toList()),
+          ),
+          Store.connect<VoiceModel>(
+              builder: (context, VoiceModel model, child) {
+            return Align(
+                alignment: Alignment(-0.9, 0.7),
+                child: InkWell(
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(25.0)),
+                      color: Colors.white,
+                      // border: Border.all(
+                      //   width: 1,
+                      //   color: _colorModel.dark ? Colors.white10 : Colors.black,
+                      // )
+                    ),
+                    child: (model.audioPlayer.state !=
+                            AudioPlayerState.PLAYING)
+                        ? Image(image: AssetImage("images/bp1.png"))
+                        : AnimationImages(),
+                    width: 45,
+                    height: 45,
+                  ),
+                  onTap: () {
+                    Routes.navigateTo(context, Routes.voiceDetail, params: {
+                      "link": model.link,
+                      "idx": model.idx
+                    });
+                  },
+                ));
+          })
+        ],
+      ),
     );
   }
 
@@ -79,8 +143,8 @@ class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
                   ],
                 ),
                 onTap: () {
-                  Routes.navigateTo(context, Routes.allTagBook,
-                      params: {"title": title, "bks": jsonEncode(bks)});
+                  Routes.navigateTo(context, Routes.voices,
+                      params: {"url": link});
                 },
               )
             ],

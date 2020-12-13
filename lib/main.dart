@@ -11,6 +11,7 @@ import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/view/voice/Voice.dart';
 import 'package:book/widgets/TextTest.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:fluro/fluro.dart';
@@ -75,45 +76,46 @@ class _MainPageState extends State<MainPage> {
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/book_shelf.png"),
-        size: 26,
+        size: 30,
       ),
       label: '书架',
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/good.png"),
-        size: 26,
+        size: 30,
       ),
       label: '精选',
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/video.png"),
-        size: 26,
+        size: 30,
       ),
       label: '美剧',
     ),
-    // BottomNavigationBarItem(
-    //   icon: ImageIcon(
-    //     AssetImage("images/video.png"),
-    //   ),
-    //   label: '美剧',
-    // ),
-  ];
-  imgIcon(String src, String title) {
-    return BottomNavigationBarItem(
+    BottomNavigationBarItem(
       icon: ImageIcon(
-        AssetImage(src),
-        size: 25,
+        AssetImage("images/listen.png"),
+        size: 30,
       ),
-      label: title,
-    );
-  }
+      label: '听书',
+    ),
+  ];
+  // imgIcon(String src, String title) {
+  //   return BottomNavigationBarItem(
+  //     icon: ImageIcon(
+  //       AssetImage(src),
+  //       size: 30,
+  //     ),
+  //     label: title,
+  //   );
+  // }
 
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video()];
+  var _pages = [BookShelf(), GoodBook(), Video(),VoiceBook()];
 
   @override
   void initState() {

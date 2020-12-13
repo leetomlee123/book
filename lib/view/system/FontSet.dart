@@ -102,7 +102,7 @@ class StateFontSet extends State<FontSet> {
                 onTap: () async {
                   if (fileInfo == null && fontName != "Roboto") {
                     BotToast.showLoading();
-                    FileInfo fileInfo = await CustomCacheManager.instance
+                    FileInfo fileInfo = await CustomCacheManager.instanceFont
                         .downloadFile(fontUrl, key: fontName);
                     BotToast.cleanAll();
                     print("下载");
@@ -110,7 +110,7 @@ class StateFontSet extends State<FontSet> {
                     if (fontName == "Roboto") {
                       _colorModel.setFontFamily("Roboto");
                     } else {
-                      File file = await CustomCacheManager.instance
+                      File file = await CustomCacheManager.instanceFont
                           .getSingleFile(fontUrl, key: fontName);
                       var fontLoader = FontLoader(fontName);
                       Uint8List readAsBytes = file.readAsBytesSync();
@@ -143,7 +143,7 @@ class StateFontSet extends State<FontSet> {
   }
 
   Future<FileInfo> getFileInfo(String key) async {
-    return await CustomCacheManager.instance.getFileFromCache(key);
+    return await CustomCacheManager.instanceFont.getFileFromCache(key);
   }
 
   // Future<bool> isDirectoryExist(String path) async {

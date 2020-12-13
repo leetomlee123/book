@@ -1,13 +1,24 @@
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class CustomCacheManager {
-  static const key = 'customCacheKey';
-  static CacheManager instance = CacheManager(
+  static const fontKey = 'fontCacheKey';
+  static const voiceKey = 'voiceKey';
+  static CacheManager instanceFont = CacheManager(
     Config(
-      key,
+      fontKey,
       stalePeriod: const Duration(days: 1000),
       maxNrOfCacheObjects: 20,
-      repo: JsonCacheInfoRepository(databaseName: key),
+      repo: JsonCacheInfoRepository(databaseName: fontKey),
+      // fileSystem: IOFileSystem(key),
+      fileService: HttpFileService(),
+    ),
+  );
+  static CacheManager instanceVoice = CacheManager(
+    Config(
+      voiceKey,
+      stalePeriod: const Duration(days: 7),
+      maxNrOfCacheObjects: 20,
+      repo: JsonCacheInfoRepository(databaseName: voiceKey),
       // fileSystem: IOFileSystem(key),
       fileService: HttpFileService(),
     ),

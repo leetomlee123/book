@@ -8,6 +8,7 @@ import 'package:book/common/net.dart';
 import 'package:book/entity/VoiceDetail.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/VoiceModel.dart';
+import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -64,18 +65,6 @@ class _VoiceDetailState extends State<VoiceDetailView>
     } else {
       init();
     }
-
-    //动画开始、结束、向前移动或向后移动时会调用StatusListener
-    // controller.addStatusListener((status) {
-    //   if (status == AnimationStatus.completed) {
-    //     // controller.forward();
-    //     // print("status is completed");
-    //     //重置起点
-    //     controller.reset();
-    //     //开启
-    //     controller.forward();
-    //   }
-    // });
   }
 
   init() async {
@@ -91,7 +80,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
 
     if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
       saveRecord();
-      _voiceModel.audioPlayer.stop();
+      _voiceModel.audioPlayer.release();
     }
     print('get link ${this.widget.link}');
 
@@ -108,6 +97,11 @@ class _VoiceDetailState extends State<VoiceDetailView>
       p = x['position'];
       _voiceModel.position = p.toDouble();
     }
+    if(mounted){
+      setState(() {
+        
+      });
+    }
     initAudio(p);
   }
 
@@ -115,16 +109,9 @@ class _VoiceDetailState extends State<VoiceDetailView>
     if (kIsWeb) {
       return;
     }
-    if (Platform.isIOS) {
-      if (_voiceModel.audioCache.fixedPlayer != null) {
-        _voiceModel.audioCache.fixedPlayer.startHeadlessService();
-      }
-      _voiceModel.audioPlayer.startHeadlessService();
-    }
-    int result = await _voiceModel.audioPlayer.play(
-      url,
-      position: Duration(milliseconds: p),
-    );
+
+    int result = await _voiceModel.audioPlayer
+        .play(url, position: Duration(milliseconds: p), stayAwake: true);
     _voiceModel.audioPlayer.setPlaybackRate(playbackRate: _voiceModel.fast);
     if (result == 1) {
       print("success");
@@ -133,9 +120,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
       _voiceModel.stateImg = 'btv';
     }
     // controller.forward();
-    if (mounted) {
-      setState(() {});
-    }
+
     _voiceModel.audioPlayer.onDurationChanged.listen((Duration d) {
       if (!getAllTime) {
         len = d.inMilliseconds.toDouble();
@@ -238,9 +223,13 @@ class _VoiceDetailState extends State<VoiceDetailView>
         BotToast.showText(text: "已经是最后一节");
         return;
       }
+      _voiceModel.audioPlayer.release();
+
       _voiceModel.setIdx(idx);
     } else {
       saveRecord();
+      _voiceModel.audioPlayer.release();
+
       _voiceModel.setIdx1(idx);
     }
 

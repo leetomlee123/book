@@ -68,7 +68,11 @@ class _BookShelfState extends State<BookShelf>
                       ),
                       IconButton(
                         color: _colorModel.dark ? Colors.white : Colors.black,
-                        icon: Icon(Icons.more_vert),
+                        icon: ImageIcon(
+                          AssetImage("images/more_vert.png"),
+                          size: 32.0,
+                          color: _colorModel.dark ? Colors.white : Colors.black,
+                        ),
                         onPressed: () async {
                           String shelfModelName =
                               shelfModel.model ? "列表模式" : "封面模式";
