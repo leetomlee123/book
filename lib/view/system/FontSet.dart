@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:book/common/LoadDialog.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
@@ -104,11 +105,19 @@ class StateFontSet extends State<FontSet> {
                 ),
                 onTap: () async {
                   if (fileInfo == null && fontName != "Roboto") {
-                    BotToast.showLoading();
+                    showGeneralDialog(
+                      context: context,
+                      barrierLabel: "",
+                      barrierDismissible: true,
+                      transitionDuration: Duration(milliseconds: 300),
+                      pageBuilder: (BuildContext context, Animation animation,
+                          Animation secondaryAnimation) {
+                        return LoadingDialog();
+                      },
+                    );
                     FileInfo fileInfo = await CustomCacheManager.instanceFont
                         .downloadFile(fontUrl, key: fontName);
-                    BotToast.cleanAll();
-                    print("下载");
+                    Navigator.pop(context);
                   } else {
                     if (fontName == "Roboto") {
                       _colorModel.setFontFamily("Roboto");
