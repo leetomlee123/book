@@ -6,6 +6,7 @@ import 'package:book/entity/VoiceDetail.dart';
 import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceModelEntity.dart';
 import 'package:book/entity/VoiceMore.dart';
+import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -134,13 +135,13 @@ class VoiceModel with ChangeNotifier {
     if (kIsWeb) {
       return -1;
     }
-
+    audioPlayer.release();
     int result = await audioPlayer.play(url,
         position: Duration(milliseconds: p), stayAwake: true);
     audioPlayer.setPlaybackRate(playbackRate: fast);
     if (result == 1) {
       print("success");
-
+      eventBus.fire(RollEvent("1"));
       link = link;
       stateImg = 'btv';
 
@@ -157,9 +158,9 @@ class VoiceModel with ChangeNotifier {
       audioPlayer.onAudioPositionChanged.listen((Duration p) {
         change(p.inMilliseconds);
       });
+
       audioPlayer.onPlayerCompletion.listen((event) {
-        // controller.dispose();
-        // controller.didUnregisterListener();
+        print("next***********************");
         changeUrl(1);
       });
       return 1;
@@ -175,33 +176,40 @@ class VoiceModel with ChangeNotifier {
   }
 
   toggleState() async {
-    if (url == "" || (voiceDetail?.chapters?.isEmpty ?? true)) {
-      await init();
-    }
     if (stateImg == "btw") {
-      audioPlayer.resume();
-      setStateImg("btv");
-      print("stop");
+      saveRecord();
+      if (url == "" || (voiceDetail?.chapters?.isEmpty ?? true)) {
+        await init();
+      } else {
+        audioPlayer.resume();
+        print("restart");
+        eventBus.fire(RollEvent("1"));
+        setStateImg("btv");
+      }
     } else {
-      print("restart");
+      print("stop");
+
       await saveRecord();
       audioPlayer.pause();
+      eventBus.fire(RollEvent("0"));
       setStateImg("btw");
     }
   }
 
   saveRecord() async {
-    int position = await audioPlayer?.getCurrentPosition() ?? 0;
-    print(
-        "save ${voiceDetail?.title} position is $position key is ${link} idx is ${idx}");
-    DbHelper().saveVoiceRecord(
-        link,
-        voiceDetail?.cover ?? '',
-        voiceDetail?.title ?? '',
-        voiceDetail?.author ?? '',
-        position.toInt() ?? 0,
-        idx,
-        voiceDetail.chapters[idx].name);
+    if (audioPlayer != null) {
+      int position = await audioPlayer?.getCurrentPosition() ?? 0;
+      print(
+          "save ${voiceDetail?.title} position is $position key is ${link} idx is ${idx}");
+      DbHelper().saveVoiceRecord(
+          link,
+          voiceDetail?.cover ?? '',
+          voiceDetail?.title ?? '',
+          voiceDetail?.author ?? '',
+          position.toInt() ?? 0,
+          idx,
+          voiceDetail.chapters[idx].name);
+    }
     // DbHelper().voices();
   }
 
@@ -270,7 +278,6 @@ class VoiceModel with ChangeNotifier {
   }
 
   saveHis() async {
-    print("save voice model data");
     await saveRecord();
     SpUtil.putObject(
         modelJsonKey, VoiceModelEntity(voiceDetail.cover, link, idx).toJson());

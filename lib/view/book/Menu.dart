@@ -104,7 +104,7 @@ class _MenuState extends State<Menu> {
 
   Widget chapterSilde() {
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 15.0),
+        padding: EdgeInsets.symmetric(horizontal: 15.0,vertical: 5.0),
         child: Row(
           children: <Widget>[
             GestureDetector(

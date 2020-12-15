@@ -5,11 +5,17 @@ EventBus eventBus = new EventBus();
 
 class AddEvent {}
 
+class RollEvent {
+  String roll;
+  RollEvent(this.roll);
+}
+
 class OpenEvent {
   String name;
 
   OpenEvent(this.name);
 }
+
 class PlayEvent {
   String name;
 

@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:book/common/PicWidget.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/VoiceModel.dart';
@@ -38,12 +39,11 @@ class _VoiceDetailState extends State<VoiceDetailView>
     if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
       if (this.widget.link != _voiceModel.link) {
         _voiceModel.link = widget.link;
-        _voiceModel.idx = widget?.idx??0;
+        _voiceModel.idx = widget?.idx ?? 0;
         _voiceModel.init();
-
       }
     } else {
-      _voiceModel.idx = widget?.idx??0;
+      _voiceModel.idx = widget?.idx ?? 0;
       _voiceModel.link = widget.link;
       _voiceModel.init();
     }
@@ -57,15 +57,17 @@ class _VoiceDetailState extends State<VoiceDetailView>
   Widget buildRotationTransition() {
     return Center(
         child: Container(
-      width: 160,
-      height: 220,
-      decoration: BoxDecoration(
-          image: DecorationImage(
-              image: _voiceModel.voiceDetail.cover.isEmpty
-                  ? AssetImage("images/nocover.jpg")
-                  : CachedNetworkImageProvider(_voiceModel.voiceDetail.cover),
-              fit: BoxFit.cover)),
-    ));
+          width: 160,
+          height: 220,
+          child: PicWidget(_voiceModel.voiceDetail.cover,width: 160,height: 220,),
+          decoration: BoxDecoration(
+              image: DecorationImage(
+                  image: _voiceModel.voiceDetail.cover.isEmpty
+                      ? AssetImage("images/nocover.jpg")
+                      : CachedNetworkImageProvider(
+                      _voiceModel.voiceDetail.cover),
+                  fit: BoxFit.cover)),
+        ));
   }
 
   @override
@@ -106,116 +108,117 @@ class _VoiceDetailState extends State<VoiceDetailView>
   Widget build(BuildContext context) {
     return Store.connect<VoiceModel>(
         builder: (context, VoiceModel model, child) {
-      return model.voiceDetail == null
-          ? Scaffold()
-          : Scaffold(body: Store.connect<VoiceModel>(
+          return model.voiceDetail == null
+              ? Scaffold()
+              : Scaffold(body: Store.connect<VoiceModel>(
               builder: (context, VoiceModel model, child) {
-              return ListView(
-                shrinkWrap: true,
-                children: [
-                  Column(
-                    children: [
-                      SizedBox(
-                        height: Screen.topSafeHeight,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          buildRotationTransition(),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Row(
+                return ListView(
+                  shrinkWrap: true,
+                  children: [
+                    Column(
+                      children: [
+                        SizedBox(
+                          height: Screen.topSafeHeight,
+                        ),
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Column(
-                              children: [
-                                Text(
-                                  _voiceModel.voiceDetail?.title ?? '',
-                                  style: TextStyle(
-                                      color: _colorModel.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 25),
-                                ),
-                                Text(
-                                  _voiceModel.voiceDetail?.author ?? '',
-                                  style: TextStyle(
-                                      color: _colorModel.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 14),
-                                ),
-                                Text(
-                                  _voiceModel.voiceDetail
-                                          ?.chapters[_voiceModel.idx].name ??
-                                      '',
-                                  style: TextStyle(
-                                      color: _colorModel.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 14),
-                                ),
-                              ],
-                            )
-                          ]),
-                      SizedBox(
-                        height: 40,
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(model.start),
-                            Expanded(
-                                child: Slider(
-                              value: model.position,
-                              max: model.len,
-                              min: 0.0,
-                              onChanged: (v) {
-                                _voiceModel.audioPlayer
-                                    .seek(Duration(milliseconds: v.floor()));
-                              },
-                              activeColor: _colorModel.dark
-                                  ? Colors.white
-                                  : _colorModel.theme.primaryColor,
-                            )),
-                            Text(model.end),
+                            buildRotationTransition(),
                           ],
                         ),
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _listCps(),
-                            _tap("btx", () {
-                              _voiceModel.changeUrl(-1);
-                            }),
-                            _tap(_voiceModel.stateImg, () async {
-                              _voiceModel.toggleState();
-                            }),
-                            _tap("btu", () {
-                              _voiceModel.changeUrl(1);
-                            }),
-                            _fast(),
-                          ],
+                        SizedBox(
+                          height: 20,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }));
-    });
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    _voiceModel.voiceDetail?.title ?? '',
+                                    style: TextStyle(
+                                        color: _colorModel.dark
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontSize: 25),
+                                  ),
+                                  Text(
+                                    _voiceModel.voiceDetail?.author ?? '',
+                                    style: TextStyle(
+                                        color: _colorModel.dark
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontSize: 14),
+                                  ),
+                                  Text(
+                                    _voiceModel.voiceDetail
+                                        ?.chapters[_voiceModel.idx].name ??
+                                        '',
+                                    style: TextStyle(
+                                        color: _colorModel.dark
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontSize: 14),
+                                  ),
+                                ],
+                              )
+                            ]),
+                        SizedBox(
+                          height: 40,
+                        ),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 15),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(model.start),
+                              Expanded(
+                                  child: Slider(
+                                    value: model.position,
+                                    max: model.len,
+                                    min: 0.0,
+                                    onChanged: (v) {
+                                      _voiceModel.audioPlayer
+                                          .seek(
+                                          Duration(milliseconds: v.floor()));
+                                    },
+                                    activeColor: _colorModel.dark
+                                        ? Colors.white
+                                        : _colorModel.theme.primaryColor,
+                                  )),
+                              Text(model.end),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          height: 20,
+                        ),
+                        Container(
+                          padding:
+                          EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _listCps(),
+                              _tap("btx", () {
+                                _voiceModel.changeUrl(-1);
+                              }),
+                              _tap(_voiceModel.stateImg, () async {
+                                _voiceModel.toggleState();
+                              }),
+                              _tap("btu", () {
+                                _voiceModel.changeUrl(1);
+                              }),
+                              _fast(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }));
+        });
   }
 
   Widget _listCps() {
@@ -245,7 +248,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
                         return ListTile(
                           title: GestureDetector(
                             child:
-                                Text(_voiceModel.voiceDetail.chapters[ix].name),
+                            Text(_voiceModel.voiceDetail.chapters[ix].name),
                             onTap: () {
                               if (_voiceModel.idx != ix) {
                                 _voiceModel.changeUrl(ix, flag: false);
@@ -283,27 +286,28 @@ class _VoiceDetailState extends State<VoiceDetailView>
               builder: (BuildContext context) {
                 return Store.connect<VoiceModel>(
                     builder: (context, VoiceModel model, child) {
-                  return Container(
-                      child: ListView(
-                    padding: const EdgeInsets.all(6.0),
-                    children: fasts
-                        .map((e) => ListTile(
-                              title: Text('X${e.toString()}'),
-                              trailing: Radio(
-                                value: e,
-                                autofocus: true,
-                                groupValue: model.fast,
-                                onChanged: (v) {
-                                  print(v);
-                                  model.setFast(v);
-                                  model.audioPlayer.setPlaybackRate(
-                                      playbackRate: model.fast);
-                                },
-                              ),
-                            ))
-                        .toList(),
-                  ));
-                });
+                      return Container(
+                          child: ListView(
+                            padding: const EdgeInsets.all(6.0),
+                            children: fasts
+                                .map((e) =>
+                                ListTile(
+                                  title: Text('X${e.toString()}'),
+                                  trailing: Radio(
+                                    value: e,
+                                    autofocus: true,
+                                    groupValue: model.fast,
+                                    onChanged: (v) {
+                                      print(v);
+                                      model.setFast(v);
+                                      model.audioPlayer.setPlaybackRate(
+                                          playbackRate: model.fast);
+                                    },
+                                  ),
+                                ))
+                                .toList(),
+                          ));
+                    });
               });
         });
   }

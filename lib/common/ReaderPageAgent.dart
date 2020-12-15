@@ -1,8 +1,7 @@
 import 'package:book/common/ReadSetting.dart';
-
+import 'package:book/common/Screen.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
 
 class ReaderPageAgent {
   /// 文本间距
@@ -96,6 +95,7 @@ class ReaderPageAgent {
     String key = ReadSetting.getFontSize().toString();
     TextPainter textPainter = layout1(tempStr, width);
     double textLineHeight = (textPainter.preferredLineHeight);
+    print(textLineHeight);
     double pageHeight;
     if (SpUtil.haveKey(key)) {
       pageHeight = SpUtil.getDouble(key);
@@ -127,13 +127,16 @@ class ReaderPageAgent {
   }
 
   TextPainter layout1(String text, double width) {
-    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr,textScaleFactor: Screen.textScaleFactor);
 
     textPainter.text = TextSpan(
         text: text,
+
         style: TextStyle(
+          locale: Locale('zh_CN'),
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
           fontSize: ReadSetting.getFontSize(),
+          height: ReadSetting.getLineHeight()
         ));
     // textPainter.strutStyle = StrutStyle(
 

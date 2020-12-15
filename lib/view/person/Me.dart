@@ -273,6 +273,7 @@ class Me extends StatelessWidget {
                             title: Text(('清阅揽胜  ')),
                             content: Text(
                               ReadSetting.poet,
+                              style: TextStyle(fontSize: 15,  height: 2.1),
                             ),
                             actions: <Widget>[
                               FlatButton(

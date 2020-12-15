@@ -1,13 +1,10 @@
-import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
-import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceOV.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/voice/VoiceDance.dart';
-import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/widgets/SAppBarSearch.dart';
 import 'package:flutter/material.dart';
 
 class VoiceBook extends StatefulWidget {
@@ -16,41 +13,61 @@ class VoiceBook extends StatefulWidget {
 }
 
 class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
-  List<VoiceIdx> _voiceIdxs = [];
   ColorModel _colorModel;
+  VoiceModel _voiceModel;
 
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
+    _voiceModel = Store.value<VoiceModel>(context);
+    _voiceModel.getData();
     super.initState();
-    getData();
+  }
+
+  void search(var key) {
+    _voiceModel.getSearch(key);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        title: Text("听书",style: TextStyle( color: _colorModel.dark ? Colors.white : Colors.black,),),
-        centerTitle: true,
+      appBar: PreferredSize(
+        child: SAppBarSearch(
+          onSearch: search,
+        ),
+        preferredSize: Size.fromHeight(83),
       ),
-      // appBar: PreferredSize(
-      //   child: SAppBarSearch(),
-      //   preferredSize: Size.fromHeight(100),
-      // ),
-      body: Stack(
-        children: [
-          Container(
-            child: ListView(
-                children: _voiceIdxs
-                    .map((e) => item(e.cate, e.link, e.voices))
-                    .toList()),
-          ),
-          VoiceDance()
-        ],
-      ),
+      body:
+      Store.connect<VoiceModel>(builder: (context,VoiceModel model,child){
+        return  model.isVoiceIdx
+            ? Stack(
+          children: [
+            Container(
+              child: ListView(
+                  children: _voiceModel.voiceIdxs
+                      .map((e) => item(e.cate, e.link, e.voices))
+                      .toList()),
+            ),
+            VoiceDance()
+          ],
+        )
+            : model.voiceMores.isEmpty
+            ? Center(
+          child: Text("空空如也"),
+        )
+            : ListView(
+            children: model.voiceMores
+                .map((e) => ListTile(
+              title: Text(e.title),
+              trailing: Text(e.date),
+              onTap: () {
+                Routes.navigateTo(context, Routes.voiceDetail,
+                    params: {"link": e.href, "idx": "0"});
+              },
+            ))
+                .toList());
+      }),
+
     );
   }
 
@@ -119,27 +136,5 @@ class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
         ],
       ),
     );
-  }
-
-  getData() async {
-    String k = "voice_idx";
-    if (SpUtil.haveKey(k)) {
-      List json = SpUtil.getObjectList(k);
-      for (var d in json) {
-        _voiceIdxs.add(VoiceIdx.fromJson(d));
-      }
-      if (mounted) {
-        setState(() {});
-      }
-    }
-    Response resp = await Util(null).http().get(Common.voiceIndex);
-    List data = resp.data;
-    for (var d in data) {
-      _voiceIdxs.add(VoiceIdx.fromJson(d));
-    }
-    SpUtil.putObjectList(k, data);
-    if (mounted) {
-      setState(() {});
-    }
   }
 }

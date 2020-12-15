@@ -86,6 +86,7 @@ class ReadModel with ChangeNotifier {
 
   bool sSave;
   Load load;
+
   //获取本书记录
   getBookRecord() async {
     showMenu = false;
@@ -378,7 +379,6 @@ class ReadModel with ChangeNotifier {
     r.chapterName = chapters[idx].name;
     String id = chapters[idx].id;
     if (chapters[idx].hasContent != 2) {
-
       r.chapterContent = await compute(requestDataWithCompute, id);
       if (r.chapterContent.isNotEmpty) {
         // SpUtil.putString(id, r.chapterContent);
@@ -636,34 +636,14 @@ class ReadModel with ChangeNotifier {
                                   alignment: i == (sum - 1)
                                       ? Alignment.topLeft
                                       : Alignment.centerLeft,
-                                  child: Text.rich(
-                                    TextSpan(children: [
-                                      TextSpan(
-                                          text: content,
-                                          style: TextStyle(
-                                            locale: Locale('zh_CN'),
-                                            fontSize:
-                                                ReadSetting.getFontSize() /
-                                                    Screen.textScaleFactor,
-                                            // height:
-                                            //     ReadSetting.getLatterHeight()/ReadSetting.getFontSize() ,
-                                            // letterSpacing:
-                                            //     ReadSetting.getLatterSpace(),
-                                            textBaseline:
-                                                TextBaseline.ideographic,
-                                            color: model.dark
-                                                ? Colors.white30
-                                                : Colors.black,
-                                            // fontSize:
-                                            //     ReadSetting.getFontSize() /
-                                            //         Screen.textScaleFactor,
-                                            // height: ReadSetting
-                                            //     .getLatterHeight(),
-                                            // letterSpacing: ReadSetting
-                                            //     .getLatterSpace()
-                                          ))
-                                    ]),
-                                    textAlign: TextAlign.justify,
+                                  child: Text(
+                                    content,
+                                    textScaleFactor: Screen.textScaleFactor,
+                                    style: TextStyle(
+                                        fontFamily: model.font,
+                                        locale: Locale('zh_CN'),
+                                        fontSize: ReadSetting.getFontSize(),
+                                        height: ReadSetting.getLineHeight()),
                                   ))),
                           Container(
                             height: 30,
@@ -815,7 +795,8 @@ class ReadModel with ChangeNotifier {
     // print('download $url ok');
     var responseBody = await response.transform(utf8.decoder).join();
     var dataList = await parseJson(responseBody);
-    return dataList['data']['content'];
+    String dataList2 = dataList['data']['content'];
+    return dataList2;
   }
 
   @override
