@@ -1,4 +1,6 @@
 // 播放图片动画
+import 'package:book/model/ColorModel.dart';
+import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
 
 class AnimationImages extends StatefulWidget {
@@ -10,24 +12,23 @@ class _AnimationImagesState extends State<AnimationImages> {
   // 显示的 image
   int showIndex = 0;
   bool _disposed;
-  List<Image> images = [
-    Image.asset("images/bp0.png"),
-    Image.asset("images/bp1.png"),
-    Image.asset("images/bp2.png"),
-    Image.asset("images/bp3.png"),
-    Image.asset("images/bp4.png"),
-    Image.asset("images/bp5.png"),
-    Image.asset("images/bp6.png"),
-    Image.asset("images/bp7.png"),
-    Image.asset("images/bp8.png"),
-    Image.asset("images/bp9.png"),
-  ];
+  List<Image> images = [];
+  ColorModel _colorModel;
+
   @override
   void initState() {
+    _colorModel = Store.value<ColorModel>(context);
     super.initState();
+    for (int i = 0; i <= 29; i++) {
+      String prefix = i.toString();
+      if (i <= 9) {
+        prefix = "0" + prefix;
+      }
+      images.add(Image.asset("images/loading_000$prefix.png",color: _colorModel.theme.primaryColor));
+    }
     _disposed = false;
     Future.delayed(Duration(milliseconds: 200), () {
-      _updateImage(images.length, Duration(milliseconds: 100));
+      _updateImage(images.length, Duration(milliseconds: 80));
     });
   }
 

@@ -332,7 +332,7 @@ class _MyMaterialControlsState extends State<MyControls> {
         ),
         child: ImageIcon(
           AssetImage(controller.value.isPlaying
-              ? "images/video_stop.png"
+              ? "images/btv.png"
               : "images/video_play.png"),
           color: Colors.white,
           size: 32,

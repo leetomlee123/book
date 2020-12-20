@@ -100,7 +100,7 @@ class ReaderPageAgent {
     if (SpUtil.haveKey(key)) {
       pageHeight = SpUtil.getDouble(key);
     } else {
-      pageHeight = ((height ~/ textLineHeight) - 1) * textLineHeight;
+      pageHeight = ((height ~/ textLineHeight) -1) * textLineHeight;
       SpUtil.putDouble(key, pageHeight);
     }
 

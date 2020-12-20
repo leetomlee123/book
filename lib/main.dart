@@ -12,6 +12,7 @@ import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/view/voice/Voice.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:fluro/fluro.dart';
@@ -19,28 +20,33 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:get_it/get_it.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  if (await Permission.storage.request().isGranted) {
-    await SpUtil.getInstance();
 
-    locator.registerSingleton(TelAndSmsService());
-    final router = FluroRouter();
-    Routes.configureRoutes(router);
-    Routes.router = router;
-    runApp(Store.init(child: MyApp()));
-    await DirectoryUtil.getInstance();
+void main() {
+  FlutterBugly.postCatchedException(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    if (await Permission.storage.request().isGranted) {
+      await SpUtil.getInstance();
 
-    if (Platform.isAndroid) {
-      SystemUiOverlayStyle systemUiOverlayStyle =
-          SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+      locator.registerSingleton(TelAndSmsService());
+      final router = FluroRouter();
+      Routes.configureRoutes(router);
+      Routes.router = router;
+      runApp(Store.init(child: MyApp()));
+      await DirectoryUtil.getInstance();
+
+      if (Platform.isAndroid) {
+        SystemUiOverlayStyle systemUiOverlayStyle =
+            SystemUiOverlayStyle(statusBarColor: Colors.transparent);
+        SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+      }
     }
-  }
+  });
+  FlutterBugly.init(androidAppId: "a0ac5e889a", enableNotification: true);
 }
 
 class MyApp extends StatelessWidget {
@@ -70,6 +76,36 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _tabIndex = 0;
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
+
+  void showUpdateDialog(String versionName, String feature, String url) async {
+    await showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (_) => UpdateDialog(versionName, feature, url),
+    );
+  }
+
+  Future<void> _checkUpdate() async {
+    if (Platform.isAndroid) {
+      FlutterBugly.checkUpgrade();
+      var info = await FlutterBugly.getUpgradeInfo();
+      print("get info ${info}");
+      if (info != null && info.id != null) {
+        showUpdateDialog(info?.versionName ?? '', info?.newFeature ?? '',
+            info?.apkUrl ?? '');
+      }
+    }
+  }
+
+  /// 跳转应用市场升级
+  // _launchURL(url) async {
+  //   if (await canLaunch(url)) {
+  //     await launch(url);
+  //   } else {
+  //     throw 'Could not launch $url';
+  //   }
+  // }
+
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
     BottomNavigationBarItem(
@@ -135,6 +171,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     eventBus.on<NavEvent>().listen((navEvent) {
       _pageController.jumpToPage(navEvent.idx);
     });
+    _checkUpdate();
   }
 
   @override
@@ -177,7 +214,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    Store.value<VoiceModel>(context).saveHis();
+    // Store.value<VoiceModel>(context).saveHis();
   }
 
   void _pageChanged(int index) {

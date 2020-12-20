@@ -272,6 +272,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.5.0"
+  flutter_bugly:
+    dependency: "direct main"
+    description:
+      name: flutter_bugly
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.3.0+2"
   flutter_cache_manager:
     dependency: "direct main"
     description:
@@ -380,6 +387,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "3.1.4"
+  install_plugin:
+    dependency: "direct main"
+    description:
+      name: install_plugin
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "2.0.1"
   intl:
     dependency: transitive
     description:
@@ -639,6 +653,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.24.1"
+  scroll_to_index:
+    dependency: "direct main"
+    description:
+      name: scroll_to_index
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.6"
   shared_preferences:
     dependency: "direct main"
     description:

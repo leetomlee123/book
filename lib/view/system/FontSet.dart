@@ -117,6 +117,7 @@ class StateFontSet extends State<FontSet> {
                     );
                     FileInfo fileInfo = await CustomCacheManager.instanceFont
                         .downloadFile(fontUrl, key: fontName);
+                    print(fileInfo.file.path);
                     Navigator.pop(context);
                   } else {
                     if (fontName == "Roboto") {

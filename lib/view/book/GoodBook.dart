@@ -166,7 +166,7 @@ class StateTabItem extends State<TabItem>
           ),
           GridView(
             shrinkWrap: true,
-            physics: new NeverScrollableScrollPhysics(),
+            physics:  NeverScrollableScrollPhysics(),
             padding: EdgeInsets.all(5.0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
@@ -192,7 +192,7 @@ class StateTabItem extends State<TabItem>
             ),
             onTap: () async {
               String url = Common.two + '/${gbk.name}/${gbk.author}';
-              Response future = await Util(context).http().get(url);
+              Response future = await Util(null).http().get(url);
               var d = future.data['data'];
               if (d == null) {
                 Routes.navigateTo(context, Routes.search, params: {

@@ -70,7 +70,7 @@ class _BookShelfState extends State<BookShelf>
                         color: _colorModel.dark ? Colors.white : Colors.black,
                         icon: ImageIcon(
                           AssetImage("images/more_vert.png"),
-                          size: 32.0,
+                          size: 25.0,
                           color: _colorModel.dark ? Colors.white : Colors.black,
                         ),
                         onPressed: () async {

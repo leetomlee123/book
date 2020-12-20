@@ -624,22 +624,28 @@ class ReadModel with ChangeNotifier {
                               //     height: textLineHeight),
                               style: TextStyle(
                                 fontSize: 12 / Screen.textScaleFactor,
-                                color:
-                                    model.dark ? Colors.white30 : Colors.black,
+                              color: model.dark
+                                            ? Color(0x8FFFFFFF)
+                                            : Colors.black,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Expanded(
                               child: Container(
-                                  padding: EdgeInsets.fromLTRB(15, 0, 5, 0),
+                                  margin: EdgeInsets.fromLTRB(15, 0, 5, 0),
                                   alignment: i == (sum - 1)
                                       ? Alignment.topLeft
                                       : Alignment.centerLeft,
                                   child: Text(
                                     content,
+                                    textAlign: TextAlign.justify,
                                     textScaleFactor: Screen.textScaleFactor,
                                     style: TextStyle(
+                                        textBaseline: TextBaseline.ideographic,
+                                        color: model.dark
+                                            ? Color(0x8FFFFFFF)
+                                            : Colors.black,
                                         fontFamily: model.font,
                                         locale: Locale('zh_CN'),
                                         fontSize: ReadSetting.getFontSize(),
@@ -658,9 +664,9 @@ class ReadModel with ChangeNotifier {
                                   //     height: textLineHeight),
                                   style: TextStyle(
                                     fontSize: 12 / Screen.textScaleFactor,
-                                    color: model.dark
-                                        ? Colors.white30
-                                        : Colors.black,
+                                   color: model.dark
+                                            ? Color(0x8FFFFFFF)
+                                            : Colors.black,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),

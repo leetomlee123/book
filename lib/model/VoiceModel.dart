@@ -197,7 +197,7 @@ class VoiceModel with ChangeNotifier {
   }
 
   saveRecord() async {
-    if (audioPlayer != null) {
+    if (url.isNotEmpty) {
       int position = await audioPlayer?.getCurrentPosition() ?? 0;
       print(
           "save ${voiceDetail?.title} position is $position key is ${link} idx is ${idx}");

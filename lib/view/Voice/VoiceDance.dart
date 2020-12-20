@@ -83,7 +83,12 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
           builder: (context, VoiceModel model, child) {
         return InkWell(
           child: (model.audioPlayer.state != AudioPlayerState.PLAYING)
-              ? Image(image: AssetImage("images/bp0.png"))
+              ? Image(
+                  image: AssetImage(
+                    "images/loading_00029.png",
+                  ),
+                  color: _colorModel.theme.primaryColor,
+                )
               : AnimationImages(),
           onTap: () {
             model.showMenuFun(true);

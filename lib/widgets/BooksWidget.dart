@@ -181,6 +181,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   Widget listModel() {
     return ListView.builder(
         itemCount: _shelfModel.shelf.length,
+
         itemBuilder: (context, i) {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -225,11 +226,11 @@ class _BooksWidgetState extends State<BooksWidget> {
                       padding: const EdgeInsets.only(left: 10.0, top: 10.0),
                       child: Stack(
                         children: <Widget>[
-                          PicWidget(item.Img,height: 115,width: 98,),
+                          PicWidget(item.Img,height: 135,width: 105,),
                           item.NewChapterCount == 1
                               ? Container(
-                                  height: 115,
-                                  width: 98,
+                                  height: 135,
+                                  width: 105,
                                   child: Align(
                                     alignment: Alignment.topRight,
                                     child: Image.asset(
@@ -251,7 +252,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                   children: <Widget>[
                     Container(
                       width: ScreenUtil.getScreenW(context) - 115,
-                      padding: const EdgeInsets.only(left: 10.0, top: 5.0),
+                      padding: const EdgeInsets.only(left: 10.0, top: 5.0,right: 10),
                       child: Text(
                         item.Name,
                         style: TextStyle(
@@ -259,7 +260,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 22.0),
+                      padding: const EdgeInsets.only(left: 10.0, top: 22.0,right: 10),
                       child: Text(
                         item.LastChapter,
                         style: TextStyle(fontSize: 12),
@@ -269,7 +270,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                       width: ScreenUtil.getScreenW(context) - 115,
                     ),
                     Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 22.0),
+                      padding: const EdgeInsets.only(left: 10.0, top: 22.0,right: 10),
                       child: Text(item?.UTime ?? '',
                           style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ),
