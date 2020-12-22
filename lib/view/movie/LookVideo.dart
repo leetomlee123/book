@@ -140,7 +140,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                         ],
                       ),
                     )
-                  : Scaffold(body: LoadingDialog()),
+                  : Scaffold(body: Center(child: CircularProgressIndicator())),
               data: model.theme,
             ));
   }

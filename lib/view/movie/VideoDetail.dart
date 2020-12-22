@@ -188,7 +188,7 @@ class VideoDetailState extends State<VideoDetail> {
                   ),
                 );
               } else {
-                return LoadingDialog();
+                return Center(child: CircularProgressIndicator(),);
               }
             },
           )),

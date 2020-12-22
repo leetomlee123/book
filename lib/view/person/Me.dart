@@ -256,13 +256,13 @@ class Me extends StatelessWidget {
                   launch('https://github.com/leetomlee123/book');
                 },
               ),
-//              getItem(
-//                ImageIcon(AssetImage("images/logo.png")),
-//                'WEB站点',
-//                    () {
-//                  launch('https://web.leetomlee.xyz/');
-//                },
-//              ),
+            //  getItem(
+            //    ImageIcon(AssetImage("images/logo.png")),
+            //    '更新',
+            //        () {
+            //      launch('https://web.leetomlee.xyz/');
+            //    },
+            //  ),
               getItem(
                 ImageIcon(AssetImage("images/ab.png")),
                 '关于',

@@ -87,7 +87,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   Future<void> _checkUpdate() async {
     if (Platform.isAndroid) {
-      FlutterBugly.checkUpgrade();
+      FlutterBugly.checkUpgrade(isManual: false,isSilence: true);
       var info = await FlutterBugly.getUpgradeInfo();
       print("get info ${info}");
       if (info != null && info.id != null) {
@@ -108,20 +108,20 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
-    BottomNavigationBarItem(
-      icon: ImageIcon(
-        AssetImage("images/book_shelf.png"),
-        size: 30,
-      ),
-      label: '书架',
-    ),
-    BottomNavigationBarItem(
-      icon: ImageIcon(
-        AssetImage("images/good.png"),
-        size: 30,
-      ),
-      label: '精选',
-    ),
+    // BottomNavigationBarItem(
+    //   icon: ImageIcon(
+    //     AssetImage("images/book_shelf.png"),
+    //     size: 30,
+    //   ),
+    //   label: '书架',
+    // ),
+    // BottomNavigationBarItem(
+    //   icon: ImageIcon(
+    //     AssetImage("images/good.png"),
+    //     size: 30,
+    //   ),
+    //   label: '精选',
+    // ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/video.png"),
@@ -151,7 +151,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
+  // var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
+  var _pages = [Video(), VoiceBook()];
 
   @override
   void initState() {
@@ -171,7 +172,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     eventBus.on<NavEvent>().listen((navEvent) {
       _pageController.jumpToPage(navEvent.idx);
     });
-    _checkUpdate();
+    // _checkUpdate();
   }
 
   @override

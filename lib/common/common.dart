@@ -10,7 +10,8 @@ class Common {
   static String domain = "http://23.91.100.230:8090/book/v1";
 //  static String domain = "https://newbook.leetomlee.xyz/v1";
 //  static String video_domain = "http://192.168.0.109:8012";
-  static String video_domain = "http://23.91.100.230:8090/movie";
+  // static String video_domain = "http://23.91.100.230:8090/movie";
+  static String video_domain = "http://121.5.70.123:8012";
 //  static String video_domain = "https://movie.leetomlee.xyz";
 
 //static String domain = "https://book.leetomlee.xyz/v1";
