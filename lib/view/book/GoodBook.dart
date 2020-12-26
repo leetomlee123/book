@@ -8,8 +8,6 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/Voice/Voice.dart';
-import 'package:book/view/voice/VoiceList.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';

@@ -40,6 +40,7 @@ class Util {
           context: _buildContext,
           barrierLabel: "",
           barrierDismissible: true,
+          barrierColor: Colors.transparent,
           transitionDuration: Duration(milliseconds: 300),
           pageBuilder: (BuildContext context, Animation animation,
               Animation secondaryAnimation) {

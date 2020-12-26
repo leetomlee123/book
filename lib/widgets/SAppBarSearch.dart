@@ -182,6 +182,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
                   ),
                 ),
                 Expanded(
+                    child: Center(
                   child: TextField(
                     autofocus: widget.autoFocus,
                     focusNode: _focusNode,
@@ -205,7 +206,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
                     onChanged: _onInputChanged,
                     onSubmitted: widget.onSearch,
                   ),
-                ),
+                )),
                 _suffix(),
               ],
             ),

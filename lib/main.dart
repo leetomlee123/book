@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
-import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
@@ -108,20 +107,20 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
-    // BottomNavigationBarItem(
-    //   icon: ImageIcon(
-    //     AssetImage("images/book_shelf.png"),
-    //     size: 30,
-    //   ),
-    //   label: '书架',
-    // ),
-    // BottomNavigationBarItem(
-    //   icon: ImageIcon(
-    //     AssetImage("images/good.png"),
-    //     size: 30,
-    //   ),
-    //   label: '精选',
-    // ),
+    BottomNavigationBarItem(
+      icon: ImageIcon(
+        AssetImage("images/book_shelf.png"),
+        size: 30,
+      ),
+      label: '书架',
+    ),
+    BottomNavigationBarItem(
+      icon: ImageIcon(
+        AssetImage("images/good.png"),
+        size: 30,
+      ),
+      label: '精选',
+    ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/video.png"),
@@ -151,8 +150,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  // var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
-  var _pages = [Video(), VoiceBook()];
+  var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
+  // var _pages = [Video(), VoiceBook()];
 
   @override
   void initState() {

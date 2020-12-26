@@ -104,7 +104,7 @@ class _MenuState extends State<Menu> {
 
   Widget chapterSilde() {
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 15.0,vertical: 5.0),
+        padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
         child: Row(
           children: <Widget>[
             GestureDetector(
@@ -252,14 +252,17 @@ class _MenuState extends State<Menu> {
     );
   }
 
+
+
   Widget moreSetting() {
     return Container(
       decoration: BoxDecoration(
         color: _colorModel.dark ? Colors.black : Colors.white,
         borderRadius: BorderRadius.all(Radius.circular(10.0)),
       ),
-      height: 130,
+      height: 190,
       child: Column(
+
         children: <Widget>[
           Expanded(
             child: ListView(
@@ -292,9 +295,7 @@ class _MenuState extends State<Menu> {
                   ReadSetting.calcFontSize(1.0);
                   _readModel.modifyFont();
                 }),
-                SizedBox(
-                  width: 10,
-                ),
+            
                 Container(
                   child: FlatButton(
                     onPressed: () {
@@ -325,15 +326,57 @@ class _MenuState extends State<Menu> {
               ],
             ),
           ),
+         
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: <Widget>[
+                Container(
+                  child: Center(
+                    child: Text('行距', style: TextStyle(fontSize: 13.0)),
+                  ),
+                  height: 40,
+                  width: 40,
+                ),
+                SizedBox(
+                  width: 10,
+                ),
+                     fontOperate("images/side1.png", () {
+                  ReadSetting.setLineHeight(1.5);
+                  _readModel.modifyFont();
+                }),   SizedBox(
+                  width: 10,
+                ),
+                     fontOperate("images/side2.png", () {
+                  ReadSetting.setLineHeight(1.6);
+                  _readModel.modifyFont();
+                }),   SizedBox(
+                  width: 10,
+                ),
+                     fontOperate("images/side3.png", () {
+                 ReadSetting.setLineHeight(1.7);
+                  _readModel.modifyFont();
+                }),
+                // _hj("最小", () {
+                //   ReadSetting.setLineHeight(-0.1);
+                //   _readModel.modifyFont();
+                // }),
+                // _hj("适中", () {
+                //   ReadSetting.setLineHeight(-0.1);
+                //   _readModel.modifyFont();
+                // }),
+                // _hj("最大", () {
+                //   ReadSetting.setLineHeight(-0.1);
+                //   _readModel.modifyFont();
+                // }),
+              ],
+            ),
+          ),
           Expanded(
               child: ListView(
             children: bgThemes(),
             scrollDirection: Axis.horizontal,
           ))
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.spaceAround,
-          //   children: bgThemes(),
-          // ),
         ],
       ),
       padding: EdgeInsets.only(left: 15.0),

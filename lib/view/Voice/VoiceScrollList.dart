@@ -47,7 +47,7 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
             height: height,
             decoration: BoxDecoration(
                 border:
-                    Border.all(color: _colorModel.theme.primaryColor, width: 2),
+                    Border.all(color: _voiceModel.idx==idx? _colorModel.theme.primaryColor:Colors.black, width: 1),
                 borderRadius: BorderRadius.circular(12)),
             child: Text(_voiceModel.voiceDetail.chapters[idx].name),
           ),
@@ -71,6 +71,7 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
   Widget build(BuildContext context) {
     return Container(
       child: ListView.builder(
+        controller: controller,
           padding: EdgeInsets.all(8),
           itemBuilder: (BuildContext context, int ix) {
             return _getRow(ix, 60);

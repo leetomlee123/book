@@ -112,15 +112,13 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                                 )
                               : Container(
                                   width: double.infinity,
-                                  height: 225,
+                                  height: 230,
                                   color: Colors.black,
                                   child: Center(
-                                      child: Container(
-                                    child: SpinKitCircle(
-                                      color: Colors.white,
-                                      size: 70,
-                                    ),
-                                  )),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.0,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      )),
                                 ),
                           Container(
                             padding:

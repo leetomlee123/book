@@ -109,6 +109,7 @@ class StateFontSet extends State<FontSet> {
                       context: context,
                       barrierLabel: "",
                       barrierDismissible: true,
+                      barrierColor: Colors.transparent,
                       transitionDuration: Duration(milliseconds: 300),
                       pageBuilder: (BuildContext context, Animation animation,
                           Animation secondaryAnimation) {

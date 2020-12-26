@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -181,7 +182,6 @@ class _BooksWidgetState extends State<BooksWidget> {
   Widget listModel() {
     return ListView.builder(
         itemCount: _shelfModel.shelf.length,
-
         itemBuilder: (context, i) {
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -223,14 +223,18 @@ class _BooksWidgetState extends State<BooksWidget> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: <Widget>[
                     Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 10.0),
+                      padding: const EdgeInsets.only(left: 15.0, top: 10.0),
                       child: Stack(
                         children: <Widget>[
-                          PicWidget(item.Img,height: 135,width: 105,),
+                          PicWidget(
+                            item.Img,
+                            height: (Screen.width / 4) * 1.23,
+                            width: Screen.width / 4,
+                          ),
                           item.NewChapterCount == 1
                               ? Container(
-                                  height: 135,
-                                  width: 105,
+                                  height: (Screen.width / 4) * 1.23,
+                                  width: Screen.width / 4,
                                   child: Align(
                                     alignment: Alignment.topRight,
                                     child: Image.asset(
@@ -246,13 +250,14 @@ class _BooksWidgetState extends State<BooksWidget> {
                     )
                   ],
                 ),
+               
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  
                   children: <Widget>[
                     Container(
-                      width: ScreenUtil.getScreenW(context) - 115,
-                      padding: const EdgeInsets.only(left: 10.0, top: 5.0,right: 10),
+                      width: ScreenUtil.getScreenW(context) - 120,
+                      padding: const EdgeInsets.only(
+                          left: 10.0, top: 5.0, right: 10),
                       child: Text(
                         item.Name,
                         style: TextStyle(
@@ -260,22 +265,25 @@ class _BooksWidgetState extends State<BooksWidget> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 22.0,right: 10),
+                      padding: const EdgeInsets.only(
+                          left: 10.0, top: 22.0, right: 10),
                       child: Text(
                         item.LastChapter,
                         style: TextStyle(fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
                       ),
-                      width: ScreenUtil.getScreenW(context) - 115,
+                      width: ScreenUtil.getScreenW(context) - 120,
                     ),
                     Container(
-                      padding: const EdgeInsets.only(left: 10.0, top: 22.0,right: 10),
+                      padding: const EdgeInsets.only(
+                          left: 10.0, top: 22.0, right: 10),
                       child: Text(item?.UTime ?? '',
                           style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ),
                   ],
                 ),
+              
               ],
             ),
           ),

@@ -228,27 +228,28 @@ class ReadModel with ChangeNotifier {
       context: context,
       barrierLabel: "",
       barrierDismissible: true,
+      barrierColor: Colors.transparent,
       transitionDuration: Duration(milliseconds: 300),
       pageBuilder: (BuildContext context, Animation animation,
           Animation secondaryAnimation) {
         return LoadingDialog();
       },
     );
-    await Future.wait<dynamic>(
-            [loadChapter(idx - 1), loadChapter(idx), loadChapter(idx + 1)])
-        .then((e) {
-      prePage = e[0];
-      curPage = e[1];
-      nextPage = e[2];
-      // print(e); //[true,true,false]
-    }).catchError((e) {
-      print(e);
-    });
-    // await Future.wait([
-    //   loadChapter(idx - 1).then((value) => {prePage = value}),
-    //   loadChapter(idx).then((value) => {curPage = value}),
-    //   loadChapter(idx + 1).then((value) => {nextPage = value}),
-    // ]);
+    // await Future.wait<dynamic>(
+    //         [loadChapter(idx - 1), loadChapter(idx), loadChapter(idx + 1)])
+    //     .then((e) {
+    //   prePage = e[0];
+    //   curPage = e[1];
+    //   nextPage = e[2];
+    //   // print(e); //[true,true,false]
+    // }).catchError((e) {
+    //   print(e);
+    // });
+    await Future.wait([
+      loadChapter(idx - 1).then((value) => {prePage = value}),
+      loadChapter(idx).then((value) => {curPage = value}),
+      loadChapter(idx + 1).then((value) => {nextPage = value}),
+    ]);
     // prePage = await loadChapter(idx - 1);
     // curPage = await loadChapter(idx);
     // nextPage = await loadChapter(idx + 1);
@@ -281,6 +282,7 @@ class ReadModel with ChangeNotifier {
           showGeneralDialog(
             context: context,
             barrierLabel: "",
+            barrierColor: Colors.transparent,
             barrierDismissible: true,
             transitionDuration: Duration(milliseconds: 300),
             pageBuilder: (BuildContext context, Animation animation,
@@ -633,7 +635,7 @@ class ReadModel with ChangeNotifier {
                           ),
                           Expanded(
                               child: Container(
-                                  margin: EdgeInsets.fromLTRB(15, 0, 5, 0),
+                                  margin: EdgeInsets.fromLTRB(10, 0, 10, 0),
                                   alignment: i == (sum - 1)
                                       ? Alignment.topLeft
                                       : Alignment.centerLeft,
@@ -644,7 +646,7 @@ class ReadModel with ChangeNotifier {
                                     style: TextStyle(
                                         textBaseline: TextBaseline.ideographic,
                                         color: model.dark
-                                            ? Color(0x8FFFFFFF)
+                                            ? Color(0xFFFFFFF)
                                             : Colors.black,
                                         fontFamily: model.font,
                                         locale: Locale('zh_CN'),

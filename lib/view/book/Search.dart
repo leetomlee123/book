@@ -88,66 +88,59 @@ class _SearchState extends State<Search> {
   }
 
   Widget buildSearchWidget() {
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Container(
-                  //修饰黑色背景与圆角
-                  decoration: BoxDecoration(
-                    //灰色的一层边框
-                    border: Border.all(
-                        color: value.dark ? Colors.white : Colors.black,
-                        width: 0.5),
-                    // color: data.dark ? Colors.white : Colors.black,
-                    borderRadius: BorderRadius.all(Radius.circular(25.0)),
-                  ),
-                  alignment: Alignment.center,
-                  height: 40,
-                  child: Center(
-                    child: TextField(
-                      controller: controller,
-                      onSubmitted: (word) {
-                        searchModel.search(word);
-                      },
-                      autofocus: false,
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(bottom: 6, left: 20),
-                        border: InputBorder.none,
-                        suffixIcon: IconButton(
-                          icon: Icon(Icons.close),
-                          onPressed: () {
-                            controller.text = "";
-                            searchModel.reset();
-                          },
-                        ),
-                        hintText: isBookSearch ? "书籍/作者名" : "美剧/作者",
-                      ),
-                    ),
-                  )),
-          flex: 5,
-        ),
-        SizedBox(
-          width: 5,
-        ),
-        Expanded(
-          child: Center(
-            child: Padding(
-              child: GestureDetector(
-                child: Text(
-                  '搜索',
-                  style:
-                      TextStyle(color: value.dark ? Colors.white : Colors.black),
-                ),
-                onTap: () {
-                  searchModel.search(controller.text);
-                },
-              ),
-              padding: EdgeInsets.only(left: 1, right: 1),
+    return Container(
+      // margin: EdgeInsets.symmetric(horizontal: 3),
+      decoration: BoxDecoration(
+        color: Color(0xFFF2F2F2),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              Icons.search,
+              size: 22,
+              color: Color(0xFF999999),
             ),
           ),
-          flex: 1,
-        )
-      ],
+          Expanded(
+              child: Container(
+            child: TextField(
+              controller: controller,
+              onSubmitted: (word) {
+                searchModel.search(word);
+              },
+              style: TextStyle(
+                fontSize: 15,
+                color: Color(0xFF333333),
+                height: 1.3,
+              ),
+              autofocus: false,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                hintStyle: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF999999),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.close),
+                  onPressed: () {
+                    controller.text = "";
+                    searchModel.reset();
+                  },
+                ),
+                hintText: isBookSearch ? "书籍/作者名" : "美剧/作者",
+              ),
+            ),
+            height: 40,
+          )),
+
+          // _suffix(),
+        ],
+      ),
     );
   }
 

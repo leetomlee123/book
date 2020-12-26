@@ -37,37 +37,36 @@ class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
         ),
         preferredSize: Size.fromHeight(83),
       ),
-      body:
-      Store.connect<VoiceModel>(builder: (context,VoiceModel model,child){
-        return  model.isVoiceIdx
+      body: Store.connect<VoiceModel>(
+          builder: (context, VoiceModel model, child) {
+        return model.isVoiceIdx
             ? Stack(
-          children: [
-            Container(
-              child: ListView(
-                  children: _voiceModel.voiceIdxs
-                      .map((e) => item(e.cate, e.link, e.voices))
-                      .toList()),
-            ),
-            VoiceDance()
-          ],
-        )
+                children: [
+                  Container(
+                    child: ListView(
+                        children: _voiceModel.voiceIdxs
+                            .map((e) => item(e.cate, e.link, e.voices))
+                            .toList()),
+                  ),
+                  VoiceDance()
+                ],
+              )
             : model.voiceMores.isEmpty
-            ? Center(
-          child: Text("空空如也"),
-        )
-            : ListView(
-            children: model.voiceMores
-                .map((e) => ListTile(
-              title: Text(e.title),
-              trailing: Text(e.date),
-              onTap: () {
-                Routes.navigateTo(context, Routes.voiceDetail,
-                    params: {"link": e.href, "idx": "0"});
-              },
-            ))
-                .toList());
+                ? Center(
+                    child: Text("空空如也"),
+                  )
+                : ListView(
+                    children: model.voiceMores
+                        .map((e) => ListTile(
+                              title: Text(e.title),
+                              trailing: Text(e.date),
+                              onTap: () {
+                                Routes.navigateTo(context, Routes.voiceDetail,
+                                    params: {"link": e.href, "idx": "0"});
+                              },
+                            ))
+                        .toList());
       }),
-
     );
   }
 
