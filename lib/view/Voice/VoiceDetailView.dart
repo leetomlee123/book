@@ -270,8 +270,7 @@ class _VoiceDetailState extends State<VoiceDetailView>
                 ),
               ),
               builder: (BuildContext context) {
-                     return Fast();
-            
+                return Fast();
               });
         });
   }

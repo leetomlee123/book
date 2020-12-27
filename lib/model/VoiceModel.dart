@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/common.dart';
@@ -7,12 +9,14 @@ import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceModelEntity.dart';
 import 'package:book/entity/VoiceMore.dart';
 import 'package:book/event/event.dart';
+import 'package:book/service/CustomCacheManager.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class VoiceModel with ChangeNotifier {
   String modelJsonKey = "Voice_History";
@@ -136,8 +140,13 @@ class VoiceModel with ChangeNotifier {
       return -1;
     }
     audioPlayer.release();
-    int result = await audioPlayer.play(url,
-        position: Duration(milliseconds: p), stayAwake: true);
+    String key = link + idx.toString();
+    int result = 0;
+    File file =
+        await CustomCacheManager.instanceVoice.getSingleFile(url, key: key);
+
+    result = await audioPlayer.play(file.path,
+        position: Duration(milliseconds: p), stayAwake: true,isLocal: true);
     audioPlayer.setPlaybackRate(playbackRate: fast);
     if (result == 1) {
       print("success");
@@ -198,7 +207,12 @@ class VoiceModel with ChangeNotifier {
 
   saveRecord() async {
     if (url.isNotEmpty) {
-      int position = await audioPlayer?.getCurrentPosition() ?? 0;
+      print("***************" + url);
+      int position = 0;
+      try {
+        position = await audioPlayer?.getCurrentPosition() ?? 0;
+      } catch (e) {}
+
       print(
           "save ${voiceDetail?.title} position is $position key is ${link} idx is ${idx}");
       DbHelper().saveVoiceRecord(
@@ -272,14 +286,16 @@ class VoiceModel with ChangeNotifier {
 
   @override
   void dispose() {
-    audioPlayer.dispose();
-    saveHis();
+    print("dispose");
+    audioPlayer.release();
+
     super.dispose();
   }
 
   saveHis() async {
     await saveRecord();
+
     SpUtil.putObject(
-        modelJsonKey, VoiceModelEntity(voiceDetail.cover, link, idx).toJson());
+        modelJsonKey, VoiceModelEntity(voiceDetail?.cover??'', link, idx).toJson());
   }
 }

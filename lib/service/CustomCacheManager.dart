@@ -23,4 +23,14 @@ class CustomCacheManager {
       fileService: HttpFileService(),
     ),
   );
+    static CacheManager instanceVideo = CacheManager(
+    Config(
+      voiceKey,
+      stalePeriod: const Duration(days: 1),
+      maxNrOfCacheObjects: 20,
+      repo: JsonCacheInfoRepository(databaseName: voiceKey),
+      // fileSystem: IOFileSystem(key),
+      fileService: HttpFileService(),
+    ),
+  );
 }

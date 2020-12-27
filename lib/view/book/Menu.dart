@@ -342,19 +342,19 @@ class _MenuState extends State<Menu> {
                   width: 10,
                 ),
                      fontOperate("images/side1.png", () {
-                  ReadSetting.setLineHeight(1.5);
+                  ReadSetting.setLineHeight(1.4);
                   _readModel.modifyFont();
                 }),   SizedBox(
                   width: 10,
                 ),
                      fontOperate("images/side2.png", () {
-                  ReadSetting.setLineHeight(1.6);
+                  ReadSetting.setLineHeight(1.5);
                   _readModel.modifyFont();
                 }),   SizedBox(
                   width: 10,
                 ),
                      fontOperate("images/side3.png", () {
-                 ReadSetting.setLineHeight(1.7);
+                 ReadSetting.setLineHeight(1.6);
                   _readModel.modifyFont();
                 }),
                 // _hj("最小", () {

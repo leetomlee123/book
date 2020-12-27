@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:book/common/FunUtil.dart';
-import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
@@ -18,6 +17,7 @@ import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:video_player/video_player.dart';
 
@@ -116,9 +116,10 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                                   color: Colors.black,
                                   child: Center(
                                       child: CircularProgressIndicator(
-                                        strokeWidth: 2.0,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      )),
+                                    strokeWidth: 2.0,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  )),
                                 ),
                           Container(
                             padding:
@@ -147,6 +148,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     String url = Common.look_m + '${this.widget.id}';
     Response future = await Util(null).http().get(url);
     source = future.data[2];
+    // Stream<FileResponse> response= CustomCacheManager.instanceVideo.getFileStream(source);
     videoPlayerController = VideoPlayerController.network(source);
     videoPlayerController.addListener(_videoListener);
     videoPlayerController.initialize().then((_) {

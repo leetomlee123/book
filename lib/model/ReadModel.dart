@@ -626,16 +626,16 @@ class ReadModel with ChangeNotifier {
                               //     height: textLineHeight),
                               style: TextStyle(
                                 fontSize: 12 / Screen.textScaleFactor,
-                              color: model.dark
-                                            ? Color(0x8FFFFFFF)
-                                            : Colors.black,
+                                color: model.dark
+                                    ? Color(0x5FFFFFFF)
+                                    : Colors.black,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Expanded(
                               child: Container(
-                                  margin: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                                  margin: EdgeInsets.only(left:20,right: 10),
                                   alignment: i == (sum - 1)
                                       ? Alignment.topLeft
                                       : Alignment.centerLeft,
@@ -644,11 +644,11 @@ class ReadModel with ChangeNotifier {
                                     textAlign: TextAlign.justify,
                                     textScaleFactor: Screen.textScaleFactor,
                                     style: TextStyle(
-                                        textBaseline: TextBaseline.ideographic,
+                                        fontFamily: SpUtil.getString("fontName",
+                                            defValue: "Roboto"),
                                         color: model.dark
-                                            ? Color(0xFFFFFFF)
+                                            ? Color(0x5FFFFFFF)
                                             : Colors.black,
-                                        fontFamily: model.font,
                                         locale: Locale('zh_CN'),
                                         fontSize: ReadSetting.getFontSize(),
                                         height: ReadSetting.getLineHeight()),
@@ -666,9 +666,9 @@ class ReadModel with ChangeNotifier {
                                   //     height: textLineHeight),
                                   style: TextStyle(
                                     fontSize: 12 / Screen.textScaleFactor,
-                                   color: model.dark
-                                            ? Color(0x8FFFFFFF)
-                                            : Colors.black,
+                                    color: model.dark
+                                        ? Color(0x5FFFFFFF)
+                                        : Colors.black,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),

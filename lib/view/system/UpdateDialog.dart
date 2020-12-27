@@ -26,7 +26,7 @@ class UpdateDialogState extends State<UpdateDialog> {
     var _textStyle = TextStyle(color: Theme.of(context).textTheme.body1.color);
 
     return AlertDialog(
-      shape:RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       title: Text(
         "更新",
         style: _textStyle,
@@ -63,9 +63,11 @@ class UpdateDialogState extends State<UpdateDialog> {
     Dio dio = Util(null).http();
     Directory storageDir = await getExternalStorageDirectory();
     String storagePath = storageDir.path;
-    File file = new File('$storagePath/deerbook.apk');
+    File file = new File('$storagePath/apk/deerbook.apk');
 
-    if (!file.existsSync()) {
+    if (file.existsSync()) {
+      file.delete();
+    } else {
       file.createSync();
     }
 
@@ -108,9 +110,7 @@ class UpdateDialogState extends State<UpdateDialog> {
 
     InstallPlugin.installApk(_apkFilePath, "com.leetomlee.book").then((result) {
       print('install apk $result');
-      _apkFile.delete();
     }).catchError((error) {
-      _apkFile.delete();
       print('install apk error: $error');
     });
   }

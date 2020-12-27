@@ -6,9 +6,9 @@ import io.flutter.embedding.engine.FlutterEngine
 
 class MainActivity : FlutterActivity() {
 
-    override fun provideSplashScreen(): SplashScreen? {
-        return LottieSplashScreen()
-    }
+    // override fun provideSplashScreen(): SplashScreen? {
+    //     return LottieSplashScreen()
+    // }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
@@ -12,6 +13,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -56,36 +58,65 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   PreferredSizeWidget _appBar() {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      leading: IconButton(
-        color: _colorModel.dark ? Colors.white : Colors.black,
-        icon: Icon(Icons.arrow_back),
-        onPressed: () {
-          Navigator.of(context).pop();
-        },
-      ),
-      elevation: 0,
-      actions: <Widget>[
-        GestureDetector(
-          child: Center(
-            child: Text(
-              '书架',
-              style: TextStyle(
-                color: _colorModel.dark ? Colors.white : Colors.black,
+    return PreferredSize(
+        child: Stack(
+          children: [
+            Container(
+              child: ClipRRect(
+                // make sure we apply clip it properly
+                child: BackdropFilter(
+                  //背景滤镜
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), //背景模糊化
+                  child: Container(
+                    alignment: Alignment.center,
+                    color: Colors.grey.withOpacity(0.1),
+                  ),
+                ),
               ),
+              decoration: BoxDecoration(
+                  image: DecorationImage(
+                      fit: BoxFit.fitWidth,
+                      image: CachedNetworkImageProvider(
+                        book.Img,
+                      ))),
             ),
-          ),
-          onTap: () {
-            Navigator.of(context).popUntil(ModalRoute.withName('/'));
-            eventBus.fire(new NavEvent(0));
-          },
+            AppBar(
+              backgroundColor: Colors.transparent,
+              leading: IconButton(
+                color: _colorModel.dark ? Colors.white : Colors.black,
+                icon: Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              elevation: 0,
+              actions: <Widget>[
+                GestureDetector(
+                  child: Center(
+                    child: Text(
+                      '书架',
+                      style: TextStyle(
+                        color: _colorModel.dark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.of(context).popUntil(ModalRoute.withName('/'));
+                    eventBus.fire(new NavEvent(0));
+                  },
+                ),
+                SizedBox(
+                  width: 20,
+                )
+              ],
+              bottom: PreferredSize(
+                child: _bookHead(),
+                preferredSize: Size.fromHeight(120),
+              ),
+            )
+          ],
         ),
-        SizedBox(
-          width: 20,
-        )
-      ],
-    );
+        preferredSize: Size.fromHeight(180));
   }
 
   Widget _bookHead() {
@@ -108,28 +139,28 @@ class _BookDetailState extends State<BookDetail> {
             child: Text(
               book.Name,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 15),
+              style: TextStyle(fontSize: 15,color: Colors.white),
             ),
           ),
           Container(
             padding: const EdgeInsets.only(left: 20.0, top: 2.0),
             child: Text('作者: ${book.Author}',
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12)),
+                style: TextStyle(fontSize: 12,color: Colors.white)),
           ),
           Container(
             padding: const EdgeInsets.only(left: 20.0, top: 2.0),
             child: new Text('类型: ' + book.CName,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
-                style: TextStyle(fontSize: 12)),
+                style: TextStyle(fontSize: 12,color: Colors.white)),
           ),
           Container(
             padding: const EdgeInsets.only(left: 20.0, top: 2.0),
             child: Text('状态: ${this.widget._bookInfo.BookStatus}',
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
-                style: TextStyle(fontSize: 12)),
+                style: TextStyle(fontSize: 12,color: Colors.white)),
             width: 270,
           ),
           Container(
@@ -150,7 +181,7 @@ class _BookDetailState extends State<BookDetail> {
                       color: Colors.amber,
                     ),
                     onRatingUpdate: (rating) {
-                      print(rating);
+                      
                     },
                   ),
                   // RatingBar(
@@ -168,7 +199,7 @@ class _BookDetailState extends State<BookDetail> {
                   //   ),
                   //   onRatingUpdate: (double value) {},
                   // ),
-                  Text('${this.widget._bookInfo.Rate ?? 0.0}分')
+                  Text('${this.widget._bookInfo.Rate ?? 0.0}分',style: TextStyle(color: Colors.white),)
                 ],
               )),
         ],
@@ -211,7 +242,7 @@ class _BookDetailState extends State<BookDetail> {
                       : "images/add_collapse.png",
                   width: 30,
                   height: 30,
-                  color: _colorModel.dark ? Colors.white : Colors.black,
+                  color: _colorModel.dark ? Colors.white24 : Colors.black26,
                 ),
                 onTap: () {
                   if (mounted) {
@@ -309,7 +340,7 @@ class _BookDetailState extends State<BookDetail> {
                         children: <Widget>[
                           Container(
                             padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                                const EdgeInsets.only(left: 15.0, top: 10.0),
                             child: PicWidget(
                               this.widget._bookInfo.SameAuthorBooks[i].Img,
                             ),
@@ -378,7 +409,6 @@ class _BookDetailState extends State<BookDetail> {
         : Container();
   }
 
- 
   @override
   Widget build(BuildContext context) {
     // return SliverAppBarDemo(this.widget._bookInfo);
@@ -386,7 +416,6 @@ class _BookDetailState extends State<BookDetail> {
         appBar: _appBar(),
         body: ListView(
           children: <Widget>[
-            _bookHead(),
             _bookDesc(),
             Divider(),
             _bookMenu(),

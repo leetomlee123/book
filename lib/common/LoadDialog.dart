@@ -12,15 +12,15 @@ class LoadingDialog extends Dialog {
         color: Colors.transparent,
         child: Center(
             child: Container(
-                width: 150,
-                height: 70,
+                width: 110,
+                height: 100,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                   color: model.dark
                       ? Colors.white.withOpacity(.5)
                       : Colors.black.withOpacity(.5),
                 ),
-                child: Row(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
@@ -28,7 +28,7 @@ class LoadingDialog extends Dialog {
                       valueColor: AlwaysStoppedAnimation<Color>(model.dark?Colors.black:Colors.white),
                     ),
                     SizedBox(
-                      width: 9,
+                      height: 10,
                     ),
                     Text(
                       "加载中....",

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
@@ -45,7 +46,15 @@ void main() {
       }
     }
   });
-  FlutterBugly.init(androidAppId: "a0ac5e889a", enableNotification: true);
+//生产id
+  FlutterBugly.init(
+      androidAppId: "9e35b3fab6",
+      enableNotification: true,
+      upgradeCheckPeriod: 60 * 60 * 24);
+  // FlutterBugly.init(
+  //     androidAppId: "a0ac5e889a",
+  //     enableNotification: true,
+  //     upgradeCheckPeriod: 60 * 60 * 24);
 }
 
 class MyApp extends StatelessWidget {
@@ -86,9 +95,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   Future<void> _checkUpdate() async {
     if (Platform.isAndroid) {
-      FlutterBugly.checkUpgrade(isManual: false,isSilence: true);
+      FlutterBugly.checkUpgrade(isManual: false, isSilence: true);
       var info = await FlutterBugly.getUpgradeInfo();
-      print("get info ${info}");
+      print("get info $info ");
       if (info != null && info.id != null) {
         showUpdateDialog(info?.versionName ?? '', info?.newFeature ?? '',
             info?.apkUrl ?? '');
@@ -171,7 +180,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     eventBus.on<NavEvent>().listen((navEvent) {
       _pageController.jumpToPage(navEvent.idx);
     });
-    // _checkUpdate();
+    _checkUpdate();
   }
 
   @override
@@ -214,7 +223,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Store.value<VoiceModel>(context).saveHis();
+    Store.value<VoiceModel>(context).saveHis();
   }
 
   void _pageChanged(int index) {

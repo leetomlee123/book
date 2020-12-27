@@ -92,17 +92,10 @@ class ReaderPageAgent {
     if (content.isEmpty) {
       return pageConfig;
     }
-    String key = ReadSetting.getFontSize().toString();
     TextPainter textPainter = layout1(tempStr, width);
     double textLineHeight = (textPainter.preferredLineHeight);
-    print(textLineHeight);
-    double pageHeight;
-    if (SpUtil.haveKey(key)) {
-      pageHeight = SpUtil.getDouble(key);
-    } else {
-      pageHeight = ((height ~/ textLineHeight) -1) * textLineHeight;
-      SpUtil.putDouble(key, pageHeight);
-    }
+    int pageLines = (height / textLineHeight).floor()-1;
+    double pageHeight =pageLines * textLineHeight;
 
     while (true) {
       textPainter = layout1(tempStr, width);
@@ -127,38 +120,18 @@ class ReaderPageAgent {
   }
 
   TextPainter layout1(String text, double width) {
-    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr,textScaleFactor: Screen.textScaleFactor);
+    TextPainter textPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        textScaleFactor: Screen.textScaleFactor);
 
     textPainter.text = TextSpan(
         text: text,
-
         style: TextStyle(
-          locale: Locale('zh_CN'),
-          fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
-          fontSize: ReadSetting.getFontSize(),
-          height: ReadSetting.getLineHeight()
-        ));
-    // textPainter.strutStyle = StrutStyle(
-
-    //   fontSize: ReadSetting.getFontSize(),
-    //   height: ReadSetting.getHeight(),
-    //   leading: ReadSetting.getLatterLead(),
-    //   forceStrutHeight: true,
-    // );
-
-    // height: ReadSetting.getLatterHeight(),
-    // letterSpacing: ReadSetting.getLatterSpace()));
-    // TextPainter textPainter = TextPainter(
-    //     text: TextSpan(
-    //         text: text,
-    //         style: TextStyle(
-    //             textBaseline: TextBaseline.alphabetic,
-    //             // height: 1.5,
-
-    //             fontSize: ReadSetting.getFontSize())),
-    //     locale: Locale('zh_CN'),
-    //     // strutStyle: StrutStyle(forceStrutHeight: true),
-    //     textDirection: TextDirection.ltr);
+            locale: Locale('zh_CN'),
+            fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+            fontSize: ReadSetting.getFontSize(),
+            height: ReadSetting.getLineHeight()));
+   
     return textPainter;
   }
 }
