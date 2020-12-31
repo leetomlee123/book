@@ -16,7 +16,6 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class VoiceModel with ChangeNotifier {
   String modelJsonKey = "Voice_History";
@@ -37,6 +36,7 @@ class VoiceModel with ChangeNotifier {
   String stateImg = "btw";
   int idx = 0;
   AudioPlayer audioPlayer;
+  int loading = 0;
 
   setIsVoiceIdx(bool x) {
     isVoiceIdx = x;
@@ -98,7 +98,6 @@ class VoiceModel with ChangeNotifier {
   }
 
   changeUrl(int ix, {bool flag = true}) async {
-    int temp = 0;
     if (flag) {
       if (idx + ix < 0) {
         BotToast.showText(text: "已经是第一节");
@@ -110,7 +109,7 @@ class VoiceModel with ChangeNotifier {
       }
       audioPlayer.release();
 //计算赋值
-      temp = idx + ix;
+      idx = idx + ix;
       // setIdx(ix);
     } else {
       await saveRecord();
@@ -119,19 +118,17 @@ class VoiceModel with ChangeNotifier {
       if (ix < 0 || ix >= voiceDetail.chapters.length) {
         return;
       }
-      temp = ix;
+      idx = ix;
       // setIdx1(ix);
     }
 
-    var ux = voiceDetail.chapters[temp].link;
+    var ux = voiceDetail.chapters[idx].link;
 
     Response resp1 = await Util(null).http().get(Common.voiceUrl + "?url=$ux");
 
     url = resp1.data['url'];
     int i = await initAudio(0);
-    if (i == 1) {
-      idx = temp;
-    }
+
     notifyListeners();
   }
 
@@ -142,12 +139,16 @@ class VoiceModel with ChangeNotifier {
     audioPlayer.release();
     String key = link + idx.toString();
     int result = 0;
+    loading = 1;
+    notifyListeners();
     File file =
         await CustomCacheManager.instanceVoice.getSingleFile(url, key: key);
 
     result = await audioPlayer.play(file.path,
-        position: Duration(milliseconds: p), stayAwake: true,isLocal: true);
+        position: Duration(milliseconds: p), stayAwake: true, isLocal: true);
     audioPlayer.setPlaybackRate(playbackRate: fast);
+    loading = 0;
+
     if (result == 1) {
       print("success");
       eventBus.fire(RollEvent("1"));
@@ -295,7 +296,7 @@ class VoiceModel with ChangeNotifier {
   saveHis() async {
     await saveRecord();
 
-    SpUtil.putObject(
-        modelJsonKey, VoiceModelEntity(voiceDetail?.cover??'', link, idx).toJson());
+    SpUtil.putObject(modelJsonKey,
+        VoiceModelEntity(voiceDetail?.cover ?? '', link, idx).toJson());
   }
 }

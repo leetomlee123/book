@@ -114,113 +114,115 @@ class _VoiceDetailState extends State<VoiceDetailView>
         builder: (context, VoiceModel model, child) {
       return model.voiceDetail == null
           ? Scaffold()
-          : Scaffold(body: Store.connect<VoiceModel>(
-              builder: (context, VoiceModel model, child) {
-              return ListView(
-                shrinkWrap: true,
-                children: [
-                  Column(
-                    children: [
-                      SizedBox(
-                        height: Screen.topSafeHeight,
-                      ),
-                      Row(
+          : Scaffold(
+              body: ListView(
+              shrinkWrap: true,
+              children: [
+                Column(
+                  children: [
+                    SizedBox(
+                      height: Screen.topSafeHeight,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        buildRotationTransition(),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Column(
+                        children: [
+                          Text(
+                            model.voiceDetail?.title ?? '',
+                            style: TextStyle(
+                                color: _colorModel.dark
+                                    ? Colors.white
+                                    : Colors.black,
+                                fontSize: 25),
+                          ),
+                          Text(
+                            model.voiceDetail?.author ?? '',
+                            style: TextStyle(
+                                color: _colorModel.dark
+                                    ? Colors.white
+                                    : Colors.black,
+                                fontSize: 14),
+                          ),
+                          Text(
+                            model.voiceDetail?.chapters[_voiceModel.idx].name ??
+                                '',
+                            style: TextStyle(
+                                color: _colorModel.dark
+                                    ? Colors.white
+                                    : Colors.black,
+                                fontSize: 14),
+                          ),
+                        ],
+                      )
+                    ]),
+                    SizedBox(
+                      height: 40,
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 15),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          buildRotationTransition(),
+                          Text(model.start),
+                          Expanded(
+                              child: Slider(
+                            value: model.position,
+                            max: model.len,
+                            min: 0.0,
+                            onChanged: (v) {
+                              model.audioPlayer
+                                  .seek(Duration(milliseconds: v.floor()));
+                            },
+                            activeColor: _colorModel.dark
+                                ? Colors.white
+                                : _colorModel.theme.primaryColor,
+                          )),
+                          Text(model.end),
                         ],
                       ),
-                      SizedBox(
-                        height: 20,
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _listCps(),
+                          _tap("btx", () {
+                            model.changeUrl(-1);
+                          }),
+                          model.loading == 0
+                              ? _tap(model.stateImg, () async {
+                                  model.toggleState();
+                                })
+                              : CircularProgressIndicator(
+
+                            strokeWidth: 2.0,
+                            valueColor: AlwaysStoppedAnimation<Color>(_colorModel.dark?Colors.white:Colors.black),
+
+                          ),
+                          _tap("btu", () {
+                            model.changeUrl(1);
+                          }),
+                          _fast(),
+                        ],
                       ),
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Column(
-                              children: [
-                                Text(
-                                  _voiceModel.voiceDetail?.title ?? '',
-                                  style: TextStyle(
-                                      color: _colorModel.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 25),
-                                ),
-                                Text(
-                                  _voiceModel.voiceDetail?.author ?? '',
-                                  style: TextStyle(
-                                      color: _colorModel.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 14),
-                                ),
-                                Text(
-                                  _voiceModel.voiceDetail
-                                          ?.chapters[_voiceModel.idx].name ??
-                                      '',
-                                  style: TextStyle(
-                                      color: _colorModel.dark
-                                          ? Colors.white
-                                          : Colors.black,
-                                      fontSize: 14),
-                                ),
-                              ],
-                            )
-                          ]),
-                      SizedBox(
-                        height: 40,
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(model.start),
-                            Expanded(
-                                child: Slider(
-                              value: model.position,
-                              max: model.len,
-                              min: 0.0,
-                              onChanged: (v) {
-                                _voiceModel.audioPlayer
-                                    .seek(Duration(milliseconds: v.floor()));
-                              },
-                              activeColor: _colorModel.dark
-                                  ? Colors.white
-                                  : _colorModel.theme.primaryColor,
-                            )),
-                            Text(model.end),
-                          ],
-                        ),
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _listCps(),
-                            _tap("btx", () {
-                              _voiceModel.changeUrl(-1);
-                            }),
-                            _tap(_voiceModel.stateImg, () async {
-                              _voiceModel.toggleState();
-                            }),
-                            _tap("btu", () {
-                              _voiceModel.changeUrl(1);
-                            }),
-                            _fast(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            }));
+                    ),
+                  ],
+                ),
+              ],
+            ));
     });
   }
 
