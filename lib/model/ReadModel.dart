@@ -635,7 +635,7 @@ class ReadModel with ChangeNotifier {
                           ),
                           Expanded(
                               child: Container(
-                                  margin: EdgeInsets.only(left: 20, right: 10),
+                                  margin: EdgeInsets.only(left: 15, right: 15),
                                   alignment: i == (sum - 1)
                                       ? Alignment.topLeft
                                       : Alignment.centerLeft,
@@ -652,7 +652,7 @@ class ReadModel with ChangeNotifier {
                                         locale: Locale('zh_CN'),
                                         decorationStyle:
                                             TextDecorationStyle.wavy,
-                                        letterSpacing: 3.0,
+                                        letterSpacing: ReadSetting.getLatterSpace(),
                                         fontSize: ReadSetting.getFontSize(),
                                         height: ReadSetting.getLineHeight()),
                                   ))),

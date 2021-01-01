@@ -130,7 +130,7 @@ class ReaderPageAgent {
             locale: Locale('zh_CN'),
             fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
             fontSize: ReadSetting.getFontSize(),
-            letterSpacing: 3.0,
+            letterSpacing: ReadSetting.getLatterSpace(),
             height: ReadSetting.getLineHeight()));
    
     return textPainter;

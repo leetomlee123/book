@@ -21,7 +21,7 @@ class ReadSetting {
   }
 
   static double getLatterSpace() {
-    return SpUtil.getDouble(latterSpace, defValue: 10);
+    return SpUtil.getDouble(latterSpace, defValue: 1.0);
   }
 
   static double getLatterLead() {
