@@ -25,7 +25,7 @@ class ColorModel with ChangeNotifier {
     "方正宋刻本秀楷体": "https://oss-asq-download.11222.cn/font/package/FZSKBXKK.TTF",
     "方正卡通": "http://oss-asq-download.11222.cn/font/package/FZKATK.TTF",
   };
-  int idx = SpUtil.getInt('skin');
+  int idx = SpUtil.getInt('skin',defValue: 5);
   ThemeData _theme;
   String font = SpUtil.getString("fontName", defValue: "Roboto");
 

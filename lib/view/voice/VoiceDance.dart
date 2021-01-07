@@ -22,9 +22,9 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   void initState() {
     eventBus.on<RollEvent>().listen((roll) {
       if (roll.roll == "1") {
-        controller.forward();
+        controller?.forward();
       } else {
-        controller.reset();
+        controller?.reset();
       }
     });
     _colorModel = Store.value<ColorModel>(context);

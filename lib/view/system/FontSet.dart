@@ -5,7 +5,6 @@ import 'package:book/common/LoadDialog.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -18,7 +17,6 @@ class FontSet extends StatefulWidget {
 }
 
 class StateFontSet extends State<FontSet> {
-  String _fontPath;
   ColorModel _colorModel;
   List<Widget> wds = [];
   bool downloading = false;
@@ -27,7 +25,6 @@ class StateFontSet extends State<FontSet> {
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
-    _fontItems();
 
     super.initState();
   }
@@ -46,114 +43,143 @@ class StateFontSet extends State<FontSet> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: wds.isEmpty
-          ? Container()
-          : Container(
-              child: Column(
-                children: <Widget>[
-                  Center(
-                    child: Text(
-                      "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: _colorModel.font,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  downloading
-                      ? Slider(value: 10, min: 0.0, max: 100, onChanged: (v) {})
-                      : Container(),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  ListView(
-                    children: wds,
-                    shrinkWrap: true,
-                  ),
-                ],
+      body: Container(
+        child: Column(
+          children: <Widget>[
+            Center(
+              child: Text(
+                "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: _colorModel.font,
+                ),
               ),
-              padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
             ),
+            SizedBox(
+              height: 20,
+            ),
+            Expanded(
+                child: FutureBuilder(
+              future: fetchData(),
+              builder: (BuildContext context,
+                  AsyncSnapshot<List<FontInfo>> snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (snapshot.hasData) {
+                    return Container(
+                      alignment: Alignment.center,
+                      child: ListView(
+                        children: snapshot.data
+                            .map((e) => Container(
+                                  padding: EdgeInsets.only(bottom: 20),
+                                  child: Row(
+                                    children: <Widget>[
+                                      Text(e.key == "Roboto" ? e.value : e.key),
+                                      Expanded(
+                                        child: Container(),
+                                      ),
+                                      GestureDetector(
+                                        child: Container(
+                                          child: _colorModel.font == e.key
+                                              ? Icon(Icons.check)
+                                              : Text((e.fileInfo != null ||
+                                                      e.key == "Roboto")
+                                                  ? "使用"
+                                                  : "下载"),
+                                        ),
+                                        onTap: () async {
+                                          if (e.fileInfo == null &&
+                                              e.key != "Roboto") {
+                                            showGeneralDialog(
+                                              context: context,
+                                              barrierLabel: "",
+                                              barrierDismissible: true,
+                                              barrierColor: Colors.transparent,
+                                              transitionDuration:
+                                                  Duration(milliseconds: 300),
+                                              pageBuilder:
+                                                  (BuildContext context,
+                                                      Animation animation,
+                                                      Animation
+                                                          secondaryAnimation) {
+                                                return LoadingDialog();
+                                              },
+                                            );
+                                            FileInfo fileInfo =
+                                                await CustomCacheManager
+                                                    .instanceFont
+                                                    .downloadFile(e.value,
+                                                        key: e.key);
+                                            print(fileInfo.file.path);
+                                            Navigator.pop(context);
+                                          } else {
+                                            if (e.key == "Roboto") {
+                                              _colorModel
+                                                  .setFontFamily("Roboto");
+                                            } else {
+                                              File file =
+                                                  await CustomCacheManager
+                                                      .instanceFont
+                                                      .getSingleFile(e.value,
+                                                          key: e.key);
+                                              var fontLoader =
+                                                  FontLoader(e.key);
+                                              Uint8List readAsBytes =
+                                                  file.readAsBytesSync();
+
+                                              fontLoader.addFont(Future.value(
+                                                  ByteData.view(
+                                                      readAsBytes.buffer)));
+                                              await fontLoader.load();
+                                              _colorModel.setFontFamily(e.key);
+                                            }
+                                          }
+                                          if (mounted) {
+                                            setState(() {});
+                                          }
+                                        },
+                                      ),
+                                      SizedBox(
+                                        width: 10,
+                                      ),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    );
+                  } else {
+                    return Container(
+                      alignment: Alignment.center,
+                      child: Text('error'),
+                    );
+                  }
+                } else {
+                  return Container(
+                      alignment: Alignment.center,
+                      child: CircularProgressIndicator());
+                }
+              },
+            ))
+            // ListView(
+            //   children: wds,
+            //   shrinkWrap: true,
+            // ),
+          ],
+        ),
+        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
+      ),
     );
   }
 
-  _fontItems() async {
-    wds = [];
-    List<Future> futures = [];
-    _colorModel.fonts.forEach((key, value) {
-      var fontName = key;
-      var fontUrl = value;
-      futures.add(getFileInfo(fontName).then((fileInfo) {
-        wds.add(Container(
-          padding: EdgeInsets.only(bottom: 20),
-          child: Row(
-            children: <Widget>[
-              Text(fontName == "Roboto" ? fontUrl : fontName),
-              Expanded(
-                child: Container(),
-              ),
-              GestureDetector(
-                child: Container(
-                  child: _colorModel.font == fontName
-                      ? Icon(Icons.check)
-                      : Text((fileInfo != null || fontName == "Roboto")
-                          ? "使用"
-                          : "下载"),
-                ),
-                onTap: () async {
-                  if (fileInfo == null && fontName != "Roboto") {
-                    showGeneralDialog(
-                      context: context,
-                      barrierLabel: "",
-                      barrierDismissible: true,
-                      barrierColor: Colors.transparent,
-                      transitionDuration: Duration(milliseconds: 300),
-                      pageBuilder: (BuildContext context, Animation animation,
-                          Animation secondaryAnimation) {
-                        return LoadingDialog();
-                      },
-                    );
-                    FileInfo fileInfo = await CustomCacheManager.instanceFont
-                        .downloadFile(fontUrl, key: fontName);
-                    print(fileInfo.file.path);
-                    Navigator.pop(context);
-                  } else {
-                    if (fontName == "Roboto") {
-                      _colorModel.setFontFamily("Roboto");
-                    } else {
-                      File file = await CustomCacheManager.instanceFont
-                          .getSingleFile(fontUrl, key: fontName);
-                      var fontLoader = FontLoader(fontName);
-                      Uint8List readAsBytes = file.readAsBytesSync();
-
-                      fontLoader.addFont(
-                          Future.value(ByteData.view(readAsBytes.buffer)));
-                      await fontLoader.load();
-                      _colorModel.setFontFamily(fontName);
-                    }
-                  }
-
-                  _fontItems();
-                },
-              ),
-              SizedBox(
-                width: 10,
-              ),
-            ],
-          ),
-        ));
-      }));
-    });
-    Future.wait(futures).then((value) {
-      if (mounted) {
-        setState(() {});
-      }
-    }).catchError((e) {
-      print(e);
-    });
+  Future<List<FontInfo>> fetchData() async {
+    List<FontInfo> fontInfos = [];
+    for (int i = 0; i < _colorModel.fonts.length; i++) {
+      String key=_colorModel.fonts.keys.elementAt(i);
+      String value=_colorModel.fonts.values.elementAt(i);
+      var fileInfo2 = await getFileInfo(key);
+      fontInfos.add(FontInfo(key, value, fileInfo2));
+    }
+    return fontInfos;
   }
 
   Future<FileInfo> getFileInfo(String key) async {
@@ -197,4 +223,12 @@ class StateFontSet extends State<FontSet> {
 
 //   BotToast.showText(text: "$name 字体下载完成");
 // }
+}
+
+class FontInfo {
+  String key;
+  String value;
+  FileInfo fileInfo;
+
+  FontInfo(this.key, this.value, this.fileInfo);
 }

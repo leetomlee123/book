@@ -34,12 +34,24 @@ class _BookShelfState extends State<BookShelf>
                     //   AssetImage("images/vip.png"),
                     //   size: 24,
                     // ),
+                    flexibleSpace: _colorModel.dark?Container():Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                            colors: [
+                              // Colors.accents[_colorModel.idx].shade100,
+                              Colors.accents[_colorModel.idx].shade200,
+                              Colors.accents[_colorModel.idx].shade400,
+                            ],
+                            begin: Alignment.centerRight,
+                            end: Alignment.centerLeft),
+                      ),
+                    ),
                     leading: IconButton(
-                      color: _colorModel.dark ? Colors.white : Colors.black,
+                      // color: _colorModel.dark ? Colors.white : Colors.black,
                       icon: ImageIcon(
                         AssetImage("images/account.png"),
                         size: 32.0,
-                        color: _colorModel.dark ? Colors.white : Colors.black,
+                        // color: _colorModel.dark ? Colors.white : Colors.black,
                       ),
                       onPressed: () {
                         eventBus.fire(OpenEvent("p"));
@@ -49,17 +61,17 @@ class _BookShelfState extends State<BookShelf>
                     title: Text(
                       '书架',
                       style: TextStyle(
-                        color: _colorModel.dark ? Colors.white : Colors.black,
-                      ),
+                          // color: _colorModel.dark ? Colors.white : Colors.black,
+                          ),
                     ),
                     centerTitle: true,
                     actions: <Widget>[
                       IconButton(
-                        color: _colorModel.dark ? Colors.white : Colors.black,
+                        // color: _colorModel.dark ? Colors.white : Colors.black,
                         icon: ImageIcon(
                           AssetImage("images/search.png"),
                           size: 20.0,
-                          color: _colorModel.dark ? Colors.white : Colors.black,
+                          // color: _colorModel.dark ? Colors.white : Colors.black,
                         ),
                         onPressed: () {
                           Routes.navigateTo(context, Routes.search,
@@ -67,11 +79,11 @@ class _BookShelfState extends State<BookShelf>
                         },
                       ),
                       IconButton(
-                        color: _colorModel.dark ? Colors.white : Colors.black,
+                        // color: _colorModel.dark ? Colors.white : Colors.black,
                         icon: ImageIcon(
                           AssetImage("images/more_vert.png"),
                           size: 25.0,
-                          color: _colorModel.dark ? Colors.white : Colors.black,
+                          // color: _colorModel.dark ? Colors.white : Colors.black,
                         ),
                         onPressed: () async {
                           String shelfModelName =

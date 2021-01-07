@@ -43,16 +43,28 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
           ? Scaffold()
           : Scaffold(
               appBar: AppBar(
+                flexibleSpace: value.dark?Container(): Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [
+                          Colors.accents[value.idx].shade200,
+                          Colors.accents[value.idx].shade400,
+                          // Colors.accents[value.idx].shade400,
+                        ],
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft),
+                  ),
+                ),
                 backgroundColor: Colors.transparent,
                 title: Text(
                   "美剧",
                   style: TextStyle(
-                    color: value.dark ? Colors.white : Colors.black,
+                    // color: value.dark ? Colors.white : Colors.black,
                   ),
                 ),
                 centerTitle: true,
                 leading: IconButton(
-                  color: value.dark ? Colors.white : Colors.black,
+                  // color: value.dark ? Colors.white : Colors.black,
                   icon: Icon(Icons.history),
                   onPressed: () {
                     eventBus.fire(OpenEvent("m"));
@@ -61,11 +73,11 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                 elevation: 0,
                 actions: <Widget>[
                        IconButton(
-                        color: value.dark ? Colors.white : Colors.black,
+                        color:  Colors.white ,
                         icon: ImageIcon(
                           AssetImage("images/search.png"),
                           size: 20.0,
-                          color: value.dark ? Colors.white : Colors.black,
+                          color:Colors.white,
                         ),
                         onPressed: () {
                            Routes.navigateTo(context, Routes.search,

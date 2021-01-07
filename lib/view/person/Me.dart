@@ -26,6 +26,7 @@ class Me extends StatelessWidget {
       return PreferredSize(
           preferredSize: Size.fromHeight(170),
           child: UserAccountsDrawerHeader(
+
             accountEmail: Text(
               SpUtil.getString('email') ?? "",
               style: TextStyle(color: Colors.black),
@@ -63,6 +64,7 @@ class Me extends StatelessWidget {
                 Padding(
                   child: Container(
                     height: 80,
+
                     width: 80,
                     child: CircleAvatar(
                       backgroundImage: AssetImage("images/account.png"),
@@ -256,13 +258,13 @@ class Me extends StatelessWidget {
                   launch('https://github.com/leetomlee123/book');
                 },
               ),
-            //  getItem(
-            //    ImageIcon(AssetImage("images/logo.png")),
-            //    '更新',
-            //        () {
-            //      launch('https://web.leetomlee.xyz/');
-            //    },
-            //  ),
+             // getItem(
+             //   ImageIcon(AssetImage("images/logo.png")),
+             //   '更新',
+             //       () {
+             //     launch('https://web.leetomlee.xyz/');
+             //   },
+             // ),
               getItem(
                 ImageIcon(AssetImage("images/ab.png")),
                 '关于',

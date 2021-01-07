@@ -109,6 +109,12 @@ class ReadModel with ChangeNotifier {
       }
       await intiPageContent(book.cur, false);
       // if (isPage) {
+      if (book.index == -1) {
+        //最后一页
+        book.index = (prePage?.pageOffsets?.length ?? 0) +
+            (curPage?.pageOffsets?.length ?? 0) -
+            1;
+      }
       pageController = PageController(initialPage: book.index);
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
@@ -272,9 +278,10 @@ class ReadModel with ChangeNotifier {
       //下一章
       int tempCur = book.cur + 1;
       if (tempCur >= chapters.length) {
-        BotToast.showText(text: "已经是最后一页");
-        pageController.previousPage(
-            duration: Duration(microseconds: 1), curve: Curves.ease);
+        book.index = -1;
+        // BotToast.showText(text: "已经是最后一页");
+        // pageController.previousPage(
+        //     duration: Duration(microseconds: 1), curve: Curves.ease);
       } else {
         book.cur += 1;
         prePage = curPage;
@@ -521,6 +528,8 @@ class ReadModel with ChangeNotifier {
 
   Widget firstPage() {
     return Container(
+
+
       padding: EdgeInsets.only(top: 100),
       child: Center(
         child: Column(
@@ -574,9 +583,10 @@ class ReadModel with ChangeNotifier {
   }
 
   Widget noMorePage() {
-    return Container(
-      child: Center(
-        child: Text('曾经沧海难为水,除却巫山不是云'),
+    return Center(
+      child: Text(
+        '等待作者更新',
+        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
       ),
     );
   }
@@ -627,7 +637,7 @@ class ReadModel with ChangeNotifier {
                               style: TextStyle(
                                 fontSize: 12 / Screen.textScaleFactor,
                                 color: model.dark
-                                    ? Color(0x5FFFFFFF)
+                                    ? Color(0x8FFFFFFF)
                                     : Colors.black,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -635,7 +645,7 @@ class ReadModel with ChangeNotifier {
                           ),
                           Expanded(
                               child: Container(
-                                  margin: EdgeInsets.only(left: 15, right: 15),
+                                  margin: EdgeInsets.only(left: 18, right: 12),
                                   alignment: i == (sum - 1)
                                       ? Alignment.topLeft
                                       : Alignment.centerLeft,
@@ -647,12 +657,13 @@ class ReadModel with ChangeNotifier {
                                         fontFamily: SpUtil.getString("fontName",
                                             defValue: "Roboto"),
                                         color: model.dark
-                                            ? Color(0x5FFFFFFF)
+                                            ? Color(0x8FFFFFFF)
                                             : Colors.black,
                                         locale: Locale('zh_CN'),
                                         decorationStyle:
                                             TextDecorationStyle.wavy,
-                                        letterSpacing: ReadSetting.getLatterSpace(),
+                                        letterSpacing:
+                                            ReadSetting.getLatterSpace(),
                                         fontSize: ReadSetting.getFontSize(),
                                         height: ReadSetting.getLineHeight()),
                                   ))),
@@ -670,7 +681,7 @@ class ReadModel with ChangeNotifier {
                                   style: TextStyle(
                                     fontSize: 12 / Screen.textScaleFactor,
                                     color: model.dark
-                                        ? Color(0x5FFFFFFF)
+                                        ? Color(0x8FFFFFFF)
                                         : Colors.black,
                                   ),
                                   textAlign: TextAlign.center,

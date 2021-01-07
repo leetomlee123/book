@@ -17,7 +17,9 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class BooksWidget extends StatefulWidget {
   final String type;
+
   BooksWidget(this.type);
+
   @override
   _BooksWidgetState createState() => _BooksWidgetState();
 }
@@ -27,6 +29,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   RefreshController _refreshController;
   ShelfModel _shelfModel;
   bool isShelf;
+
   @override
   void initState() {
     isShelf = this.widget.type == '';
@@ -90,7 +93,7 @@ class _BooksWidgetState extends State<BooksWidget> {
           crossAxisCount: 3,
           mainAxisSpacing: 10.0,
           crossAxisSpacing: 10.0,
-          childAspectRatio: 0.8),
+          childAspectRatio: 0.75),
       children: cover(),
     );
   }
@@ -108,16 +111,27 @@ class _BooksWidgetState extends State<BooksWidget> {
             Stack(
               alignment: AlignmentDirectional.topCenter,
               children: <Widget>[
-                PicWidget(
-                  book.Img,
-                  width: (ScreenUtil.getScreenW(context) - 100) / 3,
-                  height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.2,
+                Container(
+                  child: PicWidget(
+                    book.Img,
+                    width: (ScreenUtil.getScreenW(context) - 100) / 3,
+                    height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
+                  ),
+                  // decoration:
+                  //     BoxDecoration(shape: BoxShape.rectangle, boxShadow: [
+                  //       BoxShadow(
+                  //           color: Colors.black12,
+                  //           offset: Offset(0.0, 15.0), //阴影xy轴偏移量
+                  //           blurRadius: 15.0, //阴影模糊程度
+                  //           spreadRadius: 1.0 //阴影扩散程度
+                  //       )
+                  // ]),
                 ),
                 book.NewChapterCount == 1
                     ? Container(
                         width: (ScreenUtil.getScreenW(context) - 100) / 3,
                         height:
-                            ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.2,
+                            ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
                         child: Align(
                           alignment: Alignment.topRight,
                           child: Image.asset(
@@ -250,7 +264,6 @@ class _BooksWidgetState extends State<BooksWidget> {
                     )
                   ],
                 ),
-               
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -283,7 +296,6 @@ class _BooksWidgetState extends State<BooksWidget> {
                     ),
                   ],
                 ),
-              
               ],
             ),
           ),

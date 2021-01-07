@@ -3,10 +3,10 @@ import 'dart:ui';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/Book.dart';
-
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -35,6 +35,7 @@ class _BookDetailState extends State<BookDetail> {
   bool inShelf = false;
   int maxLines = 3;
   int maxLine = 3;
+
   @override
   void initState() {
     book = new Book(
@@ -83,7 +84,7 @@ class _BookDetailState extends State<BookDetail> {
             AppBar(
               backgroundColor: Colors.transparent,
               leading: IconButton(
-                color: Colors.white ,
+                color: Colors.white,
                 icon: Icon(Icons.arrow_back),
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -96,7 +97,7 @@ class _BookDetailState extends State<BookDetail> {
                     child: Text(
                       '书架',
                       style: TextStyle(
-                        color:  Colors.white ,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -120,94 +121,100 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   Widget _bookHead() {
-    return Column(children: [
-      Row(children: <Widget>[
-        Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Container(
-              padding: const EdgeInsets.only(left: 15.0, top: 5.0, bottom: 10.0),
-              child: PicWidget(book.Img),
-            )
-          ],
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Container(
-              width: ScreenUtil.getScreenW(context) - 120,
-              padding: const EdgeInsets.only(left: 20.0, top: 5.0),
-              child: Text(
-                book.Name,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15,color: Colors.white),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.only(left: 20.0, top: 2.0),
-              child: Text('作者: ${book.Author}',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12,color: Colors.white)),
-            ),
-            Container(
-              padding: const EdgeInsets.only(left: 20.0, top: 2.0),
-              child: new Text('类型: ' + book.CName,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  style: TextStyle(fontSize: 12,color: Colors.white)),
-            ),
-            Container(
-              padding: const EdgeInsets.only(left: 20.0, top: 2.0),
-              child: Text('状态: ${this.widget._bookInfo.BookStatus}',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  style: TextStyle(fontSize: 12,color: Colors.white)),
-              width: 270,
-            ),
-            Container(
+    return Column(
+      children: [
+        Row(children: <Widget>[
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              Container(
                 padding:
-                const EdgeInsets.only(left: 15.0, top: 2.0, bottom: 10.0),
-                child: Row(
-                  children: <Widget>[
-                    RatingBar(
-                      itemSize: 30,
-                      initialRating: this.widget._bookInfo.Rate ?? 1,
-                      minRating: 1,
-                      direction: Axis.horizontal,
-                      allowHalfRating: true,
-                      itemCount: 5,
-                      itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                      itemBuilder: (context, _) => Icon(
-                        Icons.star,
-                        color: Colors.amber,
+                    const EdgeInsets.only(left: 15.0, top: 5.0, bottom: 10.0),
+                child: PicWidget(book.Img),
+              )
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: ScreenUtil.getScreenW(context) - 120,
+                padding: const EdgeInsets.only(left: 20.0, top: 5.0),
+                child: Text(
+                  book.Name,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 15, color: Colors.white),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.only(left: 20.0, top: 2.0),
+                child: Text('作者: ${book.Author}',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+              Container(
+                padding: const EdgeInsets.only(left: 20.0, top: 2.0),
+                child: new Text('类型: ' + book.CName,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+              Container(
+                padding: const EdgeInsets.only(left: 20.0, top: 2.0),
+                child: Text('状态: ${this.widget._bookInfo.BookStatus}',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+                width: 270,
+              ),
+              Container(
+                  padding:
+                      const EdgeInsets.only(left: 15.0, top: 2.0, bottom: 10.0),
+                  child: Row(
+                    children: <Widget>[
+                      RatingBar(
+                        itemSize: 30,
+                        initialRating: this.widget._bookInfo.Rate ?? 1,
+                        minRating: 1,
+                        direction: Axis.horizontal,
+                        allowHalfRating: true,
+                        itemCount: 5,
+                        itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                        itemBuilder: (context, _) => Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                        ),
+                        onRatingUpdate: (rating) {},
                       ),
-                      onRatingUpdate: (rating) {
-
-                      },
-                    ),
-                    // RatingBar(
-                    //   initialRating: _bookInfo.Rate ?? 0.0,
-                    //   minRating: 1,
-                    //   direction: Axis.horizontal,
-                    //   allowHalfRating: true,
-                    //   itemCount: 5,
-                    //   itemSize: 25,
-                    //   itemPadding:
-                    //       EdgeInsets.symmetric(horizontal: 1.0),
-                    //   itemBuilder: (context, _) => Icon(
-                    //     Icons.star,
-                    //     color: Colors.amber,
-                    //   ),
-                    //   onRatingUpdate: (double value) {},
-                    // ),
-                    Text('${this.widget._bookInfo.Rate ?? 0.0}分',style: TextStyle(color: Colors.white),)
-                  ],
-                )),
-          ],
-        ),
-      ]),
-      SizedBox(height: 20,)
-    ],);
+                      // RatingBar(
+                      //   initialRating: _bookInfo.Rate ?? 0.0,
+                      //   minRating: 1,
+                      //   direction: Axis.horizontal,
+                      //   allowHalfRating: true,
+                      //   itemCount: 5,
+                      //   itemSize: 25,
+                      //   itemPadding:
+                      //       EdgeInsets.symmetric(horizontal: 1.0),
+                      //   itemBuilder: (context, _) => Icon(
+                      //     Icons.star,
+                      //     color: Colors.amber,
+                      //   ),
+                      //   onRatingUpdate: (double value) {},
+                      // ),
+                      Text(
+                        '${this.widget._bookInfo.Rate ?? 0.0}分',
+                        style: TextStyle(color: Colors.white),
+                      )
+                    ],
+                  )),
+            ],
+          ),
+        ]),
+        SizedBox(
+          height: 20,
+        )
+      ],
+    );
   }
 
   Widget _bookDesc() {
@@ -331,7 +338,7 @@ class _BookDetailState extends State<BookDetail> {
     return this.widget._bookInfo.SameAuthorBooks != null
         ? ListView.builder(
             shrinkWrap: true, //解决无限高度问题
-            physics: NeverScrollableScrollPhysics(), //禁用滑动事件
+            physics: NeverScrollableScrollPhysics(),
             itemBuilder: (context, i) {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -414,10 +421,263 @@ class _BookDetailState extends State<BookDetail> {
 
   @override
   Widget build(BuildContext context) {
+    var width = (Screen.width - 10) / 2;
     // return SliverAppBarDemo(this.widget._bookInfo);
+    return Material(
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                // backgroundColor: Colors.transparent,
+
+                leading: IconButton(
+                  color: Colors.white,
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                elevation: 0,
+                actions: <Widget>[
+                  GestureDetector(
+                    child: Center(
+                      child: Text(
+                        '书架',
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(context).popUntil(ModalRoute.withName('/'));
+                      eventBus.fire(new NavEvent(0));
+                    },
+                  ),
+                  SizedBox(
+                    width: 20,
+                  )
+                ],
+                expandedHeight: 210.0,
+                // backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  // title: const Text('Demo'),
+                  background: Stack(
+                    children: [
+                      Container(
+                        child: ClipRRect(
+                          // make sure we apply clip it properly
+                          child: BackdropFilter(
+                            //背景滤镜
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            //背景模糊化
+                            child: Container(
+                              alignment: Alignment.center,
+                              color: Colors.grey.withOpacity(0.1),
+                            ),
+                          ),
+                        ),
+                        decoration: BoxDecoration(
+                            image: DecorationImage(
+                                fit: BoxFit.fitWidth,
+                                image: CachedNetworkImageProvider(
+                                  book.Img,
+                                ))),
+                      ),
+                      AppBar(
+                        backgroundColor: Colors.transparent,
+                        bottom: PreferredSize(
+                          child: _bookHead(),
+                          preferredSize: Size.fromHeight(140),
+                        ),
+                        // flexibleSpace: _colorModel.dark?Container():Container(
+                        //   decoration: BoxDecoration(
+                        //     gradient: LinearGradient(
+                        //         colors: [
+                        //           // Colors.accents[_colorModel.idx].shade100,
+                        //           Colors.accents[_colorModel.idx].shade200,
+                        //           Colors.accents[_colorModel.idx].shade400,
+                        //         ],
+                        //         begin: Alignment.centerRight,
+                        //         end: Alignment.centerLeft),
+                        //   ),
+                        // ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+              SliverList(
+                  delegate: SliverChildListDelegate([
+                _bookDesc(),
+                Divider(),
+                _bookMenu(),
+                Divider(),
+                Padding(
+                  padding: const EdgeInsets.only(left: 17.0, top: 15.0),
+                  child: Text(
+                    '作者还写过:',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                _sameAuthorBooks(),
+                Padding(
+                  padding: const EdgeInsets.only(left: 17.0, top: 15.0),
+                  child: Center(
+                    child: Text(
+                      '到底啦',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                ),
+              ])),
+            ],
+          ),
+Align(alignment: Alignment.bottomCenter,child:    Store.connect<ShelfModel>(builder: (context, ShelfModel d, child) {
+  return BottomNavigationBar(
+    type: BottomNavigationBarType.fixed,
+    unselectedItemColor: _colorModel.dark ? Colors.white : null,
+    //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
+    items: [
+
+      d.shelf
+          .map((f) => f.Id)
+          .toList()
+          .contains(this.widget._bookInfo.Id)
+          ? BottomNavigationBarItem(
+
+        icon: Icon(
+          Icons.clear,
+        ),
+        label: '移除书架',
+
+      )
+          : BottomNavigationBarItem(
+        icon: Icon(
+          Icons.playlist_add,
+        ),
+        label: '加入书架',
+      ),
+      BottomNavigationBarItem(
+        icon: ImageIcon(
+          AssetImage("images/read.png"),
+        ),
+        label: '立即阅读',
+      ),
+      // BottomNavigationBarItem(
+      //   icon: Icon(
+      //     Icons.cloud_download,
+      //   ),
+      //   label: '全本缓存',
+      // ),
+    ],
+
+    onTap: (int i) {
+      switch (i) {
+        case 0:
+          {
+            Store.value<ShelfModel>(context).modifyShelf(book);
+          }
+          break;
+        case 1:
+          {
+            Routes.navigateTo(
+              context,
+              Routes.read,
+              params: {
+                'read': jsonEncode(book),
+              },
+            );
+          }
+          break;
+      // case 2:
+      //   {
+      //     BotToast.showText(text: "开始下载...");
+      //
+      //     var value = Store.value<ReadModel>(context);
+      //     value.book = _bookInfo as Book;
+      //     value.book.UTime = _bookInfo.LastTime;
+      //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
+      //     value.downloadAll();
+      //   }
+      //   break;
+      }
+    },
+  );
+}),)
+
+
+          // Column(
+          //   children: [
+          //     Expanded(child: Container()),
+          //     Row(
+          //       mainAxisAlignment: MainAxisAlignment.center,
+          //       children: [
+          //         Container(
+          //           width: width,
+          //           height: 55,
+          //           padding: EdgeInsets.only(
+          //             left: 5,
+          //           ),
+          //           decoration: BoxDecoration(
+          //             color: Colors.red,
+          //
+          //             borderRadius: BorderRadius.only(
+          //                 bottomLeft: Radius.circular(10.0),
+          //                 topLeft: Radius.circular(10.0)),
+          //           ),
+          //           // color: Colors.red,
+          //         ),
+          //         Container(
+          //           width: width,
+          //           height: 55,
+          //           padding: EdgeInsets.only(right: 5),
+          //           decoration: BoxDecoration(
+          //             color: Colors.blue,
+          //
+          //             borderRadius: BorderRadius.only(
+          //                 bottomRight: Radius.circular(10.0),
+          //                 topRight: Radius.circular(10.0)),
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //     SizedBox(
+          //       height: 1,
+          //     )
+          //   ],
+          // )
+          // Align(
+          //   child: Row(
+          //     children: [
+          //       Container(
+          //           width: width,
+          //           height: 30,
+          //           decoration: BoxDecoration(
+          //             gradient: LinearGradient(
+          //                 colors: [
+          //                   // Colors.accents[_colorModel.idx].shade100,
+          //                   Colors.accents[_colorModel.idx].shade200,
+          //                   Colors.accents[_colorModel.idx].shade400,
+          //                 ],
+          //                 begin: Alignment.centerRight,
+          //                 end: Alignment.centerLeft),
+          //           )),
+          //       Container(
+          //         width: width,
+          //       ),
+          //     ],
+          //   ),
+          //   alignment: Alignment.topCenter,
+          // )
+        ],
+      ),
+    );
     return Scaffold(
         appBar: _appBar(),
         body: ListView(
+          physics: NeverScrollableScrollPhysics(),
           children: <Widget>[
             _bookDesc(),
             Divider(),

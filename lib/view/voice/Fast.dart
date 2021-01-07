@@ -20,7 +20,6 @@ class Fast extends StatelessWidget {
                     autofocus: true,
                     groupValue: model.fast,
                     onChanged: (v) {
-                      print(v);
                       model.setFast(v);
                       model.audioPlayer
                           .setPlaybackRate(playbackRate: model.fast);

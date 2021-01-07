@@ -35,7 +35,7 @@ class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
         child: SAppBarSearch(
           onSearch: search,
         ),
-        preferredSize: Size.fromHeight(83),
+        preferredSize: Size.fromHeight(55),
       ),
       body: Store.connect<VoiceModel>(
           builder: (context, VoiceModel model, child) {

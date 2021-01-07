@@ -60,13 +60,25 @@ class StateGoodBook extends State<GoodBook>
       length: tabs.length,
       child: Scaffold(
           appBar: AppBar(
+            flexibleSpace: value.dark?Container():Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [
+                      Colors.accents[value.idx].shade200,
+                      Colors.accents[value.idx].shade400,
+                      // Colors.accents[value.idx].shade400,
+                    ],
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft),
+              ),
+            ),
             backgroundColor: Colors.transparent,
             title: TabBar(
               unselectedLabelColor:
-                  !value.dark ? Colors.black38 : Colors.white38,
-              labelColor: value.dark ? Colors.white : Colors.black,
+                   Colors.white38 ,
+              // labelColor: value.dark ? Colors.white : Colors.black,
               indicatorColor:
-                  value.dark ? Colors.white : Theme.of(context).primaryColor,
+                  Colors.white ,
               indicatorSize: TabBarIndicatorSize.label,
               controller: controller,
               tabs: tabs,
