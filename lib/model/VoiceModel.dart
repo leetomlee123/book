@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 
 class VoiceModel with ChangeNotifier {
   String modelJsonKey = "Voice_History";
-  String fastKey = "voicefast1";
+  String fastKey = "voicefast";
   bool hasEntity = false;
   bool isVoiceIdx = true;
   List<VoiceMore> voiceMores = [];
@@ -29,7 +29,7 @@ class VoiceModel with ChangeNotifier {
   List<VoiceIdx> voiceIdxs = [];
   String link = '';
   String url = '';
-  double fast =SpUtil.getDouble("voicefast1", defValue: 1.0);
+  double fast = 0.0;
   double position = 0.1;
   String start = "00:00";
   String end = "00:00";
@@ -49,10 +49,14 @@ class VoiceModel with ChangeNotifier {
     showMenu = v;
     notifyListeners();
   }
-double getFast(){
 
-return SpUtil.getDouble(fastKey, defValue: 1.0);
-}
+  double getFast() {
+    if (fast == 0.0) {
+      fast = SpUtil.getDouble("voicefast1", defValue: 1.0);
+    }
+    return fast;
+  }
+
   VoiceModel() {
     if (audioPlayer == null) {
       audioPlayer = AudioPlayer();
@@ -191,13 +195,13 @@ return SpUtil.getDouble(fastKey, defValue: 1.0);
     try {
       var ux = voiceDetail.chapters[temp].link;
 
-      Response resp1 = await Util(null).http().get(Common.voiceUrl + "?url=$ux");
+      Response resp1 =
+          await Util(null).http().get(Common.voiceUrl + "?url=$ux");
 
       url = resp1.data['url'];
       await CustomCacheManager.instanceVoice
           .getSingleFile(url, key: link + temp.toString());
-    }
-    on Exception {
+    } on Exception {
       loadNext = true;
     }
 
@@ -207,7 +211,7 @@ return SpUtil.getDouble(fastKey, defValue: 1.0);
   change(int p) async {
     if (loadNext && (p > ((len / 4) * 3))) {
       loadNext = false;
-      await loadVolum(idx+1);
+      await loadVolum(idx + 1);
     }
     position = p.toDouble();
     start = DateUtil.formatDateMs(p, format: "mm:ss");

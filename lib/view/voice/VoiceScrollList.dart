@@ -22,7 +22,7 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
     _colorModel = Store.value<ColorModel>(context);
     print("ok");
     controller =
-        AutoScrollController(initialScrollOffset: _voiceModel.idx * itemHeight);
+        AutoScrollController(initialScrollOffset: (_voiceModel.idx-3) * (itemHeight+10));
 
     super.initState();
   }
@@ -41,7 +41,9 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
                     : Colors.black,
                 width: 2),
             borderRadius: BorderRadius.circular(12)),
-        child: Text(_voiceModel.voiceDetail.chapters[idx].name),
+        child: Text(_voiceModel.voiceDetail.chapters[idx].name,style: TextStyle(    color: idx == _voiceModel.idx
+            ? _colorModel.theme.primaryColor
+            : Colors.black,),),
       ),
       onTap: () {
         if (_voiceModel.idx != idx) {

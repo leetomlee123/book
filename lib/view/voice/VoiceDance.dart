@@ -110,8 +110,9 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
         borderRadius: BorderRadius.all(Radius.circular(45.0)),
       ),
       height: 45,
-      width: 220,
+      width: 230,
       child: ListView(
+        padding: EdgeInsets.only(left: 10),
         scrollDirection: Axis.horizontal,
         children: [
           InkWell(

@@ -337,6 +337,7 @@ class _BookDetailState extends State<BookDetail> {
   Widget _sameAuthorBooks() {
     return this.widget._bookInfo.SameAuthorBooks != null
         ? ListView.builder(
+      padding: EdgeInsets.all(0),
             shrinkWrap: true, //解决无限高度问题
             physics: NeverScrollableScrollPhysics(),
             itemBuilder: (context, i) {
@@ -350,7 +351,7 @@ class _BookDetailState extends State<BookDetail> {
                         children: <Widget>[
                           Container(
                             padding:
-                                const EdgeInsets.only(left: 15.0, top: 10.0),
+                                const EdgeInsets.only(left: 15.0,top: 10),
                             child: PicWidget(
                               this.widget._bookInfo.SameAuthorBooks[i].Img,
                             ),
@@ -369,7 +370,7 @@ class _BookDetailState extends State<BookDetail> {
                           Container(
                               width: ScreenUtil.getScreenW(context) - 120,
                               padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10.0),
+                                  const EdgeInsets.only(left: 10.0,top: 10),
                               child: Text(
                                 this.widget._bookInfo.SameAuthorBooks[i].Name,
                                 overflow: TextOverflow.ellipsis,
@@ -531,82 +532,85 @@ class _BookDetailState extends State<BookDetail> {
                     ),
                   ),
                 ),
+                SizedBox(
+                  height: 40,
+                )
               ])),
             ],
           ),
-Align(alignment: Alignment.bottomCenter,child:    Store.connect<ShelfModel>(builder: (context, ShelfModel d, child) {
-  return BottomNavigationBar(
-    type: BottomNavigationBarType.fixed,
-    unselectedItemColor: _colorModel.dark ? Colors.white : null,
-    //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
-    items: [
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Store.connect<ShelfModel>(
+                builder: (context, ShelfModel d, child) {
+              return BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
+                unselectedItemColor: _colorModel.dark ? Colors.white : null,
+                //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
+                items: [
+                  d.shelf
+                          .map((f) => f.Id)
+                          .toList()
+                          .contains(this.widget._bookInfo.Id)
+                      ? BottomNavigationBarItem(
+                          icon: Icon(
+                            Icons.clear,
+                          ),
+                          label: '移除书架',
+                        )
+                      : BottomNavigationBarItem(
+                          icon: Icon(
+                            Icons.playlist_add,
+                          ),
+                          label: '加入书架',
+                        ),
+                  BottomNavigationBarItem(
+                    icon: ImageIcon(
+                      AssetImage("images/read.png"),
+                    ),
+                    label: '立即阅读',
+                  ),
+                  // BottomNavigationBarItem(
+                  //   icon: Icon(
+                  //     Icons.cloud_download,
+                  //   ),
+                  //   label: '全本缓存',
+                  // ),
+                ],
 
-      d.shelf
-          .map((f) => f.Id)
-          .toList()
-          .contains(this.widget._bookInfo.Id)
-          ? BottomNavigationBarItem(
-
-        icon: Icon(
-          Icons.clear,
-        ),
-        label: '移除书架',
-
-      )
-          : BottomNavigationBarItem(
-        icon: Icon(
-          Icons.playlist_add,
-        ),
-        label: '加入书架',
-      ),
-      BottomNavigationBarItem(
-        icon: ImageIcon(
-          AssetImage("images/read.png"),
-        ),
-        label: '立即阅读',
-      ),
-      // BottomNavigationBarItem(
-      //   icon: Icon(
-      //     Icons.cloud_download,
-      //   ),
-      //   label: '全本缓存',
-      // ),
-    ],
-
-    onTap: (int i) {
-      switch (i) {
-        case 0:
-          {
-            Store.value<ShelfModel>(context).modifyShelf(book);
-          }
-          break;
-        case 1:
-          {
-            Routes.navigateTo(
-              context,
-              Routes.read,
-              params: {
-                'read': jsonEncode(book),
-              },
-            );
-          }
-          break;
-      // case 2:
-      //   {
-      //     BotToast.showText(text: "开始下载...");
-      //
-      //     var value = Store.value<ReadModel>(context);
-      //     value.book = _bookInfo as Book;
-      //     value.book.UTime = _bookInfo.LastTime;
-      //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
-      //     value.downloadAll();
-      //   }
-      //   break;
-      }
-    },
-  );
-}),)
-
+                onTap: (int i) {
+                  switch (i) {
+                    case 0:
+                      {
+                        Store.value<ShelfModel>(context).modifyShelf(book);
+                      }
+                      break;
+                    case 1:
+                      {
+                        Routes.navigateTo(
+                          context,
+                          Routes.read,
+                          params: {
+                            'read': jsonEncode(book),
+                          },
+                        );
+                      }
+                      break;
+                    // case 2:
+                    //   {
+                    //     BotToast.showText(text: "开始下载...");
+                    //
+                    //     var value = Store.value<ReadModel>(context);
+                    //     value.book = _bookInfo as Book;
+                    //     value.book.UTime = _bookInfo.LastTime;
+                    //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
+                    //     value.downloadAll();
+                    //   }
+                    //   break;
+                  }
+                },
+              );
+            }),
+          )
 
           // Column(
           //   children: [

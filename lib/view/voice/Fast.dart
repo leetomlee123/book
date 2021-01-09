@@ -1,5 +1,6 @@
 import 'package:book/model/VoiceModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
 class Fast extends StatelessWidget {
@@ -18,11 +19,12 @@ class Fast extends StatelessWidget {
                   trailing: Radio(
                     value: e,
                     autofocus: true,
-                    groupValue: model.fast,
+                    groupValue: model.getFast(),
                     onChanged: (v) {
                       model.setFast(v);
                       model.audioPlayer
                           .setPlaybackRate(playbackRate: model.fast);
+
                     },
                   ),
                 ))

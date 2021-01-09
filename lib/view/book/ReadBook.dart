@@ -145,7 +145,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     : "images/${bgimg[readModel?.bgIdx ?? 0]}",
                                 fit: BoxFit.cover)),
                         readModel.isPage
-                            ? PageView.builder(
+                            ?
+                        PageView.builder(
                                 controller: model.pageController,
                                 physics: AlwaysScrollableScrollPhysics(),
                                 itemBuilder: (BuildContext context, int index) {
