@@ -17,7 +17,6 @@ import 'package:book/view/movie/VideoDetail.dart';
 import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
-import 'package:book/view/person/Upgrade.dart';
 import 'package:book/view/system/FontSet.dart';
 import 'package:book/view/voice/CateVoices.dart';
 import 'package:book/view/voice/VoiceList.dart';
@@ -53,10 +52,7 @@ var fontSetHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   return FontSet();
 });
-var upgradeHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  return Upgrade();
-});
+
 
 var allTagBookHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
