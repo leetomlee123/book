@@ -117,15 +117,14 @@ class _BooksWidgetState extends State<BooksWidget> {
                     width: (ScreenUtil.getScreenW(context) - 100) / 3,
                     height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
                   ),
-                  // decoration:
-                  //     BoxDecoration(shape: BoxShape.rectangle, boxShadow: [
-                  //       BoxShadow(
-                  //           color: Colors.black12,
-                  //           offset: Offset(0.0, 15.0), //阴影xy轴偏移量
-                  //           blurRadius: 15.0, //阴影模糊程度
-                  //           spreadRadius: 1.0 //阴影扩散程度
-                  //       )
-                  // ]),
+                  decoration:
+                      BoxDecoration(shape: BoxShape.rectangle, boxShadow: [
+                    BoxShadow(
+                        offset: Offset(2, 1), //x,y轴
+                        color: Colors.black38, //投影颜色
+                        blurRadius: 10.0 //投影距离
+                        )
+                  ]),
                 ),
                 book.NewChapterCount == 1
                     ? Container(
@@ -195,6 +194,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
+        itemExtent: (10 + (Screen.width / 4) * 1.23),
         itemCount: _shelfModel.shelf.length,
         itemBuilder: (context, i) {
           return GestureDetector(

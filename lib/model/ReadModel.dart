@@ -528,8 +528,8 @@ class ReadModel with ChangeNotifier {
 
   Widget firstPage() {
     return Container(
-
-
+      width: Screen.width,
+      height: Screen.height,
       padding: EdgeInsets.only(top: 100),
       child: Center(
         child: Column(
@@ -605,12 +605,17 @@ class ReadModel with ChangeNotifier {
     } else {
       int sum = r.pageOffsets.length;
       for (var i = 0; i < sum; i++) {
-        int end = int.parse(r.pageOffsets[i]);
-        String content = cts.substring(0, end);
-        cts = cts.substring(end, cts.length);
+        String content;
+        if (isPage) {
+          int end = int.parse(r.pageOffsets[i]);
+          content = cts.substring(0, end);
+          cts = cts.substring(end, cts.length);
 
-        while (cts.startsWith("\n")) {
-          cts = cts.substring(1);
+          while (cts.startsWith("\n")) {
+            cts = cts.substring(1);
+          }
+        } else {
+          content = r.chapterContent;
         }
 
         contents.add(Store.connect<ColorModel>(
@@ -711,13 +716,21 @@ class ReadModel with ChangeNotifier {
                             ),
                             child: Text(
                               content,
-                              style: TextStyle(
-                                  color: model.dark
-                                      ? Color.fromRGBO(128, 128, 128, 1)
-                                      : null,
-                                  fontSize: ReadSetting.getFontSize() /
-                                      Screen.textScaleFactor),
                               textAlign: TextAlign.justify,
+                              textScaleFactor: Screen.textScaleFactor,
+                              style: TextStyle(
+                                  fontFamily: SpUtil.getString("fontName",
+                                      defValue: "Roboto"),
+                                  color: model.dark
+                                      ? Color(0x8FFFFFFF)
+                                      : Colors.black,
+                                  locale: Locale('zh_CN'),
+                                  decorationStyle:
+                                  TextDecorationStyle.wavy,
+                                  letterSpacing:
+                                  ReadSetting.getLatterSpace(),
+                                  fontSize: ReadSetting.getFontSize(),
+                                  height: ReadSetting.getLineHeight()),
                             )),
                         SizedBox(
                           height: Screen.height / 2,

@@ -52,7 +52,7 @@ class VoiceModel with ChangeNotifier {
 
   double getFast() {
     if (fast == 0.0) {
-      fast = SpUtil.getDouble("voicefast1", defValue: 1.0);
+      fast = SpUtil.getDouble(fastKey, defValue: 1.0);
     }
     return fast;
   }
@@ -62,8 +62,8 @@ class VoiceModel with ChangeNotifier {
       audioPlayer = AudioPlayer();
       // audioPlayer.setReleaseMode(ReleaseMode.RELEASE);
     }
-
-    print("init voiceModel");
+    fast=SpUtil.getDouble(fastKey, defValue: 1.0);
+    print("init voiceModel $fast");
     if (SpUtil.haveKey(modelJsonKey)) {
       hasEntity = true;
       SpUtil.getObj(modelJsonKey, (v) {

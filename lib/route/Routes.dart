@@ -24,6 +24,7 @@ class Routes {
   static String voiceDetail = '/voiceDetail';
   static String voices = '/voices';
   static String voiceList = '/voiceList';
+  static String upgrade = '/upgrade';
 
 
   // 配置route
@@ -47,6 +48,7 @@ class Routes {
     router.define(voiceDetail, handler: voiceDetailHandler);
     router.define(voices, handler: voicesHandler);
     router.define(voiceList, handler: voiceListHandler);
+    router.define(upgrade, handler: upgradeHandler);
 
   }
 

@@ -5,7 +5,8 @@ import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/system/AnimationImages.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:book/view/voice/RollImg.dart';
+import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 
 class VoiceDance extends StatefulWidget {
@@ -15,44 +16,11 @@ class VoiceDance extends StatefulWidget {
 
 class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   ColorModel _colorModel;
-  VoiceModel _voiceModel;
-  AnimationController controller;
 
   @override
   void initState() {
-    eventBus.on<RollEvent>().listen((roll) {
-      if (roll.roll == "1") {
-        controller?.forward();
-      } else {
-        controller?.reset();
-      }
-    });
     _colorModel = Store.value<ColorModel>(context);
-    _voiceModel = Store.value<VoiceModel>(context);
-    controller =
-        AnimationController(duration: const Duration(seconds: 20), vsync: this);
-    if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
-      controller.forward();
-    }
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        //动画从 controller.forward() 正向执行 结束时会回调此方法
-        print("status is completed");
-        //重置起点
-        controller.reset();
-        //开启
-        controller.forward();
-      } else if (status == AnimationStatus.dismissed) {
-        //动画从 controller.reverse() 反向执行 结束时会回调此方法
-        print("status is dismissed");
-      } else if (status == AnimationStatus.forward) {
-        print("status is forward");
-        //执行 controller.forward() 会回调此状态
-      } else if (status == AnimationStatus.reverse) {
-        //执行 controller.reverse() 会回调此状态
-        print("status is reverse");
-      }
-    });
+
     super.initState();
   }
 
@@ -93,7 +61,7 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
           onTap: () {
             model.showMenuFun(true);
             if (model.audioPlayer.state == AudioPlayerState.PLAYING) {
-              controller.forward();
+              eventBus.fire(RollEvent("1"));
             }
           },
         );
@@ -116,7 +84,7 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
         scrollDirection: Axis.horizontal,
         children: [
           InkWell(
-            child: _buildRotationTransition(model),
+            child: RollImg(),
             onTap: () {
               Routes.navigateTo(context, Routes.voiceDetail,
                   params: {"link": model.link, "idx": model.idx.toString()});
@@ -130,9 +98,9 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
             ),
             onTap: () async {
               if (model.audioPlayer.state != AudioPlayerState.PLAYING) {
-                controller.forward();
+                 eventBus.fire(RollEvent("1"));
               } else {
-                controller.reset();
+                 eventBus.fire(RollEvent("0"));
               }
               await model.toggleState();
             },
@@ -155,9 +123,9 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
                 AssetImage("images/btu.png"),
               ),
               onTap: () async {
-                controller.reset();
+                 eventBus.fire(RollEvent("0"));
                 await model.changeUrl(1);
-                controller.forward();
+                 eventBus.fire(RollEvent("1"));
               },
             ),
           ),
@@ -188,32 +156,8 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildRotationTransition(VoiceModel model) {
-    return Center(
-      child: RotationTransition(
-        alignment: Alignment.center,
-        turns: controller,
-        child: Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-                // color: Colors.green,
-                borderRadius: BorderRadius.circular(35),
-                // 圆形图片
-                image: DecorationImage(
-                    image: model.voiceDetail == null
-                        ? AssetImage("images/nocover.jpg")
-                        : CachedNetworkImageProvider(
-                            model.voiceDetail.cover,
-                          ),
-                    fit: BoxFit.cover))),
-      ),
-    );
-  }
-
   @override
   void dispose() {
-    controller.dispose();
     super.dispose();
   }
 }

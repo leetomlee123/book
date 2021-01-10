@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
@@ -6,9 +8,11 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Me extends StatelessWidget {
@@ -26,7 +30,6 @@ class Me extends StatelessWidget {
       return PreferredSize(
           preferredSize: Size.fromHeight(170),
           child: UserAccountsDrawerHeader(
-
             accountEmail: Text(
               SpUtil.getString('email') ?? "",
               style: TextStyle(color: Colors.black),
@@ -64,7 +67,6 @@ class Me extends StatelessWidget {
                 Padding(
                   child: Container(
                     height: 80,
-
                     width: 80,
                     child: CircleAvatar(
                       backgroundImage: AssetImage("images/account.png"),
@@ -176,7 +178,7 @@ class Me extends StatelessWidget {
               ),
               getItem(
                 ImageIcon(AssetImage("images/co.png")),
-                '应用更新',
+                '交流联系',
                 ({int number = 953457248, bool isGroup = true}) async {
                   String url = isGroup
                       ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
@@ -258,13 +260,28 @@ class Me extends StatelessWidget {
                   launch('https://github.com/leetomlee123/book');
                 },
               ),
-             // getItem(
-             //   ImageIcon(AssetImage("images/logo.png")),
-             //   '更新',
-             //       () {
-             //     launch('https://web.leetomlee.xyz/');
-             //   },
-             // ),
+              getItem(
+                ImageIcon(AssetImage("images/upgrade.png")),
+                '应用更新',
+                () async {
+                  if (Platform.isAndroid) {
+                    FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
+                    var info = await FlutterBugly.getUpgradeInfo();
+                    print("get info $info ");
+                    if (info != null && info.id != null) {
+                      Navigator.pop(context);
+                      await showDialog(
+                        barrierDismissible: false,
+                        context: context,
+                        builder: (_) => UpdateDialog(info?.versionName ?? '',
+                            info?.newFeature ?? '', info?.apkUrl ?? ''),
+                      );
+                    }
+                  }
+                  //  Routes.navigateTo(context, Routes.upgrade,
+                  //                );
+                },
+              ),
               getItem(
                 ImageIcon(AssetImage("images/ab.png")),
                 '关于',
@@ -275,7 +292,7 @@ class Me extends StatelessWidget {
                             title: Text(('清阅揽胜  ')),
                             content: Text(
                               ReadSetting.poet,
-                              style: TextStyle(fontSize: 15,  height: 2.1),
+                              style: TextStyle(fontSize: 15, height: 2.1),
                             ),
                             actions: <Widget>[
                               FlatButton(

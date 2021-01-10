@@ -51,10 +51,6 @@ void main() {
       androidAppId: "9e35b3fab6",
       enableNotification: true,
       upgradeCheckPeriod: 60 * 60 * 24);
-  // FlutterBugly.init(
-  //     androidAppId: "a0ac5e889a",
-  //     enableNotification: true,
-  //     upgradeCheckPeriod: 60 * 60 * 24);
 }
 
 class MyApp extends StatelessWidget {
@@ -85,22 +81,18 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
 
-  void showUpdateDialog(String versionName, String feature, String url) async {
-    await showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (_) => UpdateDialog(versionName, feature, url),
-    );
-  }
-
   Future<void> _checkUpdate() async {
     if (Platform.isAndroid) {
       FlutterBugly.checkUpgrade(isManual: false, isSilence: true);
       var info = await FlutterBugly.getUpgradeInfo();
       print("get info $info ");
       if (info != null && info.id != null) {
-        showUpdateDialog(info?.versionName ?? '', info?.newFeature ?? '',
-            info?.apkUrl ?? '');
+        await showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (_) => UpdateDialog(info?.versionName ?? '',
+              info?.newFeature ?? '', info?.apkUrl ?? ''),
+        );
       }
     }
   }

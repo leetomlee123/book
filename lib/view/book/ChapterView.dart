@@ -114,6 +114,7 @@ class _ChapterViewItem extends State<ChapterView> {
                         ),
                       ],
                     ),
+
                   ],
                 ),
                 SizedBox(

@@ -58,8 +58,8 @@ class _VoiceDetailState extends State<VoiceDetailView>
   Widget buildRotationTransition() {
     return Center(
         child: Container(
-      width: 160,
-      height: 220,
+      width: 200,
+      height: 270,
       child: PicWidget(
         _voiceModel.voiceDetail.cover,
         width: 160,

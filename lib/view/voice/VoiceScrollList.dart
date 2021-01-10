@@ -20,7 +20,6 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
   void initState() {
     _voiceModel = Store.value<VoiceModel>(context);
     _colorModel = Store.value<ColorModel>(context);
-    print("ok");
     controller =
         AutoScrollController(initialScrollOffset: (_voiceModel.idx-3) * (itemHeight+10));
 
@@ -59,6 +58,7 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
     return Container(
       child: ListView.builder(
           controller: controller,
+          itemExtent: itemHeight+16,
           padding: EdgeInsets.all(8),
           itemBuilder: (BuildContext context, int ix) {
             return _getRow(ix);
