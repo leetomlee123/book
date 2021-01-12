@@ -265,21 +265,22 @@ class _BooksWidgetState extends State<BooksWidget> {
                   ],
                 ),
                 Column(
+               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(
                       width: ScreenUtil.getScreenW(context) - 120,
                       padding: const EdgeInsets.only(
-                          left: 10.0, top: 5.0, right: 10),
+                          left: 10.0,  right: 10),
                       child: Text(
                         item.Name,
                         style: TextStyle(
-                            fontSize: 16.0, fontWeight: FontWeight.bold),
+                            fontSize: 18.0, fontWeight: FontWeight.bold),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.only(
-                          left: 10.0, top: 22.0, right: 10),
+                          left: 10.0, right: 10),
                       child: Text(
                         item.LastChapter,
                         style: TextStyle(fontSize: 12),
@@ -290,7 +291,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                     ),
                     Container(
                       padding: const EdgeInsets.only(
-                          left: 10.0, top: 22.0, right: 10),
+                          left: 10.0, right: 10),
                       child: Text(item?.UTime ?? '',
                           style: TextStyle(color: Colors.grey, fontSize: 11)),
                     ),
