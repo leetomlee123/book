@@ -146,18 +146,18 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
     if (!canPop && !hasDrawer && widget.leading == null) left = 5;
     if (_controller.text.isEmpty && widget.actions.isEmpty) right = 5;
     return AppBar(
-      flexibleSpace: _colorModel.dark?Container(): Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-              colors: [
-                Colors.accents[_colorModel.idx].shade200,
-                Colors.accents[_colorModel.idx].shade400,
-                // Colors.accents[value.idx].shade400,
-              ],
-              begin: Alignment.centerRight,
-              end: Alignment.centerLeft),
-        ),
-      ),
+      // flexibleSpace: _colorModel.dark?Container(): Container(
+      //   decoration: BoxDecoration(
+      //     gradient: LinearGradient(
+      //         colors: [
+      //           Colors.accents[_colorModel.idx].shade200,
+      //           Colors.accents[_colorModel.idx].shade400,
+      //           // Colors.accents[value.idx].shade400,
+      //         ],
+      //         begin: Alignment.centerRight,
+      //         end: Alignment.centerLeft),
+      //   ),
+      // ),
       // backgroundColor: !_colorModel.dark ? Colors.white : Colors.black,
       backgroundColor: Colors.transparent,
       titleSpacing: 0,

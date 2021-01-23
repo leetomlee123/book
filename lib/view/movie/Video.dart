@@ -43,28 +43,28 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
           ? Scaffold()
           : Scaffold(
               appBar: AppBar(
-                flexibleSpace: value.dark?Container(): Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: [
-                          Colors.accents[value.idx].shade200,
-                          Colors.accents[value.idx].shade400,
-                          // Colors.accents[value.idx].shade400,
-                        ],
-                        begin: Alignment.centerRight,
-                        end: Alignment.centerLeft),
-                  ),
-                ),
+                // flexibleSpace: value.dark?Container(): Container(
+                //   decoration: BoxDecoration(
+                //     gradient: LinearGradient(
+                //         colors: [
+                //           Colors.accents[value.idx].shade200,
+                //           Colors.accents[value.idx].shade400,
+                //           // Colors.accents[value.idx].shade400,
+                //         ],
+                //         begin: Alignment.centerRight,
+                //         end: Alignment.centerLeft),
+                //   ),
+                // ),
                 backgroundColor: Colors.transparent,
                 title: Text(
                   "美剧",
                   style: TextStyle(
-                    // color: value.dark ? Colors.white : Colors.black,
+                    color: value.dark ? Colors.white : Colors.black,
                   ),
                 ),
                 centerTitle: true,
                 leading: IconButton(
-                  // color: value.dark ? Colors.white : Colors.black,
+                  color: value.dark ? Colors.white : Colors.black,
                   icon: Icon(Icons.history),
                   onPressed: () {
                     eventBus.fire(OpenEvent("m"));
@@ -77,7 +77,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                         icon: ImageIcon(
                           AssetImage("images/search.png"),
                           size: 20.0,
-                          color:Colors.white,
+                          color: value.dark ? Colors.white : Colors.black,
                         ),
                         onPressed: () {
                            Routes.navigateTo(context, Routes.search,
@@ -136,6 +136,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
 
   Widget swiper() {
     return Container(
+
       height: 150.0,
       width: ScreenUtil.getScreenW(context),
       child: Swiper(
@@ -160,6 +161,8 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
 
   Widget item(String title, List<GBook> bks, String key) {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8),
+
       child: ListView(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),

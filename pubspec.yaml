@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+
   audioplayers: ^0.17.0
   install_plugin: ^2.0.1
   flutter_bugly: ^0.3.0

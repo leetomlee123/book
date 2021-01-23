@@ -306,7 +306,6 @@ class _BooksWidgetState extends State<BooksWidget> {
                   ? GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       child: Container(
-                        // color: Colors.red,
                         margin: EdgeInsets.only(right: 20),
                         height: 115,
                         width: ScreenUtil.getScreenW(context),
@@ -315,7 +314,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                           child: Image.asset(
                             'images/pick.png',
                             color: !_shelfModel.picks(i)
-                                ? Colors.white
+                                ? Colors.black38
                                 : Store.value<ColorModel>(context)
                                     .theme
                                     .primaryColor,

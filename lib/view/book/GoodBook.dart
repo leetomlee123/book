@@ -23,6 +23,7 @@ class StateGoodBook extends State<GoodBook>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   TabController controller;
   var tabs = <Tab>[];
+
   @override
   void initState() {
     super.initState();
@@ -60,26 +61,24 @@ class StateGoodBook extends State<GoodBook>
       length: tabs.length,
       child: Scaffold(
           appBar: AppBar(
-            flexibleSpace: value.dark?Container():Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [
-                      Colors.accents[value.idx].shade200,
-                      Colors.accents[value.idx].shade400,
-                      // Colors.accents[value.idx].shade400,
-                    ],
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft),
-              ),
-            ),
+            // flexibleSpace: value.dark?Container():Container(
+            //   decoration: BoxDecoration(
+            //     gradient: LinearGradient(
+            //         colors: [
+            //           Colors.accents[value.idx].shade200,
+            //           Colors.accents[value.idx].shade400,
+            //           // Colors.accents[value.idx].shade400,
+            //         ],
+            //         begin: Alignment.centerRight,
+            //         end: Alignment.centerLeft),
+            //   ),
+            // ),
             backgroundColor: Colors.transparent,
             title: TabBar(
+              labelColor: value.dark ? Colors.white : Colors.black,
               unselectedLabelColor:
-                   Colors.white38 ,
-              // labelColor: value.dark ? Colors.white : Colors.black,
-              indicatorColor:
-                  Colors.white ,
-              indicatorSize: TabBarIndicatorSize.label,
+                  value.dark ? Colors.white38 : Colors.black45,
+              indicatorSize: TabBarIndicatorSize.tab,
               controller: controller,
               tabs: tabs,
               labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -117,6 +116,7 @@ class StateTabItem extends State<TabItem>
   List<String> keys = [];
   ColorModel value;
   ColorModel _colorModel;
+
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
@@ -126,6 +126,7 @@ class StateTabItem extends State<TabItem>
 
   Widget item(String title, List<GBook> bks) {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8),
       child: ListView(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
@@ -176,7 +177,7 @@ class StateTabItem extends State<TabItem>
           ),
           GridView(
             shrinkWrap: true,
-            physics:  NeverScrollableScrollPhysics(),
+            physics: NeverScrollableScrollPhysics(),
             padding: EdgeInsets.all(5.0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
@@ -261,6 +262,7 @@ class StateTabItem extends State<TabItem>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
     return Scaffold(
       body: values.length == 0
           ? Container()
