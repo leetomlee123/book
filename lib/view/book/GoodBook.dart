@@ -56,43 +56,45 @@ class StateGoodBook extends State<GoodBook>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    ColorModel value = Store.value<ColorModel>(context);
-    return DefaultTabController(
-      length: tabs.length,
-      child: Scaffold(
-          appBar: AppBar(
-            // flexibleSpace: value.dark?Container():Container(
-            //   decoration: BoxDecoration(
-            //     gradient: LinearGradient(
-            //         colors: [
-            //           Colors.accents[value.idx].shade200,
-            //           Colors.accents[value.idx].shade400,
-            //           // Colors.accents[value.idx].shade400,
-            //         ],
-            //         begin: Alignment.centerRight,
-            //         end: Alignment.centerLeft),
-            //   ),
-            // ),
-            backgroundColor: Colors.transparent,
-            title: TabBar(
-              labelColor: value.dark ? Colors.white : Colors.black,
-              unselectedLabelColor:
-                  value.dark ? Colors.white38 : Colors.black45,
-              indicatorSize: TabBarIndicatorSize.tab,
-              controller: controller,
-              tabs: tabs,
-              labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return Store.connect<ColorModel>(builder: (context,ColorModel value,child){
+      return DefaultTabController(
+        length: tabs.length,
+        child: Scaffold(
+            appBar: AppBar(
+              // flexibleSpace: value.dark?Container():Container(
+              //   decoration: BoxDecoration(
+              //     gradient: LinearGradient(
+              //         colors: [
+              //           Colors.accents[value.idx].shade200,
+              //           Colors.accents[value.idx].shade400,
+              //           // Colors.accents[value.idx].shade400,
+              //         ],
+              //         begin: Alignment.centerRight,
+              //         end: Alignment.centerLeft),
+              //   ),
+              // ),
+              backgroundColor: Colors.transparent,
+              title: TabBar(
+                labelColor: value.dark ? Colors.white : value.theme.primaryColor,
+                unselectedLabelColor:
+                value.dark ? Colors.white38 : Colors.black45,
+                indicatorSize: TabBarIndicatorSize.label,
+                controller: controller,
+                tabs: tabs,
+                labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              centerTitle: true,
+              elevation: 0,
+              automaticallyImplyLeading: false,
             ),
-            centerTitle: true,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-          ),
-          body: TabBarView(
-            controller: controller,
-            children: [TabItem("1"), TabItem("2")],
-            // children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
-          )),
-    );
+            body: TabBarView(
+              controller: controller,
+              children: [TabItem("1"), TabItem("2")],
+              // children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
+            )),
+      );
+    });
+
   }
 
   @override
