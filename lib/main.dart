@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
@@ -173,6 +174,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       _pageController.jumpToPage(navEvent.idx);
     });
     _checkUpdate();
+    Store.value<ReadModel>(context).getEveryNote();
   }
 
   @override

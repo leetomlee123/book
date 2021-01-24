@@ -96,7 +96,6 @@ class ReadModel with ChangeNotifier {
     loadOk = false;
     sSave = true;
     load = Load.Done;
-    getEveryNote();
     if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
 
@@ -185,13 +184,12 @@ class ReadModel with ChangeNotifier {
     if (_everyPoet != null) {
       return;
     }
-    // var response = await Util(null).http().get("http://open.iciba.com/dsapi");
-    // print(response.data);
     var url = "http://open.iciba.com/dsapi";
     var client = new HttpClient();
+
     var request = await client.getUrl(Uri.parse(url));
     var response = await request.close();
-    // print('download $url ok');
+
     var responseBody = await response.transform(utf8.decoder).join();
     var dataList = await parseJson(responseBody);
 
@@ -604,40 +602,17 @@ class ReadModel with ChangeNotifier {
   }
 
   Widget noMorePage() {
-    return Container(
-      decoration: BoxDecoration(
-          image: DecorationImage(
-              image: CachedNetworkImageProvider('${_everyPoet.share}'),fit: BoxFit.fitWidth)),
-
-      // padding: EdgeInsets.symmetric(horizontal: 20),
-      // child: Center(
-      //   child: Column(
-      //     children: [
-      //       SizedBox(
-      //         height: 60,
-      //       ),
-      //       Image.network(
-      //         _everyPoet.cover,
-      //         fit: BoxFit.fitWidth,
-      //       ),
-      //       SizedBox(
-      //         height: 20,
-      //       ),
-      //       Image.network(
-      //         _everyPoet.share,
-      //         fit: BoxFit.fitWidth,
-      //       ),
-            // Text(_everyPoet.note,style: TextStyle(fontSize: 15,fontWeight: FontWeight.bold),),
-            // SizedBox(
-            //   height: 20,
-            // ),
-      //       // Text(_everyPoet.content),
-      //
-      //
-      //     ],
-      //   ),
-      // ),
-    );
+    return _everyPoet == null
+        ? Center(
+            child: Text('等待作者更新'),
+          )
+        : Container(
+            decoration: BoxDecoration(
+                image: DecorationImage(
+                    image:
+                        CachedNetworkImageProvider('${_everyPoet.share ?? ''}'),
+                    fit: BoxFit.fitWidth)),
+          );
   }
 
   List<Widget> chapterContent(ReadPage r) {
