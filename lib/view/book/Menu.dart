@@ -110,6 +110,10 @@ class _MenuState extends State<Menu> {
             GestureDetector(
               child: Container(child: Text('上一章')),
               onTap: () async {
+                if ((_readModel.book.cur - 1) < 0) {
+                  BotToast.showText(text: '已经是第一章');
+                  return;
+                }
                 _readModel.book.cur -= 1;
                 await _readModel.intiPageContent(_readModel.book.cur, true);
                 BotToast.showText(text: _readModel.curPage.chapterName);
@@ -139,7 +143,12 @@ class _MenuState extends State<Menu> {
             GestureDetector(
               child: Container(child: Text('下一章')),
               onTap: () async {
+                if ((_readModel.book.cur + 1) >= _readModel.chapters.length) {
+                  BotToast.showText(text: "已经是最后一章");
+                  return;
+                }
                 _readModel.book.cur += 1;
+
                 await _readModel.intiPageContent(_readModel.book.cur, true);
                 BotToast.showText(text: _readModel.curPage.chapterName);
               },
@@ -252,8 +261,6 @@ class _MenuState extends State<Menu> {
     );
   }
 
-
-
   Widget moreSetting() {
     return Container(
       decoration: BoxDecoration(
@@ -262,7 +269,6 @@ class _MenuState extends State<Menu> {
       ),
       height: 190,
       child: Column(
-
         children: <Widget>[
           Expanded(
             child: ListView(
@@ -295,7 +301,6 @@ class _MenuState extends State<Menu> {
                   ReadSetting.calcFontSize(1.0);
                   _readModel.modifyFont();
                 }),
-            
                 Container(
                   child: FlatButton(
                     onPressed: () {
@@ -326,7 +331,6 @@ class _MenuState extends State<Menu> {
               ],
             ),
           ),
-         
           Expanded(
             child: ListView(
               scrollDirection: Axis.horizontal,
@@ -341,20 +345,22 @@ class _MenuState extends State<Menu> {
                 SizedBox(
                   width: 10,
                 ),
-                     fontOperate("images/side1.png", () {
+                fontOperate("images/side1.png", () {
                   ReadSetting.setLineHeight(1.4);
                   _readModel.modifyFont();
-                }),   SizedBox(
+                }),
+                SizedBox(
                   width: 10,
                 ),
-                     fontOperate("images/side2.png", () {
+                fontOperate("images/side2.png", () {
                   ReadSetting.setLineHeight(1.5);
                   _readModel.modifyFont();
-                }),   SizedBox(
+                }),
+                SizedBox(
                   width: 10,
                 ),
-                     fontOperate("images/side3.png", () {
-                 ReadSetting.setLineHeight(1.6);
+                fontOperate("images/side3.png", () {
+                  ReadSetting.setLineHeight(1.6);
                   _readModel.modifyFont();
                 }),
                 // _hj("最小", () {

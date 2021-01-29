@@ -11,16 +11,13 @@ import 'LoadDialog.dart';
 class Util {
   static Dio _dio;
   BuildContext _buildContext;
-var  httpHeaders={
 
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'
-  };
   Util(this._buildContext);
 
   Dio http() {
     _dio = new Dio();
     // _dio.options.connectTimeout = 10000;
-    _dio.options.headers= httpHeaders;
+ 
 //    var dic = DirectoryUtil.getAppDocPath();
 //    _dio.httpClientAdapter = Http2Adapter(
 //      ConnectionManager(

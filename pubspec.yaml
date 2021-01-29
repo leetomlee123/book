@@ -17,10 +17,10 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
-
+  firebase_analytics: ^7.0.1
+  firebase_core: ^0.7.0
   audioplayers: ^0.17.0
   install_plugin: ^2.0.1
-  flutter_bugly: ^0.3.0
   flutter_cache_manager: ^2.0.0
   permission_handler: ^5.0.1+1
   flutter_rating_bar: ^3.0.1+1

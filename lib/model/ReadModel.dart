@@ -109,6 +109,8 @@ class ReadModel with ChangeNotifier {
       if (book.CId == "-1") {
         book.cur = chapters.length - 1;
       }
+      checkCur();
+
       await intiPageContent(book.cur, false);
       // if (isPage) {
       if (book.index == -1) {
@@ -171,6 +173,15 @@ class ReadModel with ChangeNotifier {
     //   });
     // }
     notifyListeners();
+  }
+
+  checkCur() {
+    if (book.cur < 0) {
+      book.cur = 0;
+    }
+    if (book.cur > chapters.length - 1) {
+      book.cur = chapters.length - 1;
+    }
   }
 
   checkPosition(double offset) {
@@ -249,6 +260,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future intiPageContent(int idx, bool jump) async {
+
     showGeneralDialog(
       context: context,
       barrierLabel: "",
