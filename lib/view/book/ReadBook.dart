@@ -1,3 +1,4 @@
+import 'package:book/common/Screen.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -5,6 +6,7 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
+import 'package:book/view/system/BatteryView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,7 @@ class ReadBook extends StatefulWidget {
 
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   ReadModel readModel;
+  ColorModel _colorModel;
 
   //背景色数据
   // List<List> bgs = [
@@ -44,8 +47,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     "QR_bg_8.png",
     "QR_bg_4.jpg",
   ];
+
   @override
   void initState() {
+    setUp();
+    super.initState();
+  }
+
+  setUp() async {
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
       readModel.intiPageContent(readModel.book.cur, false);
@@ -55,22 +64,18 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     });
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    var widgetsBinding = WidgetsBinding.instance;
-    widgetsBinding.addPostFrameCallback((callback) async {
-      readModel = Store.value<ReadModel>(context);
-      readModel.book = this.widget.book;
-      readModel.context = context;
-      readModel.getBookRecord();
+    readModel = Store.value<ReadModel>(context);
+    _colorModel = Store.value<ColorModel>(context);
+    readModel.book = this.widget.book;
+    readModel.context = context;
+    readModel.getBookRecord();
 
-      if (SpUtil.haveKey('bgIdx')) {
-        readModel.bgIdx = SpUtil.getInt('bgIdx');
-      }
+    if (SpUtil.haveKey('bgIdx')) {
+      readModel.bgIdx = SpUtil.getInt('bgIdx');
+    }
 
-      readModel.contentH = ScreenUtil.getScreenH(context) -
-          ScreenUtil.getStatusBarH(context) -
-          60;
-      readModel.contentW = ScreenUtil.getScreenW(context) - 30.0;
-    });
+    readModel.contentH = Screen.height - Screen.topSafeHeight - 60;
+    readModel.contentW = Screen.width - 30.0;
     setSystemBar();
   }
 
@@ -131,7 +136,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             ),
             body: Store.connect<ReadModel>(
                 builder: (context, ReadModel model, child) {
-              return (model?.loadOk ?? false)
+              return model.loadOk
                   ? Stack(
                       children: <Widget>[
                         Positioned(
@@ -144,41 +149,46 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     ? 'images/QR_bg_4.jpg'
                                     : "images/${bgimg[readModel?.bgIdx ?? 0]}",
                                 fit: BoxFit.cover)),
-                        readModel.isPage
-                            ?
                         PageView.builder(
-                                controller: model.pageController,
-                                physics: AlwaysScrollableScrollPhysics(),
-                                itemBuilder: (BuildContext context, int index) {
-                                  return readModel.allContent[index];
-                                },
-                                //条目个数
-                                itemCount: (readModel
-                                            .prePage?.pageOffsets?.length ??
-                                        0) +
-                                    (readModel.curPage?.pageOffsets?.length ??
-                                        0) +
-                                    (readModel.nextPage?.pageOffsets?.length ??
-                                        0),
-                                onPageChanged: (idx) =>
-                                    readModel.changeChapter(idx),
-                              )
-                            : LayoutBuilder(builder: (context, constraints) {
-                                return NotificationListener(
-                                  onNotification: (ScrollNotification note) {
-                                    readModel.checkPosition(
-                                        note.metrics.pixels); // 滚动位置。
-                                  },
-                                  child: ListView.builder(
-                                    controller: readModel.listController,
-                                    itemCount: readModel.allContent.length,
-                                    itemBuilder:
-                                        (BuildContext context, int index) {
-                                      return readModel.allContent[index];
-                                    },
+                          controller: model.pageController,
+                          physics: AlwaysScrollableScrollPhysics(),
+                          itemBuilder: (BuildContext context, int position) {
+                            return readModel.allContent[position];
+                          },
+                          //条目个数
+                          itemCount: (readModel.prePage?.pageOffsets?.length ??
+                                  0) +
+                              (readModel.curPage?.pageOffsets?.length ?? 0) +
+                              (readModel.nextPage?.pageOffsets?.length ?? 0),
+                          onPageChanged: (idx) => readModel.changeChapter(idx),
+                        ),
+                        Column(
+                          children: [
+                            Spacer(),
+                            Container(
+                              height: 30,
+                              padding: EdgeInsets.only(left: 20),
+                              child: Row(
+                                children: <Widget>[
+                                  BatteryView(),
+                                  SizedBox(
+                                    width: 4,
                                   ),
-                                );
-                              }),
+                                  Text(
+                                    '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                                    style: TextStyle(
+                                      fontSize: 12 / Screen.textScaleFactor,
+                                      color: _colorModel.dark
+                                          ? Color(0x8FFFFFFF)
+                                          : Colors.black54,
+                                    ),
+                                  ),
+                                  Spacer(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                         model.showMenu ? Menu() : Container(),
                         model.showMenu
                             ? Positioned(

@@ -7,8 +7,9 @@ class VoiceModelEntity {
   String cover;
   String link;
   int idx;
+  double fast;
 
-  VoiceModelEntity(this.cover, this.link, this.idx);
+  VoiceModelEntity(this.cover, this.link, this.idx,this.fast);
 
   factory VoiceModelEntity.fromJson(Map<String, dynamic> json) =>
       _$VoiceModelEntityFromJson(json);

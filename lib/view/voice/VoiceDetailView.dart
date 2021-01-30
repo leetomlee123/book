@@ -97,10 +97,10 @@ class _VoiceDetailState extends State<VoiceDetailView>
   Widget _tap(img, func) {
     return InkWell(
       child: Container(
-        width: 40,
-        height: 40,
+        width: 45,
+        height: 45,
         child: Image(
-          color: Color(0xDFFFFFFF),
+          color: Colors.white,
           image: AssetImage("images/$img.png"),
         ),
       ),

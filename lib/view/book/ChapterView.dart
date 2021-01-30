@@ -114,7 +114,6 @@ class _ChapterViewItem extends State<ChapterView> {
                         ),
                       ],
                     ),
-
                   ],
                 ),
                 SizedBox(
@@ -180,32 +179,21 @@ class _ChapterViewItem extends State<ChapterView> {
                 ),
               ),
             ),
+            ButtonBar(
+              mainAxisSize: MainAxisSize.max,
+              alignment: MainAxisAlignment.spaceAround,
+              children: [
+                TextButton(onPressed: refresh, child: Text("重新加载")),
+                TextButton(
+                    onPressed: topOrBottom,
+                    child: Text(!showToTopBtn ? "回到底部" : "回到顶部"))
+              ],
+            ),
+
             // ButtonBar(children: [
             //   Text('a'),
             //   Text('a'),
             // ],)
-          ],
-        ),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            FloatingActionButton(
-                heroTag: "refresh",
-                backgroundColor:
-                    value.dark ? Colors.white : value.theme.primaryColor,
-                onPressed: refresh,
-                child: Icon(Icons.refresh)),
-            SizedBox(
-              height: 10.0,
-            ),
-            FloatingActionButton(
-                heroTag: "tree",
-                backgroundColor:
-                    value.dark ? Colors.white : value.theme.primaryColor,
-                onPressed: topOrBottom,
-                child: Icon(
-                  showToTopBtn ? Icons.arrow_upward : Icons.arrow_downward,
-                ))
           ],
         ),
       );
@@ -218,7 +206,7 @@ class _ChapterViewItem extends State<ChapterView> {
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);
     Routes.navigateTo(context, Routes.detail,
-        params: {"detail": jsonEncode(bookInfo)},replace: true);
+        params: {"detail": jsonEncode(bookInfo)}, replace: true);
     data.saveData();
     data.loadOk = false;
     // data.clear();

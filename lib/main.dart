@@ -31,23 +31,30 @@ FirebaseAnalytics analytics = FirebaseAnalytics();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  runZoned(
+    () async {
+      if (await Permission.storage.request().isGranted) {
+        await SpUtil.getInstance();
 
-  if (await Permission.storage.request().isGranted) {
-    await SpUtil.getInstance();
+        locator.registerSingleton(TelAndSmsService());
+        final router = FluroRouter();
+        Routes.configureRoutes(router);
+        Routes.router = router;
+        runApp(Store.init(child: MyApp()));
+        await DirectoryUtil.getInstance();
 
-    locator.registerSingleton(TelAndSmsService());
-    final router = FluroRouter();
-    Routes.configureRoutes(router);
-    Routes.router = router;
-    runApp(Store.init(child: MyApp()));
-    await DirectoryUtil.getInstance();
-
-    if (Platform.isAndroid) {
-      SystemUiOverlayStyle systemUiOverlayStyle =
-          SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
-    }
-  }
+        if (Platform.isAndroid) {
+          SystemUiOverlayStyle systemUiOverlayStyle =
+              SystemUiOverlayStyle(statusBarColor: Colors.transparent);
+          SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+        }
+      }
+    },
+    zoneSpecification: new ZoneSpecification(
+        print: (Zone self, ZoneDelegate parent, Zone zone, String line) {
+      parent.print(zone, "Intercepted: $line");
+    }),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -129,13 +136,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       ),
       label: '美剧',
     ),
-    // BottomNavigationBarItem(
-    //   icon: ImageIcon(
-    //     AssetImage("images/listen.png"),
-    //     size: 30,
-    //   ),
-    //   label: '听书',
-    // ),
+    BottomNavigationBarItem(
+      icon: ImageIcon(
+        AssetImage("images/listen.png"),
+        size: 30,
+      ),
+      label: '听书',
+    ),
   ];
 
   // imgIcon(String src, String title) {
@@ -151,7 +158,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video()];
+  var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
 
   // var _pages = [Video(), VoiceBook()];
 

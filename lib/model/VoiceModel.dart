@@ -19,17 +19,16 @@ import 'package:flutter/material.dart';
 
 class VoiceModel with ChangeNotifier {
   String modelJsonKey = "Voice_History";
-  String fastKey = "voicefast";
   bool hasEntity = false;
   bool isVoiceIdx = true;
   List<VoiceMore> voiceMores = [];
   bool showMenu = false;
   bool getAllTime = false;
   VoiceDetail voiceDetail;
+  double fast = 1.0;
   List<VoiceIdx> voiceIdxs = [];
   String link = '';
   String url = '';
-  double fast = 0.0;
   double position = 0.1;
   String start = "00:00";
   String end = "00:00";
@@ -50,20 +49,9 @@ class VoiceModel with ChangeNotifier {
     notifyListeners();
   }
 
-  double getFast() {
-    if (fast == 0.0) {
-      fast = SpUtil.getDouble(fastKey, defValue: 1.0);
-    }
-    return fast;
-  }
-
   VoiceModel() {
-    if (audioPlayer == null) {
-      audioPlayer = AudioPlayer();
-      // audioPlayer.setReleaseMode(ReleaseMode.RELEASE);
-    }
-    fast=SpUtil.getDouble(fastKey, defValue: 1.0);
-    print("init voiceModel $fast");
+    audioPlayer = AudioPlayer();
+
     if (SpUtil.haveKey(modelJsonKey)) {
       hasEntity = true;
       SpUtil.getObj(modelJsonKey, (v) {
@@ -71,6 +59,7 @@ class VoiceModel with ChangeNotifier {
         voiceDetail = VoiceDetail("", "", null, "", voiceModelEntity.cover);
         idx = voiceModelEntity.idx;
         link = voiceModelEntity.link;
+        fast = voiceModelEntity.fast;
       });
     }
   }
@@ -88,22 +77,26 @@ class VoiceModel with ChangeNotifier {
       audioPlayer.release();
     }
 
-    setFast(SpUtil.getDouble("voice_fast") ?? 1.0);
-
     setIdx1(x['idx'] == -1 ? 0 : x['idx']);
+    String ux = voiceDetail.chapters[idx].link;
+    String key = ux + idx.toString();
+    var fileFromCache =
+        await CustomCacheManager.instanceVoice.getFileFromCache(key);
+    var t;
+    if (fileFromCache == null) {
+      Response resp1 =
+          await Util(null).http().get(Common.voiceUrl + "?url=$ux");
+      url = resp1.data['url'];
+      t = url;
+    }
 
-    Response resp1 = await Util(null)
-        .http()
-        .get(Common.voiceUrl + "?url=${voiceDetail.chapters[idx].link}");
-
-    url = resp1.data['url'];
     int p = 0;
     if (idx >= 0) {
       p = x['position'];
       position = p.toDouble();
     }
 
-    await initAudio(p);
+    await initAudio(p, t);
     notifyListeners();
   }
 
@@ -133,28 +126,50 @@ class VoiceModel with ChangeNotifier {
     }
 
     var ux = voiceDetail.chapters[idx].link;
+    String key = ux + idx.toString();
+    print("load key $key");
+    var fileFromCache =
+        await CustomCacheManager.instanceVoice.getFileFromCache(key);
+    var t;
+    if (fileFromCache == null) {
+      print("没有缓存");
+      Response resp1 =
+          await Util(null).http().get(Common.voiceUrl + "?url=$ux");
+      url = resp1.data['url'];
+      t = url;
+    }
 
-    Response resp1 = await Util(null).http().get(Common.voiceUrl + "?url=$ux");
-
-    url = resp1.data['url'];
-    int i = await initAudio(0);
+    await initAudio(0, t);
 
     notifyListeners();
   }
 
-  Future<int> initAudio(int p) async {
+  initAudio(int p, String u) async {
     loadNext = true;
     if (kIsWeb) {
       return -1;
     }
-    audioPlayer.release();
-    String key = link + idx.toString();
+
+    String key = voiceDetail.chapters[idx].link + idx.toString();
     int result = 0;
     loading = 1;
     notifyListeners();
-    File file =
-        await CustomCacheManager.instanceVoice.getSingleFile(url, key: key);
-
+    File file;
+    if (u == null) {
+      var fileInfo =
+          await CustomCacheManager.instanceVoice.getFileFromCache(key);
+      file = fileInfo.file;
+    } else {
+      file = await CustomCacheManager.instanceVoice.getSingleFile(u, key: key);
+    }
+    // var split1 = u == null ? "" : u.split('?')[0];
+    // var split2 = url.split('?')[0];
+    // if (split1 != split2) {
+    //   return;
+    // }
+    if (audioPlayer.state == AudioPlayerState.PLAYING) {
+      return;
+    }
     result = await audioPlayer.play(file.path,
         position: Duration(milliseconds: p), stayAwake: true, isLocal: true);
     audioPlayer.setPlaybackRate(playbackRate: fast);
@@ -190,17 +205,23 @@ class VoiceModel with ChangeNotifier {
     }
   }
 
-  loadVolum(int temp) async {
+  loadVolume(int temp) async {
     print(" start load  ");
     try {
       var ux = voiceDetail.chapters[temp].link;
+      String key = ux + temp.toString();
+      var fileFromCache =
+          await CustomCacheManager.instanceVoice.getFileFromCache(key);
+      if (fileFromCache != null) {
+        return;
+      }
 
       Response resp1 =
           await Util(null).http().get(Common.voiceUrl + "?url=$ux");
 
-      url = resp1.data['url'];
       await CustomCacheManager.instanceVoice
-          .getSingleFile(url, key: link + temp.toString());
+          .getSingleFile(resp1.data['url'], key: key);
+      print("pre cache $key");
     } on Exception {
       loadNext = true;
     }
@@ -211,7 +232,7 @@ class VoiceModel with ChangeNotifier {
   change(int p) async {
     if (loadNext && (p > ((len / 4) * 3))) {
       loadNext = false;
-      await loadVolum(idx + 1);
+      await loadVolume(idx + 1);
     }
     position = p.toDouble();
     start = DateUtil.formatDateMs(p, format: "mm:ss");
@@ -278,7 +299,6 @@ class VoiceModel with ChangeNotifier {
   }
 
   setFast(double f) {
-    SpUtil.putDouble(fastKey, f);
     fast = f;
     notifyListeners();
   }
@@ -330,7 +350,7 @@ class VoiceModel with ChangeNotifier {
     await saveRecord();
     if (url.isNotEmpty) {
       SpUtil.putObject(modelJsonKey,
-          VoiceModelEntity(voiceDetail?.cover ?? '', link, idx).toJson());
+          VoiceModelEntity(voiceDetail?.cover ?? '', link, idx, fast).toJson());
     }
   }
 }

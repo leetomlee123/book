@@ -6,7 +6,6 @@ import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/system/AnimationImages.dart';
 import 'package:book/view/voice/RollImg.dart';
-import 'package:event_bus/event_bus.dart';
 import 'package:flutter/material.dart';
 
 class VoiceDance extends StatefulWidget {

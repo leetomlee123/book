@@ -31,6 +31,8 @@ class ReadModel with ChangeNotifier {
   Book book;
   List<Chapter> chapters = [];
   EveryPoet _everyPoet;
+  var currentPageValue = 0.0;
+  var _batteryWidget;
 
   //本书记录
   // BookTag bookTag;
@@ -172,6 +174,10 @@ class ReadModel with ChangeNotifier {
     // }
     //   });
     // }
+    pageController.addListener(() {
+      currentPageValue = pageController.page;
+      notifyListeners();
+    });
     notifyListeners();
   }
 
@@ -260,7 +266,6 @@ class ReadModel with ChangeNotifier {
   }
 
   Future intiPageContent(int idx, bool jump) async {
-
     showGeneralDialog(
       context: context,
       barrierLabel: "",
@@ -669,7 +674,7 @@ class ReadModel with ChangeNotifier {
                           Container(
                             height: 30,
                             alignment: Alignment.centerLeft,
-                            padding: EdgeInsets.only(left: 3),
+                            padding: EdgeInsets.only(left: 20),
                             child: Text(
                               r.chapterName,
                               // strutStyle: StrutStyle(
@@ -679,7 +684,7 @@ class ReadModel with ChangeNotifier {
                                 fontSize: 12 / Screen.textScaleFactor,
                                 color: model.dark
                                     ? Color(0x8FFFFFFF)
-                                    : Colors.black,
+                                    : Colors.black54,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -710,20 +715,20 @@ class ReadModel with ChangeNotifier {
                                   ))),
                           Container(
                             height: 30,
-                            padding: EdgeInsets.only(right: 8),
+                            padding: EdgeInsets.only(right: 20),
                             child: Row(
                               children: <Widget>[
-                                Expanded(child: Container()),
+
+                                Spacer(),
+
+                                // Expanded(child: Container()),
                                 Text(
                                   '第${i + 1}/${r.pageOffsets.length}页',
-                                  // strutStyle: StrutStyle(
-                                  //     forceStrutHeight: true,
-                                  //     height: textLineHeight),
                                   style: TextStyle(
                                     fontSize: 12 / Screen.textScaleFactor,
                                     color: model.dark
                                         ? Color(0x8FFFFFFF)
-                                        : Colors.black,
+                                        : Colors.black54,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
