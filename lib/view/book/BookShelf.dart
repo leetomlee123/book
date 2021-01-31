@@ -58,12 +58,12 @@ class _BookShelfState extends State<BookShelf>
                       },
                     ),
                     elevation: 0,
-                    // title: Text(
-                    //   '书架',
-                    //   style: TextStyle(
-                    //       color: _colorModel.dark ? Colors.white : Colors.black,
-                    //       ),
-                    // ),
+                    title: Text(
+                      '书架',
+                      style: TextStyle(
+                          color: _colorModel.dark ? Colors.white : Colors.black,
+                          ),
+                    ),
                     centerTitle: true,
                     actions: <Widget>[
                       IconButton(

@@ -22,7 +22,7 @@ class ChapterView extends StatefulWidget {
 class _ChapterViewItem extends State<ChapterView> {
   ScrollController _scrollController = new ScrollController();
 
-  double ITEM_HEIGH = 50.0;
+  double ITEM_HEIGH = 45.0;
 
   bool up = false;
   int curIndex = 0;
@@ -179,9 +179,11 @@ class _ChapterViewItem extends State<ChapterView> {
                 ),
               ),
             ),
+Divider(),
             ButtonBar(
               mainAxisSize: MainAxisSize.max,
               alignment: MainAxisAlignment.spaceAround,
+
               children: [
                 TextButton(onPressed: refresh, child: Text("重新加载")),
                 TextButton(

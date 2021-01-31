@@ -31,30 +31,22 @@ FirebaseAnalytics analytics = FirebaseAnalytics();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runZoned(
-    () async {
-      if (await Permission.storage.request().isGranted) {
-        await SpUtil.getInstance();
+  if (await Permission.storage.request().isGranted) {
+    await SpUtil.getInstance();
 
-        locator.registerSingleton(TelAndSmsService());
-        final router = FluroRouter();
-        Routes.configureRoutes(router);
-        Routes.router = router;
-        runApp(Store.init(child: MyApp()));
-        await DirectoryUtil.getInstance();
+    locator.registerSingleton(TelAndSmsService());
+    final router = FluroRouter();
+    Routes.configureRoutes(router);
+    Routes.router = router;
+    runApp(Store.init(child: MyApp()));
+    await DirectoryUtil.getInstance();
 
-        if (Platform.isAndroid) {
-          SystemUiOverlayStyle systemUiOverlayStyle =
-              SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-          SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
-        }
-      }
-    },
-    zoneSpecification: new ZoneSpecification(
-        print: (Zone self, ZoneDelegate parent, Zone zone, String line) {
-      parent.print(zone, "Intercepted: $line");
-    }),
-  );
+    if (Platform.isAndroid) {
+      SystemUiOverlayStyle systemUiOverlayStyle =
+      SystemUiOverlayStyle(statusBarColor: Colors.transparent);
+      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {

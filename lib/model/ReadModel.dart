@@ -16,6 +16,7 @@ import 'package:book/entity/EveryPoet.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/system/BatteryView.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
@@ -32,7 +33,7 @@ class ReadModel with ChangeNotifier {
   List<Chapter> chapters = [];
   EveryPoet _everyPoet;
   var currentPageValue = 0.0;
-  var _batteryWidget;
+  var _batteryWidget = BatteryView();
 
   //本书记录
   // BookTag bookTag;
@@ -715,10 +716,22 @@ class ReadModel with ChangeNotifier {
                                   ))),
                           Container(
                             height: 30,
-                            padding: EdgeInsets.only(right: 20),
+                            padding: EdgeInsets.symmetric(horizontal: 20),
                             child: Row(
                               children: <Widget>[
-
+                                _batteryWidget,
+                                SizedBox(
+                                  width: 4,
+                                ),
+                                Text(
+                                  '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                                  style: TextStyle(
+                                    fontSize: 12 / Screen.textScaleFactor,
+                                    color: model.dark
+                                        ? Color(0x8FFFFFFF)
+                                        : Colors.black54,
+                                  ),
+                                ),
                                 Spacer(),
 
                                 // Expanded(child: Container()),

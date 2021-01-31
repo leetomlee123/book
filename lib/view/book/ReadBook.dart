@@ -162,33 +162,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                               (readModel.nextPage?.pageOffsets?.length ?? 0),
                           onPageChanged: (idx) => readModel.changeChapter(idx),
                         ),
-                        Column(
-                          children: [
-                            Spacer(),
-                            Container(
-                              height: 30,
-                              padding: EdgeInsets.only(left: 20),
-                              child: Row(
-                                children: <Widget>[
-                                  BatteryView(),
-                                  SizedBox(
-                                    width: 4,
-                                  ),
-                                  Text(
-                                    '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                                    style: TextStyle(
-                                      fontSize: 12 / Screen.textScaleFactor,
-                                      color: _colorModel.dark
-                                          ? Color(0x8FFFFFFF)
-                                          : Colors.black54,
-                                    ),
-                                  ),
-                                  Spacer(),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+
                         model.showMenu ? Menu() : Container(),
                         model.showMenu
                             ? Positioned(

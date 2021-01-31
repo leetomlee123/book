@@ -15,6 +15,7 @@ import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
+import 'package:extended_text/extended_text.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -34,8 +35,6 @@ class _BookDetailState extends State<BookDetail> {
   ColorModel _colorModel;
   bool inShelf = false;
   int maxLines = 3;
-  int maxLine = 3;
-
   @override
   void initState() {
     book = new Book(
@@ -186,21 +185,6 @@ class _BookDetailState extends State<BookDetail> {
                         ),
                         onRatingUpdate: (rating) {},
                       ),
-                      // RatingBar(
-                      //   initialRating: _bookInfo.Rate ?? 0.0,
-                      //   minRating: 1,
-                      //   direction: Axis.horizontal,
-                      //   allowHalfRating: true,
-                      //   itemCount: 5,
-                      //   itemSize: 25,
-                      //   itemPadding:
-                      //       EdgeInsets.symmetric(horizontal: 1.0),
-                      //   itemBuilder: (context, _) => Icon(
-                      //     Icons.star,
-                      //     color: Colors.amber,
-                      //   ),
-                      //   onRatingUpdate: (double value) {},
-                      // ),
                       Text(
                         '${this.widget._bookInfo.Rate ?? 0.0}分',
                         style: TextStyle(color: Colors.white),
@@ -234,48 +218,34 @@ class _BookDetailState extends State<BookDetail> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(left: 17.0, top: 5.0),
-          child: Column(
-            children: <Widget>[
-              Text(
-                this.widget._bookInfo.Desc ?? "".trim(),
-                style: TextStyle(
-                  fontSize: 12,
-                ),
-                maxLines: maxLine,
-              ),
-              Center(
-                  child: GestureDetector(
-                child: Image.asset(
-                  maxLine <= 3
-                      ? "images/more_info.png"
-                      : "images/add_collapse.png",
-                  width: 30,
-                  height: 30,
-                  color: _colorModel.dark ? Colors.white24 : Colors.black26,
-                ),
-                onTap: () {
-                  if (mounted) {
-                    setState(() {
-                      maxLine = maxLine > 3 ? 3 : 100;
-                    });
-                  }
-                },
-              )
-//                                child: IconButton(
-//                                  padding: EdgeInsets.all(0.0),
-//                                  icon: Icon(Icons.expand_more),
-//                                  onPressed: (){
-//                                    if(mounted){
-//                                      setState(() {
-//                                    maxLine=maxLine>3?3:100;
-//                                      });
-//                                    }
-//                                  },
-//                                ),
+          padding: const EdgeInsets.only(left: 17.0, top: 5.0,right: 17.0),
+          child:ExtendedText(
+            this.widget._bookInfo.Desc ?? "".trim(),
+            maxLines: maxLines,
+            overflowWidget: TextOverflowWidget(
+              // maxHeight: 11,
+              // align: TextOverflowAlign.right,
+              fixedOffset: Offset(-10, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text('\u2026 '),
+                  GestureDetector(
+                    child: const Text(
+                      '更多',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                    onTap: () {
+                      setState(() {
+                        maxLines = 100;
+                      });
+                    },
                   )
-            ],
-          ),
+                ],
+              ),
+            ),
+          )
+
         ),
       ],
     );
@@ -337,8 +307,9 @@ class _BookDetailState extends State<BookDetail> {
   Widget _sameAuthorBooks() {
     return this.widget._bookInfo.SameAuthorBooks != null
         ? ListView.builder(
-      padding: EdgeInsets.all(0),
-            shrinkWrap: true, //解决无限高度问题
+            padding: EdgeInsets.all(0),
+            shrinkWrap: true,
+            //解决无限高度问题
             physics: NeverScrollableScrollPhysics(),
             itemBuilder: (context, i) {
               return GestureDetector(
@@ -350,8 +321,7 @@ class _BookDetailState extends State<BookDetail> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: <Widget>[
                           Container(
-                            padding:
-                                const EdgeInsets.only(left: 15.0,top: 10),
+                            padding: const EdgeInsets.only(left: 15.0, top: 10),
                             child: PicWidget(
                               this.widget._bookInfo.SameAuthorBooks[i].Img,
                             ),
@@ -370,7 +340,7 @@ class _BookDetailState extends State<BookDetail> {
                           Container(
                               width: ScreenUtil.getScreenW(context) - 120,
                               padding:
-                                  const EdgeInsets.only(left: 10.0,top: 10),
+                                  const EdgeInsets.only(left: 10.0, top: 10),
                               child: Text(
                                 this.widget._bookInfo.SameAuthorBooks[i].Name,
                                 overflow: TextOverflow.ellipsis,
