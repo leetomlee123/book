@@ -10,6 +10,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
+import 'package:extended_text/extended_text.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -25,6 +26,8 @@ class VideoDetail extends StatefulWidget {
 }
 
 class VideoDetailState extends State<VideoDetail> {
+  int maxLines = 4;
+
   @override
   Widget build(BuildContext context) {
     return Store.connect<ColorModel>(
@@ -37,34 +40,8 @@ class VideoDetailState extends State<VideoDetail> {
                 color: model.dark ? Colors.white : Colors.black,
               ),
             ),
-            leading: IconButton(
-              color: model.dark ? Colors.white : Colors.black,
-              icon: Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
             elevation: 0,
             centerTitle: true,
-            actions: <Widget>[
-              GestureDetector(
-                child: Center(
-                  child: Text(
-                    '美剧',
-                    style: TextStyle(
-                      color: model.dark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                ),
-                onTap: () {
-                  Navigator.of(context).popUntil(ModalRoute.withName('/'));
-                  eventBus.fire(new NavEvent(2));
-                },
-              ),
-              SizedBox(
-                width: 20,
-              )
-            ],
           ),
           body: FutureBuilder(
             future: getData(),
@@ -126,9 +103,7 @@ class VideoDetailState extends State<VideoDetail> {
                               "在线播放:",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            Expanded(
-                              child: Container(),
-                            ),
+                            Spacer()
                           ],
                         ),
                         Wrap(
@@ -153,12 +128,35 @@ class VideoDetailState extends State<VideoDetail> {
                               "剧情简介:",
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            Expanded(
-                              child: Container(),
-                            ),
+                            Spacer()
                           ],
                         ),
-                        Text(data[2]),
+                        ExtendedText(
+                          data[2] ?? "".trim(),
+                          maxLines: maxLines,
+                          overflowWidget: TextOverflowWidget(
+                            // maxHeight: 11,
+                            // align: TextOverflowAlign.right,
+                            fixedOffset: Offset(-5, 0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                const Text('\u2026 '),
+                                GestureDetector(
+                                  child: const Text(
+                                    '更多',
+                                    style: TextStyle(color: Colors.blue),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      maxLines = 100;
+                                    });
+                                  },
+                                )
+                              ],
+                            ),
+                          ),
+                        ),
                         Row(
                           children: <Widget>[
                             Padding(
@@ -187,10 +185,21 @@ class VideoDetailState extends State<VideoDetail> {
                   ),
                 );
               } else {
-                return Center(child: CircularProgressIndicator(),);
+                return Center(
+                  child: CircularProgressIndicator(),
+                );
               }
             },
-          )),
+          ),
+          floatingActionButton: FloatingActionButton(
+              heroTag: "tree",
+              backgroundColor:
+                  model.dark ? Colors.white : model.theme.primaryColor,
+              onPressed: () {
+                Navigator.of(context).popUntil(ModalRoute.withName('/'));
+                eventBus.fire(new NavEvent(2));
+              },
+              child: Text('首页'))),
     );
   }
 
@@ -214,7 +223,7 @@ class VideoDetailState extends State<VideoDetail> {
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
           ),
-          padding: EdgeInsets.symmetric(horizontal: 30,vertical: 5),
+          padding: EdgeInsets.symmetric(horizontal: 30, vertical: 5),
           decoration: BoxDecoration(
             //灰色的一层边框
             borderRadius: BorderRadius.all(Radius.circular(25.0)),
