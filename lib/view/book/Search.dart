@@ -89,7 +89,6 @@ class _SearchState extends State<Search> {
 
   Widget buildSearchWidget() {
     return Container(
-      // margin: EdgeInsets.symmetric(horizontal: 3),
       decoration: BoxDecoration(
         color: Color(0xFFF2F2F2),
         borderRadius: BorderRadius.circular(25),
@@ -297,7 +296,7 @@ class _SearchState extends State<Search> {
   Widget suggestionWidget(data) {
     return SingleChildScrollView(
       child: Container(
-        padding: EdgeInsets.only(left: 5, right: 5, top: 10),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           children: <Widget>[
             Row(

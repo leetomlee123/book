@@ -1,6 +1,7 @@
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/event/event.dart';
+import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -59,80 +60,91 @@ class Login extends StatelessWidget {
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.only(left: 24.0, right: 24.0),
-            children: <Widget>[
-              SizedBox(height: 48.0),
-              TextFormField(
-                autofocus: false,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  // hintStyle: TextStyle(color: Colors.white),
-                  hintText: '账号',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  this.username = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                obscureText: true,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  // hintStyle: TextStyle(color: Colors.white),
-                  hintText: '密码',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  this.pwd = value;
-                },
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: RaisedButton(
-                  color: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  onPressed: () => login(context),
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    '登陆',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: Stack(
+          children: [
+            Container(
+              color: Store.value<ColorModel>(context).dark
+                  ? Colors.black
+                  : Colors.transparent,
+            ),
+            Center(
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.only(left: 24.0, right: 24.0),
                 children: <Widget>[
-                  FlatButton(
-                    child: Text(
-                      '忘记密码',
-                      // style: TextStyle(color: Colors.white),
+                  SizedBox(height: 48.0),
+                  TextFormField(
+                    autofocus: false,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      // hintStyle: TextStyle(color: Colors.white),
+                      hintText: '账号',
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
                     ),
-                    onPressed: () {
-                      Routes.navigateTo(context, Routes.modifyPassword);
+                    onChanged: (String value) {
+                      this.username = value;
                     },
                   ),
-                  FlatButton(
-                    child: Text(
-                      '注册',
-                      // style: TextStyle(color: Colors.white),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    autofocus: false,
+                    obscureText: true,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      // hintStyle: TextStyle(color: Colors.white),
+                      hintText: '密码',
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
                     ),
-                    onPressed: () {
-                      Routes.navigateTo(context, Routes.register);
+                    onChanged: (String value) {
+                      this.pwd = value;
                     },
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: RaisedButton(
+                      color: Theme.of(context).primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      onPressed: () => login(context),
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                        '登陆',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      FlatButton(
+                        child: Text(
+                          '忘记密码',
+                          // style: TextStyle(color: Colors.white),
+                        ),
+                        onPressed: () {
+                          Routes.navigateTo(context, Routes.modifyPassword);
+                        },
+                      ),
+                      FlatButton(
+                        child: Text(
+                          '注册',
+                          // style: TextStyle(color: Colors.white),
+                        ),
+                        onPressed: () {
+                          Routes.navigateTo(context, Routes.register);
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

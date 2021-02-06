@@ -8,6 +8,7 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/voice/Voice.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,9 @@ class StateGoodBook extends State<GoodBook>
       Tab(
         text: "女生",
       ),
+      Tab(
+        text: "听书",
+      ),
     ];
     //initialIndex初始选中第几个
     controller =
@@ -56,32 +60,27 @@ class StateGoodBook extends State<GoodBook>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Store.connect<ColorModel>(builder: (context,ColorModel value,child){
+    return Store.connect<ColorModel>(
+        builder: (context, ColorModel value, child) {
       return DefaultTabController(
         length: tabs.length,
         child: Scaffold(
             appBar: AppBar(
-              // flexibleSpace: value.dark?Container():Container(
-              //   decoration: BoxDecoration(
-              //     gradient: LinearGradient(
-              //         colors: [
-              //           Colors.accents[value.idx].shade200,
-              //           Colors.accents[value.idx].shade400,
-              //           // Colors.accents[value.idx].shade400,
-              //         ],
-              //         begin: Alignment.centerRight,
-              //         end: Alignment.centerLeft),
-              //   ),
-              // ),
               backgroundColor: Colors.transparent,
               title: TabBar(
-                labelColor: value.dark ? Colors.white : value.theme.primaryColor,
+
+                labelColor:
+                    value.dark ? Colors.white : value.theme.primaryColor,
                 unselectedLabelColor:
-                value.dark ? Colors.white38 : Colors.black45,
+                    value.dark ? Colors.white38 : Colors.black45,
                 indicatorSize: TabBarIndicatorSize.label,
+                unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal,),
+                indicatorColor:
+                    value.dark ? Colors.white : value.theme.primaryColor,
                 controller: controller,
                 tabs: tabs,
-                labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                labelStyle:
+                    TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               centerTitle: true,
               elevation: 0,
@@ -89,12 +88,11 @@ class StateGoodBook extends State<GoodBook>
             ),
             body: TabBarView(
               controller: controller,
-              children: [TabItem("1"), TabItem("2")],
+              children: [TabItem("1"), TabItem("2"),VoiceBook()],
               // children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
             )),
       );
     });
-
   }
 
   @override
@@ -151,7 +149,10 @@ class StateTabItem extends State<TabItem>
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 16.0,
+                  fontSize: 19.0,
+                  color: _colorModel.dark
+                      ? Colors.white
+                      : _colorModel.theme.primaryColor,
                 ),
               ),
               Expanded(

@@ -128,13 +128,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       ),
       label: '美剧',
     ),
-    BottomNavigationBarItem(
-      icon: ImageIcon(
-        AssetImage("images/listen.png"),
-        size: 30,
-      ),
-      label: '听书',
-    ),
+    // BottomNavigationBarItem(
+    //   icon: ImageIcon(
+    //     AssetImage("images/listen.png"),
+    //     size: 30,
+    //   ),
+    //   label: '听书',
+    // ),
   ];
 
   // imgIcon(String src, String title) {
@@ -150,7 +150,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video(), VoiceBook()];
+  var _pages = [BookShelf(), GoodBook(), Video()];
 
   // var _pages = [Video(), VoiceBook()];
 
@@ -199,7 +199,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
                 itemBuilder: (context, index) => _pages[index]),
             bottomNavigationBar: BottomNavigationBar(
               unselectedItemColor: model.dark ? Colors.white : Colors.black,
-              elevation: 0,
+              elevation: 3,
               items: bottoms,
               type: BottomNavigationBarType.fixed,
               currentIndex: _tabIndex,

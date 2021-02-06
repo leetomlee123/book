@@ -225,7 +225,7 @@ class _BookDetailState extends State<BookDetail> {
             overflowWidget: TextOverflowWidget(
               // maxHeight: 11,
               // align: TextOverflowAlign.right,
-              fixedOffset: Offset(-10, 0),
+              // fixedOffset: Offset(-10, 0),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -462,18 +462,7 @@ class _BookDetailState extends State<BookDetail> {
                           child: _bookHead(),
                           preferredSize: Size.fromHeight(140),
                         ),
-                        // flexibleSpace: _colorModel.dark?Container():Container(
-                        //   decoration: BoxDecoration(
-                        //     gradient: LinearGradient(
-                        //         colors: [
-                        //           // Colors.accents[_colorModel.idx].shade100,
-                        //           Colors.accents[_colorModel.idx].shade200,
-                        //           Colors.accents[_colorModel.idx].shade400,
-                        //         ],
-                        //         begin: Alignment.centerRight,
-                        //         end: Alignment.centerLeft),
-                        //   ),
-                        // ),
+
                       )
                     ],
                   ),

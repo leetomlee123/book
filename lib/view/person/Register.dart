@@ -1,6 +1,8 @@
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
+import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
+import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -29,90 +31,104 @@ class _RegisterState extends State<Register> {
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.only(left: 24.0, right: 24.0),
-            children: <Widget>[
-              TextFormField(
-                keyboardType: TextInputType.phone,
-                autofocus: false,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '账号',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+        child: Stack(
+          children: [
+            Container(
+              color: Store.value<ColorModel>(context).dark
+                  ? Colors.black
+                  : Colors.transparent,
+            ),
+            Center(
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.only(left: 24.0, right: 24.0),
+                children: <Widget>[
+                  TextFormField(
+                    keyboardType: TextInputType.phone,
+                    autofocus: false,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '账号',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  this.name = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                obscureText: true,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '密码',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  pwd = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                obscureText: true,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '重复密码',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  repassword = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                keyboardType: TextInputType.emailAddress,
-                autofocus: false,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  // hintStyle: TextStyle(color: Colors.white),
-                  hintText: '邮箱 找回密码的唯一凭证,请谨慎输入...',
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  email = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: RaisedButton(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    ),
+                    onChanged: (String value) {
+                      this.name = value;
+                    },
                   ),
-                  onPressed: () {
-                    register();
-                  },
-                  padding: EdgeInsets.all(12),
-                  child: Text('注册'),
-                ),
-              )
-            ],
-          ),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    autofocus: false,
+                    obscureText: true,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '密码',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+                    ),
+                    onChanged: (String value) {
+                      pwd = value;
+                    },
+                  ),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    autofocus: false,
+                    obscureText: true,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '重复密码',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+                    ),
+                    onChanged: (String value) {
+                      repassword = value;
+                    },
+                  ),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    keyboardType: TextInputType.emailAddress,
+                    autofocus: false,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      // hintStyle: TextStyle(color: Colors.white),
+                      hintText: '邮箱 找回密码的唯一凭证,请谨慎输入...',
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+                    ),
+                    onChanged: (String value) {
+                      email = value;
+                    },
+                  ),
+                  SizedBox(height: 8.0),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: RaisedButton(
+                      color: Theme.of(context).primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      onPressed: () {
+                        register();
+                      },
+                      padding: EdgeInsets.all(12),
+                      child: Text('注册',style: TextStyle(color: Colors.white),),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
         ),
       ),
     );

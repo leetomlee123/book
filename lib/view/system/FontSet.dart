@@ -160,10 +160,6 @@ class StateFontSet extends State<FontSet> {
                 }
               },
             ))
-            // ListView(
-            //   children: wds,
-            //   shrinkWrap: true,
-            // ),
           ],
         ),
         padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 20.0),
@@ -174,8 +170,8 @@ class StateFontSet extends State<FontSet> {
   Future<List<FontInfo>> fetchData() async {
     List<FontInfo> fontInfos = [];
     for (int i = 0; i < _colorModel.fonts.length; i++) {
-      String key=_colorModel.fonts.keys.elementAt(i);
-      String value=_colorModel.fonts.values.elementAt(i);
+      String key = _colorModel.fonts.keys.elementAt(i);
+      String value = _colorModel.fonts.values.elementAt(i);
       var fileInfo2 = await getFileInfo(key);
       fontInfos.add(FontInfo(key, value, fileInfo2));
     }
@@ -185,44 +181,6 @@ class StateFontSet extends State<FontSet> {
   Future<FileInfo> getFileInfo(String key) async {
     return await CustomCacheManager.instanceFont.getFileFromCache(key);
   }
-
-// Future<bool> isDirectoryExist(String path) async {
-//   File file = File(path);
-//   return await file.exists();
-// }
-
-// Future<void> createDirectory(String path) async {
-//   Directory directory = Directory(path);
-//   directory.create();
-// }
-
-// Future<void> download(String name, String url) async {
-//   bool exist = await isDirectoryExist(_fontPath); //判定目录是否存在 - 不存在就创建
-//   if (!exist) {
-//     await createDirectory(_fontPath);
-//   }
-//   var path = _fontPath + "/" + name + '.TTF';
-//   var bool2 = await isDirectoryExist(path);
-//   if (bool2) {
-//     print("已存在");
-//     return;
-//   }
-//   showGeneralDialog(
-//     context: context,
-//     barrierLabel: "",
-//     barrierDismissible: true,
-//     transitionDuration: Duration(milliseconds: 300),
-//     pageBuilder: (BuildContext context, Animation animation,
-//         Animation secondaryAnimation) {
-//       return LoadingDialog();
-//     },
-//   );
-//   await Util(null).http().download(url, path);
-//   Navigator.pop(context);
-//   SpUtil.putString(name, "1");
-
-//   BotToast.showText(text: "$name 字体下载完成");
-// }
 }
 
 class FontInfo {

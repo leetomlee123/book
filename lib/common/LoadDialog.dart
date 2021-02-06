@@ -17,8 +17,8 @@ class LoadingDialog extends Dialog {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: model.dark
-                      ? Colors.white.withOpacity(.5)
-                      : Colors.black.withOpacity(.5),
+                      ? Colors.white24.withOpacity(.5)
+                      : Colors.black38.withOpacity(.5),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

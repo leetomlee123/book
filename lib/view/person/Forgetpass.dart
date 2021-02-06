@@ -1,8 +1,9 @@
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
+import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
+import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -31,91 +32,107 @@ class _ForgetPassState extends State<ForgetPass> {
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.only(left: 24.0, right: 24.0),
-            children: <Widget>[
-              TextFormField(
-                keyboardType: TextInputType.phone,
-                autofocus: false,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '账号',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+        child: Stack(
+          children: [
+            Container(
+              color: Store.value<ColorModel>(context).dark
+                  ? Colors.black
+                  : Colors.transparent,
+            ),
+            Center(
+              child: ListView(
+                shrinkWrap: true,
+                padding: EdgeInsets.only(left: 24.0, right: 24.0),
+                children: <Widget>[
+                  TextFormField(
+                    keyboardType: TextInputType.phone,
+                    autofocus: false,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '账号',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  this.account = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                // style: TextStyle(color: Colors.white),
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: '邮箱',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  email = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                autofocus: false,
-                obscureText: true,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '输入新密码',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  newpwd = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              TextFormField(
-                obscureText: true,
-                autofocus: false,
-                // style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: '重复新密码',
-                  // hintStyle: TextStyle(color: Colors.white),
-                  contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                ),
-                onChanged: (String value) {
-                  repetpwd = value;
-                },
-              ),
-              SizedBox(height: 8.0),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: RaisedButton(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    ),
+                    onChanged: (String value) {
+                      this.account = value;
+                    },
                   ),
-                  onPressed: () {
-                    register();
-                  },
-                  padding: EdgeInsets.all(12),
-                  color: Colors.grey,
-                  child: Text('修改密码', style: TextStyle(color: Colors.white)),
-                ),
-              )
-            ],
-          ),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    autofocus: false,
+                    // style: TextStyle(color: Colors.white),
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      hintText: '邮箱',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+                    ),
+                    onChanged: (String value) {
+                      email = value;
+                    },
+                  ),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    autofocus: false,
+                    obscureText: true,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '输入新密码',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+                    ),
+                    onChanged: (String value) {
+                      newpwd = value;
+                    },
+                  ),
+                  SizedBox(height: 8.0),
+                  TextFormField(
+                    obscureText: true,
+                    autofocus: false,
+                    // style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '重复新密码',
+                      // hintStyle: TextStyle(color: Colors.white),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+                    ),
+                    onChanged: (String value) {
+                      repetpwd = value;
+                    },
+                  ),
+                  SizedBox(height: 8.0),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: RaisedButton(
+                      color: Theme.of(context).primaryColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      onPressed: () {
+                        register();
+                      },
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                        '修改密码',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
         ),
       ),
     );

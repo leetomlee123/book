@@ -1,51 +1,23 @@
-import 'package:battery/battery.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class BatteryView extends StatefulWidget {
+class BatteryView extends StatelessWidget {
   final double electricQuantity;
-  double width;
-  double height;
+  final double width;
+  final double height;
 
   BatteryView(
       {Key key, this.electricQuantity, this.width = 22, this.height = 10})
       : super(key: key);
 
   @override
-  State<StatefulWidget> createState() {
-    return BatteryViewState();
-  }
-}
-
-class BatteryViewState extends State<BatteryView> {
-  ColorModel _colorModel;
-
-  @override
-  void initState() {
-    _colorModel = Store.value<ColorModel>(context);
-    _getBatteryLevel();
-    super.initState();
-  }
-
-  double electricQuantity = 1.0;
-
-  Future _getBatteryLevel() async {
-    electricQuantity = (await Battery().batteryLevel) / 100;
-
-    if (mounted) {
-      setState(() {
-        print('获得电量$electricQuantity');
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    ColorModel _colorModel = Store.value<ColorModel>(context);
     return Container(
       child: CustomPaint(
-          size: Size(widget.width, widget.height),
+          size: Size(width, height),
           painter: BatteryViewPainter(electricQuantity, _colorModel)),
     );
   }
@@ -108,7 +80,7 @@ class BatteryViewPainter extends CustomPainter {
     //画电池电量
     canvas.drawRRect(
         RRect.fromLTRBR(
-            electricQuantityLeft+1,
+            electricQuantityLeft + 0.5,
             electricQuantityTop,
             electricQuantityRight,
             electricQuantityBottom,

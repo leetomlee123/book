@@ -40,21 +40,11 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel value, child) {
       return gbks.isEmpty
-          ? Scaffold()
+          ? Center(
+        child: CircularProgressIndicator(),
+      )
           : Scaffold(
               appBar: AppBar(
-                // flexibleSpace: value.dark?Container(): Container(
-                //   decoration: BoxDecoration(
-                //     gradient: LinearGradient(
-                //         colors: [
-                //           Colors.accents[value.idx].shade200,
-                //           Colors.accents[value.idx].shade400,
-                //           // Colors.accents[value.idx].shade400,
-                //         ],
-                //         begin: Alignment.centerRight,
-                //         end: Alignment.centerLeft),
-                //   ),
-                // ),
                 backgroundColor: Colors.transparent,
                 title: Text(
                   "美剧",
@@ -161,7 +151,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
 
   Widget item(String title, List<GBook> bks, String key) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: 10),
 
       child: ListView(
         shrinkWrap: true,
@@ -177,18 +167,21 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                   width: 4,
                   height: 20,
                   color: value.dark
-                      ? value.theme.textTheme.body1.color
+                      ? Colors.white
                       : value.theme.primaryColor,
                 ),
                 padding: EdgeInsets.only(left: 5.0, right: 3.0),
               ),
               Text(
                 title,
-                style: TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(fontWeight: FontWeight.w500,
+                  fontSize: 17,
+                  color: value.dark
+                      ? Colors.white
+                      : value.theme.primaryColor,
+                ),
               ),
-              Expanded(
-                child: Container(),
-              ),
+           Spacer(),
               GestureDetector(
                 child: Row(
                   children: <Widget>[
@@ -216,8 +209,8 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 mainAxisSpacing: 20.0,
-                crossAxisSpacing: 10.0,
-                childAspectRatio: 0.7),
+                crossAxisSpacing: 23.0,
+                childAspectRatio: 0.6),
             children: bks.map((i) => img(i)).toList(),
           )
         ],

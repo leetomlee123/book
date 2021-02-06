@@ -1,14 +1,13 @@
-import 'dart:io';
-
 import 'package:book/common/ReadSetting.dart';
+import 'package:book/event/event.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -16,43 +15,57 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Me extends StatelessWidget {
-  Widget getItem(imagIcon, text, func) {
+  Widget getItem(imagIcon, text, func, Color c) {
     return ListTile(
       onTap: func,
       leading: imagIcon,
       title: Text(text),
-//      trailing: Icon(Icons.keyboard_arrow_right),
+      trailing: Icon(
+        Icons.keyboard_arrow_right_rounded,
+        color: c,
+        size: 25,
+      ),
     );
   }
 
   PreferredSizeWidget _appBar(BuildContext context) {
     if (SpUtil.haveKey("username")) {
       return PreferredSize(
-          preferredSize: Size.fromHeight(170),
-          child: UserAccountsDrawerHeader(
-            accountEmail: Text(
-              SpUtil.getString('email') ?? "",
-              style: TextStyle(color: Colors.black),
-            ),
-            accountName: Text(
-              SpUtil.getString('username') ?? "",
-              style: TextStyle(color: Colors.black),
-            ),
-            currentAccountPicture: CircleAvatar(
-              backgroundImage: AssetImage("images/fu.png"),
-            ),
-            otherAccountsPictures: [
-              // CircleAvatar(
-              //   backgroundImage: AssetImage("images/vip.png"),
-              // )
-            ],
-            decoration: BoxDecoration(
-              //用一个BoxDecoration装饰器提供背景图片
-              image: DecorationImage(
-                fit: BoxFit.fill,
-                image: AssetImage('images/bg.png'),
+          preferredSize: Size.fromHeight(160),
+          child: Stack(
+            children: [
+              UserAccountsDrawerHeader(
+                margin: EdgeInsets.all(0),
+                accountEmail: Text(
+                  SpUtil.getString('email') ?? "",
+                  style: TextStyle(color: Colors.black),
+                ),
+                accountName: Text(
+                  SpUtil.getString('username') ?? "",
+                  style: TextStyle(color: Colors.black),
+                ),
+                currentAccountPicture: CircleAvatar(
+                  backgroundImage: AssetImage("images/fu.png"),
+                ),
+                otherAccountsPictures: [
+                  // CircleAvatar(
+                  //   backgroundImage: AssetImage("images/vip.png"),
+                  // )
+                ],
+                decoration: BoxDecoration(
+                  //用一个BoxDecoration装饰器提供背景图片
+                  image: DecorationImage(
+                    fit: BoxFit.fill,
+                    image: AssetImage('images/bg.png'),
+                  ),
+                ),
               ),
-            ),
+              Container(
+                color: Store.value<ColorModel>(context).dark
+                    ? Colors.black38
+                    : Colors.transparent,
+              ),
+            ],
           ));
     } else {
       return PreferredSize(
@@ -60,20 +73,20 @@ class Me extends StatelessWidget {
         child: Container(
           child: GestureDetector(
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                SizedBox(
-                  width: 20,
-                ),
+
                 Padding(
                   child: Container(
-                    height: 80,
-                    width: 80,
+                    height: 60,
+                    width: 60,
                     child: CircleAvatar(
                       backgroundImage: AssetImage("images/account.png"),
+                      backgroundColor: Colors.transparent,
                     ),
                   ),
                   padding:
-                      EdgeInsets.only(top: ScreenUtil.getStatusBarH(context)),
+                      EdgeInsets.only(top: ScreenUtil.getStatusBarH(context),left: 10),
                 ),
                 SizedBox(
                   width: 10,
@@ -105,10 +118,14 @@ class Me extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ColorModel _colorModel = Store.value<ColorModel>(context);
+    Color c =
+        Color(!Store.value<ColorModel>(context).dark ? 0x4D000000 : 0xFBFFFFFF);
     return Scaffold(
       appBar: _appBar(context),
       body: Container(
         width: ScreenUtil.getScreenW(context),
+        height: double.infinity,
         child: Padding(
           padding: EdgeInsets.only(right: 5, left: 5),
           child: ListView(
@@ -121,17 +138,20 @@ class Me extends StatelessWidget {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (BuildContext context) => InfoPage()));
                 },
+                c,
               ),
               Store.connect<ColorModel>(
-                  builder: (context, ColorModel data, child) => getItem(
-                        ImageIcon(data.dark
-                            ? AssetImage("images/sun.png")
-                            : AssetImage("images/moon.png")),
-                        data.dark ? '日间模式' : '夜间模式',
-                        () {
-                          data.switchModel();
-                        },
-                      )),
+                builder: (context, ColorModel data, child) => getItem(
+                  ImageIcon(data.dark
+                      ? AssetImage("images/sun.png")
+                      : AssetImage("images/moon.png")),
+                  data.dark ? '日间模式' : '夜间模式',
+                  () {
+                    data.switchModel();
+                  },
+                  c,
+                ),
+              ),
               getItem(
                 ImageIcon(AssetImage("images/re.png")),
                 '免责声明',
@@ -175,6 +195,7 @@ class Me extends StatelessWidget {
                             ],
                           ));
                 },
+                c,
               ),
               getItem(
                 ImageIcon(AssetImage("images/co.png")),
@@ -228,6 +249,7 @@ class Me extends StatelessWidget {
 //                            ],
 //                          ));
                 },
+                c,
               ),
               getItem(
                 ImageIcon(AssetImage("images/skin.png")),
@@ -236,6 +258,7 @@ class Me extends StatelessWidget {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (BuildContext context) => Skin()));
                 },
+                c,
               ),
               // getItem(
               //   ImageIcon(AssetImage("images/cache_manager.png")),
@@ -252,6 +275,7 @@ class Me extends StatelessWidget {
                   locator<TelAndSmsService>()
                       .sendEmail('leetomlee123@gmail.com');
                 },
+                c,
               ),
               getItem(
                 ImageIcon(AssetImage("images/github.png")),
@@ -259,6 +283,7 @@ class Me extends StatelessWidget {
                 () {
                   launch('https://github.com/leetomlee123/book');
                 },
+                c,
               ),
               getItem(
                 ImageIcon(AssetImage("images/upgrade.png")),
@@ -282,6 +307,7 @@ class Me extends StatelessWidget {
                   //  Routes.navigateTo(context, Routes.upgrade,
                   //                );
                 },
+                c,
               ),
               getItem(
                 ImageIcon(AssetImage("images/ab.png")),
@@ -307,25 +333,38 @@ class Me extends StatelessWidget {
                             ],
                           ));
                 },
+                c,
               ),
-//              SpUtil.haveKey("login")
-//                  ? Store.connect<ShelfModel>(
-//                      builder: (context, ShelfModel model, child) {
-//                      return GestureDetector(
-//                        child: Card(
-//                          child: Container(
-//                            height: 50,
-//                            child: Text("退出登录"),
-//                            alignment: Alignment.center,
-//                          ),
-//                        ),
-//                        onTap: () {
-//                          model.dropAccountOut();
-//                          eventBus.fire(new BooksEvent([]));
-//                        },
-//                      );
-//                    })
-//                  : Container(),
+
+              SpUtil.haveKey("username")
+                  ? Store.connect<ShelfModel>(
+                      builder: (context, ShelfModel model, child) {
+                      return GestureDetector(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Color(
+                                _colorModel.dark ? 0x4D000000 : 0xFBFFFFFF),
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(10.0)),
+                          ),
+                          margin: EdgeInsets.symmetric(vertical: 50),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 30,
+                          ),
+                          height: 50,
+                          child: Text(
+                            "退出登录",
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
+                          alignment: Alignment.center,
+                        ),
+                        onTap: () {
+                          model.dropAccountOut();
+                          eventBus.fire(new BooksEvent([]));
+                        },
+                      );
+                    })
+                  : Container(),
             ],
           ),
         ),

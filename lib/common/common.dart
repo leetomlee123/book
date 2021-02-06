@@ -1,12 +1,12 @@
 class Common {
-  static String imgPre =
-      "https://appbdimg.cdn.bcebos.com/BookFiles/BookImages/";
+
 
 //   static String domain = "http://120.27.244.128:8083/v1";
 //  static String domain = "http://192.168.0.107:8081/v1";
 //  static String domain = "http://192.168.0.107:8081/v1";
 //  static String domain = "https://book.leetomlee.xyz/v1";
 //
+//   static String domain = "http://192.168.0.109:8011/v1";
   static String domain = "http://134.175.83.19:8011/v1";
 //  static String domain = "https://newbook.leetomlee.xyz/v1";
   static String video_domain = "http://134.175.83.19:8012";

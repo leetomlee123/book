@@ -6,7 +6,6 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
-import 'package:book/view/system/BatteryView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +56,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   setUp() async {
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
-      readModel.intiPageContent(readModel.book.cur, false);
+      readModel.intiPageContent(readModel.book.cur, true);
     });
     eventBus.on<OpenChapters>().listen((event) {
       _globalKey.currentState?.openDrawer();
@@ -74,7 +73,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.bgIdx = SpUtil.getInt('bgIdx');
     }
 
-    readModel.contentH = Screen.height - Screen.topSafeHeight - 60;
+    readModel.contentH =
+        Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
     readModel.contentW = Screen.width - 30.0;
     setSystemBar();
   }
@@ -162,7 +162,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                               (readModel.nextPage?.pageOffsets?.length ?? 0),
                           onPageChanged: (idx) => readModel.changeChapter(idx),
                         ),
-
                         model.showMenu ? Menu() : Container(),
                         model.showMenu
                             ? Positioned(

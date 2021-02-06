@@ -40,6 +40,7 @@ class VideoDetailState extends State<VideoDetail> {
                 color: model.dark ? Colors.white : Colors.black,
               ),
             ),
+            automaticallyImplyLeading:false,
             elevation: 0,
             centerTitle: true,
           ),

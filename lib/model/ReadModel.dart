@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
+import 'package:battery/battery.dart';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
@@ -33,7 +35,8 @@ class ReadModel with ChangeNotifier {
   List<Chapter> chapters = [];
   EveryPoet _everyPoet;
   var currentPageValue = 0.0;
-  var _batteryWidget = BatteryView();
+
+  var electricQuantity = 1.0;
 
   //本书记录
   // BookTag bookTag;
@@ -94,6 +97,7 @@ class ReadModel with ChangeNotifier {
 
   //获取本书记录
   getBookRecord() async {
+    electricQuantity = (await Battery().batteryLevel) / 100;
     showMenu = false;
     font = false;
     loadOk = false;
@@ -649,6 +653,7 @@ class ReadModel with ChangeNotifier {
       for (var i = 0; i < sum; i++) {
         String content;
         if (isPage) {
+          // content = r.pageOffsets[i];
           int end = int.parse(r.pageOffsets[i]);
           content = cts.substring(0, end);
           cts = cts.substring(end, cts.length);
@@ -692,34 +697,42 @@ class ReadModel with ChangeNotifier {
                           ),
                           Expanded(
                               child: Container(
-                                  margin: EdgeInsets.only(left: 18, right: 12),
-                                  alignment: i == (sum - 1)
-                                      ? Alignment.topLeft
-                                      : Alignment.centerLeft,
-                                  child: Text(
-                                    content,
+                                  margin: EdgeInsets.only(left: 17, right: 13),
+                                  // alignment: i == (sum - 1)
+                                  //     ? Alignment.topLeft
+                                  //     : Alignment.centerLeft,
+                                  child: RichText(
                                     textAlign: TextAlign.justify,
                                     textScaleFactor: Screen.textScaleFactor,
-                                    style: TextStyle(
-                                        fontFamily: SpUtil.getString("fontName",
-                                            defValue: "Roboto"),
-                                        color: model.dark
-                                            ? Color(0x8FFFFFFF)
-                                            : Colors.black,
-                                        locale: Locale('zh_CN'),
-                                        decorationStyle:
-                                            TextDecorationStyle.wavy,
-                                        letterSpacing:
-                                            ReadSetting.getLatterSpace(),
-                                        fontSize: ReadSetting.getFontSize(),
-                                        height: ReadSetting.getLineHeight()),
+                                    text: TextSpan(children: [
+                                      TextSpan(
+                                        text: content,
+                                        style: TextStyle(
+                                            fontFamily: SpUtil.getString(
+                                                "fontName",
+                                                defValue: "Roboto"),
+                                            color: model.dark
+                                                ? Color(0x8FFFFFFF)
+                                                : Colors.black,
+                                            locale: Locale('zh_CN'),
+                                            decorationStyle:
+                                                TextDecorationStyle.wavy,
+                                            letterSpacing:
+                                                ReadSetting.getLatterSpace(),
+                                            fontSize: ReadSetting.getFontSize(),
+                                            height:
+                                                ReadSetting.getLineHeight()),
+                                      )
+                                    ]),
                                   ))),
                           Container(
                             height: 30,
                             padding: EdgeInsets.symmetric(horizontal: 20),
                             child: Row(
                               children: <Widget>[
-                                _batteryWidget,
+                                BatteryView(
+                                  electricQuantity: electricQuantity,
+                                ),
                                 SizedBox(
                                   width: 4,
                                 ),
@@ -874,16 +887,21 @@ class ReadModel with ChangeNotifier {
   }
 
   static Future<String> requestDataWithCompute(String id) async {
-    var url = Common.bookContentUrl + '/$id';
-    var client = new HttpClient();
-    // print('download $url');
-    var request = await client.getUrl(Uri.parse(url));
-    var response = await request.close();
-    // print('download $url ok');
-    var responseBody = await response.transform(utf8.decoder).join();
-    var dataList = await parseJson(responseBody);
-    String dataList2 = dataList['data']['content'];
-    return dataList2;
+    String content = "";
+    try {
+      var url = Common.bookContentUrl + '/$id';
+      var client = new HttpClient();
+      // print('download $url');
+      var request = await client.getUrl(Uri.parse(url));
+      var response = await request.close();
+      // print('download $url ok');
+      var responseBody = await response.transform(utf8.decoder).join();
+      var dataList = await parseJson(responseBody);
+      content = dataList['data']['content'];
+    } catch (E) {
+      log(E);
+    }
+    return content;
   }
 
   @override
