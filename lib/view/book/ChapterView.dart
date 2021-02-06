@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:book/common/common.dart';
 import 'package:book/common/net.dart';
 import 'package:book/entity/BookInfo.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -22,7 +21,7 @@ class ChapterView extends StatefulWidget {
 class _ChapterViewItem extends State<ChapterView> {
   ScrollController _scrollController = new ScrollController();
 
-  double ITEM_HEIGH = 45.0;
+  double itemHeight = 45.0;
 
   bool up = false;
   int curIndex = 0;
@@ -43,7 +42,7 @@ class _ChapterViewItem extends State<ChapterView> {
     });
     //监听滚动事件，打印滚动位置
     _scrollController.addListener(() {
-      if (_scrollController.offset < ITEM_HEIGH * 8 && showToTopBtn) {
+      if (_scrollController.offset < itemHeight * 8 && showToTopBtn) {
         setState(() {
           showToTopBtn = false;
         });
@@ -60,7 +59,7 @@ class _ChapterViewItem extends State<ChapterView> {
     if (_scrollController.hasClients) {
       curIndex = Store.value<ReadModel>(context).book.cur - 8;
       await _scrollController.animateTo(
-          (Store.value<ReadModel>(context).book.cur - 8) * ITEM_HEIGH,
+          (Store.value<ReadModel>(context).book.cur - 8) * itemHeight,
           duration: Duration(microseconds: 1),
           curve: Curves.ease);
     }
@@ -69,7 +68,6 @@ class _ChapterViewItem extends State<ChapterView> {
   @override
   Widget build(BuildContext context) {
     return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
-      var value = Store.value<ColorModel>(context);
       return Scaffold(
         appBar: PreferredSize(
           child: Container(
@@ -152,7 +150,7 @@ class _ChapterViewItem extends State<ChapterView> {
               child: Scrollbar(
                 child: ListView.builder(
                   controller: _scrollController,
-                  itemExtent: ITEM_HEIGH,
+                  itemExtent: itemHeight,
                   itemBuilder: (context, index) {
                     var title = data.chapters[index].name;
                     var has = data.chapters[index].hasContent;
@@ -179,11 +177,10 @@ class _ChapterViewItem extends State<ChapterView> {
                 ),
               ),
             ),
-Divider(),
+            Divider(),
             ButtonBar(
               mainAxisSize: MainAxisSize.max,
               alignment: MainAxisAlignment.spaceAround,
-
               children: [
                 TextButton(onPressed: refresh, child: Text("重新加载")),
                 TextButton(
@@ -219,7 +216,7 @@ Divider(),
       int temp = showToTopBtn
           ? 0
           : Store.value<ReadModel>(context).chapters.length - 8;
-      await _scrollController.animateTo(temp * ITEM_HEIGH,
+      await _scrollController.animateTo(temp * itemHeight,
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }
   }
@@ -228,7 +225,7 @@ Divider(),
     Store.value<ReadModel>(context).reloadChapters();
     if (_scrollController.hasClients) {
       int temp = Store.value<ReadModel>(context).chapters.length - 8;
-      await _scrollController.animateTo(temp * ITEM_HEIGH,
+      await _scrollController.animateTo(temp * itemHeight,
           duration: Duration(microseconds: 1), curve: Curves.ease);
     }
   }

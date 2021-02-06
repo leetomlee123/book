@@ -26,18 +26,8 @@ class ReadBook extends StatefulWidget {
 
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   ReadModel readModel;
-  ColorModel _colorModel;
-
-  //背景色数据
-  // List<List> bgs = [
-  //   [250, 245, 235],
-  //   [245, 234, 204],
-  //   [230, 242, 230],
-  //   [228, 241, 245],
-  //   [245, 228, 228],
-  // ];
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
-  List<String> bgimg = [
+  List<String> bgImg = [
     "QR_bg_1.jpg",
     "QR_bg_2.jpg",
     "QR_bg_3.jpg",
@@ -63,8 +53,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     });
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     readModel = Store.value<ReadModel>(context);
-    _colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
     readModel.context = context;
     readModel.getBookRecord();
@@ -84,6 +74,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     super.dispose();
     await readModel.saveData();
     await readModel.clear();
+
     // readModel.pageController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     print('dispose');
@@ -147,7 +138,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             child: Image.asset(
                                 Store.value<ColorModel>(context).dark
                                     ? 'images/QR_bg_4.jpg'
-                                    : "images/${bgimg[readModel?.bgIdx ?? 0]}",
+                                    : "images/${bgImg[readModel?.bgIdx ?? 0]}",
                                 fit: BoxFit.cover)),
                         PageView.builder(
                           controller: model.pageController,

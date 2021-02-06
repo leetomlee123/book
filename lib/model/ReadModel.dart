@@ -58,15 +58,8 @@ class ReadModel with ChangeNotifier {
     [245, 228, 228],
   ];
 
-  // List<String> bgimg = [
-  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/body_base_bg.5988a.png",
-  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme1_bg.9987a.png",
-  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme2_bg.75a33.png",
-  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/theme_3_bg.31237.png",
-  //   "https://qidian.gtimg.com/qd/images/read.qidian.com/theme/body_theme5_bg.85f0d.png",
-  // ];
   //缓存批量提交大小
-  int BATCH_NUM = 100;
+  int batchNum = 100;
   bool refresh = true;
 
   //显示上层 设置
@@ -127,6 +120,7 @@ class ReadModel with ChangeNotifier {
             1;
       }
       pageController = PageController(initialPage: book.index);
+
       // } else {
       //   listController = ScrollController(initialScrollOffset: bookTag.offset);
       // }
@@ -517,15 +511,6 @@ class ReadModel with ChangeNotifier {
       SpUtil.putString(book.Id, "");
       await DbHelper.instance
           .updBookProcess(book?.cur ?? 0, book?.index ?? 0, book.Id);
-      // await DbHelper.instance.addCords(
-      //     '${book.Id}pages${prePage?.chapterName ?? ' '}',
-      //     prePage?.pageOffsets ?? []);
-      // await DbHelper.instance.addCords(
-      //     '${book.Id}pages${curPage?.chapterName ?? ' '}',
-      //     curPage?.pageOffsets ?? []);
-      // await DbHelper.instance.addCords(
-      //     '${book.Id}pages${nextPage?.chapterName ?? ' '}',
-      //     nextPage?.pageOffsets ?? []);
       SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
           prePage?.pageOffsets ?? []);
       SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
@@ -538,7 +523,6 @@ class ReadModel with ChangeNotifier {
             .http()
             .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
       }
-      // print("保存成功");
     }
   }
 
@@ -859,22 +843,28 @@ class ReadModel with ChangeNotifier {
     nextPage = null;
   }
 
+
+
   downloadAll(int start) async {
-    if (chapters?.isEmpty ?? 0 == 0) {
+    List<Chapter> temp = chapters;
+    if (temp?.isEmpty ?? 0 == 0) {
       await getChapters();
     }
     List<ChapterNode> cpNodes = [];
-    for (var i = start; i < chapters.length; i++) {
-      Chapter chapter = chapters[i];
+    for (var i = start; i < temp.length; i++) {
+      Chapter chapter = temp[i];
       var id = chapter.id;
+      print("download chapter id is :$id");
       if (chapter.hasContent != 2) {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
           cpNodes.add(ChapterNode(content, id));
-          chapters[i].hasContent = 2;
+          if (chapters.isNotEmpty) {
+            chapters[i].hasContent = 2;
+          }
         }
       }
-      if (cpNodes.length % BATCH_NUM == 0) {
+      if (cpNodes.length % batchNum == 0) {
         await DbHelper.instance.udpChapter(cpNodes);
         cpNodes.clear();
       }

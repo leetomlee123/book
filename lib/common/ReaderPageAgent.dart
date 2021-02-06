@@ -63,8 +63,7 @@ class ReaderPageAgent {
     return pageContents;
   }
 
-  List<String> getPageOffsets(
-      String content, double pageHeight, double width) {
+  List<String> getPageOffsets(String content, double pageHeight, double width) {
     String tempStr = content;
     List<String> pageConfig = [];
     if (content.isEmpty) {
@@ -80,7 +79,8 @@ class ReaderPageAgent {
     int lineNumberPerPage = pageHeight ~/ lineHeight;
     // int pageNum = (lineNumber / lineNumberPerPage).ceil();
     double actualPageHeight = lineNumberPerPage * lineHeight;
-
+    print(
+        "${SpUtil.getString("fontName", defValue: "Roboto")} font Family actualPageHeight is :$actualPageHeight lineHeight :$lineHeight}");
     while (true) {
       textPainter = getTextPainter(tempStr, width);
       textPainter.layout(maxWidth: width);
@@ -117,7 +117,9 @@ class ReaderPageAgent {
             fontSize: ReadSetting.getFontSize(),
             letterSpacing: ReadSetting.getLatterSpace(),
             height: ReadSetting.getLineHeight()));
-
+    double lineHeight = textPainter.preferredLineHeight;
+    print(
+        "use fontFamily is :${SpUtil.getString("fontName", defValue: "Roboto")} lineHeight:$lineHeight");
     return textPainter;
   }
 }

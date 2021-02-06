@@ -10,10 +10,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class VoiceDetailView extends StatefulWidget {
-  String link;
-  int idx;
+  final String link;
+  final int idx;
 
-  //  int position;
   VoiceDetailView(this.link, this.idx);
 
   @override
@@ -161,34 +160,38 @@ class _VoiceDetailState extends State<VoiceDetailView>
                     height: 40,
                   ),
                   Expanded(child: Container()),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 15),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          model.start,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        Expanded(
-                            child: Slider(
-                          value: model.position,
-                          max: model.len,
-                          min: 0.0,
-                          onChanged: (v) {
-                            model.audioPlayer
-                                .seek(Duration(milliseconds: v.floor()));
-                          },
-                          activeColor: Colors.white,
-                          inactiveColor: Colors.white10,
-                        )),
-                        Text(
-                          model.end,
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
+                  Store.connect<VoiceModel>(builder: (context,VoiceModel _vm,child){
+                    return Container(
+                      padding: EdgeInsets.symmetric(horizontal: 15),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _vm.start,
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          Expanded(
+                              child: Slider(
+                                value: _vm.position,
+                                max: _vm.len,
+                                min: 0.0,
+                                onChanged: (v) {
+                                  _vm.audioPlayer
+                                      .seek(Duration(milliseconds: v.floor()));
+                                },
+                                activeColor: Colors.white,
+                                inactiveColor: Colors.white10,
+                              )),
+                          Text(
+                            _vm.end,
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+
                   SizedBox(
                     height: 20,
                   ),

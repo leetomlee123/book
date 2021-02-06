@@ -2,7 +2,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/VoiceModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
-import 'package:scroll_to_index/scroll_to_index.dart';
+
 
 class VoiceScrollList extends StatefulWidget {
   @override
@@ -10,7 +10,7 @@ class VoiceScrollList extends StatefulWidget {
 }
 
 class _VoiceScrollListState extends State<VoiceScrollList> {
-  ScrollController controller;
+  ScrollController controller= new ScrollController();
   static double itemHeight = 50.0;
   final scrollDirection = Axis.vertical;
   VoiceModel _voiceModel;
@@ -20,16 +20,26 @@ class _VoiceScrollListState extends State<VoiceScrollList> {
   void initState() {
     _voiceModel = Store.value<VoiceModel>(context);
     _colorModel = Store.value<ColorModel>(context);
-    controller =
-        AutoScrollController(initialScrollOffset: (_voiceModel.idx-3) * (itemHeight+10));
 
+    var widgetsBinding = WidgetsBinding.instance;
+    widgetsBinding.addPostFrameCallback((callback) {
+      scrollTo();
+    });
     super.initState();
   }
+//滚动到当前阅读位置
+  scrollTo() async {
+    if (controller.hasClients) {
 
+      await controller.animateTo(
+          (_voiceModel.idx - 3) * (itemHeight+16),
+          duration: Duration(microseconds: 1),
+          curve: Curves.ease);
+    }
+  }
   Widget _getRow(int idx) {
     return GestureDetector(
       child: Container(
-        // padding: EdgeInsets.only(bottom: 20),
         margin: EdgeInsets.symmetric(vertical: 5),
         alignment: Alignment.center,
         height: itemHeight,
