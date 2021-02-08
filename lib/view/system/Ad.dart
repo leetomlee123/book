@@ -1,77 +1,178 @@
-//import 'package:flutter/material.dart';
-//import 'package:flutter_native_admob/flutter_native_admob.dart';
-//import 'package:flutter_native_admob/native_admob_controller.dart';
+// import 'dart:io';
 //
-//class Ad extends StatefulWidget {
-//  @override
-//  _AdState createState() => _AdState();
-//}
+// import 'package:firebase_admob/firebase_admob.dart';
+// import 'package:flutter/material.dart';
 //
-//class _AdState extends State<Ad> {
-//  static const _adUnitID = "ca-app-pub-6006602100377888/5830679164";
+// const String testDevice = 'YOUR_DEVICE_ID';
 //
-//  final _controller = NativeAdmobController();
+// class Ad extends StatefulWidget {
+//   @override
+//   _AdState createState() => _AdState();
+// }
 //
-//  @override
-//  Widget build(BuildContext context) {
-//    return MaterialApp(
-//      home: Scaffold(
-//        appBar: AppBar(
-//          title: const Text('Plugin example app'),
-//        ),
-//        body: ListView(
-//          children: <Widget>[
-//            Container(
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              height: 200.0,
-//              color: Colors.green,
-//            ),
-//            Container(
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              height: 200.0,
-//              color: Colors.green,
-//            ),
-//            Container(
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              height: 200.0,
-//              color: Colors.green,
-//            ),
-//            Container(
-//              height: 330,
-//              padding: EdgeInsets.all(10),
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              child: NativeAdmob(
-//                adUnitID: _adUnitID,
-//                controller: _controller,
-//              ),
-//            ),
-//            Container(
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              height: 200.0,
-//              color: Colors.green,
-//            ),
-//            Container(
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              height: 200.0,
-//              color: Colors.green,
-//            ),
-//            Container(
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              height: 200.0,
-//              color: Colors.green,
-//            ),
-//            Container(
-//              height: 330,
-//              padding: EdgeInsets.all(10),
-//              margin: EdgeInsets.only(bottom: 20.0),
-//              child: NativeAdmob(
-//                adUnitID: _adUnitID,
-//                controller: _controller,
-//              ),
-//            ),
-//          ],
-//        ),
-//      ),
-//    );
-//  }
-//}
+// class _AdState extends State<Ad> {
+//   static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
+//     testDevices: testDevice != null ? <String>[testDevice] : null,
+//     keywords: <String>['foo', 'bar'],
+//     contentUrl: 'http://foo.com/bar.html',
+//     childDirected: true,
+//     nonPersonalizedAds: true,
+//   );
+//
+//   BannerAd _bannerAd;
+//   NativeAd _nativeAd;
+//   InterstitialAd _interstitialAd;
+//   int _coins = 0;
+//
+//   BannerAd createBannerAd() {
+//     return BannerAd(
+//       adUnitId: BannerAd.testAdUnitId,
+//       size: AdSize.banner,
+//       targetingInfo: targetingInfo,
+//       listener: (MobileAdEvent event) {
+//         print("BannerAd event $event");
+//       },
+//     );
+//   }
+//
+//   InterstitialAd createInterstitialAd() {
+//     return InterstitialAd(
+//       adUnitId: InterstitialAd.testAdUnitId,
+//       targetingInfo: targetingInfo,
+//       listener: (MobileAdEvent event) {
+//         print("InterstitialAd event $event");
+//       },
+//     );
+//   }
+//
+//   NativeAd createNativeAd() {
+//     return NativeAd(
+//       adUnitId: NativeAd.testAdUnitId,
+//       factoryId: 'adFactoryExample',
+//       targetingInfo: targetingInfo,
+//       listener: (MobileAdEvent event) {
+//         print("$NativeAd event $event");
+//       },
+//     );
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       home: Scaffold(
+//         appBar: AppBar(
+//           title: const Text('AdMob Plugin example app'),
+//         ),
+//         body: SingleChildScrollView(
+//           child: Center(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.center,
+//               mainAxisSize: MainAxisSize.min,
+//               children: <Widget>[
+//                 RaisedButton(
+//                     child: const Text('SHOW BANNER'),
+//                     onPressed: () {
+//                       _bannerAd ??= createBannerAd();
+//                       _bannerAd
+//                         ..load()
+//                         ..show();
+//                     }),
+//                 RaisedButton(
+//                     child: const Text('SHOW BANNER WITH OFFSET'),
+//                     onPressed: () {
+//                       _bannerAd ??= createBannerAd();
+//                       _bannerAd
+//                         ..load()
+//                         ..show(horizontalCenterOffset: -50, anchorOffset: 100);
+//                     }),
+//                 RaisedButton(
+//                     child: const Text('REMOVE BANNER'),
+//                     onPressed: () {
+//                       _bannerAd?.dispose();
+//                       _bannerAd = null;
+//                     }),
+//                 RaisedButton(
+//                   child: const Text('LOAD INTERSTITIAL'),
+//                   onPressed: () {
+//                     _interstitialAd?.dispose();
+//                     _interstitialAd = createInterstitialAd()..load();
+//                   },
+//                 ),
+//                 RaisedButton(
+//                   child: const Text('SHOW INTERSTITIAL'),
+//                   onPressed: () {
+//                     _interstitialAd?.show();
+//                   },
+//                 ),
+//                 RaisedButton(
+//                   child: const Text('SHOW NATIVE'),
+//                   onPressed: () {
+//                     _nativeAd ??= createNativeAd();
+//                     _nativeAd
+//                       ..load()
+//                       ..show(
+//                         anchorType: Platform.isAndroid
+//                             ? AnchorType.bottom
+//                             : AnchorType.top,
+//                       );
+//                   },
+//                 ),
+//                 RaisedButton(
+//                   child: const Text('REMOVE NATIVE'),
+//                   onPressed: () {
+//                     _nativeAd?.dispose();
+//                     _nativeAd = null;
+//                   },
+//                 ),
+//                 RaisedButton(
+//                   child: const Text('LOAD REWARDED VIDEO'),
+//                   onPressed: () {
+//                     RewardedVideoAd.instance.load(
+//                         adUnitId: RewardedVideoAd.testAdUnitId,
+//                         targetingInfo: targetingInfo);
+//                   },
+//                 ),
+//                 RaisedButton(
+//                   child: const Text('SHOW REWARDED VIDEO'),
+//                   onPressed: () {
+//                     RewardedVideoAd.instance.show();
+//                   },
+//                 ),
+//                 Text("You have $_coins coins."),
+//               ].map((Widget button) {
+//                 return Padding(
+//                   padding: const EdgeInsets.symmetric(vertical: 16.0),
+//                   child: button,
+//                 );
+//               }).toList(),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+//
+//   @override
+//   void initState() {
+//     FirebaseAdMob.instance.initialize(appId: FirebaseAdMob.testAppId);
+//     _bannerAd = createBannerAd()..load();
+//     RewardedVideoAd.instance.listener =
+//         (RewardedVideoAdEvent event, {String rewardType, int rewardAmount}) {
+//       print("RewardedVideoAd event $event");
+//       if (event == RewardedVideoAdEvent.rewarded) {
+//         setState(() {
+//           _coins += rewardAmount;
+//         });
+//       }
+//     };
+//     super.initState();
+//   }
+//
+//   @override
+//   void dispose() {
+//     _bannerAd?.dispose();
+//     _nativeAd?.dispose();
+//     _interstitialAd?.dispose();
+//     super.dispose();
+//   }
+// }

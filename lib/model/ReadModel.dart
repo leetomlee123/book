@@ -619,6 +619,7 @@ class ReadModel with ChangeNotifier {
                         CachedNetworkImageProvider('${_everyPoet.share ?? ''}'),
                     fit: BoxFit.fitWidth)),
           );
+    // return Ad();
   }
 
   List<Widget> chapterContent(ReadPage r) {

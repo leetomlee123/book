@@ -13,6 +13,8 @@ import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
 import 'Menu.dart';
 
+
+
 class ReadBook extends StatefulWidget {
   final Book book;
 
@@ -25,6 +27,8 @@ class ReadBook extends StatefulWidget {
 }
 
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
+
+
   ReadModel readModel;
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
   List<String> bgImg = [
@@ -44,6 +48,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   setUp() async {
+
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
       readModel.intiPageContent(readModel.book.cur, true);
@@ -78,6 +83,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     // readModel.pageController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     print('dispose');
+
   }
 
   @override

@@ -1,11 +1,12 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/system/AnimationImages.dart';
-import 'package:book/view/voice/RollImg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class VoiceDance extends StatefulWidget {
@@ -27,6 +28,7 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Store.connect<VoiceModel>(
         builder: (context, VoiceModel model, child) {
+      return _danceMenu(model);
       return model.hasEntity
           ? Align(
               alignment: Alignment(-0.7, 0.4),
@@ -73,34 +75,49 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   Widget _danceMenu(VoiceModel model) {
     return Container(
       decoration: BoxDecoration(
-        color: _colorModel.dark ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(45.0)),
+        // color: _colorModel.dark ? Colors.black : Colors.white,
+        color: Colors.transparent
+        // borderRadius: BorderRadius.all(Radius.circular(45.0)),
       ),
-      height: 45,
-      width: 230,
-      child: ListView(
-        padding: EdgeInsets.only(left: 10),
-        scrollDirection: Axis.horizontal,
+      height: 50,
+      width: Screen.width,
+      padding: EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
         children: [
           InkWell(
-            child: RollImg(),
+            child: Store.connect<VoiceModel>(
+                builder: (context, VoiceModel model, child) {
+              return Container(
+                alignment: Alignment.center,
+                margin: EdgeInsets.all(0),
+                padding: EdgeInsets.all(0),
+                child: CircleAvatar(
+                  radius: 60.0,
+                  backgroundImage: model.voiceDetail == null
+                      ? AssetImage("images/nocover.jpg")
+                      : CachedNetworkImageProvider(model.voiceDetail.cover),
+                ),
+              );
+            }),
+            // child: RollImg(),
             onTap: () {
               Routes.navigateTo(context, Routes.voiceDetail,
                   params: {"link": model.link, "idx": model.idx.toString()});
             },
           ),
-          _divider(),
+          Spacer(),
           InkWell(
             child: ImageIcon(
               AssetImage("images/${model.stateImg}.png"),
+              size: 30,
               // color: Colors.white,
             ),
             onTap: () async {
-              if (model.audioPlayer.state != AudioPlayerState.PLAYING) {
-                 eventBus.fire(RollEvent("1"));
-              } else {
-                 eventBus.fire(RollEvent("0"));
-              }
+              // if (model.audioPlayer.state != AudioPlayerState.PLAYING) {
+              //   eventBus.fire(RollEvent("1"));
+              // } else {
+              //   eventBus.fire(RollEvent("0"));
+              // }
               await model.toggleState();
             },
           ),
@@ -120,29 +137,31 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
             child: InkWell(
               child: ImageIcon(
                 AssetImage("images/btu.png"),
+                size: 30,
               ),
               onTap: () async {
-                 eventBus.fire(RollEvent("0"));
+                // eventBus.fire(RollEvent("0"));
                 await model.changeUrl(1);
-                 eventBus.fire(RollEvent("1"));
+                // eventBus.fire(RollEvent("1"));
               },
             ),
           ),
-          _divider(),
+          Spacer(),
           InkWell(
             child: ImageIcon(
               AssetImage("images/egq.png"),
+              size: 30,
             ),
             onTap: () async {
               Routes.navigateTo(context, Routes.voiceList);
             },
           ),
-          _divider(),
-          IconButton(
-              icon: Icon(Icons.close),
-              onPressed: () {
-                model.showMenuFun(false);
-              })
+
+          // IconButton(
+          //     icon: Icon(Icons.close),
+          //     onPressed: () {
+          //       model.showMenuFun(false);
+          //     })
         ],
       ),
     );

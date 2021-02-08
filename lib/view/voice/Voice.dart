@@ -48,7 +48,10 @@ class _VoiceBookState extends State<VoiceBook> with WidgetsBindingObserver {
                             .map((e) => item(e.cate, e.link, e.voices))
                             .toList()),
                   ),
-                  VoiceDance()
+                  Align(
+                    child: VoiceDance(),
+                    alignment: Alignment.bottomCenter,
+                  )
                 ],
               )
             : model.voiceMores.isEmpty
