@@ -168,8 +168,10 @@ class _ChapterViewItem extends State<ChapterView> {
                         Navigator.of(context).pop();
                         //不是卷目录
                         data.book.cur = index;
-                        await Future.delayed(Duration(microseconds: 3000));
-                        data.intiPageContent(index, true);
+
+                        Future.delayed(Duration(milliseconds: 300 ), () {
+                          data.intiPageContent(index, true);
+                        });
                       },
                     );
                   },

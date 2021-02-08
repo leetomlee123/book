@@ -10,10 +10,9 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'Menu.dart';
-
-
 
 class ReadBook extends StatefulWidget {
   final Book book;
@@ -27,8 +26,7 @@ class ReadBook extends StatefulWidget {
 }
 
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
-
-
+  Widget body;
   ReadModel readModel;
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
   List<String> bgImg = [
@@ -48,7 +46,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   setUp() async {
-
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
       readModel.intiPageContent(readModel.book.cur, true);
@@ -79,11 +76,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     super.dispose();
     await readModel.saveData();
     await readModel.clear();
-
-    // readModel.pageController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     print('dispose');
-
   }
 
   @override
@@ -96,33 +90,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     return WillPopScope(
         onWillPop: () async {
           if (!Store.value<ShelfModel>(context)
-              .shelf
-              .map((f) => f.Id)
-              .toList()
-              .contains(readModel.book.Id)) {
-            var showDialog2 = await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                      content: Text('是否加入本书'),
-                      actions: <Widget>[
-                        FlatButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              Store.value<ShelfModel>(context)
-                                  .modifyShelf(this.widget.book);
-                            },
-                            child: Text('确定')),
-                        FlatButton(
-                            onPressed: () {
-                              readModel.sSave = false;
-
-                              Store.value<ShelfModel>(context)
-                                  .delLocalCache([this.widget.book.Id]);
-                              Navigator.pop(context);
-                            },
-                            child: Text('取消')),
-                      ],
-                    ));
+              .exitsInBookShelfById(readModel.book.Id)) {
+            await confirmAddToShelf(context);
           }
           return true;
         },
@@ -136,6 +105,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               return model.loadOk
                   ? Stack(
                       children: <Widget>[
+                        //背景
                         Positioned(
                             left: 0,
                             top: 0,
@@ -146,59 +116,86 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     ? 'images/QR_bg_4.jpg'
                                     : "images/${bgImg[readModel?.bgIdx ?? 0]}",
                                 fit: BoxFit.cover)),
-                        PageView.builder(
-                          controller: model.pageController,
-                          physics: AlwaysScrollableScrollPhysics(),
-                          itemBuilder: (BuildContext context, int position) {
-                            return readModel.allContent[position];
-                          },
-                          //条目个数
-                          itemCount: (readModel.prePage?.pageOffsets?.length ??
-                                  0) +
-                              (readModel.curPage?.pageOffsets?.length ?? 0) +
-                              (readModel.nextPage?.pageOffsets?.length ?? 0),
-                          onPageChanged: (idx) => readModel.changeChapter(idx),
-                        ),
-                        model.showMenu ? Menu() : Container(),
-                        model.showMenu
-                            ? Positioned(
-                                child: reloadCurChapterWidget(),
-                                bottom: 250,
-                                right: 20,
+                        //内容
+                        model.isPage
+                            ? PageView.builder(
+                                controller: model.pageController,
+                                physics: AlwaysScrollableScrollPhysics(),
+                                itemBuilder:
+                                    (BuildContext context, int position) {
+                                  return readModel.allContent[position];
+                                },
+                                //条目个数
+                                itemCount: (readModel
+                                            .prePage?.pageOffsets?.length ??
+                                        0) +
+                                    (readModel.curPage?.pageOffsets?.length ??
+                                        0) +
+                                    (readModel.nextPage?.pageOffsets?.length ??
+                                        0),
+                                onPageChanged: (idx) =>
+                                    readModel.changeChapter(idx),
                               )
-                            : Container()
+                            : SmartRefresher(
+                                enablePullDown: true,
+                                enablePullUp: true,
+                                footer: CustomFooter(
+                                  builder:
+                                      (BuildContext context, LoadStatus mode) {
+                                    if (mode == LoadStatus.idle) {
+                                    } else if (mode == LoadStatus.loading) {
+                                      body = CupertinoActivityIndicator();
+                                    } else if (mode == LoadStatus.failed) {
+                                      body = Text("加载失败！点击重试！");
+                                    } else if (mode == LoadStatus.canLoading) {
+                                      body = Text("松手,加载更多!");
+                                    } else {
+                                      body = Text("到底了!");
+                                    }
+                                    return Center(
+                                      child: body,
+                                    );
+                                  },
+                                ),
+                                controller: model.listController,
+                                onRefresh: model.loadPreChapter(),
+                                onLoading: model.loadNextChapter(),
+                                child: SingleChildScrollView(child: Column(
+                                  children: model.allContent,
+                                ),)),
+                        //菜单
+
+                        model.showMenu ? Menu() : Container(),
                       ],
                     )
                   : Container();
             })));
   }
 
-  Widget _loadingPage() {
-    return Center(
-      child: Text("正在加载..."),
-    );
-  }
+  Future confirmAddToShelf(BuildContext context) async {
+    await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              content: Text('是否加入本书'),
+              actions: <Widget>[
+                FlatButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Store.value<ShelfModel>(context)
+                          .modifyShelf(this.widget.book);
+                    },
+                    child: Text('确定')),
+                FlatButton(
+                    onPressed: () {
+                      readModel.sSave = false;
 
-  Widget reloadCurChapterWidget() {
-    return Opacity(
-      opacity: 0.9,
-      child: GestureDetector(
-        child: Container(
-          width: 50,
-          height: 50,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: Colors.grey, borderRadius: BorderRadius.circular(25)),
-          child: Icon(
-            Icons.refresh,
-            color: Colors.white,
-          ),
-        ),
-        onTap: () {
-          readModel.reloadCurrentPage();
-        },
-      ),
-    );
+                      Store.value<ShelfModel>(context)
+                          .delLocalCache([this.widget.book.Id]);
+                      Navigator.pop(context);
+                    },
+                    child: Text('取消')),
+              ],
+            ));
   }
 
   void setSystemBar() {

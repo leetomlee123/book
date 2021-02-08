@@ -419,27 +419,54 @@ class _MenuState extends State<Menu> {
       ),
     );
   }
-
+  Widget reloadCurChapterWidget() {
+    return Opacity(
+      opacity: 0.9,
+      child: GestureDetector(
+        child: Container(
+          width: 50,
+          height: 50,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: Colors.grey, borderRadius: BorderRadius.circular(25)),
+          child: Icon(
+            Icons.refresh,
+            color: Colors.white,
+          ),
+        ),
+        onTap: () {
+          _readModel.reloadCurrentPage();
+        },
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      child: Container(
-        child: Column(
-          children: <Widget>[
-            // Container(
-            //   color: _colorModel.dark ? Colors.black : Colors.white,
-            //   height: Screen.topSafeHeight,
-            // ),
-            // head(),
-            midTranspant(),
-            bottom(),
-          ],
-        ),
+    return Stack(children: [
+      Positioned(
+        child: reloadCurChapterWidget(),
+        bottom: 250,
+        right: 20,
       ),
-      onTap: () {
-        _readModel.toggleShowMenu();
-      },
-    );
+      GestureDetector(
+        child: Container(
+          child: Column(
+            children: <Widget>[
+              // Container(
+              //   color: _colorModel.dark ? Colors.black : Colors.white,
+              //   height: Screen.topSafeHeight,
+              // ),
+              // head(),
+              midTranspant(),
+              bottom(),
+            ],
+          ),
+        ),
+        onTap: () {
+          _readModel.toggleShowMenu();
+        },
+      )
+    ],);
   }
 
   buildBottomMenus() {

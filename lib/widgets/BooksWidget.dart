@@ -194,7 +194,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
-        itemExtent: (10 + (Screen.width / 4) * 1.23),
+        itemExtent: (10 + (Screen.width / 4) * 1.2),
         itemCount: _shelfModel.shelf.length,
         itemBuilder: (context, i) {
           return GestureDetector(
@@ -242,12 +242,12 @@ class _BooksWidgetState extends State<BooksWidget> {
                         children: <Widget>[
                           PicWidget(
                             item.Img,
-                            height: (Screen.width / 4) * 1.23,
+                            height: (Screen.width / 4) * 1.2,
                             width: Screen.width / 4,
                           ),
                           item.NewChapterCount == 1
                               ? Container(
-                                  height: (Screen.width / 4) * 1.23,
+                                  height: (Screen.width / 4) * 1.2,
                                   width: Screen.width / 4,
                                   child: Align(
                                     alignment: Alignment.topRight,

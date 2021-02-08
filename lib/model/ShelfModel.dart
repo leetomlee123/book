@@ -172,7 +172,13 @@ class ShelfModel with ChangeNotifier {
     shelf = [];
     notifyListeners();
   }
-
+//根据id判断书架是否存在本书
+  bool exitsInBookShelfById(String id){
+    return shelf
+        .map((f) => f.Id)
+        .toList()
+        .contains(id);
+  }
   //删除本地记录
   void delLocalCache(List<String> ids) {
     for (var i = 0; i < ids.length; i++) {
