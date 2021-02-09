@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
@@ -125,7 +125,7 @@ class TagVideoState extends State<TagVideo> {
     }
     var url = '${Common.tag_movies}/${this.widget.category}/page/$page';
 
-    Response res = await Util(ctx).http().get(url);
+    Response res = await HttpUtil(showLoading: true).http().get(url);
     List data = res.data;
     if (data == null) {
       refreshController.loadNoData();

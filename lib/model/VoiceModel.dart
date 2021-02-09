@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/VoiceDetail.dart';
 import 'package:book/entity/VoiceIdx.dart';
 import 'package:book/entity/VoiceModelEntity.dart';
@@ -66,7 +66,7 @@ class VoiceModel with ChangeNotifier {
 
   init() async {
     Response resp =
-        await Util(null).http().get(Common.voiceDetail + "?key=$link");
+        await HttpUtil().http().get(Common.voiceDetail + "?key=$link");
     var data = resp.data;
     voiceDetail = VoiceDetail.fromJson(data);
 
@@ -85,7 +85,7 @@ class VoiceModel with ChangeNotifier {
     var t;
     if (fileFromCache == null) {
       Response resp1 =
-          await Util(null).http().get(Common.voiceUrl + "?url=$ux");
+          await HttpUtil().http().get(Common.voiceUrl + "?url=$ux");
       url = resp1.data['url'];
       t = url;
     }
@@ -134,7 +134,7 @@ class VoiceModel with ChangeNotifier {
     if (fileFromCache == null) {
       print("没有缓存");
       Response resp1 =
-          await Util(null).http().get(Common.voiceUrl + "?url=$ux");
+          await HttpUtil().http().get(Common.voiceUrl + "?url=$ux");
       url = resp1.data['url'];
       t = url;
     }
@@ -155,21 +155,23 @@ class VoiceModel with ChangeNotifier {
     loading = 1;
     notifyListeners();
     File file;
-    if (u == null) {
-      var fileInfo =
-          await CustomCacheManager.instanceVoice.getFileFromCache(key);
-      file = fileInfo.file;
-    } else {
-      file = await CustomCacheManager.instanceVoice.getSingleFile(u, key: key);
+    try {
+      if (u == null) {
+        var fileInfo =
+            await CustomCacheManager.instanceVoice.getFileFromCache(key);
+        file = fileInfo.file;
+      } else {
+        file =
+            await CustomCacheManager.instanceVoice.getSingleFile(u, key: key);
+      }
+      if (audioPlayer.state == AudioPlayerState.PLAYING) {
+        return;
+      }
+    } catch (e) {
+      loading = 0;
+      notifyListeners();
     }
-    // var split1 = u == null ? "" : u.split('?')[0];
-    // var split2 = url.split('?')[0];
-    // if (split1 != split2) {
-    //   return;
-    // }
-    if (audioPlayer.state == AudioPlayerState.PLAYING) {
-      return;
-    }
+
     result = await audioPlayer.play(file.path,
         position: Duration(milliseconds: p), stayAwake: true, isLocal: true);
     audioPlayer.setPlaybackRate(playbackRate: fast);
@@ -186,7 +188,8 @@ class VoiceModel with ChangeNotifier {
       audioPlayer.onDurationChanged.listen((Duration d) {
         if (!getAllTime) {
           len = d.inMilliseconds.toDouble();
-          end = DateUtil.formatDateMs(d.inMilliseconds, format: "mm:ss");
+          end = DateUtil.formatDateMs(d.inMilliseconds,
+              format: DateFormats.h_m_s, isUtc: true);
           getAllTime = true;
         }
       });
@@ -217,7 +220,7 @@ class VoiceModel with ChangeNotifier {
       }
 
       Response resp1 =
-          await Util(null).http().get(Common.voiceUrl + "?url=$ux");
+          await HttpUtil().http().get(Common.voiceUrl + "?url=$ux");
 
       await CustomCacheManager.instanceVoice
           .getSingleFile(resp1.data['url'], key: key);
@@ -235,7 +238,7 @@ class VoiceModel with ChangeNotifier {
       await loadVolume(idx + 1);
     }
     position = p.toDouble();
-    start = DateUtil.formatDateMs(p, format: "mm:ss");
+    start = DateUtil.formatDateMs(p, format: DateFormats.h_m_s, isUtc: true);
     notifyListeners();
   }
 
@@ -311,7 +314,7 @@ class VoiceModel with ChangeNotifier {
 
   getSearch(var k) async {
     voiceMores = [];
-    Response resp = await Util(null).http().get(Common.voiceSearch + "?key=$k");
+    Response resp = await HttpUtil().http().get(Common.voiceSearch + "?key=$k");
     List data = resp.data;
     for (var d in data) {
       voiceMores.add(VoiceMore.fromJson(d));
@@ -328,7 +331,7 @@ class VoiceModel with ChangeNotifier {
         voiceIdxs.add(VoiceIdx.fromJson(d));
       }
     }
-    Response resp = await Util(null).http().get(Common.voiceIndex);
+    Response resp = await HttpUtil().http().get(Common.voiceIndex);
     List data = resp.data;
     for (var d in data) {
       voiceIdxs.add(VoiceIdx.fromJson(d));

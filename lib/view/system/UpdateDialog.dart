@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:install_plugin/install_plugin.dart';
@@ -60,7 +60,7 @@ class UpdateDialogState extends State<UpdateDialog> {
   }
 
   Future<File> downloadFile() async {
-    Dio dio = Util(null).http();
+    Dio dio = HttpUtil().http();
     Directory storageDir = await getExternalStorageDirectory();
     String storagePath = storageDir.path;
     File file = new File('$storagePath/apk/deerbook.apk');

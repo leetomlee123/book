@@ -16,10 +16,50 @@ class VoiceDance extends StatefulWidget {
 
 class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   ColorModel _colorModel;
+  VoiceModel _voiceModel;
+  AnimationController controller;
+  double dx = -.7;
+  double dy = .4;
+  double x;
+  double y;
 
   @override
   void initState() {
+    x = Screen.width / 2;
+    y = Screen.height / 2;
+    eventBus.on<RollEvent>().listen((roll) {
+      if (roll.roll == "1") {
+        controller?.forward();
+      } else {
+        controller?.reset();
+      }
+    });
     _colorModel = Store.value<ColorModel>(context);
+    _voiceModel = Store.value<VoiceModel>(context);
+    controller =
+        AnimationController(duration: const Duration(seconds: 20), vsync: this);
+    if (_voiceModel.audioPlayer.state == AudioPlayerState.PLAYING) {
+      controller.forward();
+    }
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        //动画从 controller.forward() 正向执行 结束时会回调此方法
+        print("status is completed");
+        //重置起点
+        controller.reset();
+        //开启
+        controller.forward();
+      } else if (status == AnimationStatus.dismissed) {
+        //动画从 controller.reverse() 反向执行 结束时会回调此方法
+        print("status is dismissed");
+      } else if (status == AnimationStatus.forward) {
+        print("status is forward");
+        //执行 controller.forward() 会回调此状态
+      } else if (status == AnimationStatus.reverse) {
+        //执行 controller.reverse() 会回调此状态
+        print("status is reverse");
+      }
+    });
 
     super.initState();
   }
@@ -28,12 +68,36 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Store.connect<VoiceModel>(
         builder: (context, VoiceModel model, child) {
-      return _danceMenu(model);
-      return model.hasEntity
-          ? Align(
-              alignment: Alignment(-0.7, 0.4),
-              child: model.showMenu ? _danceMenu(model) : _danceIcon(model))
-          : Container();
+      return Draggable(
+          child: Offstage(
+            offstage: !model.hasEntity,
+            child: Align(
+                alignment: Alignment(dx, dy),
+                child: model.showMenu ? _danceMenu(model) : _danceIcon(model)),
+          ),
+          feedback: Container(),
+          onDraggableCanceled: (Velocity velocity, Offset offset) {
+            if (mounted) {
+              setState(() {
+                dx = offset.dx / x;
+                if (dx < -.7 || dx > .7) {
+                  if (dx < 0) {
+                    dx = -.7;
+                  } else {
+                    dx = .7;
+                  }
+                }
+                dy = offset.dy / y;
+                if (dy < -.7 || dy > .7) {
+                  if (dy < 0) {
+                    dy = -.7;
+                  } else {
+                    dy = .7;
+                  }
+                }
+              });
+            }
+          });
     });
   }
 
@@ -62,6 +126,7 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
           onTap: () {
             model.showMenuFun(true);
             if (model.audioPlayer.state == AudioPlayerState.PLAYING) {
+              controller.forward();
               eventBus.fire(RollEvent("1"));
             }
           },
@@ -75,49 +140,36 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
   Widget _danceMenu(VoiceModel model) {
     return Container(
       decoration: BoxDecoration(
-        // color: _colorModel.dark ? Colors.black : Colors.white,
-        color: Colors.transparent
-        // borderRadius: BorderRadius.all(Radius.circular(45.0)),
+        color: _colorModel.dark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(45.0)),
       ),
-      height: 50,
-      width: Screen.width,
-      padding: EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
+      height: 45,
+      width: 230,
+      child: ListView(
+        padding: EdgeInsets.only(left: 10),
+        scrollDirection: Axis.horizontal,
         children: [
           InkWell(
-            child: Store.connect<VoiceModel>(
-                builder: (context, VoiceModel model, child) {
-              return Container(
-                alignment: Alignment.center,
-                margin: EdgeInsets.all(0),
-                padding: EdgeInsets.all(0),
-                child: CircleAvatar(
-                  radius: 60.0,
-                  backgroundImage: model.voiceDetail == null
-                      ? AssetImage("images/nocover.jpg")
-                      : CachedNetworkImageProvider(model.voiceDetail.cover),
-                ),
-              );
-            }),
-            // child: RollImg(),
+            child: _buildRotationTransition(model),
             onTap: () {
               Routes.navigateTo(context, Routes.voiceDetail,
                   params: {"link": model.link, "idx": model.idx.toString()});
             },
           ),
-          Spacer(),
+          _divider(),
           InkWell(
             child: ImageIcon(
               AssetImage("images/${model.stateImg}.png"),
-              size: 30,
               // color: Colors.white,
             ),
             onTap: () async {
-              // if (model.audioPlayer.state != AudioPlayerState.PLAYING) {
-              //   eventBus.fire(RollEvent("1"));
-              // } else {
-              //   eventBus.fire(RollEvent("0"));
-              // }
+              if (model.audioPlayer.state != AudioPlayerState.PLAYING) {
+                controller.forward();
+                eventBus.fire(RollEvent("1"));
+              } else {
+                controller.reset();
+                eventBus.fire(RollEvent("0"));
+              }
               await model.toggleState();
             },
           ),
@@ -137,31 +189,31 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
             child: InkWell(
               child: ImageIcon(
                 AssetImage("images/btu.png"),
-                size: 30,
               ),
               onTap: () async {
-                // eventBus.fire(RollEvent("0"));
+                controller.reset();
+                eventBus.fire(RollEvent("0"));
                 await model.changeUrl(1);
-                // eventBus.fire(RollEvent("1"));
+                controller.forward();
+                eventBus.fire(RollEvent("1"));
               },
             ),
           ),
-          Spacer(),
+          _divider(),
           InkWell(
             child: ImageIcon(
               AssetImage("images/egq.png"),
-              size: 30,
             ),
             onTap: () async {
               Routes.navigateTo(context, Routes.voiceList);
             },
           ),
-
-          // IconButton(
-          //     icon: Icon(Icons.close),
-          //     onPressed: () {
-          //       model.showMenuFun(false);
-          //     })
+          _divider(),
+          IconButton(
+              icon: Icon(Icons.close),
+              onPressed: () {
+                model.showMenuFun(false);
+              })
         ],
       ),
     );
@@ -174,8 +226,32 @@ class _VoiceDanceState extends State<VoiceDance> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildRotationTransition(VoiceModel model) {
+    return Center(
+      child: RotationTransition(
+        alignment: Alignment.center,
+        turns: controller,
+        child: Container(
+            width: 35,
+            height: 35,
+            decoration: BoxDecoration(
+                // color: Colors.green,
+                borderRadius: BorderRadius.circular(35),
+                // 圆形图片
+                image: DecorationImage(
+                    image: model.voiceDetail == null
+                        ? AssetImage("images/nocover.jpg")
+                        : CachedNetworkImageProvider(
+                            model.voiceDetail.cover,
+                          ),
+                    fit: BoxFit.cover))),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    controller.dispose();
     super.dispose();
   }
 }

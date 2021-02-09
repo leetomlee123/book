@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
@@ -31,7 +31,7 @@ class AllTagBook extends StatelessWidget {
               ),
               onTap: () async {
                 String url = Common.two + '/${gbk.name}/${gbk.author}';
-                Response future = await Util(context).http().get(url);
+                Response future = await HttpUtil(showLoading: true).http().get(url);
                 var d = future.data['data'];
                 if (d == null) {
                   Routes.navigateTo(context, Routes.search, params: {

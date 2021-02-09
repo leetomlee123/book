@@ -160,7 +160,8 @@ class _VoiceDetailState extends State<VoiceDetailView>
                     height: 40,
                   ),
                   Expanded(child: Container()),
-                  Store.connect<VoiceModel>(builder: (context,VoiceModel _vm,child){
+                  Store.connect<VoiceModel>(
+                      builder: (context, VoiceModel _vm, child) {
                     return Container(
                       padding: EdgeInsets.symmetric(horizontal: 15),
                       child: Row(
@@ -172,16 +173,16 @@ class _VoiceDetailState extends State<VoiceDetailView>
                           ),
                           Expanded(
                               child: Slider(
-                                value: _vm.position,
-                                max: _vm.len,
-                                min: 0.0,
-                                onChanged: (v) {
-                                  _vm.audioPlayer
-                                      .seek(Duration(milliseconds: v.floor()));
-                                },
-                                activeColor: Colors.white,
-                                inactiveColor: Colors.white10,
-                              )),
+                            value: _vm.position,
+                            max: _vm.len,
+                            min: 0.0,
+                            onChanged: (v) {
+                              _vm.audioPlayer
+                                  .seek(Duration(milliseconds: v.floor()));
+                            },
+                            activeColor: Colors.white,
+                            inactiveColor: Colors.white10,
+                          )),
                           Text(
                             _vm.end,
                             style: TextStyle(color: Colors.white),
@@ -190,8 +191,6 @@ class _VoiceDetailState extends State<VoiceDetailView>
                       ),
                     );
                   }),
-
-
                   SizedBox(
                     height: 20,
                   ),

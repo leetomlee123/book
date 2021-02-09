@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/entity/HotBook.dart';
@@ -76,7 +76,7 @@ class SearchModel with ChangeNotifier {
 //      var url = '${Common.search}/$word/$page';
       var url = '${Common.search}?key=$word&page=$page&size=$size';
       print(url);
-      Response res = await Util(ctx).http().get(url);
+      Response res = await HttpUtil(showLoading: true).http().get(url);
       var d = res.data;
       List data = d['data'];
       // ignore: null_aware_in_condition
@@ -93,7 +93,7 @@ class SearchModel with ChangeNotifier {
 //    /movies
       var url = '${Common.movie_search}/$word/search/$page/tv';
 
-      Response res = await Util(ctx).http().get(url);
+      Response res = await HttpUtil(showLoading: true).http().get(url);
       List data = res.data;
       if (data?.isEmpty ?? true) {
         refreshController.loadNoData();
@@ -276,7 +276,7 @@ class SearchModel with ChangeNotifier {
 
   Future<void> initBookHot() async {
     hot = [];
-    Response res = await Util(null).http().get(Common.hot);
+    Response res = await HttpUtil().http().get(Common.hot);
     List data = res.data['data'];
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
@@ -286,7 +286,7 @@ class SearchModel with ChangeNotifier {
         ),
         onTap: () async {
           String url = Common.detail + '/${hbs[i].Id}';
-          Response future = await Util(context).http().get(url);
+          Response future = await HttpUtil(showLoading: true).http().get(url);
           var d = future.data['data'];
           BookInfo b = BookInfo.fromJson(d);
           Routes.navigateTo(
@@ -343,7 +343,7 @@ class SearchModel with ChangeNotifier {
 
   Future<void> initMovieHot() async {
     hot = [];
-    Response res = await Util(null).http().get(Common.movie_hot);
+    Response res = await HttpUtil().http().get(Common.movie_hot);
     List data = res.data;
     List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {

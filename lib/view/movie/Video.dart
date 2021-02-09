@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -41,8 +41,8 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
         builder: (context, ColorModel value, child) {
       return gbks.isEmpty
           ? Center(
-        child: CircularProgressIndicator(),
-      )
+              child: CircularProgressIndicator(),
+            )
           : Scaffold(
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
@@ -62,19 +62,18 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                 ),
                 elevation: 0,
                 actions: <Widget>[
-                       IconButton(
-                        color:  Colors.white ,
-                        icon: ImageIcon(
-                          AssetImage("images/search.png"),
-                          size: 20.0,
-                          color: value.dark ? Colors.white : Colors.black,
-                        ),
-                        onPressed: () {
-                           Routes.navigateTo(context, Routes.search,
+                  IconButton(
+                    color: Colors.white,
+                    icon: ImageIcon(
+                      AssetImage("images/search.png"),
+                      size: 20.0,
+                      color: value.dark ? Colors.white : Colors.black,
+                    ),
+                    onPressed: () {
+                      Routes.navigateTo(context, Routes.search,
                           params: {"type": "movie", "name": ""});
-                        },
-                      ),
-
+                    },
+                  ),
                 ],
               ),
               body: ListView(
@@ -99,8 +98,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
       List objectList = jsonDecode(SpUtil.getString(Common.cache_index));
       formatData(objectList);
     }
-    Response res =
-        await Util(null ).http().get(Common.index);
+    Response res = await HttpUtil().http().get(Common.index);
     List data = res.data;
     if (haveKey) {
       SpUtil.remove(Common.cache_index);
@@ -126,7 +124,6 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
 
   Widget swiper() {
     return Container(
-
       height: 150.0,
       width: ScreenUtil.getScreenW(context),
       child: Swiper(
@@ -152,7 +149,6 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
   Widget item(String title, List<GBook> bks, String key) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10),
-
       child: ListView(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
@@ -166,22 +162,19 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
                 child: Container(
                   width: 4,
                   height: 20,
-                  color: value.dark
-                      ? Colors.white
-                      : value.theme.primaryColor,
+                  color: value.dark ? Colors.white : value.theme.primaryColor,
                 ),
                 padding: EdgeInsets.only(left: 5.0, right: 3.0),
               ),
               Text(
                 title,
-                style: TextStyle(fontWeight: FontWeight.w500,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
                   fontSize: 17,
-                  color: value.dark
-                      ? Colors.white
-                      : value.theme.primaryColor,
+                  color: value.dark ? Colors.white : value.theme.primaryColor,
                 ),
               ),
-           Spacer(),
+              Spacer(),
               GestureDetector(
                 child: Row(
                   children: <Widget>[

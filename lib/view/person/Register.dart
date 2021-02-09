@@ -1,5 +1,5 @@
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -152,7 +152,7 @@ class _RegisterState extends State<Register> {
       var formData =
           FormData.fromMap({"name": name, "password": pwd, "email": email});
       try {
-        response = await Util(context).http().post(
+        response = await HttpUtil(showLoading: true).http().post(
               Common.register,
               data: formData,
             );

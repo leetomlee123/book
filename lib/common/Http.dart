@@ -4,20 +4,19 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 
 import 'LoadDialog.dart';
 
-class Util {
+class HttpUtil {
   static Dio _dio;
-  BuildContext _buildContext;
+  final bool showLoading;
 
-  Util(this._buildContext);
+  HttpUtil({this.showLoading = false});
 
   Dio http() {
     _dio = new Dio();
     // _dio.options.connectTimeout = 10000;
- 
+
 //    var dic = DirectoryUtil.getAppDocPath();
 //    _dio.httpClientAdapter = Http2Adapter(
 //      ConnectionManager(
@@ -29,24 +28,8 @@ class Util {
     _dio.interceptors
         .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
       // Do something before request is sent
-      if (_buildContext != null) {
-//        showDialog(
-//            context: _buildContext,
-//            barrierDismissible: false,
-//            builder: (BuildContext context) {
-//              return LoadingDialog();
-//            });
-        showGeneralDialog(
-          context: _buildContext,
-          barrierLabel: "",
-          barrierDismissible: true,
-          barrierColor: Colors.transparent,
-          transitionDuration: Duration(milliseconds: 300),
-          pageBuilder: (BuildContext context, Animation animation,
-              Animation secondaryAnimation) {
-            return LoadingDialog();
-          },
-        );
+      if (showLoading) {
+        BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
       }
       if (SpUtil.haveKey("auth")) {
         options.headers.addAll(({"auth": SpUtil.getString("auth")}));
@@ -58,8 +41,8 @@ class Util {
       // you can return a `DioError` object or return `dio.reject(errMsg)`
     }, onResponse: (Response response) async {
       // Do something with response data
-      if (_buildContext != null) {
-        Navigator.pop(_buildContext);
+      if (showLoading) {
+        BotToast.closeAllLoading();
       }
       // if (response.data['code'] != 200) {
       //   BotToast.showText(text: response.data['msg']);
@@ -67,6 +50,7 @@ class Util {
       return response; // continue
     }, onError: (DioError e) async {
       // Do something with response error
+
       formatError(e);
       return e; //continue
     }));
@@ -77,8 +61,8 @@ class Util {
    * error统一处理
    */
   void formatError(DioError e) {
-    if (_buildContext != null) {
-      Navigator.pop(_buildContext);
+    if (showLoading) {
+      BotToast.closeAllLoading();
     }
     if (e.type == DioErrorType.CONNECT_TIMEOUT) {
       // It occurs when url is opened timeout.

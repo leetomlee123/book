@@ -8,7 +8,9 @@ class ReaderPageAgent {
   double getPageHeight(String content, double width) {
     TextPainter textPainter = getTextPainter(content, width);
     textPainter.layout(maxWidth: width, minWidth: width);
-    return textPainter.height;
+    var height = textPainter.height;
+    height += ReadSetting.listPageChapterName + ReadSetting.listPageBottom;
+    return height;
   }
 
   List<String> getPageOffsets1(

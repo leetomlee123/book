@@ -1,5 +1,5 @@
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -148,7 +148,7 @@ class _ForgetPassState extends State<ForgetPass> {
         repetpwd.isNotEmpty &&
         account.isNotEmpty &&
         email.isNotEmpty) {
-      Response response = await Util(context).http().patch(
+      Response response = await HttpUtil(showLoading: true).http().patch(
           Common.modifypassword,
           data: {"name": account, "password": newpwd, "email": email});
 

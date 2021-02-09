@@ -1,5 +1,5 @@
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/Info.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
@@ -71,7 +71,7 @@ class InfoState extends State<InfoPage> {
   }
 
   Future<void> getInfo() async {
-    Response res = await Util(null).http().get(Common.info);
+    Response res = await HttpUtil().http().get(Common.info);
     List data = res.data['data'];
     if (data == null) {
       return;

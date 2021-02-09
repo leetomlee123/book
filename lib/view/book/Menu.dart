@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -69,7 +69,7 @@ class _MenuState extends State<Menu> {
               _readModel.saveData();
               _readModel.clear();
               String url = Common.detail + '/${_readModel.book.Id}';
-              Response future = await Util(context).http().get(url);
+              Response future = await HttpUtil(showLoading: true).http().get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
 
@@ -304,10 +304,11 @@ class _MenuState extends State<Menu> {
                 Container(
                   child: FlatButton(
                     onPressed: () {
-                      Routes.navigateTo(
-                        context,
-                        Routes.fontSet,
-                      );
+                      BotToast.showText(text: "暂不可用");
+                      // Routes.navigateTo(
+                      //   context,
+                      //   Routes.fontSet,
+                      // );
                     },
                     child: Row(
                       children: [
@@ -419,54 +420,55 @@ class _MenuState extends State<Menu> {
       ),
     );
   }
+
   Widget reloadCurChapterWidget() {
-    return Opacity(
-      opacity: 0.9,
-      child: GestureDetector(
-        child: Container(
-          width: 50,
-          height: 50,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: Colors.grey, borderRadius: BorderRadius.circular(25)),
-          child: Icon(
-            Icons.refresh,
-            color: Colors.white,
-          ),
+    return GestureDetector(
+      child: Container(
+        width: 50,
+        height: 50,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+            color: Colors.grey, borderRadius: BorderRadius.circular(25)),
+        child: Icon(
+          Icons.refresh,
+          color: Colors.white,
         ),
-        onTap: () {
-          _readModel.reloadCurrentPage();
-        },
       ),
+      onTap: () {
+        _readModel.reloadCurrentPage();
+      },
     );
   }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
-      Positioned(
-        child: reloadCurChapterWidget(),
-        bottom: 250,
-        right: 20,
-      ),
-      GestureDetector(
-        child: Container(
-          child: Column(
-            children: <Widget>[
-              // Container(
-              //   color: _colorModel.dark ? Colors.black : Colors.white,
-              //   height: Screen.topSafeHeight,
-              // ),
-              // head(),
-              midTranspant(),
-              bottom(),
-            ],
+    return Stack(
+      children: [
+        GestureDetector(
+          child: Container(
+            child: Column(
+              children: <Widget>[
+                // Container(
+                //   color: _colorModel.dark ? Colors.black : Colors.white,
+                //   height: Screen.topSafeHeight,
+                // ),
+                // head(),
+                midTranspant(),
+                bottom(),
+              ],
+            ),
           ),
+          onTap: () {
+            _readModel.toggleShowMenu();
+          },
         ),
-        onTap: () {
-          _readModel.toggleShowMenu();
-        },
-      )
-    ],);
+        Positioned(
+          child: reloadCurChapterWidget(),
+          bottom: 250,
+          right: 20,
+        ),
+      ],
+    );
   }
 
   buildBottomMenus() {

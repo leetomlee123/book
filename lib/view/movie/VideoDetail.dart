@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:book/common/FunUtil.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -206,7 +206,7 @@ class VideoDetailState extends State<VideoDetail> {
 
   Future<Response> getData() async {
     String url = Common.m_detail + '/${this.widget.gBook.id}';
-    Response future = await Util(null).http().get(url);
+    Response future = await HttpUtil().http().get(url);
     return future;
   }
 

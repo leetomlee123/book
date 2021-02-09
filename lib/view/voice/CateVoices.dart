@@ -1,5 +1,5 @@
+import 'package:book/common/Http.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
 import 'package:book/entity/VoiceMore.dart';
 import 'package:book/route/Routes.dart';
 import 'package:dio/dio.dart';
@@ -26,7 +26,7 @@ class _CateVoicesState extends State<CateVoices> {
   getData() async {
     var formData = FormData.fromMap({"key": this.widget.url});
     Response resp =
-        await Util(null).http().post(Common.voiceMore, data: formData);
+        await HttpUtil().http().post(Common.voiceMore, data: formData);
     List data = resp.data;
     for (var d in data) {
       _voiceIdxs.add(VoiceMore.fromJson(d));

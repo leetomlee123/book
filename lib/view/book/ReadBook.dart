@@ -6,11 +6,11 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
+import 'package:book/view/system/BatteryView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'Menu.dart';
 
@@ -28,6 +28,7 @@ class ReadBook extends StatefulWidget {
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Widget body;
   ReadModel readModel;
+  ColorModel colorModel;
   final GlobalKey<ScaffoldState> _globalKey = new GlobalKey();
   List<String> bgImg = [
     "QR_bg_1.jpg",
@@ -57,6 +58,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     readModel = Store.value<ReadModel>(context);
+    colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
     readModel.context = context;
     readModel.getBookRecord();
@@ -136,36 +138,81 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                 onPageChanged: (idx) =>
                                     readModel.changeChapter(idx),
                               )
-                            : SmartRefresher(
-                                enablePullDown: true,
-                                enablePullUp: true,
-                                footer: CustomFooter(
-                                  builder:
-                                      (BuildContext context, LoadStatus mode) {
-                                    if (mode == LoadStatus.idle) {
-                                    } else if (mode == LoadStatus.loading) {
-                                      body = CupertinoActivityIndicator();
-                                    } else if (mode == LoadStatus.failed) {
-                                      body = Text("加载失败！点击重试！");
-                                    } else if (mode == LoadStatus.canLoading) {
-                                      body = Text("松手,加载更多!");
-                                    } else {
-                                      body = Text("到底了!");
-                                    }
-                                    return Center(
-                                      child: body,
-                                    );
-                                  },
-                                ),
-                                controller: model.listController,
-                                onRefresh: model.loadPreChapter(),
-                                onLoading: model.loadNextChapter(),
-                                child: SingleChildScrollView(child: Column(
-                                  children: model.allContent,
-                                ),)),
-                        //菜单
+                            : Container(
+                                width: Screen.width,
+                                height: Screen.height,
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: Screen.topSafeHeight,
+                                    ),
+                                    Container(
+                                      height: 30,
+                                      alignment: Alignment.centerLeft,
+                                      padding: EdgeInsets.only(left: 20),
+                                      child: Text(
+                                        model.curPage.chapterName,
+                                        style: TextStyle(
+                                          fontSize: 12 / Screen.textScaleFactor,
+                                          color: colorModel.dark
+                                              ? Color(0x8FFFFFFF)
+                                              : Colors.black54,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: Screen.width,
+                                      height: model.contentH,
+                                      child: ListView(
+                                        children: model.allContent,
+                                        controller: model.listController,
+                                      ),
+                                    ),
+                                    Container(
+                                      height: 30,
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 20),
+                                      child: Row(
+                                        children: <Widget>[
+                                          BatteryView(
+                                            electricQuantity:
+                                                model.electricQuantity,
+                                          ),
+                                          SizedBox(
+                                            width: 4,
+                                          ),
+                                          Text(
+                                            '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                                            style: TextStyle(
+                                              fontSize:
+                                                  12 / Screen.textScaleFactor,
+                                              color: colorModel.dark
+                                                  ? Color(0x8FFFFFFF)
+                                                  : Colors.black54,
+                                            ),
+                                          ),
+                                          Spacer(),
 
-                        model.showMenu ? Menu() : Container(),
+                                          // Expanded(child: Container()),
+                                          Text(
+                                            '50%',
+                                            style: TextStyle(
+                                              fontSize:
+                                                  12 / Screen.textScaleFactor,
+                                              color: colorModel.dark
+                                                  ? Color(0x8FFFFFFF)
+                                                  : Colors.black54,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  ],
+                                )),
+                        //菜单
+                        Offstage(offstage: !model.showMenu, child: Menu()),
                       ],
                     )
                   : Container();

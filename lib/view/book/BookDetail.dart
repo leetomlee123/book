@@ -5,7 +5,7 @@ import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
@@ -40,6 +40,7 @@ class _BookDetailState extends State<BookDetail> {
     book = new Book(
         0,
         0,
+        0.0,
         "",
         "",
         0,
@@ -377,7 +378,7 @@ class _BookDetailState extends State<BookDetail> {
                 onTap: () async {
                   String url = Common.detail +
                       '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
-                  Response future = await Util(null).http().get(url);
+                  Response future = await HttpUtil().http().get(url);
                   var d = future.data['data'];
                   BookInfo bookInfo = BookInfo.fromJson(d);
                   Navigator.pushReplacement(context,

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:book/entity/Book.dart';
-import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/MRecords.dart';
@@ -24,6 +23,7 @@ class DbHelper {
   static Database _db2;
   static Database _db3;
   static Database _db4;
+  int version = 2;
 
   Future<Database> get db async {
     if (_db != null) {
@@ -63,7 +63,7 @@ class DbHelper {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/books.db";
-    var db = await openDatabase(path, version: 1, onCreate: _onCreate1);
+    var db = await openDatabase(path, version: version, onCreate: _onCreate1);
     return db;
   }
 
@@ -72,7 +72,7 @@ class DbHelper {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/movies.db";
-    var db = await openDatabase(path, version: 1, onCreate: _onCreate2);
+    var db = await openDatabase(path, version: version, onCreate: _onCreate2);
     return db;
   }
 
@@ -81,7 +81,7 @@ class DbHelper {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/cord.db";
-    var db = await openDatabase(path, version: 1, onCreate: _onCreate3);
+    var db = await openDatabase(path, version: version, onCreate: _onCreate3);
     return db;
   }
 
@@ -90,7 +90,7 @@ class DbHelper {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/voice.db";
-    var db = await openDatabase(path, version: 2, onCreate: _onCreate4);
+    var db = await openDatabase(path, version: version, onCreate: _onCreate4);
     return db;
   }
 
@@ -99,7 +99,7 @@ class DbHelper {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/chapters.db";
-    var db = await openDatabase(path, version: 1, onCreate: _onCreate);
+    var db = await openDatabase(path, version: version, onCreate: _onCreate);
     return db;
   }
 
@@ -131,6 +131,7 @@ class DbHelper {
           "utime TEXT,"
           "img TEXT,"
           "intro TEXT,"
+          "position REAL,"
           "cur INTEGER,"
           "newChapter INTEGER,"
           "idx INTEGER,"
@@ -343,6 +344,7 @@ class DbHelper {
           i['intro'],
           i['cur'],
           i['idx'],
+          i['position'],
           i['newChapter'],
           i['lastChapter']));
     }
@@ -365,6 +367,7 @@ class DbHelper {
           i['intro'],
           i['cur'] ?? 0,
           i['idx'] ?? 0,
+          i['position'] ?? 0.0,
           i['newChapter'],
           i['lastChapter']);
     }
@@ -393,7 +396,8 @@ class DbHelper {
         "intro": book.Desc,
         "utime": book.UTime,
         "cur": book.cur,
-        "idx": book.index,
+        "idx": book.index??0,
+        "position": book.position??0,
         "newChapter": 0,
         "lastChapter": book.LastChapter
       });
@@ -401,26 +405,26 @@ class DbHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<Null> updBookProcess(int cur, int idx, String bookId) async {
+  Future<Null> updBookProcess(int cur, int idx,double position, String bookId) async {
     var dbClient = await db1;
 
     await dbClient.rawUpdate(
-        "update $_tableName1 set cur=?,idx=? where book_id=?",
-        [cur, idx, bookId]);
+        "update $_tableName1 set cur=?,idx=?,position where book_id=?",
+        [cur, idx, bookId,position]);
   }
 
-  Future<BookTag> getBookProcess(String bookId, String name) async {
-    var dbClient = await db1;
-
-    var list = await dbClient.rawQuery(
-        "select cur,idx,name from $_tableName1 where book_id=?", [bookId]);
-    if (list.length == 0) {
-      return BookTag(0, 0, name, 0.0);
-    }
-    var i = list[0];
-
-    return BookTag(i['cur'] ?? 0, i['idx'] ?? 0, i['name'], 0.0);
-  }
+  // Future<BookTag> getBookProcess(String bookId, String name) async {
+  //   var dbClient = await db1;
+  //
+  //   var list = await dbClient.rawQuery(
+  //       "select cur,idx,position,name from $_tableName1 where book_id=?", [bookId]);
+  //   if (list.length == 0) {
+  //     return BookTag(0, 0, name, 0.0);
+  //   }
+  //   var i = list[0];
+  //
+  //   return BookTag(i['cur'] ?? 0, i['idx'] ?? 0, i['name'], 0.0);
+  // }
 
   /// 添加章节
   Future<Null> addChapters(List<Chapter> cps, String bookId) async {

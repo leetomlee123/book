@@ -5,12 +5,12 @@ import 'dart:io';
 
 import 'package:battery/battery.dart';
 import 'package:book/common/DbHelper.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
@@ -27,7 +27,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 enum Load { Loading, Done }
 
@@ -38,6 +37,7 @@ class ReadModel with ChangeNotifier {
   var currentPageValue = 0.0;
 
   var electricQuantity = 1.0;
+  double allContentHeight = 0;
 
   //本书记录
   // BookTag bookTag;
@@ -45,10 +45,11 @@ class ReadModel with ChangeNotifier {
   ReadPage curPage;
   ReadPage nextPage;
   List<Widget> allContent = [];
+  List<ReadPage> allPages = [];
 
   //页面控制器
   PageController pageController;
-  RefreshController listController;
+  ScrollController listController;
 
   //背景色数据
   List<List> bgs = [
@@ -85,7 +86,6 @@ class ReadModel with ChangeNotifier {
 
 //是否修改font
   bool font = false;
-
   bool sSave;
   Load load;
 
@@ -97,8 +97,7 @@ class ReadModel with ChangeNotifier {
     loadOk = false;
     sSave = true;
     load = Load.Done;
-    if (false) {
-      // if (SpUtil.haveKey(book.Id)) {
+    if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
 
       if (chapters.isEmpty) {
@@ -121,11 +120,11 @@ class ReadModel with ChangeNotifier {
             (curPage?.pageOffsets?.length ?? 0) -
             1;
       }
-      pageController = PageController(initialPage: book.index);
-
-      // } else {
-      //   listController = ScrollController(initialScrollOffset: bookTag.offset);
-      // }
+      if (isPage) {
+        pageController = PageController(initialPage: book.index);
+      } else {
+        listController = ScrollController(initialScrollOffset: book.position);
+      }
       loadOk = true;
       //本书已读过
     } else {
@@ -133,7 +132,7 @@ class ReadModel with ChangeNotifier {
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
         var url = Common.process + '/$userName/${book.Id}';
-        Response response = await Util(null).http().get(url);
+        Response response = await HttpUtil().http().get(url);
         String data = response.data['data'];
         if (data.isNotEmpty) {
           cur = int.parse(data);
@@ -154,16 +153,71 @@ class ReadModel with ChangeNotifier {
         book.index = idx;
         pageController = PageController(initialPage: idx);
       } else {
-        listController = RefreshController();
+        allContentHeight = (prePage?.height ?? 0) +
+            (curPage?.height ?? 0) +
+            (nextPage?.height ?? 0);
+        listController = ScrollController(
+            initialScrollOffset: book.cur == 0 ? 0 : prePage?.height ?? 0);
+
+        listController.addListener(() {
+          if (load == Load.Done) {
+            if (listController.offset >=
+                ((prePage?.height ?? 0) + (curPage?.height ?? 0))) {
+              //翻到下一页
+              print('预加载下一章');
+              loadNextChapter();
+            }
+          } else if (listController.offset < prePage.height) {
+            print('预加载上一章');
+            loadPreChapter();
+          }
+        });
       }
       loadOk = true;
     }
     notifyListeners();
   }
 
-  loadPreChapter() {}
+  loadPreChapter() {
+    load = Load.Loading;
 
-  loadNextChapter() {}
+    load = Load.Done;
+  }
+
+  loadNextChapter() async {
+    load = Load.Loading;
+    //下一章
+    int tempCur = book.cur + 1;
+    if (tempCur >= chapters.length) {
+      //到最后一页
+      book.index = -1;
+    } else {
+      book.cur += 1;
+
+      if (nextPage.chapterName == "-1") {
+        BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
+        curPage = await loadChapter(book.cur);
+        BotToast.closeAllLoading();
+      }
+
+      ReadPage temp = await loadChapter(book.cur + 1);
+      if (book.cur == tempCur) {
+        //计算此时在nextPage的位置
+        // double positionX = listController.offset - (txPage?.height ?? 0);
+        allContentHeight += temp?.height ?? 0;
+        if (temp != null) {
+          allContent.addAll(chapterContent(temp));
+        }
+        allPages.add(temp);
+        //每次翻页刷新电池电量
+        electricQuantity = (await Battery().batteryLevel) / 100;
+        if (refresh) {
+          notifyListeners();
+        }
+      }
+    }
+    load = Load.Done;
+  }
 
   checkCur() {
     if (book.cur < 0) {
@@ -175,17 +229,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future intiPageContent(int idx, bool jump) async {
-    showGeneralDialog(
-      context: context,
-      barrierLabel: "",
-      barrierDismissible: true,
-      barrierColor: Colors.transparent,
-      transitionDuration: Duration(milliseconds: 300),
-      pageBuilder: (BuildContext context, Animation animation,
-          Animation secondaryAnimation) {
-        return LoadingDialog();
-      },
-    );
+    BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
 
     try {
       await Future.wait([
@@ -193,16 +237,25 @@ class ReadModel with ChangeNotifier {
         loadChapter(idx).then((value) => {curPage = value}),
         loadChapter(idx + 1).then((value) => {nextPage = value}),
       ]);
-
+      if (!isPage) {
+        allPages = [];
+        allPages.add(prePage);
+        allPages.add(curPage);
+        allPages.add(nextPage);
+      }
       fillAllContent(refresh: jump);
-      if (isPage && jump) {
-        int ix = prePage?.pageOffsets?.length ?? 0;
-        pageController.jumpToPage(ix);
+      if (jump) {
+        if (isPage) {
+          int ix = prePage?.pageOffsets?.length ?? 0;
+          pageController.jumpToPage(ix);
+        } else {
+          listController.jumpTo(prePage?.height ?? 0);
+        }
       }
     } catch (e) {
       print(e);
     }
-    Navigator.pop(context);
+    BotToast.closeAllLoading();
   }
 
   fillAllContent({bool refresh = true}) async {
@@ -223,6 +276,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
+  //触发章节
   changeChapter(int idx) async {
     book.index = idx;
     int preLen = prePage?.pageOffsets?.length ?? 0;
@@ -238,22 +292,12 @@ class ReadModel with ChangeNotifier {
         book.cur += 1;
         prePage = curPage;
         if (nextPage.chapterName == "-1") {
-          showGeneralDialog(
-            context: context,
-            barrierLabel: "",
-            barrierColor: Colors.transparent,
-            barrierDismissible: true,
-            transitionDuration: Duration(milliseconds: 300),
-            pageBuilder: (BuildContext context, Animation animation,
-                Animation secondaryAnimation) {
-              return LoadingDialog();
-            },
-          );
+          BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
           curPage = await loadChapter(book.cur);
           int preLen = prePage?.pageOffsets?.length ?? 0;
           int curLen = curPage?.pageOffsets?.length ?? 0;
           book.index = preLen + curLen - 1;
-          Navigator.pop(context);
+          BotToast.closeAllLoading();
         } else {
           curPage = nextPage;
         }
@@ -300,7 +344,7 @@ class ReadModel with ChangeNotifier {
   Future getChapters() async {
     var url = Common.chaptersUrl + '/${book.Id}/${chapters?.length ?? 0}';
     Response response =
-        await Util(chapters.isEmpty ? context : null).http().get(url);
+        await HttpUtil(showLoading: chapters.isEmpty).http().get(url);
 
     List data = response.data['data'];
     if (data == null) {
@@ -371,6 +415,8 @@ class ReadModel with ChangeNotifier {
       } else {
         r.height = ReaderPageAgent().getPageHeight(r.chapterContent, contentW);
       }
+      //章节内容不满一页 按一页算
+      r.height = r.height >= Screen.height ? r.height : Screen.height;
     }
     return r;
   }
@@ -431,17 +477,29 @@ class ReadModel with ChangeNotifier {
   saveData() async {
     if (sSave) {
       SpUtil.putString(book.Id, "");
-      await DbHelper.instance
-          .updBookProcess(book?.cur ?? 0, book?.index ?? 0, book.Id);
-      SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
-          prePage?.pageOffsets ?? []);
-      SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
-          curPage?.pageOffsets ?? []);
-      SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
-          nextPage?.pageOffsets ?? []);
+      if (isPage) {
+        await DbHelper.instance
+            .updBookProcess(book?.cur ?? 0, book?.index ?? 0, 0.0, book.Id);
+        SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+            prePage?.pageOffsets ?? []);
+        SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
+            curPage?.pageOffsets ?? []);
+        SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+            nextPage?.pageOffsets ?? []);
+      } else {
+        double position = allContentHeight - listController.offset;
+        await DbHelper.instance.updBookProcess(
+            book?.cur ?? 0, book?.index ?? 0, position, book.Id);
+        var len = allPages.length;
+        for (var i = 1; i <= 3; i++) {
+          var id = chapters[len - i].id;
+          var h = allPages[len - i].height;
+          SpUtil.putDouble('height' + id, h);
+        }
+      }
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
-        Util(null)
+        HttpUtil()
             .http()
             .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
       }
@@ -535,6 +593,8 @@ class ReadModel with ChangeNotifier {
             child: Text('等待作者更新'),
           )
         : Container(
+            width: Screen.width,
+            height: Screen.height,
             decoration: BoxDecoration(
                 image: DecorationImage(
                     image:
@@ -547,6 +607,7 @@ class ReadModel with ChangeNotifier {
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
     String cts = r.chapterContent;
+
     if (r.chapterName == "-1" || r.chapterName == "1") {
       contents.add(GestureDetector(
         child: r.chapterName == "1" ? firstPage() : noMorePage(),
@@ -557,10 +618,11 @@ class ReadModel with ChangeNotifier {
       ));
     } else {
       int sum = r.pageOffsets.length;
+
+      String content;
+
       for (var i = 0; i < sum; i++) {
-        String content;
         if (isPage) {
-          // content = r.pageOffsets[i];
           int end = int.parse(r.pageOffsets[i]);
           content = cts.substring(0, end);
           cts = cts.substring(end, cts.length);
@@ -568,8 +630,6 @@ class ReadModel with ChangeNotifier {
           while (cts.startsWith("\n")) {
             cts = cts.substring(1);
           }
-        } else {
-          content = r.chapterContent;
         }
 
         contents.add(Store.connect<ColorModel>(
@@ -584,157 +644,71 @@ class ReadModel with ChangeNotifier {
                       child: Column(
                         children: <Widget>[
                           SizedBox(height: ScreenUtil.getStatusBarH(context)),
-                          Container(
-                            height: 30,
-                            alignment: Alignment.centerLeft,
-                            padding: EdgeInsets.only(left: 20),
-                            child: Text(
-                              r.chapterName,
-                              // strutStyle: StrutStyle(
-                              //     forceStrutHeight: true,
-                              //     height: textLineHeight),
-                              style: TextStyle(
-                                fontSize: 12 / Screen.textScaleFactor,
-                                color: model.dark
-                                    ? Color(0x8FFFFFFF)
-                                    : Colors.black54,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Expanded(
-                              child: Container(
-                                  margin: EdgeInsets.only(left: 17, right: 13),
-                                  // alignment: i == (sum - 1)
-                                  //     ? Alignment.topLeft
-                                  //     : Alignment.centerLeft,
-                                  child: RichText(
-                                    textAlign: TextAlign.justify,
-                                    textScaleFactor: Screen.textScaleFactor,
-                                    text: TextSpan(children: [
-                                      TextSpan(
-                                        text: content,
-                                        style: TextStyle(
-                                            fontFamily: SpUtil.getString(
-                                                "fontName",
-                                                defValue: "Roboto"),
-                                            color: model.dark
-                                                ? Color(0x8FFFFFFF)
-                                                : Colors.black,
-                                            locale: Locale('zh_CN'),
-                                            decorationStyle:
-                                                TextDecorationStyle.wavy,
-                                            letterSpacing:
-                                                ReadSetting.getLatterSpace(),
-                                            fontSize: ReadSetting.getFontSize(),
-                                            height:
-                                                ReadSetting.getLineHeight()),
-                                      )
-                                    ]),
-                                  ))),
-                          Container(
-                            height: 30,
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: Row(
-                              children: <Widget>[
-                                BatteryView(
-                                  electricQuantity: electricQuantity,
-                                ),
-                                SizedBox(
-                                  width: 4,
-                                ),
-                                Text(
-                                  '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                                  style: TextStyle(
-                                    fontSize: 12 / Screen.textScaleFactor,
-                                    color: model.dark
-                                        ? Color(0x8FFFFFFF)
-                                        : Colors.black54,
-                                  ),
-                                ),
-                                Spacer(),
-
-                                // Expanded(child: Container()),
-                                Text(
-                                  '第${i + 1}/${r.pageOffsets.length}页',
-                                  style: TextStyle(
-                                    fontSize: 12 / Screen.textScaleFactor,
-                                    color: model.dark
-                                        ? Color(0x8FFFFFFF)
-                                        : Colors.black54,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          )
+                          pageHead(r, model),
+                          pageMiddleContent(content, model),
+                          pageFoot(model, i, r)
                         ],
                         crossAxisAlignment: CrossAxisAlignment.start,
                       ),
                       width: double.infinity,
                       height: double.infinity,
                     )
-                  : Column(
-                      children: [
-                        Center(
-                          child: Text(
-                            r.chapterName,
-                            style: TextStyle(
-                                fontSize: ReadSetting.getFontSize() + 2.0),
-                          ),
-                        ),
-                        Container(
-                            padding: EdgeInsets.only(
-                              right: 5,
-                              left: 15,
+                  : Container(
+                      margin: EdgeInsets.only(
+                          left: 17,
+                          right: 13,
+                          bottom: ReadSetting.listPageBottom),
+                      alignment: Alignment.centerLeft,
+                      child: Column(
+                        children: [
+                          Container(
+                            child: Center(
+                              child: Text(
+                                chapters[book.cur].name,
+                                style: TextStyle(
+                                    fontFamily: SpUtil.getString("fontName",
+                                        defValue: "Roboto"),
+                                    color: model.dark
+                                        ? Color(0x8FFFFFFF)
+                                        : Colors.black,
+                                    locale: Locale('zh_CN'),
+                                    letterSpacing: ReadSetting.getLatterSpace(),
+                                    fontSize: ReadSetting.getFontSize() + 3,
+                                    height: ReadSetting.getLineHeight()),
+                              ),
                             ),
-                            child: Text(
-                              content,
-                              textAlign: TextAlign.justify,
-                              textScaleFactor: Screen.textScaleFactor,
-                              style: TextStyle(
-                                  fontFamily: SpUtil.getString("fontName",
-                                      defValue: "Roboto"),
-                                  color: model.dark
-                                      ? Color(0x8FFFFFFF)
-                                      : Colors.black,
-                                  locale: Locale('zh_CN'),
-                                  decorationStyle: TextDecorationStyle.wavy,
-                                  letterSpacing: ReadSetting.getLatterSpace(),
-                                  fontSize: ReadSetting.getFontSize(),
-                                  height: ReadSetting.getLineHeight()),
-                            )),
-                        SizedBox(
-                          height: Screen.height / 2,
-                        )
-                      ],
-                    ));
+                            height: ReadSetting.listPageChapterName,
+                          ),
+                          RichText(
+                            textAlign: TextAlign.justify,
+                            textScaleFactor: Screen.textScaleFactor,
+                            text: TextSpan(children: [
+                              TextSpan(
+                                text: r.chapterContent,
+                                style: TextStyle(
+                                    fontFamily: SpUtil.getString("fontName",
+                                        defValue: "Roboto"),
+                                    color: model.dark
+                                        ? Color(0x8FFFFFFF)
+                                        : Colors.black,
+                                    locale: Locale('zh_CN'),
+                                    decorationStyle: TextDecorationStyle.wavy,
+                                    letterSpacing: ReadSetting.getLatterSpace(),
+                                    fontSize: ReadSetting.getFontSize(),
+                                    height: ReadSetting.getLineHeight()),
+                              )
+                            ]),
+                          ),
+                        ],
+                      )));
         }));
       }
     }
+
     return contents;
   }
 
-  Widget pageHead(var model, var r) {
-    return Container(
-      height: 30,
-      alignment: Alignment.centerLeft,
-      padding: EdgeInsets.only(left: 20),
-      child: Text(
-        r.chapterName,
-        // strutStyle: StrutStyle(
-        //     forceStrutHeight: true,
-        //     height: textLineHeight),
-        style: TextStyle(
-          fontSize: 12 / Screen.textScaleFactor,
-          color: model.dark ? Color(0x8FFFFFFF) : Colors.black54,
-        ),
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-
-  Widget pageFoot(var model, var r, var i) {
+  Widget pageFoot(var model, var i, var r) {
     return Container(
       height: 30,
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -769,6 +743,47 @@ class ReadModel with ChangeNotifier {
     );
   }
 
+  Widget pageMiddleContent(var content, var model) {
+    return Expanded(
+        child: Container(
+            margin: EdgeInsets.only(left: 17, right: 13),
+            alignment: Alignment.centerLeft,
+            child: RichText(
+              textAlign: TextAlign.justify,
+              textScaleFactor: Screen.textScaleFactor,
+              text: TextSpan(children: [
+                TextSpan(
+                  text: content,
+                  style: TextStyle(
+                      fontFamily:
+                          SpUtil.getString("fontName", defValue: "Roboto"),
+                      color: model.dark ? Color(0x8FFFFFFF) : Colors.black,
+                      locale: Locale('zh_CN'),
+                      decorationStyle: TextDecorationStyle.wavy,
+                      letterSpacing: ReadSetting.getLatterSpace(),
+                      fontSize: ReadSetting.getFontSize(),
+                      height: ReadSetting.getLineHeight()),
+                )
+              ]),
+            )));
+  }
+
+  Widget pageHead(var r, var model) {
+    return Container(
+      height: 30,
+      alignment: Alignment.centerLeft,
+      padding: EdgeInsets.only(left: 20),
+      child: Text(
+        r.chapterName,
+        style: TextStyle(
+          fontSize: 12 / Screen.textScaleFactor,
+          color: model.dark ? Color(0x8FFFFFFF) : Colors.black54,
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
   clear() async {
     allContent = null;
     chapters = [];
@@ -779,22 +794,16 @@ class ReadModel with ChangeNotifier {
     chapters = [];
     DbHelper.instance.clearChapters(book.Id);
 
-    // var key = '${book.Id}chapters';
-    // if (SpUtil.haveKey(key)) {
-    //   SpUtil.remove(key);
-    // }
     var url = Common.chaptersUrl + '/${book.Id}/0';
-    Response response = await Util(null).http().get(url);
+    Response response = await HttpUtil().http().get(url);
 
     List data = response.data['data'];
     if (data == null) {
-      // print("load cps ok");
       return;
     }
 
     chapters = data.map((c) => Chapter.fromJson(c)).toList();
 
-    // SpUtil.putString('${book.Id}chapters', jsonEncode(chapters));
     DbHelper.instance.addChapters(chapters, book.Id);
     notifyListeners();
   }
@@ -802,8 +811,9 @@ class ReadModel with ChangeNotifier {
   Future<void> reloadCurrentPage() async {
     toggleShowMenu();
     var chapter = chapters[book.cur];
-    var future =
-        await Util(context).http().get(Common.reload + '/${chapter.id}/reload');
+    var future = await HttpUtil(showLoading: true)
+        .http()
+        .get(Common.reload + '/${chapter.id}/reload');
     var content = future.data['data']['content'];
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.id)];
@@ -834,9 +844,6 @@ class ReadModel with ChangeNotifier {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
           cpNodes.add(ChapterNode(content, id));
-          if (chapters.isNotEmpty) {
-            chapters[i].hasContent = 2;
-          }
         }
       }
       if (cpNodes.length % batchNum == 0) {

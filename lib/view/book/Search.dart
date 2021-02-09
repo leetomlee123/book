@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/net.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
@@ -244,7 +244,7 @@ class _SearchState extends State<Search> {
                   ),
                   onTap: () async {
                     String url = Common.detail + '/${searchModel.bks[i].Id}';
-                    Response future = await Util(context).http().get(url);
+                    Response future = await HttpUtil(showLoading: true).http().get(url);
                     var d = future.data['data'];
                     BookInfo b = BookInfo.fromJson(d);
                     Routes.navigateTo(context, Routes.detail,

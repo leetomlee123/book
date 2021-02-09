@@ -8,6 +8,13 @@ class LoadingDialog extends Dialog {
     //创建透明层
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
+      return Center(
+        child: CircularProgressIndicator(
+            // strokeWidth: 2.0,
+            // valueColor: AlwaysStoppedAnimation<Color>(
+            //     model.dark ? Colors.black : Colors.white),
+            ),
+      );
       return Material(
         color: Colors.transparent,
         child: Center(
@@ -25,7 +32,8 @@ class LoadingDialog extends Dialog {
                   children: [
                     CircularProgressIndicator(
                       strokeWidth: 2.0,
-                      valueColor: AlwaysStoppedAnimation<Color>(model.dark?Colors.black:Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          model.dark ? Colors.black : Colors.white),
                     ),
                     SizedBox(
                       height: 10,
