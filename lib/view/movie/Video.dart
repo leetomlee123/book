@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/widgets/LabelTitle.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -148,6 +150,7 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
 
   Widget item(String title, List<GBook> bks, String key) {
     return Container(
+      width: Screen.width,
       padding: EdgeInsets.symmetric(horizontal: 10),
       child: ListView(
         shrinkWrap: true,
@@ -157,30 +160,16 @@ class VideoState extends State<Video> with AutomaticKeepAliveClientMixin {
             height: 5.0,
           ),
           Row(
+
             children: <Widget>[
-              Padding(
-                child: Container(
-                  width: 4,
-                  height: 20,
-                  color: value.dark ? Colors.white : value.theme.primaryColor,
-                ),
-                padding: EdgeInsets.only(left: 5.0, right: 3.0),
-              ),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 17,
-                  color: value.dark ? Colors.white : value.theme.primaryColor,
-                ),
-              ),
+              LabelTitle("在线播放"),
               Spacer(),
               GestureDetector(
                 child: Row(
                   children: <Widget>[
                     Text(
                       "更多",
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      style: TextStyle(color: Colors.black45, fontSize: 13),
                     ),
                     Icon(
                       Icons.keyboard_arrow_right,

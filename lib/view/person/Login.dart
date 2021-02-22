@@ -1,5 +1,5 @@
-import 'package:book/common/common.dart';
 import 'package:book/common/Http.dart';
+import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -18,8 +18,9 @@ class Login extends StatelessWidget {
   login(BuildContext context) async {
     FocusScope.of(context).requestFocus(FocusNode());
     var formData = FormData.fromMap({"name": username, "password": pwd});
-    Response response =
-        await HttpUtil(showLoading: true).http().post(Common.login, data: formData);
+    Response response = await HttpUtil(showLoading: true)
+        .http()
+        .post(Common.login, data: formData);
     var data = response.data;
     if (data['code'] != 201) {
       BotToast.showText(text: data['msg']);

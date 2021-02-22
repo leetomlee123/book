@@ -5,11 +5,13 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-
 void main() {
+  List<int> a = [1, 2, 3, 4, 5];
+  int cursor = 1;
+  a.removeAt(cursor);
+  a.insert(cursor, 6);
+  print(a);
 
-
-  
 //  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
 //    // Build our app and trigger a frame.
 //    await tester.pumpWidget(MyApp());

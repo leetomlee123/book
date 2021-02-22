@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:flustars/flustars.dart';
@@ -7,9 +9,9 @@ class ReaderPageAgent {
   /// 文本间距
   double getPageHeight(String content, double width) {
     TextPainter textPainter = getTextPainter(content, width);
-    textPainter.layout(maxWidth: width, minWidth: width);
+    textPainter.layout(maxWidth: width);
     var height = textPainter.height;
-    height += ReadSetting.listPageChapterName + ReadSetting.listPageBottom;
+    height += (ReadSetting.listPageChapterName + ReadSetting.listPageBottom);
     return height;
   }
 
@@ -81,8 +83,6 @@ class ReaderPageAgent {
     int lineNumberPerPage = pageHeight ~/ lineHeight;
     // int pageNum = (lineNumber / lineNumberPerPage).ceil();
     double actualPageHeight = lineNumberPerPage * lineHeight;
-    print(
-        "${SpUtil.getString("fontName", defValue: "Roboto")} font Family actualPageHeight is :$actualPageHeight lineHeight :$lineHeight}");
     while (true) {
       textPainter = getTextPainter(tempStr, width);
       textPainter.layout(maxWidth: width);
@@ -98,7 +98,6 @@ class ReaderPageAgent {
       pageConfig.add(end.toString());
 
       tempStr = tempStr.substring(end, tempStr.length);
-
       while (tempStr.startsWith("\n")) {
         tempStr = tempStr.substring(1);
       }
@@ -120,8 +119,8 @@ class ReaderPageAgent {
             letterSpacing: ReadSetting.getLatterSpace(),
             height: ReadSetting.getLineHeight()));
     double lineHeight = textPainter.preferredLineHeight;
-    print(
-        "use fontFamily is :${SpUtil.getString("fontName", defValue: "Roboto")} lineHeight:$lineHeight");
+    // print(
+    //     "use fontFamily is :${SpUtil.getString("fontName", defValue: "Roboto")} lineHeight:$lineHeight");
     return textPainter;
   }
 }

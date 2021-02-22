@@ -44,19 +44,27 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   void initState() {
     setUp();
     super.initState();
+    var widgetsBinding = WidgetsBinding.instance;
+
+    widgetsBinding.addPostFrameCallback((callback) {
+      print('rebuild');
+    });
   }
 
   setUp() async {
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
-      readModel.intiPageContent(readModel.book.cur, true);
+      readModel.initPageContent(readModel.book.cur, true);
     });
+
     eventBus.on<OpenChapters>().listen((event) {
       _globalKey.currentState?.openDrawer();
     });
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
+    eventBus.on<ZEvent>().listen((event) {
+      move(event.isPage, event.offset);
+    });
     readModel = Store.value<ReadModel>(context);
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
@@ -74,17 +82,24 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() async {
     super.dispose();
-    await readModel.saveData();
-    await readModel.clear();
+    readModel?.pageController?.dispose();
+    readModel?.listController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
-    print('dispose');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     readModel.saveData();
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    readModel.saveData();
+    readModel.clear();
+
   }
 
   @override
@@ -125,18 +140,16 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                 physics: AlwaysScrollableScrollPhysics(),
                                 itemBuilder:
                                     (BuildContext context, int position) {
-                                  return readModel.allContent[position];
+                                  return model.allContent[position];
                                 },
                                 //条目个数
-                                itemCount: (readModel
+                                itemCount: (model
                                             .prePage?.pageOffsets?.length ??
                                         0) +
-                                    (readModel.curPage?.pageOffsets?.length ??
-                                        0) +
-                                    (readModel.nextPage?.pageOffsets?.length ??
-                                        0),
+                                    (model.curPage?.pageOffsets?.length ?? 0) +
+                                    (model.nextPage?.pageOffsets?.length ?? 0),
                                 onPageChanged: (idx) =>
-                                    readModel.changeChapter(idx),
+                                    model.changeChapter(idx),
                               )
                             : Container(
                                 width: Screen.width,
@@ -151,7 +164,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                       alignment: Alignment.centerLeft,
                                       padding: EdgeInsets.only(left: 20),
                                       child: Text(
-                                        model.curPage.chapterName,
+                                        model.readPages[model.cursor]
+                                            .chapterName,
                                         style: TextStyle(
                                           fontSize: 12 / Screen.textScaleFactor,
                                           color: colorModel.dark
@@ -164,51 +178,70 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                     Container(
                                       width: Screen.width,
                                       height: model.contentH,
-                                      child: ListView(
-                                        children: model.allContent,
-                                        controller: model.listController,
+                                      child: NotificationListener<
+                                          ScrollNotification>(
+                                        // 添加 NotificationListener 作为父容器
+                                        onNotification: (scrollNotification) {
+                                          // 注册通知回调
+                                          if (scrollNotification
+                                              is ScrollEndNotification) {
+                                            readModel.notifyOffset();
+                                          }
+                                          return true;
+                                        },
+                                        child: ListView.builder(
+                                          itemCount: model.readPages.length,
+                                          itemBuilder: (BuildContext context,
+                                              int index) {
+                                            return model.allContent[index];
+                                          },
+                                          controller: model.listController,
+                                          cacheExtent: model.readPages[model.cursor].height,
+                                        ),
                                       ),
                                     ),
-                                    Container(
-                                      height: 30,
-                                      padding:
-                                          EdgeInsets.symmetric(horizontal: 20),
-                                      child: Row(
-                                        children: <Widget>[
-                                          BatteryView(
-                                            electricQuantity:
-                                                model.electricQuantity,
-                                          ),
-                                          SizedBox(
-                                            width: 4,
-                                          ),
-                                          Text(
-                                            '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                                            style: TextStyle(
-                                              fontSize:
-                                                  12 / Screen.textScaleFactor,
-                                              color: colorModel.dark
-                                                  ? Color(0x8FFFFFFF)
-                                                  : Colors.black54,
+                                    Store.connect<ReadModel>(builder:
+                                        (context, ReadModel _readModel, child) {
+                                      return Container(
+                                        height: 30,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 20),
+                                        child: Row(
+                                          children: <Widget>[
+                                            BatteryView(
+                                              electricQuantity:
+                                              _readModel.electricQuantity,
                                             ),
-                                          ),
-                                          Spacer(),
-
-                                          // Expanded(child: Container()),
-                                          Text(
-                                            '50%',
-                                            style: TextStyle(
-                                              fontSize:
-                                                  12 / Screen.textScaleFactor,
-                                              color: colorModel.dark
-                                                  ? Color(0x8FFFFFFF)
-                                                  : Colors.black54,
+                                            SizedBox(
+                                              width: 4,
                                             ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
-                                      ),
-                                    )
+                                            Text(
+                                              '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                                              style: TextStyle(
+                                                fontSize:
+                                                    12 / Screen.textScaleFactor,
+                                                color: colorModel.dark
+                                                    ? Color(0x8FFFFFFF)
+                                                    : Colors.black54,
+                                              ),
+                                            ),
+                                            Spacer(),
+                                            Text(
+                                              '${_readModel.percent}%',
+                                              style: TextStyle(
+                                                fontSize:
+                                                    12 / Screen.textScaleFactor,
+                                                color: colorModel.dark
+                                                    ? Color(0x8FFFFFFF)
+                                                    : Colors.black54,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            // Expanded(child: Container()),
+                                          ],
+                                        ),
+                                      );
+                                    }),
                                   ],
                                 )),
                         //菜单
@@ -252,5 +285,23 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     } else {
       FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
     }
+  }
+
+  void move(bool isPage, double offset) {
+    var widgetsBinding = WidgetsBinding.instance;
+
+    widgetsBinding.addPostFrameCallback((callback) {
+      if (isPage) {
+        int ix = readModel.prePage?.pageOffsets?.length ?? 0;
+        readModel.pageController.jumpToPage(ix);
+      } else {
+        if (offset == 0.0) {
+          readModel.listController
+              .jumpTo((readModel.ladderH[readModel.cursor - 1]));
+        } else {
+          readModel.listController.jumpTo(offset);
+        }
+      }
+    });
   }
 }

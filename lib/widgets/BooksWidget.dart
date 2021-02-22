@@ -169,11 +169,11 @@ class _BooksWidgetState extends State<BooksWidget> {
                     : Container()
               ],
             ),
-            Text(
-              book.Name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
+            // Text(
+            //   book.Name,
+            //   maxLines: 1,
+            //   overflow: TextOverflow.ellipsis,
+            // )
           ],
         ),
         onTap: () async {
@@ -194,7 +194,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
-        itemExtent: (10 + (Screen.width / 4) * 1.2),
+        itemExtent: (15 + (Screen.width / 4) * 1.2),
         itemCount: _shelfModel.shelf.length,
         itemBuilder: (context, i) {
           return GestureDetector(
@@ -222,11 +222,11 @@ class _BooksWidgetState extends State<BooksWidget> {
         'read': jsonEncode(b),
       },
     );
-    _shelfModel.upTotop(b, i);
+    _shelfModel.upToTop(b, i);
   }
 
   getBookItemView(Book item, int i) {
-    return Dismissible(
+    return Container(child: Dismissible(
       key: Key(item.Id.toString()),
       child: Stack(
         children: [
@@ -247,17 +247,17 @@ class _BooksWidgetState extends State<BooksWidget> {
                           ),
                           item.NewChapterCount == 1
                               ? Container(
-                                  height: (Screen.width / 4) * 1.2,
-                                  width: Screen.width / 4,
-                                  child: Align(
-                                    alignment: Alignment.topRight,
-                                    child: Image.asset(
-                                      'images/h6.png',
-                                      width: 30,
-                                      height: 30,
-                                    ),
-                                  ),
-                                )
+                            height: (Screen.width / 4) * 1.2,
+                            width: Screen.width / 4,
+                            child: Align(
+                              alignment: Alignment.topRight,
+                              child: Image.asset(
+                                'images/h6.png',
+                                width: 30,
+                                height: 30,
+                              ),
+                            ),
+                          )
                               : Container(),
                         ],
                       ),
@@ -265,7 +265,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                   ],
                 ),
                 Column(
-               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Container(
@@ -305,29 +305,29 @@ class _BooksWidgetState extends State<BooksWidget> {
               alignment: Alignment.topRight,
               child: this.widget.type == "sort"
                   ? GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        margin: EdgeInsets.only(right: 20),
-                        height: 115,
-                        width: ScreenUtil.getScreenW(context),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Image.asset(
-                            'images/pick.png',
-                            color: !_shelfModel.picks(i)
-                                ? Colors.black38
-                                : Store.value<ColorModel>(context)
-                                    .theme
-                                    .primaryColor,
-                            width: 30,
-                            height: 30,
-                          ),
-                        ),
-                      ),
-                      onTap: () {
-                        _shelfModel.changePick(i);
-                      },
-                    )
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  margin: EdgeInsets.only(right: 20),
+                  height: 115,
+                  width: ScreenUtil.getScreenW(context),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Image.asset(
+                      'images/pick.png',
+                      color: !_shelfModel.picks(i)
+                          ? Colors.black38
+                          : Store.value<ColorModel>(context)
+                          .theme
+                          .primaryColor,
+                      width: 30,
+                      height: 30,
+                    ),
+                  ),
+                ),
+                onTap: () {
+                  _shelfModel.changePick(i);
+                },
+              )
                   : Container())
         ],
       ),
@@ -364,11 +364,11 @@ class _BooksWidgetState extends State<BooksWidget> {
           _confirmContent = '确认删除     ${item.Name}';
           _alertDialog = ConfirmDialog(
             _confirmContent,
-            () {
+                () {
               // 展示 SnackBar
               Navigator.of(context).pop(true);
             },
-            () {
+                () {
               Navigator.of(context).pop(false);
             },
           );
@@ -382,6 +382,6 @@ class _BooksWidgetState extends State<BooksWidget> {
             });
         return isDismiss;
       },
-    );
+    ),padding: EdgeInsets.only(bottom: 5),);
   }
 }

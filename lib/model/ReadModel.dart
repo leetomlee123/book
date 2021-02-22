@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:battery/battery.dart';
 import 'package:book/common/DbHelper.dart';
@@ -16,6 +16,7 @@ import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/EveryPoet.dart';
 import 'package:book/entity/ReadPage.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/system/BatteryView.dart';
@@ -29,15 +30,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 enum Load { Loading, Done }
+enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
   Book book;
   List<Chapter> chapters = [];
   EveryPoet _everyPoet;
   var currentPageValue = 0.0;
+  String poet = "";
 
   var electricQuantity = 1.0;
-  double allContentHeight = 0;
+
+  // double allContentHeight = 0;
+  List<Color> skins = Colors.accents;
+  List<ReadPage> readPages = [];
+  List<double> ladderH = [];
+
+  //readPages 中 curPage 实际位置
+  int cursor = 1;
 
   //本书记录
   // BookTag bookTag;
@@ -45,7 +55,9 @@ class ReadModel with ChangeNotifier {
   ReadPage curPage;
   ReadPage nextPage;
   List<Widget> allContent = [];
-  List<ReadPage> allPages = [];
+  int _percent = 0;
+
+  int get percent => _percent;
 
   //页面控制器
   PageController pageController;
@@ -78,8 +90,8 @@ class ReadModel with ChangeNotifier {
   double contentW;
   bool jump = true;
 
-//阅读方式
-  bool isPage = true;
+  //阅读方式
+  bool isPage = SpUtil.getBool("isPage", defValue: false);
 
   //页面上下文
   BuildContext context;
@@ -97,6 +109,10 @@ class ReadModel with ChangeNotifier {
     loadOk = false;
     sSave = true;
     load = Load.Done;
+    cursor = 1;
+    readPages = [];
+    ladderH = [];
+    getEveyPoet();
     if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
 
@@ -112,18 +128,25 @@ class ReadModel with ChangeNotifier {
       }
       checkCur();
 
-      await intiPageContent(book.cur, false);
+      await initPageContent(book.cur, false);
       // if (isPage) {
-      if (book.index == -1) {
-        //最后一页
-        book.index = (prePage?.pageOffsets?.length ?? 0) +
-            (curPage?.pageOffsets?.length ?? 0) -
-            1;
-      }
+
       if (isPage) {
-        pageController = PageController(initialPage: book.index);
+        if (book.index == -1) {
+          //最后一页
+          book.index = (prePage?.pageOffsets?.length ?? 0) +
+              (curPage?.pageOffsets?.length ?? 0) -
+              1;
+        }
+        pageController =
+            PageController(initialPage: book.index, keepPage: false);
       } else {
-        listController = ScrollController(initialScrollOffset: book.position);
+        if (book.index == -1) {
+          //最后一页
+          book.position = ladderH[cursor];
+        }
+        listController = ScrollController(
+            initialScrollOffset: book.position, keepScrollOffset: false);
       }
       loadOk = true;
       //本书已读过
@@ -147,45 +170,108 @@ class ReadModel with ChangeNotifier {
       if (book.CId == "-1") {
         book.cur = chapters.length - 1;
       }
-      await intiPageContent(book?.cur ?? 0, false);
+      await initPageContent(book?.cur ?? 0, false);
       if (isPage) {
         int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
         book.index = idx;
-        pageController = PageController(initialPage: idx);
+        pageController = PageController(initialPage: idx, keepPage: false);
       } else {
-        allContentHeight = (prePage?.height ?? 0) +
-            (curPage?.height ?? 0) +
-            (nextPage?.height ?? 0);
-        listController = ScrollController(
-            initialScrollOffset: book.cur == 0 ? 0 : prePage?.height ?? 0);
+        double z1 = book.cur == 0 ? 0 : (prePage?.height ?? 0);
 
-        listController.addListener(() {
-          if (load == Load.Done) {
-            if (listController.offset >=
-                ((prePage?.height ?? 0) + (curPage?.height ?? 0))) {
-              //翻到下一页
-              print('预加载下一章');
-              loadNextChapter();
-            }
-          } else if (listController.offset < prePage.height) {
-            print('预加载上一章');
-            loadPreChapter();
-          }
-        });
+        listController =
+            ScrollController(initialScrollOffset: z1, keepScrollOffset: false);
       }
       loadOk = true;
     }
+    // listen();
+
     notifyListeners();
   }
 
-  loadPreChapter() {
-    load = Load.Loading;
+  void notifyOffset() {
+    try {
+      if (load == Load.Done) {
+        if (listController.offset > ladderH[cursor]) {
+          print('预加载下一章');
+          getEveyPoet();
+          loadNextChapter();
+        } else if (listController.offset < ladderH[cursor - 1]) {
+          print("load pre");
+          if (cursor > 0) {
+            cursor -= 1;
+            book.cur -= 1;
+          }
+        }
+        calcPercent();
+      }
+    } catch (e) {
+      print(e);
+      load = Load.Done;
+    }
+  }
 
+  void calcPercent() {
+    double preH = (cursor - 1) < 0 ? 0 : ladderH[cursor - 1];
+    int k1;
+    if ((readPages[cursor].height) == 0) {
+      k1 = 0;
+    } else {
+      k1 = (((listController.offset - preH) / (readPages[cursor].height)) * 100)
+          .toInt();
+      if (k1 < 0) {
+        k1 = 0;
+      } else if (k1 > 100) {
+        k1 = 100;
+      }
+    }
+
+    if (k1 != _percent) {
+      _percent = k1.abs();
+      notifyListeners();
+    }
+  }
+
+  loadPreChapter() async {
+    load = Load.Loading;
+    int tempCur = book.cur - 1;
+    if (tempCur < 0) {
+      return;
+    } else {
+      book.cur -= 1;
+      nextPage = curPage;
+      curPage = prePage;
+      print("notify before offset ${listController.offset}");
+      ReadPage temp = await loadChapter(book.cur - 1);
+      if (tempCur == book.cur) {
+        if (temp != null) {
+          prePage = temp;
+          // allContentHeight += (temp?.height ?? 0);
+          allContent.insertAll(0, chapterContent(temp));
+          var newOffset = (temp?.height ?? 0) + listController.offset;
+          ScrollPosition position = listController.position;
+          position.correctPixels(newOffset);
+          // ScrollPosition newPosition = position.copyWith(
+          //     pixels: newOffset, maxScrollExtent: allContentHeight);
+          // listController.detach(position);
+          // listController.attach(newPosition);
+        }
+        //每次翻页刷新电池电量
+        electricQuantity = (await Battery().batteryLevel) / 100;
+      }
+    }
     load = Load.Done;
+    notifyListeners();
   }
 
   loadNextChapter() async {
     load = Load.Loading;
+    if (readPages.length - 2 > cursor) {
+      print("已存在");
+      cursor += 1;
+      book.cur += 1;
+      load = Load.Done;
+      return;
+    }
     //下一章
     int tempCur = book.cur + 1;
     if (tempCur >= chapters.length) {
@@ -193,30 +279,27 @@ class ReadModel with ChangeNotifier {
       book.index = -1;
     } else {
       book.cur += 1;
+      cursor += 1;
 
-      if (nextPage.chapterName == "-1") {
-        BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
-        curPage = await loadChapter(book.cur);
-        BotToast.closeAllLoading();
-      }
+      // if (nextPage.chapterName == "-1") {
+      //   BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
+      //   curPage = await loadChapter(book.cur);
+      //   BotToast.closeAllLoading();
+      // }
 
       ReadPage temp = await loadChapter(book.cur + 1);
       if (book.cur == tempCur) {
-        //计算此时在nextPage的位置
-        // double positionX = listController.offset - (txPage?.height ?? 0);
-        allContentHeight += temp?.height ?? 0;
         if (temp != null) {
+          addReadPage(temp);
           allContent.addAll(chapterContent(temp));
         }
-        allPages.add(temp);
         //每次翻页刷新电池电量
         electricQuantity = (await Battery().batteryLevel) / 100;
-        if (refresh) {
-          notifyListeners();
-        }
       }
     }
     load = Load.Done;
+
+    notifyListeners();
   }
 
   checkCur() {
@@ -228,7 +311,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  Future intiPageContent(int idx, bool jump) async {
+  Future initPageContent(int idx, bool jump) async {
     BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
 
     try {
@@ -238,23 +321,25 @@ class ReadModel with ChangeNotifier {
         loadChapter(idx + 1).then((value) => {nextPage = value}),
       ]);
       if (!isPage) {
-        allPages = [];
-        allPages.add(prePage);
-        allPages.add(curPage);
-        allPages.add(nextPage);
+        readPages = [];
+        ladderH = [];
+        cursor = 1;
+        addReadPage(prePage);
+        addReadPage(curPage);
+        addReadPage(nextPage);
       }
-      fillAllContent(refresh: jump);
+      await fillAllContent(refresh: jump);
+
+      if (!isPage && listController != null) {
+        calcPercent();
+      }
       if (jump) {
-        if (isPage) {
-          int ix = prePage?.pageOffsets?.length ?? 0;
-          pageController.jumpToPage(ix);
-        } else {
-          listController.jumpTo(prePage?.height ?? 0);
-        }
+        eventBus.fire(ZEvent(isPage, 0.0));
       }
     } catch (e) {
       print(e);
     }
+
     BotToast.closeAllLoading();
   }
 
@@ -276,7 +361,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  //触发章节
+//触发章节
   changeChapter(int idx) async {
     book.index = idx;
     int preLen = prePage?.pageOffsets?.length ?? 0;
@@ -375,6 +460,7 @@ class ReadModel with ChangeNotifier {
     } else if (idx == chapters.length) {
       r.chapterName = "-1";
       r.pageOffsets = List(1);
+      r.height = Screen.height;
       r.chapterContent = "没有更多内容,等待作者更新";
       return r;
     }
@@ -410,47 +496,49 @@ class ReadModel with ChangeNotifier {
       }
     } else {
       r.pageOffsets = [r.chapterContent];
-      if (SpUtil.haveKey('height' + id)) {
-        r.height = SpUtil.getDouble('height' + id);
+      String k = '${book.Id}height' + r.chapterName;
+      if (SpUtil.haveKey(k)) {
+        r.height = SpUtil.getDouble(k);
+        SpUtil.remove(k);
       } else {
         r.height = ReaderPageAgent().getPageHeight(r.chapterContent, contentW);
+        //章节内容不满一页 按一页算
+        r.height = r.height >= Screen.height ? r.height : Screen.height;
       }
-      //章节内容不满一页 按一页算
-      r.height = r.height >= Screen.height ? r.height : Screen.height;
     }
     return r;
   }
 
-  //章节内容变动 刷新
-  // freshPageContents(ReadPage readPage, {bool refresh = true}) async {
-  //   switch (readPage.position) {
-  //     case -1:
-  //       if (prePage != null) {
-  //         allContent.addAll(chapterContent(prePage));
-  //         pageController.jumpToPage(
-  //             prePage.pageOffsets.length + pageController.page.toInt());
-  //         print("pre load ok ${pageController.page}");
-  //       }
-  //       break;
-  //     case 0:
-  //       if (curPage != null) {
-  //         allContent.addAll(chapterContent(curPage));
-  //         pageController.jumpToPage(0);
-  //         print("cur load ok ${pageController.page}");
-  //       }
-  //       break;
-  //     case 1:
-  //       if (nextPage != null) {
-  //         allContent.addAll(chapterContent(nextPage));
-  //       }
-  //       break;
-  //   }
-  //   //每次翻页刷新电池电量
-  //   electricQuantity = (await Battery().batteryLevel) / 100;
-  //   notifyListeners();
-  // }
+//章节内容变动 刷新
+// freshPageContents(ReadPage readPage, {bool refresh = true}) async {
+//   switch (readPage.position) {
+//     case -1:
+//       if (prePage != null) {
+//         allContent.addAll(chapterContent(prePage));
+//         pageController.jumpToPage(
+//             prePage.pageOffsets.length + pageController.page.toInt());
+//         print("pre load ok ${pageController.page}");
+//       }
+//       break;
+//     case 0:
+//       if (curPage != null) {
+//         allContent.addAll(chapterContent(curPage));
+//         pageController.jumpToPage(0);
+//         print("cur load ok ${pageController.page}");
+//       }
+//       break;
+//     case 1:
+//       if (nextPage != null) {
+//         allContent.addAll(chapterContent(nextPage));
+//       }
+//       break;
+//   }
+//   //每次翻页刷新电池电量
+//   electricQuantity = (await Battery().batteryLevel) / 100;
+//   notifyListeners();
+// }
 
-  modifyFont() {
+  modifyFont() async {
     if (!font) {
       font = !font;
     }
@@ -465,8 +553,8 @@ class ReadModel with ChangeNotifier {
         SpUtil.remove(key);
       }
     }
-    fillAllContent(refresh: true);
-    intiPageContent(book.cur, true);
+    await fillAllContent(refresh: true);
+    initPageContent(book.cur, true);
   }
 
   toggleShowMenu() {
@@ -487,15 +575,22 @@ class ReadModel with ChangeNotifier {
         SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
             nextPage?.pageOffsets ?? []);
       } else {
-        double position = allContentHeight - listController.offset;
-        await DbHelper.instance.updBookProcess(
-            book?.cur ?? 0, book?.index ?? 0, position, book.Id);
-        var len = allPages.length;
-        for (var i = 1; i <= 3; i++) {
-          var id = chapters[len - i].id;
-          var h = allPages[len - i].height;
-          SpUtil.putDouble('height' + id, h);
-        }
+        double p1 = ladderH[cursor + 1] - listController.offset;
+        p1 = (readPages[cursor - 1].height +
+                readPages[cursor].height +
+                readPages[cursor + 1].height) -
+            p1;
+        await DbHelper.instance
+            .updBookProcess(book?.cur ?? 0, book?.index ?? 0, p1, book.Id);
+        SpUtil.putDouble(
+            '${book.Id}height${readPages[cursor - 1]?.chapterName ?? ''}',
+            readPages[cursor - 1]?.height ?? 0.0);
+        SpUtil.putDouble(
+            '${book.Id}height${readPages[cursor]?.chapterName ?? ''}',
+            readPages[cursor]?.height ?? 0.0);
+        SpUtil.putDouble(
+            '${book.Id}height${readPages[cursor + 1]?.chapterName ?? ''}',
+            readPages[cursor + 1]?.height ?? 0.0);
       }
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
@@ -508,18 +603,21 @@ class ReadModel with ChangeNotifier {
 
   void tapPage(BuildContext context, TapDownDetails details) {
     var wid = ScreenUtil.getScreenW(context);
+    var hSpace = Screen.height / 4;
     var space = wid / 3;
-    var curWid = details.localPosition.dx;
+    var curWid = details.globalPosition.dx;
+    var curH = details.globalPosition.dy;
+
     if (isPage && (curWid > 0 && curWid < space)) {
       pageController.previousPage(
           duration: Duration(microseconds: 1), curve: Curves.ease);
-    } else if (curWid > space && curWid < 2 * space) {
+    } else if ((curWid > space) &&
+        (curWid < 2 * space) &&
+        (curH < hSpace * 3)) {
       toggleShowMenu();
-    } else {
-      if (isPage) {
-        pageController.nextPage(
-            duration: Duration(microseconds: 1), curve: Curves.ease);
-      }
+    } else if (isPage && (curWid > space * 2)) {
+      pageController.nextPage(
+          duration: Duration(microseconds: 1), curve: Curves.ease);
     }
   }
 
@@ -571,7 +669,7 @@ class ReadModel with ChangeNotifier {
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 40),
               child: Text(
-                book.Desc,
+                book?.Desc ?? '',
                 style: TextStyle(
                   fontWeight: FontWeight.w100,
                   fontSize: 11,
@@ -618,13 +716,16 @@ class ReadModel with ChangeNotifier {
       ));
     } else {
       int sum = r.pageOffsets.length;
-
-      String content;
-
-      for (var i = 0; i < sum; i++) {
+      bool top = false;
+      for (int i = 0; i < sum; i++) {
+        String content;
         if (isPage) {
           int end = int.parse(r.pageOffsets[i]);
           content = cts.substring(0, end);
+          if (i + 1 == sum) {
+            top = true;
+          }
+
           cts = cts.substring(end, cts.length);
 
           while (cts.startsWith("\n")) {
@@ -645,7 +746,7 @@ class ReadModel with ChangeNotifier {
                         children: <Widget>[
                           SizedBox(height: ScreenUtil.getStatusBarH(context)),
                           pageHead(r, model),
-                          pageMiddleContent(content, model),
+                          pageMiddleContent(content, model, top),
                           pageFoot(model, i, r)
                         ],
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -654,17 +755,14 @@ class ReadModel with ChangeNotifier {
                       height: double.infinity,
                     )
                   : Container(
-                      margin: EdgeInsets.only(
-                          left: 17,
-                          right: 13,
-                          bottom: ReadSetting.listPageBottom),
+                      margin: EdgeInsets.only(left: 17, right: 13),
                       alignment: Alignment.centerLeft,
                       child: Column(
                         children: [
                           Container(
                             child: Center(
                               child: Text(
-                                chapters[book.cur].name,
+                                r.chapterName,
                                 style: TextStyle(
                                     fontFamily: SpUtil.getString("fontName",
                                         defValue: "Roboto"),
@@ -699,6 +797,19 @@ class ReadModel with ChangeNotifier {
                               )
                             ]),
                           ),
+                          Container(
+                            child: Center(
+                              child: Text(
+                                poet,
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    color: randomColor(),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            width: Screen.width,
+                            height: ReadSetting.listPageBottom,
+                          )
                         ],
                       )));
         }));
@@ -728,8 +839,6 @@ class ReadModel with ChangeNotifier {
             ),
           ),
           Spacer(),
-
-          // Expanded(child: Container()),
           Text(
             '第${i + 1}/${r.pageOffsets.length}页',
             style: TextStyle(
@@ -743,11 +852,11 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-  Widget pageMiddleContent(var content, var model) {
+  Widget pageMiddleContent(var content, var model, bool top) {
     return Expanded(
         child: Container(
             margin: EdgeInsets.only(left: 17, right: 13),
-            alignment: Alignment.centerLeft,
+            // alignment: Alignment.centerLeft,
             child: RichText(
               textAlign: TextAlign.justify,
               textScaleFactor: Screen.textScaleFactor,
@@ -819,8 +928,20 @@ class ReadModel with ChangeNotifier {
       var temp = [ChapterNode(content, chapter.id)];
       await DbHelper.instance.udpChapter(temp);
       chapters[book.cur].hasContent = 2;
-      curPage = await loadChapter(book.cur);
-      fillAllContent();
+      if (isPage) {
+        curPage = await loadChapter(book.cur);
+        await fillAllContent();
+      } else {
+        var temp = await loadChapter(book.cur);
+        readPages.removeAt(cursor);
+        ladderH.removeAt(cursor);
+        readPages.insert(cursor, temp);
+
+        ladderH.insert(cursor, ladderH[cursor - 1] + temp.height);
+        allContent.removeAt(cursor);
+        allContent.insertAll(cursor, chapterContent(temp));
+        notifyListeners();
+      }
     }
   }
 
@@ -839,7 +960,6 @@ class ReadModel with ChangeNotifier {
     for (var i = start; i < temp.length; i++) {
       Chapter chapter = temp[i];
       var id = chapter.id;
-      print("download chapter id is :$id");
       if (chapter.hasContent != 2) {
         String content = await compute(requestDataWithCompute, id);
         if (content.isNotEmpty) {
@@ -863,15 +983,15 @@ class ReadModel with ChangeNotifier {
     try {
       var url = Common.bookContentUrl + '/$id';
       var client = new HttpClient();
-      // print('download $url');
+// print('download $url');
       var request = await client.getUrl(Uri.parse(url));
       var response = await request.close();
-      // print('download $url ok');
+// print('download $url ok');
       var responseBody = await response.transform(utf8.decoder).join();
       var dataList = await parseJson(responseBody);
       content = dataList['data']['content'];
     } catch (E) {
-      log(E);
+      print(e);
     }
     return content;
   }
@@ -923,5 +1043,71 @@ class ReadModel with ChangeNotifier {
 
     _everyPoet = EveryPoet(dataList['note'], dataList['picture4'],
         dataList['content'], dataList['fenxiang_img']);
+  }
+
+  getEveyPoet() async {
+    var url = "https://v2.jinrishici.com/one.json";
+
+    var future = await HttpUtil().http().get(url);
+    poet = future.data['data']['content'];
+  }
+
+  Future<void> switchFlipType(FlipType flipType) async {
+    switch (flipType) {
+      case FlipType.LIST_VIEW:
+        isPage = false;
+        readPages = [];
+        cursor = 1;
+        ladderH = [];
+        SpUtil.putBool("isPage", false);
+        if (listController == null) {
+          print('init');
+          await initPageContent(book.cur, false);
+          listController = ScrollController(
+              initialScrollOffset: ladderH[cursor - 1],
+              keepScrollOffset: false);
+          notifyListeners();
+        } else {
+          print('re');
+          await initPageContent(book.cur, true);
+        }
+
+        break;
+      case FlipType.PAGE_VIEW_SMOOTH:
+        isPage = true;
+        SpUtil.putBool("isPage", true);
+        initPageContent(book.cur, true);
+        pageController = PageController(
+            keepPage: false, initialPage: curPage?.pageOffsets?.length ?? 0);
+        notifyListeners();
+        break;
+      default:
+        break;
+    }
+  }
+
+  double getLadderHeight(int idx) {
+    int len = readPages.length;
+    if (idx < 0) {
+      return readPages[len + idx].height;
+    } else {
+      return readPages[idx].height;
+    }
+  }
+
+  void addReadPage(ReadPage r) {
+    int len = ladderH.length;
+    if (len == 0) {
+      ladderH.add(r.height);
+    } else {
+      ladderH.add(ladderH[len - 1] + r.height);
+    }
+    readPages.add(r);
+  }
+
+  Color randomColor() {
+    var rng = Random();
+
+    return skins[rng.nextInt(skins.length)];
   }
 }

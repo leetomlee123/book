@@ -10,6 +10,7 @@ class Book {
   String Id;
   String CId;
   int cur;
+  int sortTime;
   int index;
   double position;
   String CName;
@@ -31,10 +32,10 @@ class Book {
 
 
   Book.fromSql(this.Id, this.Name, this.CName, this.Author, this.UTime,
-      this.Img,this.Desc, this.cur, this.index,this.position, this.NewChapterCount, this.LastChapter);
+      this.Img,this.Desc, this.cur, this.sortTime,this.index,this.position, this.NewChapterCount, this.LastChapter);
 
   Book(
-    this.cur,this.index,this.position,
+    this.cur,this.sortTime,this.index,this.position,
       this.ChapterId,
       this.ChapterName,
       this.NewChapterCount,

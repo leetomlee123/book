@@ -28,19 +28,21 @@ import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
 FirebaseAnalytics analytics = FirebaseAnalytics();
+FirebaseAnalyticsObserver observer =
+    FirebaseAnalyticsObserver(analytics: analytics);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   if (await Permission.storage.request().isGranted) {
     await SpUtil.getInstance();
-    // await Firebase.initializeApp();
     locator.registerSingleton(TelAndSmsService());
     final router = FluroRouter();
     Routes.configureRoutes(router);
     Routes.router = router;
     runApp(Store.init(child: MyApp()));
     await DirectoryUtil.getInstance();
-
+    await Firebase.initializeApp();
     if (Platform.isAndroid) {
       SystemUiOverlayStyle systemUiOverlayStyle =
           SystemUiOverlayStyle(statusBarColor: Colors.transparent);
@@ -55,13 +57,13 @@ class MyApp extends StatelessWidget {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
       return MaterialApp(
+        // showPerformanceOverlay: true,
         title: '清阅',
         home: MainPage(),
         builder: BotToastInit(),
-        //
         navigatorObservers: [
           BotToastNavigatorObserver(),
-          FirebaseAnalyticsObserver(analytics: analytics),
+          observer,
         ],
         onGenerateRoute: Routes.router.generator,
         theme: model.theme, // 配置route generate
@@ -152,10 +154,16 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
    */
   var _pages = [BookShelf(), GoodBook(), Video()];
 
+  // var _pages = [BookShelf(), GoodBook(), Video(), YoutubePlayerDemoApp()];
+
   // var _pages = [Video(), VoiceBook()];
+  initEnv() async {
+    await Firebase.initializeApp();
+  }
 
   @override
   void initState() {
+    initEnv();
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     eventBus.on<OpenEvent>().listen((openEvent) {

@@ -14,6 +14,7 @@ import 'package:book/view/book/SortShelf.dart';
 import 'package:book/view/movie/LookVideo.dart';
 import 'package:book/view/movie/TagVideo.dart';
 import 'package:book/view/movie/VideoDetail.dart';
+import 'package:book/view/movie/VideoPlayerTest.dart';
 import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
@@ -28,6 +29,11 @@ var rootHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   return MainPage();
 });
+// 根目录
+// var videoTestHandler =
+//     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+//   return VideoScreen();
+// });
 
 // 设置页 - 示例：不传参数
 var searchHandler =
@@ -52,7 +58,6 @@ var fontSetHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   return FontSet();
 });
-
 
 var allTagBookHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {

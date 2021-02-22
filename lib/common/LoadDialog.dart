@@ -10,9 +10,6 @@ class LoadingDialog extends Dialog {
         builder: (context, ColorModel model, child) {
       return Center(
         child: CircularProgressIndicator(
-            // strokeWidth: 2.0,
-            // valueColor: AlwaysStoppedAnimation<Color>(
-            //     model.dark ? Colors.black : Colors.white),
             ),
       );
       return Material(

@@ -23,7 +23,7 @@ class DbHelper {
   static Database _db2;
   static Database _db3;
   static Database _db4;
-  int version = 2;
+  int version = 3;
 
   Future<Database> get db async {
     if (_db != null) {
@@ -133,6 +133,7 @@ class DbHelper {
           "intro TEXT,"
           "position REAL,"
           "cur INTEGER,"
+          "sortTime INTEGER,"
           "newChapter INTEGER,"
           "idx INTEGER,"
           "lastChapter TEXT)");
@@ -298,14 +299,6 @@ class DbHelper {
     return movies;
   }
 
-  Future<int> containBook(String bookId) async {
-    var dbClient = await db1;
-    var list = await dbClient.rawQuery(
-        "select count(*) as cnt from $_tableName1  where book_id=?", [bookId]);
-    // await close();
-    return list[0]['cnt'];
-  }
-
   Future<Null> updBookStatus(String bookId, int s) async {
     var dbClient = await db1;
     dbClient.rawUpdate(
@@ -332,7 +325,7 @@ class DbHelper {
     var dbClient = await db1;
     List<Book> bks = [];
     var list = await dbClient
-        .rawQuery("select * from $_tableName1 order by id desc", []);
+        .rawQuery("select * from $_tableName1 order by sortTime desc", []);
     for (var i in list) {
       bks.add(Book.fromSql(
           i['book_id'],
@@ -343,6 +336,7 @@ class DbHelper {
           i['img'],
           i['intro'],
           i['cur'],
+          i['sortTime'],
           i['idx'],
           i['position'],
           i['newChapter'],
@@ -366,6 +360,7 @@ class DbHelper {
           i['img'],
           i['intro'],
           i['cur'] ?? 0,
+          i['sortTime'] ?? 0,
           i['idx'] ?? 0,
           i['position'] ?? 0.0,
           i['newChapter'],
@@ -379,6 +374,14 @@ class DbHelper {
 
     await dbClient
         .rawDelete('delete from $_tableName1 where book_id=?', [bookId]);
+  }
+
+  Future<Null> sortBook(String bookId) async {
+    var dbClient = await db1;
+
+    await dbClient.rawUpdate(
+        'update  $_tableName1 set sortTime=${DateUtil.getNowDateMs()} where book_id=?',
+        [bookId]);
   }
 
   Future<Null> addBooks(List<Book> bks) async {
@@ -396,8 +399,9 @@ class DbHelper {
         "intro": book.Desc,
         "utime": book.UTime,
         "cur": book.cur,
-        "idx": book.index??0,
-        "position": book.position??0,
+        "sortTime": DateUtil.getNowDateMs(),
+        "idx": book.index ?? 0,
+        "position": book.position ?? 0,
         "newChapter": 0,
         "lastChapter": book.LastChapter
       });
@@ -405,12 +409,17 @@ class DbHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<Null> updBookProcess(int cur, int idx,double position, String bookId) async {
+  Future<Null> updBookProcess(
+      int cur, int idx, double position, String bookId) async {
     var dbClient = await db1;
 
     await dbClient.rawUpdate(
-        "update $_tableName1 set cur=?,idx=?,position where book_id=?",
-        [cur, idx, bookId,position]);
+        "update $_tableName1 set cur=?,idx=?,position=? where book_id=?", [
+      cur,
+      idx,
+      position,
+      bookId,
+    ]);
   }
 
   // Future<BookTag> getBookProcess(String bookId, String name) async {

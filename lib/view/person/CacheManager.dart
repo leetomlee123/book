@@ -70,6 +70,9 @@ class _CacheManager extends State<CacheManager> {
                     value: sub.toDouble(),
                     max: all.length.toDouble(),
                     min: 0.0,
+                    onChanged: (v){
+
+                    },
                   ),
                 ),
               ),

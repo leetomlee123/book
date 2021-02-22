@@ -15,7 +15,12 @@ class OpenEvent {
 
   OpenEvent(this.name);
 }
+class ZEvent {
+  bool isPage;
+  double offset;
 
+  ZEvent(this.isPage,this.offset);
+}
 class PlayEvent {
   String name;
 

@@ -26,58 +26,53 @@ class Me extends StatelessWidget {
   PreferredSizeWidget _appBar(BuildContext context) {
     if (SpUtil.haveKey("username")) {
       return PreferredSize(
-          preferredSize: Size.fromHeight(160),
-          child: Stack(
-            children: [
-              UserAccountsDrawerHeader(
-                margin: EdgeInsets.all(0),
-                accountEmail: Text(
-                  SpUtil.getString('email') ?? "",
-                  style: TextStyle(color: Colors.black),
-                ),
-                accountName: Text(
-                  SpUtil.getString('username') ?? "",
-                  style: TextStyle(color: Colors.black),
-                ),
-                currentAccountPicture: CircleAvatar(
-                  backgroundImage: AssetImage("images/fu.png"),
-                ),
-                otherAccountsPictures: [
-                  // CircleAvatar(
-                  //   backgroundImage: AssetImage("images/vip.png"),
-                  // )
-                ],
-                decoration: BoxDecoration(
-                  //用一个BoxDecoration装饰器提供背景图片
-                  image: DecorationImage(
-                    fit: BoxFit.fill,
-                    image: AssetImage('images/bg.png'),
+          preferredSize: Size.fromHeight(150),
+          child: Store.connect<ColorModel>(builder: (context,ColorModel model,child){
+            return Stack(
+              children: [
+                UserAccountsDrawerHeader(
+                  margin: EdgeInsets.all(0),
+                  accountEmail: Text(
+                    SpUtil.getString('email') ?? "",
+                    style: TextStyle(color: model.dark?Colors.white:Colors.black),
                   ),
+                  accountName: Text(
+                    SpUtil.getString('username') ?? "",
+                    style: TextStyle(color: model.dark?Colors.white:Colors.black),
+                  ),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundImage: AssetImage("images/fu.png"),
+                  ),
+                  otherAccountsPictures: [
+                    // CircleAvatar(
+                    //   backgroundImage: AssetImage("images/vip.png"),
+                    // )
+                  ],
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: AssetImage(
+                            "images/a0${model.dark?'r':'s'}.png"
+                            ,),fit: BoxFit.fill)),
                 ),
-              ),
-              Container(
-                color: Store.value<ColorModel>(context).dark
-                    ? Colors.black38
-                    : Colors.transparent,
-              ),
-            ],
-          ));
+
+              ],
+            );
+          }));
     } else {
       return PreferredSize(
         preferredSize: Size.fromHeight(100),
-        child: Container(
-          padding: EdgeInsets.only(top: kToolbarHeight, bottom: 20),
-          child: GestureDetector(
+        child: GestureDetector(
+          child: Container(
+            padding: EdgeInsets.only(top: kToolbarHeight, bottom: 20),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Container(
-                  height: 45,
-                  width: 45,
+                  height: 60,
+                  width: 60,
                   child: CircleAvatar(
                     backgroundImage: AssetImage("images/account.png"),
-                    backgroundColor: Colors.transparent,
                   ),
                 ),
                 SizedBox(
@@ -86,17 +81,17 @@ class Me extends StatelessWidget {
                 Text(
                   "登陆/注册",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                )
+                ),
               ],
             ),
-            onTap: () {
-              if (SpUtil.haveKey("username")) {
-                return;
-              } else {
-                Routes.navigateTo(context, Routes.login);
-              }
-            },
           ),
+          onTap: () {
+            if (SpUtil.haveKey("username")) {
+              return;
+            } else {
+              Routes.navigateTo(context, Routes.login);
+            }
+          },
         ),
       );
     }

@@ -1,22 +1,22 @@
 import 'dart:convert';
 
 import 'package:book/common/FunUtil.dart';
+import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/system/MyControls.dart';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:screen/screen.dart' as Light;
 import 'package:video_player/video_player.dart';
 
 class LookVideo extends StatefulWidget {
@@ -41,7 +41,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   ChewieController chewieController;
   List<Widget> wds = [];
   Widget cps;
-
+  double light;
   bool initOk = false;
   var urlKey;
 
@@ -120,9 +120,14 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                                   )),
                                 ),
                           Container(
-                            padding:
-                                EdgeInsets.only(top: 20, bottom: 10, left: 10),
-                            child: Text(this.widget.name),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 25),
+                            child: Row(
+                              children: [
+                                Text(this.widget.name),
+                                Spacer(),
+                              ],
+                            ),
                           ),
                           cps,
                           SizedBox(
@@ -143,15 +148,15 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   }
 
   getData() async {
+    light = await Light.Screen.brightness;
     String url = Common.look_m + '${this.widget.id}';
     Response future = await HttpUtil().http().get(url);
     source = future.data[2];
-    // Stream<FileResponse> response= CustomCacheManager.instanceVideo.getFileStream(source);
     videoPlayerController = VideoPlayerController.network(source);
     videoPlayerController.addListener(_videoListener);
     videoPlayerController.initialize().then((_) {
       chewieController = ChewieController(
-          customControls: MyControls(this.widget.name),
+          customControls: MyControls(this.widget.name, light),
           videoPlayerController: videoPlayerController,
           aspectRatio: videoPlayerController.value.aspectRatio,
           autoPlay: false,
@@ -227,7 +232,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     videoPlayerController.addListener(_videoListener);
     videoPlayerController.initialize().then((_) {
       chewieController = ChewieController(
-          customControls: MyControls(name),
+          customControls: MyControls(name, light),
           videoPlayerController: videoPlayerController,
           aspectRatio: videoPlayerController.value.aspectRatio,
           autoPlay: autoPlay,
@@ -349,12 +354,12 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
           GridView(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.all(5.0),
+            padding: EdgeInsets.all(10.0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                mainAxisSpacing: 1.0,
-                crossAxisSpacing: 10.0,
-                childAspectRatio: 0.7),
+                mainAxisSpacing: 20.0,
+                crossAxisSpacing: 23.0,
+                childAspectRatio: 0.6),
             children: bks.map((i) => img(i)).toList(),
           )
         ],

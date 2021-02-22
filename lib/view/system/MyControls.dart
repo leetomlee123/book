@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:book/common/Screen.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
@@ -8,12 +9,14 @@ import 'package:chewie/src/chewie_progress_colors.dart';
 import 'package:chewie/src/material_progress_bar.dart';
 import 'package:chewie/src/utils.dart';
 import 'package:flutter/material.dart';
+import 'package:screen/screen.dart' as Light;
 import 'package:video_player/video_player.dart';
 
 class MyControls extends StatefulWidget {
-  String title;
+  final String title;
+  final double latestLight;
 
-  MyControls(this.title);
+  MyControls(this.title, this.latestLight);
 
   @override
   State<StatefulWidget> createState() {
@@ -24,11 +27,20 @@ class MyControls extends StatefulWidget {
 class _MyMaterialControlsState extends State<MyControls> {
   VideoPlayerValue _latestValue;
   double _latestVolume;
+  double _latestLight;
+  final int len = 300;
+  int intVolume;
+  int intLight;
   bool _hideStuff = true;
   Timer _hideTimer;
   Timer _initTimer;
   Timer _showAfterExpandCollapseTimer;
   bool _dragging = false;
+  bool isVoice = false;
+
+  //拖动进度对比24/120
+  bool _progress = false;
+  bool _adjust = false;
   bool _displayTapped = false;
   static const lightColor = Color.fromRGBO(255, 255, 255, 0.85);
   static const darkColor = Colors.transparent;
@@ -40,6 +52,17 @@ class _MyMaterialControlsState extends State<MyControls> {
 
   VideoPlayerController controller;
   ChewieController chewieController;
+
+  @override
+  void initState() {
+    setUp();
+    super.initState();
+  }
+
+  setUp() async {
+    _latestLight = this.widget.latestLight;
+    _latestVolume = .5;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +86,90 @@ class _MyMaterialControlsState extends State<MyControls> {
         _cancelAndRestartTimer();
       },
       child: GestureDetector(
+        onDoubleTap: _doubleTap,
         onHorizontalDragStart: _onHorizontalDragStart,
         onHorizontalDragUpdate: _onHorizontalDragUpdate,
         onHorizontalDragEnd: _onHorizontalDragEnd,
+        onVerticalDragStart: (DragStartDetails dragStartDetails) {
+          setState(() {
+            if (intVolume == null) {
+              intVolume = (len * _latestVolume) as int;
+            }
+            _adjust = true;
+          });
+        },
+        onVerticalDragUpdate: (DragUpdateDetails dragUpdateDetails) {
+          double wSpace = Screen.width / 5;
+          double dx = dragUpdateDetails.globalPosition.dx;
+          bool up = dragUpdateDetails.primaryDelta < 0;
+          if (dx < wSpace) {
+            isVoice = false;
+            if (up) {
+              intLight += 1;
+            } else {
+              intLight -= 1;
+            }
+            setState(() {
+              if (intLight > len) {
+                intLight = len;
+                _latestLight = 1.0;
+              } else if (intLight < 0) {
+                intLight = 0;
+                _latestLight = 0;
+              }
+              var d = intLight / len;
+              print('设置亮度为:$d');
+              Light.Screen.setBrightness(d);
+            });
+          } else if (dx > (wSpace * 4)) {
+            isVoice = true;
+            if (up) {
+              intVolume += 1;
+            } else {
+              intVolume -= 1;
+            }
+            setState(() {
+              if (intVolume > len) {
+                intVolume = len;
+                _latestVolume = 1.0;
+              } else if (intVolume < 0) {
+                intVolume = 0;
+                _latestVolume = 0;
+              }
+              var d = intVolume / len;
+              print('设置音量为:$d');
+              controller.setVolume(d);
+            });
+          }
+        },
+        onVerticalDragEnd: (DragEndDetails dragEndDetails) {
+          setState(() {
+            _adjust = false;
+            if (isVoice) {
+              if (intVolume > len) {
+                intVolume = len;
+                _latestVolume = 1.0;
+              } else if (intVolume < 0) {
+                intVolume = 0;
+                _latestVolume = 0;
+              }
+              var d = intVolume / len;
+              print('设置音量为:$d');
+              controller.setVolume(d);
+            } else {
+              if (intLight > len) {
+                intLight = len;
+                _latestLight = 1.0;
+              } else if (intLight < 0) {
+                intLight = 0;
+                _latestLight = 0;
+              }
+              var d = intLight / len;
+              print('设置音量为:$d');
+              Light.Screen.setBrightness(d);
+            }
+          });
+        },
         onTap: () => _cancelAndRestartTimer(),
         child: AbsorbPointer(
             absorbing: _hideStuff,
@@ -76,6 +180,32 @@ class _MyMaterialControlsState extends State<MyControls> {
                     chewieController.isFullScreen
                         ? _buildHeader(context, this.widget.title)
                         : Container(),
+                    Center(
+                      child: Container(
+                          width: Screen.width / 6 * 4,
+                          child: Offstage(
+                              offstage: !_adjust,
+                              child: Align(
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isVoice ? Icons.alarm : Icons.lightbulb,
+                                        color: Colors.white,
+                                      ),
+                                      Expanded(
+                                        child: Slider(
+                                          value: getIntSlider(),
+                                          max: len.toDouble(),
+                                          min: 0,
+                                          activeColor: Colors.white,
+                                          inactiveColor: Colors.white38,
+                                          onChanged: (v) {},
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                  alignment: Alignment.topCenter))),
+                    ),
                     _latestValue != null &&
                                 !_latestValue.isPlaying &&
                                 _latestValue.duration == null ||
@@ -92,7 +222,7 @@ class _MyMaterialControlsState extends State<MyControls> {
                 Align(
                   child: (_hideStuff && !chewieController.isFullScreen)
                       ? Container(
-                          color: darkColor,
+                          color: Colors.transparent,
                           height: 0,
                           child: Row(
                             children: [_buildProgressBar()],
@@ -100,7 +230,7 @@ class _MyMaterialControlsState extends State<MyControls> {
                         )
                       : Container(),
                   alignment: Alignment.bottomCenter,
-                )
+                ),
               ],
             )),
       ),
@@ -134,24 +264,24 @@ class _MyMaterialControlsState extends State<MyControls> {
     super.didChangeDependencies();
   }
 
-  AnimatedOpacity _buildHeader(BuildContext context, String title) {
-    return new AnimatedOpacity(
-      opacity: _hideStuff ? 0.0 : 1.0,
-      duration: new Duration(milliseconds: 300),
-      child: new Container(
-        color: darkColor,
-        height: barHeight,
-        child: new Row(
+  Widget _buildHeader(BuildContext context, String title) {
+    return Container(
+      color: darkColor,
+      height: barHeight,
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            new IconButton(
+            IconButton(
               onPressed: _onExpandCollapse,
               color: lightColor,
-              icon: new Icon(Icons.arrow_back_ios),
+              icon: Icon(Icons.arrow_back_ios),
             ),
-            new Text(
+            Text(
               '$title',
-              style: new TextStyle(
+              style: TextStyle(
                 color: lightColor,
                 fontSize: 16.0,
               ),
@@ -160,6 +290,32 @@ class _MyMaterialControlsState extends State<MyControls> {
         ),
       ),
     );
+  }
+
+  double getIntSlider() {
+    if (isVoice) {
+      if (intVolume == null) {
+        intVolume = (_latestVolume * len).toInt();
+      }
+      if (intVolume > len) {
+        return len.toDouble();
+      } else if (intVolume < 0) {
+        return .0;
+      } else {
+        return intVolume.toDouble();
+      }
+    } else {
+      if (intLight == null) {
+        intLight = (_latestLight * len).toInt();
+      }
+      if (intLight > len) {
+        return len.toDouble();
+      } else if (intLight < 0) {
+        return .0;
+      } else {
+        return intLight.toDouble();
+      }
+    }
   }
 
   AnimatedOpacity _buildBottomBar(
@@ -174,7 +330,10 @@ class _MyMaterialControlsState extends State<MyControls> {
         color: darkColor,
         child: Row(
           children: <Widget>[
-            _buildPlayPause(controller),
+            // _buildPlayPause(controller),
+            SizedBox(
+              width: 15,
+            ),
             // _buildPlayNext(controller),
             chewieController.isLive
                 ? Expanded(
@@ -187,9 +346,10 @@ class _MyMaterialControlsState extends State<MyControls> {
             // chewieController.allowMuting
             //     ? _buildMuteButton(controller)
             //     : Container(),
-            chewieController.allowFullScreen
-                ? _buildExpandButton()
-                : Container(),
+            Offstage(
+              offstage: !chewieController.allowFullScreen,
+              child: _buildExpandButton(),
+            ),
           ],
         ),
       ),
@@ -230,7 +390,8 @@ class _MyMaterialControlsState extends State<MyControls> {
           if (_latestValue != null && _latestValue.isPlaying) {
             if (_displayTapped) {
               setState(() {
-                _hideStuff = true;
+                _playPause();
+                // _hideStuff = true;
               });
             } else
               _cancelAndRestartTimer();
@@ -247,20 +408,16 @@ class _MyMaterialControlsState extends State<MyControls> {
           child: Center(
             child: AnimatedOpacity(
               opacity:
-                  _latestValue != null && !_latestValue.isPlaying && !_dragging
-                      ? 1.0
-                      : 0.0,
+                  _latestValue != null && !_dragging && !_hideStuff ? 1.0 : 0.0,
               duration: Duration(milliseconds: 300),
               child: GestureDetector(
                 child: Container(
-                  // decoration: BoxDecoration(
-                  //   color: Theme.of(context).dialogBackgroundColor,
-                  //   borderRadius: BorderRadius.circular(48.0),
-                  // ),
                   child: Padding(
                     padding: EdgeInsets.all(12.0),
                     child: ImageIcon(
-                      AssetImage("images/video_play.png"),
+                      AssetImage(_latestValue.isPlaying
+                          ? "images/btv.png"
+                          : "images/video_play.png"),
                       size: 64.0,
                       color: Colors.white,
                     ),
@@ -384,6 +541,7 @@ class _MyMaterialControlsState extends State<MyControls> {
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     _finalSwipeOffset = details.globalPosition;
+    if (controller.value.isPlaying) {}
   }
 
   void _onHorizontalDragEnd(DragEndDetails details) {
@@ -518,5 +676,16 @@ class _MyMaterialControlsState extends State<MyControls> {
         ),
       ),
     );
+  }
+
+  void _doubleTap() {
+    if (_latestValue != null) {
+      if (_latestValue.isPlaying) {
+        _playPause();
+      } else {
+        chewieController.play();
+        _cancelAndRestartTimer();
+      }
+    }
   }
 }

@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -35,6 +35,7 @@ class _MenuState extends State<Menu> {
     "QR_bg_8.png",
     // "QR_bg_4.jpg",
   ];
+  double settingH = 240;
 
   @override
   void initState() {
@@ -69,7 +70,8 @@ class _MenuState extends State<Menu> {
               _readModel.saveData();
               _readModel.clear();
               String url = Common.detail + '/${_readModel.book.Id}';
-              Response future = await HttpUtil(showLoading: true).http().get(url);
+              Response future =
+                  await HttpUtil(showLoading: true).http().get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
 
@@ -82,15 +84,13 @@ class _MenuState extends State<Menu> {
     );
   }
 
-  Widget midTranspant() {
+  Widget midTransparent() {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        child: Opacity(
-          opacity: 0.0,
-          child: Container(
-            width: double.infinity,
-          ),
+        child: Container(
+          color: Colors.transparent,
+          width: double.infinity,
         ),
         onTap: () {
           _readModel.toggleShowMenu();
@@ -102,7 +102,7 @@ class _MenuState extends State<Menu> {
     );
   }
 
-  Widget chapterSilde() {
+  Widget chapterSlide() {
     return Container(
         padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
         child: Row(
@@ -115,7 +115,7 @@ class _MenuState extends State<Menu> {
                   return;
                 }
                 _readModel.book.cur -= 1;
-                await _readModel.intiPageContent(_readModel.book.cur, true);
+                await _readModel.initPageContent(_readModel.book.cur, true);
                 BotToast.showText(text: _readModel.curPage.chapterName);
               },
             ),
@@ -131,7 +131,7 @@ class _MenuState extends State<Menu> {
                     int temp = newValue.round();
                     _readModel.book.cur = temp;
 
-                    _readModel.intiPageContent(_readModel.book.cur, true);
+                    _readModel.initPageContent(_readModel.book.cur, true);
                   },
                   label: '${_readModel.chapters[_readModel.book.cur].name} ',
                   semanticFormatterCallback: (newValue) {
@@ -149,7 +149,7 @@ class _MenuState extends State<Menu> {
                 }
                 _readModel.book.cur += 1;
 
-                await _readModel.intiPageContent(_readModel.book.cur, true);
+                await _readModel.initPageContent(_readModel.book.cur, true);
                 BotToast.showText(text: _readModel.curPage.chapterName);
               },
             ),
@@ -157,7 +157,7 @@ class _MenuState extends State<Menu> {
         ));
   }
 
-  Widget fontOperate(String imgName, func) {
+  Widget operate(Widget child, func) {
     return Container(
       decoration:
           BoxDecoration(color: _colorModel.dark ? Colors.black : Colors.white),
@@ -174,9 +174,7 @@ class _MenuState extends State<Menu> {
                 color: _colorModel.dark ? Colors.white : Colors.black,
               )),
           alignment: Alignment(0, 0),
-          child: ImageIcon(
-            AssetImage(imgName),
-          ),
+          child: child,
         ),
       ),
     );
@@ -267,7 +265,7 @@ class _MenuState extends State<Menu> {
         color: _colorModel.dark ? Colors.black : Colors.white,
         borderRadius: BorderRadius.all(Radius.circular(10.0)),
       ),
-      height: 190,
+      height: settingH,
       child: Column(
         children: <Widget>[
           Expanded(
@@ -284,7 +282,7 @@ class _MenuState extends State<Menu> {
                 SizedBox(
                   width: 10,
                 ),
-                fontOperate("images/fontsmall.png", () {
+                operate(ImageIcon(AssetImage("images/fontsmall.png")), () {
                   ReadSetting.calcFontSize(-1.0);
                   _readModel.modifyFont();
                 }),
@@ -297,18 +295,17 @@ class _MenuState extends State<Menu> {
                   height: 40,
                   width: 50,
                 ),
-                fontOperate("images/fontbig.png", () {
+                operate(ImageIcon(AssetImage("images/fontbig.png")), () {
                   ReadSetting.calcFontSize(1.0);
                   _readModel.modifyFont();
                 }),
                 Container(
                   child: FlatButton(
                     onPressed: () {
-                      BotToast.showText(text: "暂不可用");
-                      // Routes.navigateTo(
-                      //   context,
-                      //   Routes.fontSet,
-                      // );
+                      Routes.navigateTo(
+                        context,
+                        Routes.fontSet,
+                      );
                     },
                     child: Row(
                       children: [
@@ -346,36 +343,24 @@ class _MenuState extends State<Menu> {
                 SizedBox(
                   width: 10,
                 ),
-                fontOperate("images/side1.png", () {
+                operate(ImageIcon(AssetImage("images/side1.png")), () {
                   ReadSetting.setLineHeight(1.4);
                   _readModel.modifyFont();
                 }),
                 SizedBox(
                   width: 10,
                 ),
-                fontOperate("images/side2.png", () {
+                operate(ImageIcon(AssetImage("images/side2.png")), () {
                   ReadSetting.setLineHeight(1.5);
                   _readModel.modifyFont();
                 }),
                 SizedBox(
                   width: 10,
                 ),
-                fontOperate("images/side3.png", () {
+                operate(ImageIcon(AssetImage("images/side3.png")), () {
                   ReadSetting.setLineHeight(1.6);
                   _readModel.modifyFont();
                 }),
-                // _hj("最小", () {
-                //   ReadSetting.setLineHeight(-0.1);
-                //   _readModel.modifyFont();
-                // }),
-                // _hj("适中", () {
-                //   ReadSetting.setLineHeight(-0.1);
-                //   _readModel.modifyFont();
-                // }),
-                // _hj("最大", () {
-                //   ReadSetting.setLineHeight(-0.1);
-                //   _readModel.modifyFont();
-                // }),
               ],
             ),
           ),
@@ -383,10 +368,40 @@ class _MenuState extends State<Menu> {
               child: ListView(
             children: bgThemes(),
             scrollDirection: Axis.horizontal,
-          ))
+          )),
+          Expanded(
+            child: flipType(),
+          )
         ],
       ),
       padding: EdgeInsets.only(left: 15.0),
+    );
+  }
+
+  Widget flipType() {
+    return ListView(
+      scrollDirection: Axis.horizontal,
+      children: <Widget>[
+        Container(
+          child: Center(
+            child: Text('翻页', style: TextStyle(fontSize: 13.0)),
+          ),
+          height: 40,
+          width: 40,
+        ),
+        SizedBox(
+          width: 10,
+        ),
+        operate(Text("上下"), () {
+          _readModel.switchFlipType(FlipType.LIST_VIEW);
+        }),
+        SizedBox(
+          width: 10,
+        ),
+        operate(Text("平滑"), () {
+          _readModel.switchFlipType(FlipType.PAGE_VIEW_SMOOTH);
+        }),
+      ],
     );
   }
 
@@ -399,24 +414,21 @@ class _MenuState extends State<Menu> {
         return downloadWidget();
         break;
       default:
-        return chapterSilde();
+        return chapterSlide();
     }
   }
 
   Widget bottom() {
-    return Opacity(
-      opacity: 0.99999,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _colorModel.dark ? Colors.black : Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(10.0)),
-        ),
-        // height: 140,
-        width: double.infinity,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[bottomHead(), buildBottomMenus()],
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: _colorModel.dark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
+      // height: 140,
+      width: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[bottomHead(), buildBottomMenus()],
       ),
     );
   }
@@ -453,7 +465,7 @@ class _MenuState extends State<Menu> {
                 //   height: Screen.topSafeHeight,
                 // ),
                 // head(),
-                midTranspant(),
+                midTransparent(),
                 bottom(),
               ],
             ),
@@ -464,7 +476,7 @@ class _MenuState extends State<Menu> {
         ),
         Positioned(
           child: reloadCurChapterWidget(),
-          bottom: 250,
+          bottom: 350,
           right: 20,
         ),
       ],

@@ -1,6 +1,6 @@
 import 'package:book/common/DbHelper.dart';
-import 'package:book/common/common.dart';
 import 'package:book/common/Http.dart';
+import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
@@ -145,21 +145,14 @@ class ShelfModel with ChangeNotifier {
     saveShelf();
   }
 
-  upTotop(Book book, int i) async {
-    print(i);
+  upToTop(Book book, int i) async {
     book.NewChapterCount = 0;
     await _dbHelper.updBookStatus(book.Id, 0);
     shelf.removeAt(i);
-
     shelf.insert(0, book);
+    await _dbHelper.sortBook(book.Id);
 
-    // print(book.toString());
-
-    await _dbHelper.delBook(book.Id);
-    await _dbHelper.addBooks([book]);
     notifyListeners();
-
-    // saveShelf();
   }
 
   dropAccountOut() {
@@ -172,13 +165,12 @@ class ShelfModel with ChangeNotifier {
     shelf = [];
     notifyListeners();
   }
+
 //根据id判断书架是否存在本书
-  bool exitsInBookShelfById(String id){
-    return shelf
-        .map((f) => f.Id)
-        .toList()
-        .contains(id);
+  bool exitsInBookShelfById(String id) {
+    return shelf.map((f) => f.Id).toList().contains(id);
   }
+
   //删除本地记录
   void delLocalCache(List<String> ids) {
     for (var i = 0; i < ids.length; i++) {

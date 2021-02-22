@@ -24,8 +24,7 @@ class Routes {
   static String voiceDetail = '/voiceDetail';
   static String voices = '/voices';
   static String voiceList = '/voiceList';
-
-
+  static String videoTest = '/videoTest';
 
   // 配置route
   static void configureRoutes(FluroRouter router) {
@@ -48,8 +47,7 @@ class Routes {
     router.define(voiceDetail, handler: voiceDetailHandler);
     router.define(voices, handler: voicesHandler);
     router.define(voiceList, handler: voiceListHandler);
-
-
+    // router.define(videoTest, handler: videoTestHandler);
   }
 
   // 对参数进行encode，解决参数中有特殊字符，影响fluro路由匹配

@@ -9,6 +9,7 @@ import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/widgets/LabelTitle.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_text/extended_text.dart';
 import 'package:flustars/flustars.dart';
@@ -88,50 +89,15 @@ class VideoDetailState extends State<VideoDetail> {
                         SizedBox(
                           height: 5.0,
                         ),
-                        Row(
-                          children: <Widget>[
-                            Padding(
-                              child: Container(
-                                width: 4,
-                                height: 20,
-                                color: model.dark
-                                    ? model.theme.textTheme.body1.color
-                                    : model.theme.primaryColor,
-                              ),
-                              padding: EdgeInsets.only(left: 5.0, right: 3.0),
-                            ),
-                            Text(
-                              "在线播放:",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Spacer()
-                          ],
-                        ),
+                        LabelTitle("在线播放"),
                         Wrap(
                           runAlignment: WrapAlignment.start,
                           spacing: 10, //主轴上子控件的间距
                           runSpacing: 5, //交叉轴上子控件之间的间
                           children: mItems(data[1]),
                         ),
-                        Row(
-                          children: <Widget>[
-                            Padding(
-                              child: Container(
-                                width: 4,
-                                height: 20,
-                                color: model.dark
-                                    ? model.theme.textTheme.body1.color
-                                    : model.theme.primaryColor,
-                              ),
-                              padding: EdgeInsets.only(left: 5.0, right: 3.0),
-                            ),
-                            Text(
-                              "剧情简介:",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Spacer()
-                          ],
-                        ),
+
+                        LabelTitle("剧情简介"),
                         ExtendedText(
                           data[2] ?? "".trim(),
                           maxLines: maxLines,
@@ -158,28 +124,8 @@ class VideoDetailState extends State<VideoDetail> {
                             ),
                           ),
                         ),
-                        Row(
-                          children: <Widget>[
-                            Padding(
-                              child: Container(
-                                width: 4,
-                                height: 20,
-                                color: model.dark
-                                    ? model.theme.textTheme.body1.color
-                                    : model.theme.primaryColor,
-                              ),
-                              padding: EdgeInsets.only(left: 5.0, right: 3.0),
-                            ),
-                            Text(
-                              "影片截图:",
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            Spacer()
-                            // Expanded(
-                            //   child: Container(),
-                            // ),
-                          ],
-                        ),
+
+                        LabelTitle("影片截图"),
                         showShutPic(data[3])
                       ],
                     ),

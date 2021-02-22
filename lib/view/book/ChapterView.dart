@@ -170,7 +170,7 @@ class _ChapterViewItem extends State<ChapterView> {
                         data.book.cur = index;
 
                         Future.delayed(Duration(milliseconds: 300 ), () {
-                          data.intiPageContent(index, true);
+                          data.initPageContent(index, true);
                         });
                       },
                     );

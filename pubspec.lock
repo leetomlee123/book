@@ -182,7 +182,7 @@ packages:
       name: common_utils
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "1.2.1"
+    version: "1.2.4"
   convert:
     dependency: "direct main"
     description:
@@ -715,7 +715,7 @@ packages:
       name: pubspec_parse
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "0.1.7"
+    version: "0.1.8"
   pull_to_refresh:
     dependency: "direct main"
     description:
@@ -744,6 +744,13 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.25.0"
+  screen:
+    dependency: "direct main"
+    description:
+      name: screen
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.0.5"
   shared_preferences:
     dependency: "direct main"
     description:

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
@@ -13,8 +13,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AllTagBook extends StatelessWidget {
-  String title;
-  List<GBook> bks;
+  final String title;
+  final List<GBook> bks;
 
   AllTagBook(this.title, this.bks);
 
@@ -31,7 +31,8 @@ class AllTagBook extends StatelessWidget {
               ),
               onTap: () async {
                 String url = Common.two + '/${gbk.name}/${gbk.author}';
-                Response future = await HttpUtil(showLoading: true).http().get(url);
+                Response future =
+                    await HttpUtil(showLoading: true).http().get(url);
                 var d = future.data['data'];
                 if (d == null) {
                   Routes.navigateTo(context, Routes.search, params: {
@@ -43,7 +44,6 @@ class AllTagBook extends StatelessWidget {
                   Routes.navigateTo(context, Routes.detail,
                       params: {"detail": jsonEncode(bookInfo)});
                 }
-           
               },
             ),
             Text(
@@ -57,31 +57,34 @@ class AllTagBook extends StatelessWidget {
     }
 
     return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) =>  Scaffold(
-              // backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                title: Text(title,style: TextStyle(
-                  color: data.dark ? Colors.white : Colors.black,
-                ),),
-                centerTitle: true,
-                elevation: 0,
+      builder: (context, ColorModel data, child) => Scaffold(
+          // backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            title: Text(
+              title,
+              style: TextStyle(
+                color: data.dark ? Colors.white : Colors.black,
               ),
-              body: ListView(
-                children: <Widget>[
-                  GridView(
-                    shrinkWrap: true,
-                    physics: new NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(5.0),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        mainAxisSpacing: 1.0,
-                        crossAxisSpacing: 10.0,
-                        childAspectRatio: 0.6),
-                    children: bks.map((item) => img(item)).toList(),
-                  )
-                ],
-              )),
-        );
+            ),
+            centerTitle: true,
+            elevation: 0,
+          ),
+          body: ListView(
+            children: <Widget>[
+              GridView(
+                shrinkWrap: true,
+                physics: new NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.all(5.0),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 1.0,
+                    crossAxisSpacing: 10.0,
+                    childAspectRatio: 0.6),
+                children: bks.map((item) => img(item)).toList(),
+              )
+            ],
+          )),
+    );
   }
 }

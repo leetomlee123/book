@@ -37,7 +37,8 @@ class _BookDetailState extends State<BookDetail> {
   int maxLines = 3;
   @override
   void initState() {
-    book = new Book(
+    book = Book(
+        0,
         0,
         0,
         0.0,
@@ -393,8 +394,7 @@ class _BookDetailState extends State<BookDetail> {
 
   @override
   Widget build(BuildContext context) {
-    var width = (Screen.width - 10) / 2;
-    // return SliverAppBarDemo(this.widget._bookInfo);
+
     return Material(
       child: Stack(
         children: [
@@ -572,153 +572,9 @@ class _BookDetailState extends State<BookDetail> {
             }),
           )
 
-          // Column(
-          //   children: [
-          //     Expanded(child: Container()),
-          //     Row(
-          //       mainAxisAlignment: MainAxisAlignment.center,
-          //       children: [
-          //         Container(
-          //           width: width,
-          //           height: 55,
-          //           padding: EdgeInsets.only(
-          //             left: 5,
-          //           ),
-          //           decoration: BoxDecoration(
-          //             color: Colors.red,
-          //
-          //             borderRadius: BorderRadius.only(
-          //                 bottomLeft: Radius.circular(10.0),
-          //                 topLeft: Radius.circular(10.0)),
-          //           ),
-          //           // color: Colors.red,
-          //         ),
-          //         Container(
-          //           width: width,
-          //           height: 55,
-          //           padding: EdgeInsets.only(right: 5),
-          //           decoration: BoxDecoration(
-          //             color: Colors.blue,
-          //
-          //             borderRadius: BorderRadius.only(
-          //                 bottomRight: Radius.circular(10.0),
-          //                 topRight: Radius.circular(10.0)),
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //     SizedBox(
-          //       height: 1,
-          //     )
-          //   ],
-          // )
-          // Align(
-          //   child: Row(
-          //     children: [
-          //       Container(
-          //           width: width,
-          //           height: 30,
-          //           decoration: BoxDecoration(
-          //             gradient: LinearGradient(
-          //                 colors: [
-          //                   // Colors.accents[_colorModel.idx].shade100,
-          //                   Colors.accents[_colorModel.idx].shade200,
-          //                   Colors.accents[_colorModel.idx].shade400,
-          //                 ],
-          //                 begin: Alignment.centerRight,
-          //                 end: Alignment.centerLeft),
-          //           )),
-          //       Container(
-          //         width: width,
-          //       ),
-          //     ],
-          //   ),
-          //   alignment: Alignment.topCenter,
-          // )
         ],
       ),
     );
-    return Scaffold(
-        appBar: _appBar(),
-        body: ListView(
-          physics: NeverScrollableScrollPhysics(),
-          children: <Widget>[
-            _bookDesc(),
-            Divider(),
-            _bookMenu(),
-            Divider(),
-            _sameAuthorBooks()
-          ],
-        ),
-        bottomNavigationBar:
-            Store.connect<ShelfModel>(builder: (context, ShelfModel d, child) {
-          return BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            unselectedItemColor: _colorModel.dark ? Colors.white : null,
-            //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
-            items: [
-              d.shelf
-                      .map((f) => f.Id)
-                      .toList()
-                      .contains(this.widget._bookInfo.Id)
-                  ? BottomNavigationBarItem(
-                      icon: Icon(
-                        Icons.clear,
-                      ),
-                      label: '移除书架',
-                    )
-                  : BottomNavigationBarItem(
-                      icon: Icon(
-                        Icons.playlist_add,
-                      ),
-                      label: '加入书架',
-                    ),
-              BottomNavigationBarItem(
-                icon: ImageIcon(
-                  AssetImage("images/read.png"),
-                ),
-                label: '立即阅读',
-              ),
-              // BottomNavigationBarItem(
-              //   icon: Icon(
-              //     Icons.cloud_download,
-              //   ),
-              //   label: '全本缓存',
-              // ),
-            ],
 
-            onTap: (int i) {
-              switch (i) {
-                case 0:
-                  {
-                    Store.value<ShelfModel>(context).modifyShelf(book);
-                  }
-                  break;
-                case 1:
-                  {
-                    Routes.navigateTo(
-                      context,
-                      Routes.read,
-                      params: {
-                        'read': jsonEncode(book),
-                      },
-                    );
-                  }
-                  break;
-                // case 2:
-                //   {
-                //     BotToast.showText(text: "开始下载...");
-                //
-                //     var value = Store.value<ReadModel>(context);
-                //     value.book = _bookInfo as Book;
-                //     value.book.UTime = _bookInfo.LastTime;
-                //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
-                //     value.downloadAll();
-                //   }
-                //   break;
-              }
-            },
-          );
-        }));
   }
 }
