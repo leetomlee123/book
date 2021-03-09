@@ -26,7 +26,7 @@ class _MenuState extends State<Menu> {
   Type type = Type.SLIDE;
   ReadModel _readModel;
   ColorModel _colorModel;
-  List<String> bgimg = [
+  List<String> bgImg = [
     "QR_bg_1.jpg",
     "QR_bg_2.jpg",
     "QR_bg_3.jpg",
@@ -93,6 +93,7 @@ class _MenuState extends State<Menu> {
           width: double.infinity,
         ),
         onTap: () {
+          type=Type.SLIDE;
           _readModel.toggleShowMenu();
           if (_readModel.font) {
             _readModel.reCalcPages();
@@ -585,8 +586,8 @@ class _MenuState extends State<Menu> {
         ),
       ),
     ));
-    for (var i = 0; i < bgimg.length; i++) {
-      var f = "images/${bgimg[i]}";
+    for (var i = 0; i < bgImg.length; i++) {
+      var f = "images/${bgImg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () {
           setState(() {

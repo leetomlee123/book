@@ -75,8 +75,7 @@ class SearchModel with ChangeNotifier {
     if (isBookSearch) {
 //      var url = '${Common.search}/$word/$page';
       var url = '${Common.search}?key=$word&page=$page&size=$size';
-      print(url);
-      Response res = await HttpUtil(showLoading: true).http().get(url);
+      Response res = await HttpUtil(showLoading: bks.isEmpty).http().get(url);
       var d = res.data;
       List data = d['data'];
       // ignore: null_aware_in_condition

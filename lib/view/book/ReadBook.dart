@@ -189,6 +189,9 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                           }
                                           return true;
                                         },
+                                        // child: SingleChildScrollView(child:
+                                        // Column(children: model.allContent,),controller: model.listController
+                                        // ,),
                                         child: ListView.builder(
                                           itemCount: model.readPages.length,
                                           itemBuilder: (BuildContext context,

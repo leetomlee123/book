@@ -141,7 +141,7 @@ class ReadModel with ChangeNotifier {
         pageController =
             PageController(initialPage: book.index, keepPage: false);
       } else {
-        if (book.index == -1) {
+        if (book.cur == chapters.length - 1) {
           //最后一页
           book.position = ladderH[cursor];
         }
@@ -312,7 +312,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future initPageContent(int idx, bool jump) async {
-    BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
+    BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog(),clickClose: true,backgroundColor: Colors.transparent);
 
     try {
       await Future.wait([
@@ -377,7 +377,7 @@ class ReadModel with ChangeNotifier {
         book.cur += 1;
         prePage = curPage;
         if (nextPage.chapterName == "-1") {
-          BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
+          BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog(),clickClose: true,backgroundColor: Colors.transparent);
           curPage = await loadChapter(book.cur);
           int preLen = prePage?.pageOffsets?.length ?? 0;
           int curLen = curPage?.pageOffsets?.length ?? 0;
@@ -633,7 +633,7 @@ class ReadModel with ChangeNotifier {
     return Container(
       width: Screen.width,
       height: Screen.height,
-      padding: EdgeInsets.only(top: 100),
+      padding: const EdgeInsets.only(top: 100),
       child: Center(
         child: Column(
           children: [
@@ -667,7 +667,7 @@ class ReadModel with ChangeNotifier {
               height: 15,
             ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 book?.Desc ?? '',
                 style: TextStyle(
@@ -716,15 +716,11 @@ class ReadModel with ChangeNotifier {
       ));
     } else {
       int sum = r.pageOffsets.length;
-      bool top = false;
       for (int i = 0; i < sum; i++) {
         String content;
         if (isPage) {
           int end = int.parse(r.pageOffsets[i]);
           content = cts.substring(0, end);
-          if (i + 1 == sum) {
-            top = true;
-          }
 
           cts = cts.substring(end, cts.length);
 
@@ -746,7 +742,7 @@ class ReadModel with ChangeNotifier {
                         children: <Widget>[
                           SizedBox(height: ScreenUtil.getStatusBarH(context)),
                           pageHead(r, model),
-                          pageMiddleContent(content, model, top),
+                          pageMiddleContent(content, model, (i + 1) == sum),
                           pageFoot(model, i, r)
                         ],
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,7 +751,7 @@ class ReadModel with ChangeNotifier {
                       height: double.infinity,
                     )
                   : Container(
-                      margin: EdgeInsets.only(left: 17, right: 13),
+                      margin: const EdgeInsets.only(left: 17, right: 13),
                       alignment: Alignment.centerLeft,
                       child: Column(
                         children: [
@@ -822,7 +818,7 @@ class ReadModel with ChangeNotifier {
   Widget pageFoot(var model, var i, var r) {
     return Container(
       height: 30,
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: <Widget>[
           BatteryView(
@@ -855,8 +851,8 @@ class ReadModel with ChangeNotifier {
   Widget pageMiddleContent(var content, var model, bool top) {
     return Expanded(
         child: Container(
-            margin: EdgeInsets.only(left: 17, right: 13),
-            // alignment: Alignment.centerLeft,
+            margin: const EdgeInsets.only(left: 17, right: 13),
+            alignment: top ? Alignment.topLeft : Alignment.centerLeft,
             child: RichText(
               textAlign: TextAlign.justify,
               textScaleFactor: Screen.textScaleFactor,
@@ -881,7 +877,7 @@ class ReadModel with ChangeNotifier {
     return Container(
       height: 30,
       alignment: Alignment.centerLeft,
-      padding: EdgeInsets.only(left: 20),
+      padding: const EdgeInsets.only(left: 20),
       child: Text(
         r.chapterName,
         style: TextStyle(
@@ -1001,33 +997,6 @@ class ReadModel with ChangeNotifier {
     super.dispose();
   }
 
-  Widget pageContent(ColorModel model, var content) {
-    return Expanded(
-        child: Container(
-            margin: EdgeInsets.only(left: 17, right: 13),
-            // alignment: i == (sum - 1)
-            //     ? Alignment.topLeft
-            //     : Alignment.centerLeft,
-            child: RichText(
-              textAlign: TextAlign.justify,
-              textScaleFactor: Screen.textScaleFactor,
-              text: TextSpan(children: [
-                TextSpan(
-                  text: content,
-                  style: TextStyle(
-                      fontFamily:
-                          SpUtil.getString("fontName", defValue: "Roboto"),
-                      color: model.dark ? Color(0x8FFFFFFF) : Colors.black,
-                      locale: Locale('zh_CN'),
-                      decorationStyle: TextDecorationStyle.wavy,
-                      letterSpacing: ReadSetting.getLatterSpace(),
-                      fontSize: ReadSetting.getFontSize(),
-                      height: ReadSetting.getLineHeight()),
-                )
-              ]),
-            )));
-  }
-
   getEveryNote() async {
     if (_everyPoet != null) {
       return;
@@ -1046,10 +1015,12 @@ class ReadModel with ChangeNotifier {
   }
 
   getEveyPoet() async {
-    var url = "https://v2.jinrishici.com/one.json";
+    if (!isPage) {
+      var url = "https://v2.jinrishici.com/one.json";
 
-    var future = await HttpUtil().http().get(url);
-    poet = future.data['data']['content'];
+      var future = await HttpUtil().http().get(url);
+      poet = future.data['data']['content'];
+    }
   }
 
   Future<void> switchFlipType(FlipType flipType) async {

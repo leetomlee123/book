@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:flustars/flustars.dart';
@@ -78,11 +76,12 @@ class ReaderPageAgent {
 
     // double textHeight = textPainter.height;
     double lineHeight = textPainter.preferredLineHeight;
-
+    print(
+        "lineHeight:$lineHeight ${ReadSetting.getFontSize()} ${ReadSetting.getLineHeight()}");
     // int lineNumber = textHeight ~/ lineHeight;
     int lineNumberPerPage = pageHeight ~/ lineHeight;
     // int pageNum = (lineNumber / lineNumberPerPage).ceil();
-    double actualPageHeight = lineNumberPerPage * lineHeight;
+    double actualPageHeight = (lineNumberPerPage-1) * lineHeight;
     while (true) {
       textPainter = getTextPainter(tempStr, width);
       textPainter.layout(maxWidth: width);
@@ -105,6 +104,10 @@ class ReaderPageAgent {
     return pageConfig;
   }
 
+  bool didExceed(var textPainter, var a) {
+    return textPainter.didExceedMaxLines || textPainter.size.height > a;
+  }
+
   TextPainter getTextPainter(String text, double width) {
     TextPainter textPainter = TextPainter(
         textDirection: TextDirection.ltr,
@@ -118,9 +121,6 @@ class ReaderPageAgent {
             fontSize: ReadSetting.getFontSize(),
             letterSpacing: ReadSetting.getLatterSpace(),
             height: ReadSetting.getLineHeight()));
-    double lineHeight = textPainter.preferredLineHeight;
-    // print(
-    //     "use fontFamily is :${SpUtil.getString("fontName", defValue: "Roboto")} lineHeight:$lineHeight");
     return textPainter;
   }
 }

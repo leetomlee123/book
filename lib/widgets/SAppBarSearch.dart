@@ -137,7 +137,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
   @override
   Widget build(BuildContext context) {
     ColorModel _colorModel = Store.value<ColorModel>(context);
-    final ScaffoldState scaffold = Scaffold.of(context, nullOk: true);
+    final ScaffoldState scaffold = Scaffold.of(context);
     final ModalRoute<dynamic> parentRoute = ModalRoute.of(context);
     final bool canPop = parentRoute?.canPop ?? false;
     final bool hasDrawer = scaffold?.hasDrawer ?? false;
