@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:book/event/event.dart';
@@ -14,41 +13,40 @@ import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_analytics/observer.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:get_it/get_it.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
-FirebaseAnalytics analytics = FirebaseAnalytics();
-FirebaseAnalyticsObserver observer =
-    FirebaseAnalyticsObserver(analytics: analytics);
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (await Permission.storage.request().isGranted) {
-    await SpUtil.getInstance();
-    locator.registerSingleton(TelAndSmsService());
-    final router = FluroRouter();
-    Routes.configureRoutes(router);
-    Routes.router = router;
-    runApp(Store.init(child: MyApp()));
-    await DirectoryUtil.getInstance();
-    await Firebase.initializeApp();
-    if (Platform.isAndroid) {
-      SystemUiOverlayStyle systemUiOverlayStyle =
-          SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+//使用flutter异常上报
+  FlutterBugly.postCatchedException(() async {
+    if (await Permission.storage.request().isGranted) {
+      await SpUtil.getInstance();
+      locator.registerSingleton(TelAndSmsService());
+      final router = FluroRouter();
+      Routes.configureRoutes(router);
+      Routes.router = router;
+      runApp(Store.init(child: MyApp()));
+      await DirectoryUtil.getInstance();
+      if (Platform.isAndroid) {
+        SystemUiOverlayStyle systemUiOverlayStyle =
+            SystemUiOverlayStyle(statusBarColor: Colors.transparent);
+        SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+      }
     }
-  }
+  });
+  FlutterBugly.init(androidAppId: "9e35b3fab6");
 }
 
 class MyApp extends StatelessWidget {
@@ -63,7 +61,6 @@ class MyApp extends StatelessWidget {
         builder: BotToastInit(),
         navigatorObservers: [
           BotToastNavigatorObserver(),
-          observer,
         ],
         onGenerateRoute: Routes.router.generator,
         theme: model.theme, // 配置route generate
@@ -82,21 +79,21 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
 
-  // Future<void> _checkUpdate() async {
-  //   if (Platform.isAndroid) {
-  //     FlutterBugly.checkUpgrade(isManual: false, isSilence: true);
-  //     var info = await FlutterBugly.getUpgradeInfo();
-  //     print("get info $info ");
-  //     if (info != null && info.id != null) {
-  //       await showDialog(
-  //         barrierDismissible: false,
-  //         context: context,
-  //         builder: (_) => UpdateDialog(info?.versionName ?? '',
-  //             info?.newFeature ?? '', info?.apkUrl ?? ''),
-  //       );
-  //     }
-  //   }
-  // }
+  Future<void> _checkUpdate() async {
+    if (Platform.isAndroid) {
+      FlutterBugly.checkUpgrade(isManual: false, isSilence: true);
+      var info = await FlutterBugly.getUpgradeInfo();
+      print("get info $info ");
+      if (info != null && info.id != null) {
+        await showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (_) => UpdateDialog(info?.versionName ?? '',
+              info?.newFeature ?? '', info?.apkUrl ?? ''),
+        );
+      }
+    }
+  }
 
   /// 跳转应用市场升级
   // _launchURL(url) async {
@@ -158,7 +155,8 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   // var _pages = [Video(), VoiceBook()];
   initEnv() async {
-    await Firebase.initializeApp();
+    await _checkUpdate();
+    // await Firebase.initializeApp();
   }
 
   @override

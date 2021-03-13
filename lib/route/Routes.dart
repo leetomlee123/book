@@ -26,6 +26,7 @@ class Routes {
   static String voiceList = '/voiceList';
   static String videoTest = '/videoTest';
 
+
   // 配置route
   static void configureRoutes(FluroRouter router) {
     // 未发现对应route

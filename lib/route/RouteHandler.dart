@@ -19,6 +19,7 @@ import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/system/FontSet.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/view/voice/CateVoices.dart';
 import 'package:book/view/voice/VoiceList.dart';
 import 'package:fluro/fluro.dart';
@@ -30,10 +31,7 @@ var rootHandler =
   return MainPage();
 });
 // 根目录
-// var videoTestHandler =
-//     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-//   return VideoScreen();
-// });
+
 
 // 设置页 - 示例：不传参数
 var searchHandler =

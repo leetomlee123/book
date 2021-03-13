@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:book/common/common.dart';
 import 'package:book/common/Http.dart';
+import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
@@ -142,7 +142,7 @@ class _ChapterViewItem extends State<ChapterView> {
               ],
             ),
           ),
-          preferredSize: Size.fromHeight(130),
+          preferredSize: Size.fromHeight(160),
         ),
         body: Column(
           children: [
@@ -168,8 +168,7 @@ class _ChapterViewItem extends State<ChapterView> {
                         Navigator.of(context).pop();
                         //不是卷目录
                         data.book.cur = index;
-
-                        Future.delayed(Duration(milliseconds: 300 ), () {
+                        Future.delayed(Duration(milliseconds: 300), () {
                           data.initPageContent(index, true);
                         });
                       },

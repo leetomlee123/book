@@ -18,8 +18,9 @@ environment:
 
 dependencies:
 #  firebase_admob: ^0.11.0+1
-  firebase_analytics: ^7.0.1
-  firebase_core: ^0.7.0
+#  firebase_analytics: ^7.0.1
+#  firebase_core: ^0.7.0
+  flutter_bugly: ^0.3.1
   audioplayers: ^0.17.0
   install_plugin: ^2.0.1
   flutter_cache_manager: ^2.0.0
@@ -41,7 +42,9 @@ dependencies:
 #  fluttie: ^0.5.0
   event_bus: ^1.1.1
   flustars: ^0.2.6+1
-  flutter_statusbar_manager: ^2.0.0
+  flutter_statusbar_manager: 
+      git:
+        url: https://github.com/Gentleflow/flutter_statusbar_manager.git
   bot_toast: ^3.0.5
   flutter_spinkit: ^4.1.2
   pull_to_refresh: ^1.6.3

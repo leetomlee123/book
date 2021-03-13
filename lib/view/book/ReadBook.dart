@@ -44,11 +44,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   void initState() {
     setUp();
     super.initState();
-    var widgetsBinding = WidgetsBinding.instance;
-
-    widgetsBinding.addPostFrameCallback((callback) {
-      print('rebuild');
-    });
   }
 
   setUp() async {
@@ -60,7 +55,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     eventBus.on<OpenChapters>().listen((event) {
       _globalKey.currentState?.openDrawer();
     });
-    super.initState();
     WidgetsBinding.instance.addObserver(this);
     eventBus.on<ZEvent>().listen((event) {
       move(event.isPage, event.offset);
@@ -74,11 +68,13 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     if (SpUtil.haveKey('bgIdx')) {
       readModel.bgIdx = SpUtil.getInt('bgIdx');
     }
-
+    readModel.topSafeHeight = Screen.topSafeHeight;
     readModel.contentH =
         Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
     readModel.contentW = Screen.width - 30.0;
-    setSystemBar();
+    FlutterStatusbarManager.setFullscreen(true);
+
+    // setSystemBar();
   }
 
   @override
@@ -87,6 +83,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     readModel?.pageController?.dispose();
     readModel?.listController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    FlutterStatusbarManager.setFullscreen(false);
   }
 
   @override
@@ -99,7 +96,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     super.deactivate();
     readModel.saveData();
     readModel.clear();
-
   }
 
   @override
@@ -157,7 +153,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                 child: Column(
                                   children: [
                                     SizedBox(
-                                      height: Screen.topSafeHeight,
+                                      height: readModel.topSafeHeight,
                                     ),
                                     Container(
                                       height: 30,
@@ -199,7 +195,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                             return model.allContent[index];
                                           },
                                           controller: model.listController,
-                                          cacheExtent: model.readPages[model.cursor].height,
+                                          cacheExtent: model
+                                              .readPages[model.cursor].height,
                                         ),
                                       ),
                                     ),
@@ -213,7 +210,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                           children: <Widget>[
                                             BatteryView(
                                               electricQuantity:
-                                              _readModel.electricQuantity,
+                                                  _readModel.electricQuantity,
                                             ),
                                             SizedBox(
                                               width: 4,
@@ -279,15 +276,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                     child: Text('取消')),
               ],
             ));
-  }
-
-  void setSystemBar() {
-    var dark = Store.value<ColorModel>(context).dark;
-    if (dark) {
-      FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
-    } else {
-      FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
-    }
   }
 
   void move(bool isPage, double offset) {

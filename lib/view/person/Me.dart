@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/event/event.dart';
 import 'package:book/main.dart';
@@ -8,10 +10,12 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Me extends StatelessWidget {
@@ -27,18 +31,21 @@ class Me extends StatelessWidget {
     if (SpUtil.haveKey("username")) {
       return PreferredSize(
           preferredSize: Size.fromHeight(150),
-          child: Store.connect<ColorModel>(builder: (context,ColorModel model,child){
+          child: Store.connect<ColorModel>(
+              builder: (context, ColorModel model, child) {
             return Stack(
               children: [
                 UserAccountsDrawerHeader(
                   margin: EdgeInsets.all(0),
                   accountEmail: Text(
                     SpUtil.getString('email') ?? "",
-                    style: TextStyle(color: model.dark?Colors.white:Colors.black),
+                    style: TextStyle(
+                        color: model.dark ? Colors.white : Colors.black),
                   ),
                   accountName: Text(
                     SpUtil.getString('username') ?? "",
-                    style: TextStyle(color: model.dark?Colors.white:Colors.black),
+                    style: TextStyle(
+                        color: model.dark ? Colors.white : Colors.black),
                   ),
                   currentAccountPicture: CircleAvatar(
                     backgroundImage: AssetImage("images/fu.png"),
@@ -51,10 +58,10 @@ class Me extends StatelessWidget {
                   decoration: BoxDecoration(
                       image: DecorationImage(
                           image: AssetImage(
-                            "images/a0${model.dark?'r':'s'}.png"
-                            ,),fit: BoxFit.fill)),
+                            "images/a0${model.dark ? 'r' : 's'}.png",
+                          ),
+                          fit: BoxFit.fill)),
                 ),
-
               ],
             );
           }));
@@ -254,23 +261,21 @@ class Me extends StatelessWidget {
                 ImageIcon(AssetImage("images/upgrade.png")),
                 '应用更新',
                 () async {
-                  BotToast.showText(text: "已经是最新版本");
-                  // if (Platform.isAndroid) {
-                  //   FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
-                  //   var info = await FlutterBugly.getUpgradeInfo();
-                  //   print("get info $info ");
-                  //   if (info != null && info.id != null) {
-                  //     Navigator.pop(context);
-                  //     await showDialog(
-                  //       barrierDismissible: false,
-                  //       context: context,
-                  //       builder: (_) => UpdateDialog(info?.versionName ?? '',
-                  //           info?.newFeature ?? '', info?.apkUrl ?? ''),
-                  //     );
-                  //   }
-                  // }
-                  //  Routes.navigateTo(context, Routes.upgrade,
-                  //                );
+                  // BotToast.showText(text: "已经是最新版本");
+                  if (Platform.isAndroid) {
+                    FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
+                    var info = await FlutterBugly.getUpgradeInfo();
+                    if (info != null && info.id != null) {
+                      Navigator.pop(context);
+                      await showDialog(
+                        barrierDismissible: false,
+                        context: context,
+                        builder: (_) => UpdateDialog(info?.versionName ?? '',
+                            info?.newFeature ?? '', info?.apkUrl ?? ''),
+                      );
+                    }
+                  }
+
                 },
                 c,
               ),

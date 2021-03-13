@@ -38,6 +38,7 @@ class ReadModel with ChangeNotifier {
   EveryPoet _everyPoet;
   var currentPageValue = 0.0;
   String poet = "";
+  var topSafeHeight = .0;
 
   var electricQuantity = 1.0;
 
@@ -312,7 +313,10 @@ class ReadModel with ChangeNotifier {
   }
 
   Future initPageContent(int idx, bool jump) async {
-    BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog(),clickClose: true,backgroundColor: Colors.transparent);
+    BotToast.showCustomLoading(
+        toastBuilder: (_) => LoadingDialog(),
+        clickClose: true,
+        backgroundColor: Colors.transparent);
 
     try {
       await Future.wait([
@@ -377,7 +381,10 @@ class ReadModel with ChangeNotifier {
         book.cur += 1;
         prePage = curPage;
         if (nextPage.chapterName == "-1") {
-          BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog(),clickClose: true,backgroundColor: Colors.transparent);
+          BotToast.showCustomLoading(
+              toastBuilder: (_) => LoadingDialog(),
+              clickClose: true,
+              backgroundColor: Colors.transparent);
           curPage = await loadChapter(book.cur);
           int preLen = prePage?.pageOffsets?.length ?? 0;
           int curLen = curPage?.pageOffsets?.length ?? 0;
@@ -728,7 +735,6 @@ class ReadModel with ChangeNotifier {
             cts = cts.substring(1);
           }
         }
-
         contents.add(Store.connect<ColorModel>(
             builder: (context, ColorModel model, child) {
           return GestureDetector(
@@ -740,7 +746,7 @@ class ReadModel with ChangeNotifier {
                   ? Container(
                       child: Column(
                         children: <Widget>[
-                          SizedBox(height: ScreenUtil.getStatusBarH(context)),
+                          SizedBox(height: topSafeHeight),
                           pageHead(r, model),
                           pageMiddleContent(content, model, (i + 1) == sum),
                           pageFoot(model, i, r)
@@ -1031,6 +1037,10 @@ class ReadModel with ChangeNotifier {
         cursor = 1;
         ladderH = [];
         SpUtil.putBool("isPage", false);
+        SpUtil.getKeys().forEach(
+            (v) => {if (v.contains("height") || v.contains("pages")) {
+              SpUtil.remove(v)
+            }});
         if (listController == null) {
           print('init');
           await initPageContent(book.cur, false);
@@ -1047,6 +1057,10 @@ class ReadModel with ChangeNotifier {
       case FlipType.PAGE_VIEW_SMOOTH:
         isPage = true;
         SpUtil.putBool("isPage", true);
+               SpUtil.getKeys().forEach(
+            (v) => {if (v.contains("height") || v.contains("pages")) {
+              SpUtil.remove(v)
+            }});
         initPageContent(book.cur, true);
         pageController = PageController(
             keepPage: false, initialPage: curPage?.pageOffsets?.length ?? 0);

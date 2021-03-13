@@ -32,23 +32,6 @@ class _BookShelfState extends State<BookShelf>
                     child: Container(
                       child: AppBar(
                         backgroundColor: Colors.transparent,
-
-                        // leading: ImageIcon(
-                        //   AssetImage("images/vip.png"),
-                        //   size: 24,
-                        // ),
-                        // flexibleSpace: _colorModel.dark?Container():Container(
-                        //   decoration: BoxDecoration(
-                        //     gradient: LinearGradient(
-                        //         colors: [
-                        //           // Colors.accents[_colorModel.idx].shade100,
-                        //           Colors.accents[_colorModel.idx].shade200,
-                        //           Colors.accents[_colorModel.idx].shade400,
-                        //         ],
-                        //         begin: Alignment.centerRight,
-                        //         end: Alignment.centerLeft),
-                        //   ),
-                        // ),
                         leading: IconButton(
                           color: _colorModel.dark ? Colors.white : Colors.black,
                           icon: ImageIcon(
