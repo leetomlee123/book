@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/event/event.dart';
 import 'package:book/main.dart';
@@ -10,12 +8,10 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bugly/flutter_bugly.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Me extends StatelessWidget {
@@ -261,21 +257,20 @@ class Me extends StatelessWidget {
                 ImageIcon(AssetImage("images/upgrade.png")),
                 '应用更新',
                 () async {
-                  // BotToast.showText(text: "已经是最新版本");
-                  if (Platform.isAndroid) {
-                    FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
-                    var info = await FlutterBugly.getUpgradeInfo();
-                    if (info != null && info.id != null) {
-                      Navigator.pop(context);
-                      await showDialog(
-                        barrierDismissible: false,
-                        context: context,
-                        builder: (_) => UpdateDialog(info?.versionName ?? '',
-                            info?.newFeature ?? '', info?.apkUrl ?? ''),
-                      );
-                    }
-                  }
-
+                  BotToast.showText(text: "已经是最新版本");
+                  // if (Platform.isAndroid) {
+                  //   FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
+                  //   var info = await FlutterBugly.getUpgradeInfo();
+                  //   if (info != null && info.id != null) {
+                  //     Navigator.pop(context);
+                  //     await showDialog(
+                  //       barrierDismissible: false,
+                  //       context: context,
+                  //       builder: (_) => UpdateDialog(info?.versionName ?? '',
+                  //           info?.newFeature ?? '', info?.apkUrl ?? ''),
+                  //     );
+                  //   }
+                  // }
                 },
                 c,
               ),

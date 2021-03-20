@@ -7,7 +7,7 @@
 
      <bitmap
          android:gravity="center"
-         android:src="@mipmap/first_screen" />
+         android:src="@drawable/first_screen" />
 
  </item>
 </layer-list>

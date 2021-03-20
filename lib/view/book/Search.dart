@@ -91,7 +91,7 @@ class _SearchState extends State<Search> {
     return Container(
       decoration: BoxDecoration(
         color: Color(0xFFF2F2F2),
-        borderRadius: BorderRadius.circular(25),
+        // borderRadius: BorderRadius.circular(25),
       ),
       child: Row(
         children: [

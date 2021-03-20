@@ -4,6 +4,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import 'LoadDialog.dart';
 
@@ -29,7 +30,7 @@ class HttpUtil {
         .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
       // Do something before request is sent
       if (showLoading) {
-        BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
+        BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog(),backgroundColor: Colors.transparent);
       }
       if (SpUtil.haveKey("auth")) {
         options.headers.addAll(({"auth": SpUtil.getString("auth")}));

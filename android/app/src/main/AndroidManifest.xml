@@ -14,6 +14,7 @@
     <application
         
         android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
         android:label="小书屋">
         <activity
             android:name=".MainActivity"

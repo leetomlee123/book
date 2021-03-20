@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
@@ -18,9 +17,10 @@ import 'package:dio/dio.dart';
 import 'package:extended_text/extended_text.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 class BookDetail extends StatefulWidget {
-  BookInfo _bookInfo;
+  final BookInfo _bookInfo;
 
   BookDetail(this._bookInfo);
 
@@ -35,6 +35,8 @@ class _BookDetailState extends State<BookDetail> {
   ColorModel _colorModel;
   bool inShelf = false;
   int maxLines = 3;
+  List<Color> colors=[];
+
   @override
   void initState() {
     book = Book(
@@ -57,68 +59,22 @@ class _BookDetailState extends State<BookDetail> {
         this.widget._bookInfo.LastTime);
     super.initState();
     _colorModel = Store.value<ColorModel>(context);
+    getBkColor();
   }
 
-  PreferredSizeWidget _appBar() {
-    return PreferredSize(
-        child: Stack(
-          children: [
-            Container(
-              child: ClipRRect(
-                // make sure we apply clip it properly
-                child: BackdropFilter(
-                  //背景滤镜
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), //背景模糊化
-                  child: Container(
-                    alignment: Alignment.center,
-                    color: Colors.grey.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              decoration: BoxDecoration(
-                  image: DecorationImage(
-                      fit: BoxFit.fitWidth,
-                      image: CachedNetworkImageProvider(
-                        book.Img,
-                      ))),
-            ),
-            AppBar(
-              backgroundColor: Colors.transparent,
-              leading: IconButton(
-                color: Colors.white,
-                icon: Icon(Icons.arrow_back),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              elevation: 0,
-              actions: <Widget>[
-                GestureDetector(
-                  child: Center(
-                    child: Text(
-                      '书架',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).popUntil(ModalRoute.withName('/'));
-                    eventBus.fire(new NavEvent(0));
-                  },
-                ),
-                SizedBox(
-                  width: 20,
-                )
-              ],
-              bottom: PreferredSize(
-                child: _bookHead(),
-                preferredSize: Size.fromHeight(140),
-              ),
-            )
-          ],
-        ),
-        preferredSize: Size.fromHeight(210));
+  getBkColor() async {
+    PaletteGenerator fromImageProvider =
+        await PaletteGenerator.fromImageProvider(
+            CachedNetworkImageProvider(book.Img));
+    fromImageProvider.paletteColors.forEach((element){
+      colors.add(element.color);
+    });
+    if(mounted){
+      setState(() {
+
+      });
+    }
+
   }
 
   Widget _bookHead() {
@@ -220,35 +176,33 @@ class _BookDetailState extends State<BookDetail> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(left: 17.0, top: 5.0,right: 17.0),
-          child:ExtendedText(
-            this.widget._bookInfo.Desc ?? "".trim(),
-            maxLines: maxLines,
-            overflowWidget: TextOverflowWidget(
-              // maxHeight: 11,
-              // align: TextOverflowAlign.right,
-              // fixedOffset: Offset(-10, 0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text('\u2026 '),
-                  GestureDetector(
-                    child: const Text(
-                      '更多',
-                      style: TextStyle(color: Colors.blue),
-                    ),
-                    onTap: () {
-                      setState(() {
-                        maxLines = 100;
-                      });
-                    },
-                  )
-                ],
+            padding: const EdgeInsets.only(left: 17.0, top: 5.0, right: 17.0),
+            child: ExtendedText(
+              this.widget._bookInfo.Desc ?? "".trim(),
+              maxLines: maxLines,
+              overflowWidget: TextOverflowWidget(
+                // maxHeight: 11,
+                // align: TextOverflowAlign.right,
+                // fixedOffset: Offset(-10, 0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Text('\u2026 '),
+                    GestureDetector(
+                      child: const Text(
+                        '更多',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                      onTap: () {
+                        setState(() {
+                          maxLines = 100;
+                        });
+                      },
+                    )
+                  ],
+                ),
               ),
-            ),
-          )
-
-        ),
+            )),
       ],
     );
   }
@@ -307,94 +261,93 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   Widget _sameAuthorBooks() {
-    return this.widget._bookInfo.SameAuthorBooks != null
-        ? ListView.builder(
-            padding: EdgeInsets.all(0),
-            shrinkWrap: true,
-            //解决无限高度问题
-            physics: NeverScrollableScrollPhysics(),
-            itemBuilder: (context, i) {
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  child: Row(
-                    children: <Widget>[
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.only(left: 15.0, top: 10),
-                            child: PicWidget(
-                              this.widget._bookInfo.SameAuthorBooks[i].Img,
-                            ),
-                          )
-                        ],
+    return Offstage(offstage: this.widget._bookInfo.SameAuthorBooks.isEmpty ,child: ListView.builder(
+      padding: EdgeInsets.all(0),
+      shrinkWrap: true,
+      //解决无限高度问题
+      physics: NeverScrollableScrollPhysics(),
+      itemBuilder: (context, i) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            child: Row(
+              children: <Widget>[
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.only(left: 15.0, top: 10),
+                      child: PicWidget(
+                        this.widget._bookInfo.SameAuthorBooks[i].Img,
                       ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        verticalDirection: VerticalDirection.down,
-                        // textDirection:,
-                        textBaseline: TextBaseline.alphabetic,
-
-                        children: <Widget>[
-                          Container(
-                              width: ScreenUtil.getScreenW(context) - 120,
-                              padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10),
-                              child: Text(
-                                this.widget._bookInfo.SameAuthorBooks[i].Name,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 18.0),
-                              )),
-                          Container(
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(
-                              this.widget._bookInfo.SameAuthorBooks[i].Author,
-                              style: TextStyle(fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            width: ScreenUtil.getScreenW(context) - 120,
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(
-                                this
-                                    .widget
-                                    ._bookInfo
-                                    .SameAuthorBooks[i]
-                                    .LastChapter,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 11)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    )
+                  ],
                 ),
-                onTap: () async {
-                  String url = Common.detail +
-                      '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
-                  Response future = await HttpUtil().http().get(url);
-                  var d = future.data['data'];
-                  BookInfo bookInfo = BookInfo.fromJson(d);
-                  Navigator.pushReplacement(context,
-                      MaterialPageRoute(builder: (_) => BookDetail(bookInfo)));
-                },
-              );
-            },
-            itemCount: this.widget._bookInfo.SameAuthorBooks.length,
-          )
-        : Container();
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  verticalDirection: VerticalDirection.down,
+                  // textDirection:,
+                  textBaseline: TextBaseline.alphabetic,
+
+                  children: <Widget>[
+                    Container(
+                        width: ScreenUtil.getScreenW(context) - 120,
+                        padding:
+                        const EdgeInsets.only(left: 10.0, top: 10),
+                        child: Text(
+                          this.widget._bookInfo.SameAuthorBooks[i].Name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 18.0),
+                        )),
+                    Container(
+                      padding:
+                      const EdgeInsets.only(left: 10.0, top: 10.0),
+                      child: Text(
+                        this.widget._bookInfo.SameAuthorBooks[i].Author,
+                        style: TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      width: ScreenUtil.getScreenW(context) - 120,
+                      padding:
+                      const EdgeInsets.only(left: 10.0, top: 10.0),
+                      child: Text(
+                          this
+                              .widget
+                              ._bookInfo
+                              .SameAuthorBooks[i]
+                              .LastChapter,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.grey, fontSize: 11)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          onTap: () async {
+            String url = Common.detail +
+                '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
+            Response future = await HttpUtil().http().get(url);
+            var d = future.data['data'];
+            BookInfo bookInfo = BookInfo.fromJson(d);
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => BookDetail(bookInfo)));
+          },
+        );
+      },
+      itemCount: this.widget._bookInfo.SameAuthorBooks.length,
+    ),);
+
+
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Material(
       child: Stack(
         children: [
@@ -402,15 +355,6 @@ class _BookDetailState extends State<BookDetail> {
             slivers: [
               SliverAppBar(
                 pinned: true,
-                // backgroundColor: Colors.transparent,
-
-                leading: IconButton(
-                  color: Colors.white,
-                  icon: Icon(Icons.arrow_back),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
                 elevation: 0,
                 actions: <Widget>[
                   GestureDetector(
@@ -437,33 +381,19 @@ class _BookDetailState extends State<BookDetail> {
                   // title: const Text('Demo'),
                   background: Stack(
                     children: [
-                      Container(
-                        child: ClipRRect(
-                          // make sure we apply clip it properly
-                          child: BackdropFilter(
-                            //背景滤镜
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            //背景模糊化
-                            child: Container(
-                              alignment: Alignment.center,
-                              color: Colors.grey.withOpacity(0.1),
-                            ),
+                      Offstage(offstage: colors.isEmpty,child:Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: colors,
                           ),
                         ),
-                        decoration: BoxDecoration(
-                            image: DecorationImage(
-                                fit: BoxFit.fitWidth,
-                                image: CachedNetworkImageProvider(
-                                  book.Img,
-                                ))),
-                      ),
-                      AppBar(
-                        backgroundColor: Colors.transparent,
-                        bottom: PreferredSize(
-                          child: _bookHead(),
-                          preferredSize: Size.fromHeight(140),
-                        ),
-
+                      ))
+                      ,
+                      Padding(
+                        padding: EdgeInsets.only(top: 80),
+                        child: _bookHead(),
                       )
                     ],
                   ),
@@ -571,10 +501,8 @@ class _BookDetailState extends State<BookDetail> {
               );
             }),
           )
-
         ],
       ),
     );
-
   }
 }

@@ -4,7 +4,6 @@ import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/main.dart';
-import 'package:book/view/Voice/VoiceDetailView.dart';
 import 'package:book/view/book/AllTagBook.dart';
 import 'package:book/view/book/BookDetail.dart';
 import 'package:book/view/book/ChapterView.dart';
@@ -14,16 +13,16 @@ import 'package:book/view/book/SortShelf.dart';
 import 'package:book/view/movie/LookVideo.dart';
 import 'package:book/view/movie/TagVideo.dart';
 import 'package:book/view/movie/VideoDetail.dart';
-import 'package:book/view/movie/VideoPlayerTest.dart';
 import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/system/FontSet.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/view/voice/CateVoices.dart';
 import 'package:book/view/voice/VoiceList.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
+
+import '../view/voice/VoiceDetailView.dart';
 
 // 根目录
 var rootHandler =
@@ -31,7 +30,6 @@ var rootHandler =
   return MainPage();
 });
 // 根目录
-
 
 // 设置页 - 示例：不传参数
 var searchHandler =
@@ -83,21 +81,17 @@ var voiceDetailHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String link = params['link'][0];
   int idx = int.parse(params['idx'][0]);
-  // int position = params['position'][0];
 
   return VoiceDetailView(link, idx);
 });
 var voicesHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   String url = params['url'][0];
-  // int position = params['position'][0];
 
   return CateVoices(url);
 });
 var voiceListHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  // int position = params['position'][0];
-
   return VoiceList();
 });
 

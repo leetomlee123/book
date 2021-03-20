@@ -586,11 +586,12 @@ class _MenuState extends State<Menu> {
         ),
       ),
     ));
-    for (var i = 0; i < bgImg.length; i++) {
+    for (int i = 0; i < bgImg.length; i++) {
       var f = "images/${bgImg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () {
           setState(() {
+
             _readModel.switchBgColor(i);
           });
         },

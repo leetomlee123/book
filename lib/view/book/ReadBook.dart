@@ -83,7 +83,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     readModel?.pageController?.dispose();
     readModel?.listController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
-    FlutterStatusbarManager.setFullscreen(false);
   }
 
   @override
@@ -94,6 +93,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   @override
   void deactivate() {
     super.deactivate();
+    FlutterStatusbarManager.setFullscreen(false);
+
     readModel.saveData();
     readModel.clear();
   }

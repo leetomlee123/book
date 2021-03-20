@@ -173,7 +173,7 @@ class VideoDetailState extends State<VideoDetail> {
           padding: EdgeInsets.symmetric(horizontal: 30, vertical: 5),
           decoration: BoxDecoration(
             //灰色的一层边框
-            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+            // borderRadius: BorderRadius.all(Radius.circular(25.0)),
             border: Border.all(
                 color: v.dark ? Colors.white : Colors.black, width: 0.5),
 

@@ -1,15 +1,15 @@
 import 'dart:convert';
 
+import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/voice/Voice.dart';
 import 'package:dio/dio.dart';
+import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -23,7 +23,7 @@ class GoodBook extends StatefulWidget {
 class StateGoodBook extends State<GoodBook>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   TabController controller;
-  var tabs = <Tab>[];
+  var tabs = <ExtendedTab>[];
 
   @override
   void initState() {
@@ -36,15 +36,15 @@ class StateGoodBook extends State<GoodBook>
       // Tab(
       //   text: "听书",
       // ),
-      Tab(
+      ExtendedTab(
         text: "男生",
       ),
-      Tab(
+      ExtendedTab(
         text: "女生",
       ),
-      Tab(
-        text: "听书",
-      ),
+      // Tab(
+      //   text: "听书",
+      // ),
     ];
     //initialIndex初始选中第几个
     controller =
@@ -67,14 +67,15 @@ class StateGoodBook extends State<GoodBook>
         child: Scaffold(
             appBar: AppBar(
               backgroundColor: Colors.transparent,
-              title: TabBar(
-
+              title: ExtendedTabBar(
                 labelColor:
                     value.dark ? Colors.white : value.theme.primaryColor,
                 unselectedLabelColor:
                     value.dark ? Colors.white38 : Colors.black45,
                 indicatorSize: TabBarIndicatorSize.label,
-                unselectedLabelStyle: TextStyle(fontWeight: FontWeight.normal,),
+                unselectedLabelStyle: TextStyle(
+                  fontWeight: FontWeight.normal,
+                ),
                 indicatorColor:
                     value.dark ? Colors.white : value.theme.primaryColor,
                 controller: controller,
@@ -86,9 +87,11 @@ class StateGoodBook extends State<GoodBook>
               elevation: 0,
               automaticallyImplyLeading: false,
             ),
-            body: TabBarView(
+            body: ExtendedTabBarView(
               controller: controller,
-              children: [TabItem("1"), TabItem("2"),VoiceBook()],
+              children: [TabItem("1"), TabItem("2")],
+              cacheExtent: 2,
+              // children: [TabItem("1"), TabItem("2"),VoiceBook()],
               // children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
             )),
       );
@@ -100,7 +103,7 @@ class StateGoodBook extends State<GoodBook>
 }
 
 class TabItem extends StatefulWidget {
-  String type;
+  final String type;
 
   TabItem(this.type);
 
@@ -114,7 +117,6 @@ class StateTabItem extends State<TabItem>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   List<List<GBook>> values = [];
   List<String> keys = [];
-  ColorModel value;
   ColorModel _colorModel;
 
   @override
@@ -263,19 +265,21 @@ class StateTabItem extends State<TabItem>
   }
 
   @override
+  // ignore: must_call_super
   Widget build(BuildContext context) {
-    super.build(context);
-
-    return Scaffold(
-      body: values.length == 0
-          ? Container()
-          : ListView.builder(
-              itemCount: keys.length,
-              itemBuilder: (BuildContext context, int index) {
-                return item(keys[index], values[index]);
-              },
-            ),
+    return Visibility(
+      visible: values.isNotEmpty,
+      child: ListView.builder(
+        itemCount: keys.length,
+        itemBuilder: (BuildContext context, int index) {
+          return item(keys[index], values[index]);
+        },
+      ),
+      replacement: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
+
   }
 
   @override

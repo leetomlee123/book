@@ -74,7 +74,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
 
   // 清除输入框内容
   void _onClearInput() {
-    _voiceModel.setIsVoiceIdx(true);
+    // _voiceModel.setIsVoiceIdx(true);
     setState(() {
       _controller.clear();
     });
@@ -83,7 +83,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
 
   // 取消输入框编辑
   void _onCancelInput() {
-    _voiceModel.setIsVoiceIdx(true);
+    // _voiceModel.setIsVoiceIdx(true);
     setState(() {
       _controller.clear();
       _focusNode.unfocus();
@@ -180,7 +180,7 @@ class _SAppBarSearchState extends State<SAppBarSearch> {
             margin: EdgeInsets.only(right: right, left: left),
             decoration: BoxDecoration(
               color: Color(0xFFF2F2F2),
-              borderRadius: BorderRadius.circular(20),
+              // borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               children: [

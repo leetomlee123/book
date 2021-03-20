@@ -1,29 +1,25 @@
 import 'dart:convert';
 
+import 'package:better_player/better_player.dart';
 import 'package:book/common/FunUtil.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/GBook.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/system/MyControls.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:screen/screen.dart' as Light;
-import 'package:video_player/video_player.dart';
 
 class LookVideo extends StatefulWidget {
-  String id;
-  List<dynamic> mcids;
-  String name;
-  String cover;
+  final String id;
+  final List<dynamic> mcids;
+  final String name;
+  final String cover;
 
   LookVideo(this.id, this.mcids, this.name, this.cover);
 
@@ -36,48 +32,39 @@ class LookVideo extends StatefulWidget {
 class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
   ColorModel _colorModel;
   int idx = 0;
-  VideoPlayerController videoPlayerController;
+  BetterPlayerController _betterPlayerController;
+
   String source;
-  ChewieController chewieController;
+
   List<Widget> wds = [];
   Widget cps;
   double light;
   bool initOk = false;
   var urlKey;
+  var name;
 
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
     WidgetsBinding.instance.addObserver(this);
     urlKey = this.widget.id;
-    eventBus.on<PlayEvent>().listen((openEvent) {
-      var v = this.widget.mcids[idx + 1];
-      Map map = Map.castFrom(v);
-      chewieController.exitFullScreen();
-      _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
-      chewieController.enterFullScreen();
-    });
     super.initState();
     getData();
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     super.dispose();
-    if (videoPlayerController != null) {
-      videoPlayerController.removeListener(_videoListener);
-      videoPlayerController?.dispose();
-    }
 
-    chewieController?.dispose();
+    _betterPlayerController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
 
-    saveRecord(videoPlayerController.value.position);
+    saveRecord(await _betterPlayerController.videoPlayerController.position);
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    saveRecord(videoPlayerController.value.position);
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    saveRecord(await _betterPlayerController.videoPlayerController.position);
   }
 
   saveRecord(Duration position) {
@@ -93,87 +80,52 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel model, child) => Theme(
-              child: wds.isNotEmpty
-                  ? Scaffold(
-                      body: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            height: ScreenUtil.getStatusBarH(context),
-                            color: Colors.black,
-                          ),
-                          initOk
-                              ? Chewie(
-                                  controller: chewieController,
-                                )
-                              : Container(
-                                  width: double.infinity,
-                                  height: 230,
-                                  color: Colors.black,
-                                  child: Center(
-                                      child: CircularProgressIndicator(
-                                    strokeWidth: 2.0,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  )),
-                                ),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 25),
-                            child: Row(
-                              children: [
-                                Text(this.widget.name),
-                                Spacer(),
-                              ],
-                            ),
-                          ),
-                          cps,
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Expanded(
-                            child: ListView(
-                              shrinkWrap: true,
-                              children: wds,
-                            ),
-                          )
-                        ],
-                      ),
-                    )
-                  : Scaffold(body: Center(child: CircularProgressIndicator())),
-              data: model.theme,
-            ));
+    return wds.isNotEmpty
+        ? Scaffold(
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  height: ScreenUtil.getStatusBarH(context),
+                  color: Colors.black,
+                ),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: BetterPlayer(controller: _betterPlayerController),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                  child: Row(
+                    children: [
+                      Text(this.widget.name),
+                      Spacer(),
+                    ],
+                  ),
+                ),
+                cps,
+                SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: wds,
+                  ),
+                )
+              ],
+            ),
+          )
+        : Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 
   getData() async {
     light = await Light.Screen.brightness;
-    String url = Common.look_m + '${this.widget.id}';
-    Response future = await HttpUtil().http().get(url);
-    source = future.data[2];
-    videoPlayerController = VideoPlayerController.network(source);
-    videoPlayerController.addListener(_videoListener);
-    videoPlayerController.initialize().then((_) {
-      chewieController = ChewieController(
-          customControls: MyControls(this.widget.name, light),
-          videoPlayerController: videoPlayerController,
-          aspectRatio: videoPlayerController.value.aspectRatio,
-          autoPlay: false,
-          allowedScreenSleep: false,
-          looping: false,
-          placeholder: CachedNetworkImage(
-              imageUrl:
-                  'https://tva2.sinaimg.cn/large/007UW77jly1g5elwuwv4rj30sg0g0wfo.jpg'));
-      if (SpUtil.haveKey(source)) {
-        int p = SpUtil.getInt(source);
-        chewieController.seekTo(Duration(microseconds: p));
-      }
-    });
+    Response future = await play(urlKey);
+
     cps = Center(
       child: Wrap(
         runAlignment: WrapAlignment.start,
-        spacing: 3, //主轴上子控件的间距
+        spacing: 4, //主轴上子控件的间距
         runSpacing: 5, //交叉轴上子控件之间的间
         children: mItems(this.widget.mcids),
       ),
@@ -192,67 +144,50 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
     }
   }
 
-  void _videoListener() async {
-    if (videoPlayerController.value.initialized) {
-      if (mounted) {
-        setState(() {
-          initOk = true;
-        });
+  Future<Response> play(var id) async {
+    Response future = await getUrl(id);
+    source = future.data[2];
+    BetterPlayerConfiguration betterPlayerConfiguration =
+        BetterPlayerConfiguration(
+      aspectRatio: 16 / 9,
+      fit: BoxFit.contain,
+
+      controlsConfiguration: BetterPlayerControlsConfiguration(
+
+      ),
+    );
+    BetterPlayerDataSource dataSource =
+        BetterPlayerDataSource(BetterPlayerDataSourceType.network, source);
+    _betterPlayerController = BetterPlayerController(betterPlayerConfiguration);
+    _betterPlayerController.setupDataSource(dataSource).then((value) {
+      if (SpUtil.haveKey(source)) {
+        int p = SpUtil.getInt(source);
+        _betterPlayerController.seekTo(Duration(microseconds: p));
       }
-    }
+    });
+    return future;
+  }
+
+  Future<Response> getUrl(var key) async {
+    String url = Common.look_m + key;
+    Response future = await HttpUtil().http().get(url);
+    return future;
   }
 
   void _urlChange(url, name, {autoPlay = true, allowFullScreen = true}) async {
-    saveRecord(videoPlayerController.value.position);
+    saveRecord(_betterPlayerController.videoPlayerController.value.position);
 
-    if (videoPlayerController != null) {
+    if (_betterPlayerController != null) {
       /// 如果控制器存在，清理掉重新创建
-      videoPlayerController.removeListener(_videoListener);
-      videoPlayerController.pause();
+      // videoPlayerController.removeListener(_videoListener);
+      _betterPlayerController.pause();
 //      videoPlayerController.dispose();
     }
-
     setState(() {
       urlKey = url;
-
-      /// 重置组件参数
-      initOk = false;
     });
-    cps = Center(
-      child: Wrap(
-        runAlignment: WrapAlignment.center,
-        spacing: 3, //主轴上子控件的间距
-        runSpacing: 5, //交叉轴上子控件之间的间
-        children: mItems(this.widget.mcids),
-      ),
-    );
-    Response future = await HttpUtil().http().get(Common.look_m + url);
-    videoPlayerController = VideoPlayerController.network(future.data[2]);
+    getData();
 
-    videoPlayerController.addListener(_videoListener);
-    videoPlayerController.initialize().then((_) {
-      chewieController = ChewieController(
-          customControls: MyControls(name, light),
-          videoPlayerController: videoPlayerController,
-          aspectRatio: videoPlayerController.value.aspectRatio,
-          autoPlay: autoPlay,
-          allowedScreenSleep: false,
-          looping: false,
-          allowFullScreen: allowFullScreen,
-          placeholder: CachedNetworkImage(
-              imageUrl:
-                  'https://tva2.sinaimg.cn/large/007UW77jly1g5elwuwv4rj30sg0g0wfo.jpg'));
-      if (SpUtil.haveKey(future.data[2])) {
-        int p = SpUtil.getInt(future.data[2]);
-        chewieController.seekTo(Duration(microseconds: p));
-      }
-
-      if (mounted) {
-        setState(() {
-          initOk = true;
-        });
-      }
-    });
   }
 
   List<Widget> mItems(List<dynamic> list) {
@@ -267,7 +202,8 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
             var jsonEncode2 = jsonEncode(list);
             FunUtil.saveMoviesRecord(this.widget.cover, this.widget.name,
                 map.keys.elementAt(0), map.values.elementAt(0), jsonEncode2);
-            saveRecord(videoPlayerController.value.position);
+            saveRecord(
+                _betterPlayerController.videoPlayerController.value.position);
             _urlChange(map.keys.elementAt(0), map.values.elementAt(0));
           },
           child: Container(
@@ -285,8 +221,6 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
             ),
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
             decoration: BoxDecoration(
-              //灰色的一层边框
-              borderRadius: BorderRadius.all(Radius.circular(25.0)),
               border: Border.all(
                   color: map.keys.elementAt(0) == urlKey
                       ? (_colorModel.dark
@@ -294,12 +228,7 @@ class LookVideoState extends State<LookVideo> with WidgetsBindingObserver {
                           : _colorModel.theme.primaryColor)
                       : (_colorModel.dark ? Colors.white38 : Colors.black),
                   width: 0.75),
-
-              // color: data.dark ? Colors.white : Colors.black,
             ),
-            // color: map.keys.elementAt(0) == urlKey
-            //     ? Colors.black
-            //     : _colorModel.theme.primaryColor,
           )));
     }
     return wds;
