@@ -43,9 +43,9 @@ class Login extends StatelessWidget {
           }
         }
       }
-      // Routes.navigateTo(context, Routes.root);
+      Routes.navigateTo(context, Routes.root);
 
-      Navigator.of(context).popUntil(ModalRoute.withName('/'));
+      // Navigator.of(context).popUntil(ModalRoute.withName('/'));
       eventBus.fire(new NavEvent(0));
     }
   }
@@ -73,7 +73,8 @@ class Login extends StatelessWidget {
                 shrinkWrap: true,
                 padding: EdgeInsets.only(left: 24.0, right: 24.0),
                 children: <Widget>[
-                  SizedBox(height: 48.0),
+                  Center(child: Text('登录',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 25),),),
+                  SizedBox(height: 68.0),
                   TextFormField(
                     autofocus: false,
                     // style: TextStyle(color: Colors.white),

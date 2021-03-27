@@ -92,7 +92,7 @@ class ReadModel with ChangeNotifier {
   bool jump = true;
 
   //阅读方式
-  bool isPage = SpUtil.getBool("isPage", defValue: false);
+  bool isPage = SpUtil.getBool("isPage", defValue: true);
 
   //页面上下文
   BuildContext context;

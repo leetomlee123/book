@@ -8,6 +8,7 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
+import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -305,24 +306,11 @@ class Me extends StatelessWidget {
                   ? Store.connect<ShelfModel>(
                       builder: (context, ShelfModel model, child) {
                       return GestureDetector(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Color(
-                                _colorModel.dark ? 0x4D000000 : 0xFBFFFFFF),
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(10.0)),
-                          ),
-                          margin: EdgeInsets.symmetric(vertical: 50),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 30,
-                          ),
-                          height: 50,
-                          child: Text(
-                            "退出登录",
-                            style: TextStyle(color: Colors.redAccent),
-                          ),
-                          alignment: Alignment.center,
-                        ),
+                        child :WhiteArea(         Text(
+                          "退出登录",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),50),
+
                         onTap: () {
                           model.dropAccountOut();
                           eventBus.fire(new BooksEvent([]));

@@ -12,6 +12,7 @@ import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/book/GoodBook.dart';
 import 'package:book/view/movie/MovieRecord.dart';
 import 'package:book/view/movie/Video.dart';
+import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Me.dart';
 import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -59,7 +60,7 @@ class MyApp extends StatelessWidget {
       return MaterialApp(
         // showPerformanceOverlay: true,
         title: '清阅',
-        home: MainPage(),
+        home: SpUtil.haveKey("username")?MainPage():Login(),
         builder: BotToastInit(),
         navigatorObservers: [
           BotToastNavigatorObserver(),

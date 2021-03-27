@@ -24,7 +24,7 @@ class LabelTitle extends StatelessWidget {
               style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: model.theme.primaryColor),
+                  color: model.dark ? Colors.white : model.theme.primaryColor,),
             ),
           ],
         ),
