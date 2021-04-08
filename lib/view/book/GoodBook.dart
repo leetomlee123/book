@@ -129,9 +129,8 @@ class StateTabItem extends State<TabItem>
   Widget item(String title, List<GBook> bks) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8),
-      child: ListView(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
+      child: Column(
+
         children: <Widget>[
           SizedBox(
             height: 5.0,

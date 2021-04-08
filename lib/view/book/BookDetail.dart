@@ -70,7 +70,7 @@ class _BookDetailState extends State<BookDetail> {
         .map((f) => f.Id)
         .toList()
         .contains(this.widget._bookInfo.Id);
-    reading = ((_readModel?.book?.Id??"") == book.Id);
+    reading = ((_readModel?.book?.Id ?? "") == book.Id);
   }
 
   getBkColor() async {
@@ -191,7 +191,6 @@ class _BookDetailState extends State<BookDetail> {
             child: ExtendedText(
               this.widget._bookInfo.Desc ?? "".trim(),
               maxLines: maxLines,
-
               overflowWidget: TextOverflowWidget(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -271,83 +270,101 @@ class _BookDetailState extends State<BookDetail> {
 
   Widget _sameAuthorBooks() {
     return Offstage(
-      offstage: this.widget._bookInfo.SameAuthorBooks.isEmpty,
-      child: ListView.builder(
-        padding: EdgeInsets.all(0),
-        shrinkWrap: true,
-        //解决无限高度问题
-        physics: NeverScrollableScrollPhysics(),
-        itemBuilder: (context, i) {
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              child: Row(
-                children: <Widget>[
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Container(
-                        padding: const EdgeInsets.only(left: 15.0, top: 10),
-                        child: PicWidget(
-                          this.widget._bookInfo.SameAuthorBooks[i].Img,
-                        ),
-                      )
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    verticalDirection: VerticalDirection.down,
-                    // textDirection:,
-                    textBaseline: TextBaseline.alphabetic,
-
-                    children: <Widget>[
-                      Container(
-                          width: ScreenUtil.getScreenW(context) - 120,
-                          padding: const EdgeInsets.only(left: 10.0, top: 10),
-                          child: Text(
-                            this.widget._bookInfo.SameAuthorBooks[i].Name,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 18.0),
-                          )),
-                      Container(
-                        padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                        child: Text(
-                          this.widget._bookInfo.SameAuthorBooks[i].Author,
-                          style: TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        width: ScreenUtil.getScreenW(context) - 120,
-                        padding: const EdgeInsets.only(left: 10.0, top: 10.0),
-                        child: Text(
-                            this
-                                .widget
-                                ._bookInfo
-                                .SameAuthorBooks[i]
-                                .LastChapter,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+      offstage: this.widget._bookInfo.SameAuthorBooks?.isEmpty ?? true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 17.0, top: 15.0,bottom: 10),
+            child: Text(
+              '作者还写过:',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
-            onTap: () async {
-              String url = Common.detail +
-                  '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
-              Response future = await HttpUtil().http().get(url);
-              var d = future.data['data'];
-              BookInfo bookInfo = BookInfo.fromJson(d);
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) => BookDetail(bookInfo)));
+          ),
+          ListView.builder(
+            padding: EdgeInsets.all(0),
+            shrinkWrap: true,
+
+            //解决无限高度问题
+            physics: NeverScrollableScrollPhysics(),
+            itemBuilder: (context, i) {
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  child: Row(
+                    children: <Widget>[
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          Container(
+                            padding: const EdgeInsets.only(left: 15.0, top: 10),
+                            child: PicWidget(
+                              this.widget._bookInfo.SameAuthorBooks[i].Img,
+                            ),
+                          )
+                        ],
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        verticalDirection: VerticalDirection.down,
+                        // textDirection:,
+                        textBaseline: TextBaseline.alphabetic,
+
+                        children: <Widget>[
+                          Container(
+                              width: ScreenUtil.getScreenW(context) - 120,
+                              padding:
+                                  const EdgeInsets.only(left: 10.0, top: 10),
+                              child: Text(
+                                this.widget._bookInfo.SameAuthorBooks[i].Name,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 18.0),
+                              )),
+                          Container(
+                            padding:
+                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                            child: Text(
+                              this.widget._bookInfo.SameAuthorBooks[i].Author,
+                              style: TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            width: ScreenUtil.getScreenW(context) - 120,
+                            padding:
+                                const EdgeInsets.only(left: 10.0, top: 10.0),
+                            child: Text(
+                                this
+                                    .widget
+                                    ._bookInfo
+                                    .SameAuthorBooks[i]
+                                    .LastChapter,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Colors.grey, fontSize: 11)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: () async {
+                  String url = Common.detail +
+                      '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
+                  Response future = await HttpUtil().http().get(url);
+                  var d = future.data['data'];
+                  BookInfo bookInfo = BookInfo.fromJson(d);
+                  Navigator.pushReplacement(context,
+                      MaterialPageRoute(builder: (_) => BookDetail(bookInfo)));
+                },
+              );
             },
-          );
-        },
-        itemCount: this.widget._bookInfo.SameAuthorBooks.length,
+            itemCount: this.widget._bookInfo.SameAuthorBooks?.length ?? 0,
+            cacheExtent: 200,
+          )
+        ],
       ),
     );
   }
@@ -412,13 +429,6 @@ class _BookDetailState extends State<BookDetail> {
                 Divider(),
                 _bookMenu(),
                 Divider(),
-                Padding(
-                  padding: const EdgeInsets.only(left: 17.0, top: 15.0),
-                  child: Text(
-                    '作者还写过:',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
                 _sameAuthorBooks(),
                 Padding(
                   padding: const EdgeInsets.only(left: 17.0, top: 15.0),
@@ -479,18 +489,19 @@ class _BookDetailState extends State<BookDetail> {
                     break;
                   case 1:
                     {
-                      if(reading){
+                      if (reading) {
                         Navigator.pop(context);
                         Navigator.pop(context);
-                      }else{
-                      Routes.navigateTo(
-                        context,
-                        Routes.read,
-                        params: {
-                          'read': jsonEncode(book),
-                        },
-                      );
-                    }}
+                      } else {
+                        Routes.navigateTo(
+                          context,
+                          Routes.read,
+                          params: {
+                            'read': jsonEncode(book),
+                          },
+                        );
+                      }
+                    }
                     break;
                   // case 2:
                   //   {
