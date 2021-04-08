@@ -40,15 +40,8 @@ class Routes {
     router.define(detail, handler: detailHandler);
     router.define(chapters, handler: chaptersHandler);
     router.define(allTagBook, handler: allTagBookHandler);
-    router.define(vDetail, handler: vDetailHandler);
-    router.define(lookVideo, handler: lookVideoHandler);
-    router.define(tagVideo, handler: tagVideoHandler);
     router.define(fontSet, handler: fontSetHandler);
     router.define(sortShelf, handler: sortShelfHandler);
-    router.define(voiceDetail, handler: voiceDetailHandler);
-    router.define(voices, handler: voicesHandler);
-    router.define(voiceList, handler: voiceListHandler);
-    // router.define(videoTest, handler: videoTestHandler);
   }
 
   // 对参数进行encode，解决参数中有特殊字符，影响fluro路由匹配

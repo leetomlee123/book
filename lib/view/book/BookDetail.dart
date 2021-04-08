@@ -70,7 +70,7 @@ class _BookDetailState extends State<BookDetail> {
         .map((f) => f.Id)
         .toList()
         .contains(this.widget._bookInfo.Id);
-    reading = (_readModel.book.Id == book.Id);
+    reading = ((_readModel?.book?.Id??"") == book.Id);
   }
 
   getBkColor() async {
@@ -191,11 +191,12 @@ class _BookDetailState extends State<BookDetail> {
             child: ExtendedText(
               this.widget._bookInfo.Desc ?? "".trim(),
               maxLines: maxLines,
+
               overflowWidget: TextOverflowWidget(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Text('\u2026'),
+                    const Text('\u2026 '),
                     GestureDetector(
                       child: const Text(
                         '更多',
@@ -478,6 +479,10 @@ class _BookDetailState extends State<BookDetail> {
                     break;
                   case 1:
                     {
+                      if(reading){
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      }else{
                       Routes.navigateTo(
                         context,
                         Routes.read,
@@ -485,7 +490,7 @@ class _BookDetailState extends State<BookDetail> {
                           'read': jsonEncode(book),
                         },
                       );
-                    }
+                    }}
                     break;
                   // case 2:
                   //   {

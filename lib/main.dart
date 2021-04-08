@@ -4,17 +4,12 @@ import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
-import 'package:book/model/VoiceModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/book/GoodBook.dart';
-import 'package:book/view/movie/MovieRecord.dart';
-import 'package:book/view/movie/Video.dart';
-import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Me.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_analytics/observer.dart';
@@ -81,7 +76,6 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
 
-
   /// 跳转应用市场升级
   // _launchURL(url) async {
   //   if (await canLaunch(url)) {
@@ -107,36 +101,15 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       ),
       label: '精选',
     ),
-    BottomNavigationBarItem(
-      icon: ImageIcon(
-        AssetImage("images/video.png"),
-        size: 30,
-      ),
-      label: '美剧',
-    ),
-    // BottomNavigationBarItem(
-    //   icon: ImageIcon(
-    //     AssetImage("images/listen.png"),
-    //     size: 30,
-    //   ),
-    //   label: '听书',
-    // ),
+
   ];
 
-  // imgIcon(String src, String title) {
-  //   return BottomNavigationBarItem(
-  //     icon: ImageIcon(
-  //       AssetImage(src),
-  //       size: 30,
-  //     ),
-  //     label: title,
-  //   );
-  // }
+
 
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook(), Video()];
+  var _pages = [BookShelf(), GoodBook()];
 
   // var _pages = [BookShelf(), GoodBook(), Video(), YoutubePlayerDemoApp()];
 
@@ -178,7 +151,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
             builder: (context, ShelfModel shelfModel, child) {
           return Scaffold(
             drawer: Drawer(
-              child: isMovie ? MovieRecord() : Me(),
+              child: Me(),
             ),
             key: q,
             body: PageView.builder(

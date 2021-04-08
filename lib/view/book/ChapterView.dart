@@ -42,11 +42,6 @@ class _ChapterViewItem extends State<ChapterView> {
     _scrollController = ScrollController(
         initialScrollOffset:
             (Store.value<ReadModel>(context).book.cur - 8) * itemHeight);
-    // var widgetsBinding = WidgetsBinding.instance;
-    // widgetsBinding.addPostFrameCallback((callback) {
-    //   scrollTo();
-    // });
-    //监听滚动事件，打印滚动位置
     _scrollController.addListener(() {
       if (_scrollController.offset < itemHeight * 8 && showToTopBtn) {
         setState(() {

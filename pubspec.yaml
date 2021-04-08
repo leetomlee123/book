@@ -24,9 +24,7 @@ dependencies:
   install_plugin: ^2.0.1
   flutter_cache_manager: ^2.1.2
   permission_handler: ^6.1.0
-  better_player: ^0.0.62
   battery: ^2.0.1
-  flutter_swiper: ^1.1.6
   fluro: ^2.0.3
   screen: ^0.0.5
   shared_preferences: ^2.0.4
@@ -36,7 +34,6 @@ dependencies:
   convert: ^3.0.0
   extended_text: ^5.0.2
   json_annotation: ^2.0.0
-#  fluttie: ^0.5.0
   event_bus: ^2.0.0
   flustars: ^2.0.1
   flutter_statusbar_manager: 

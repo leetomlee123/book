@@ -194,7 +194,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
-        itemExtent: (15 + (Screen.width / 4) * 1.2),
+        itemExtent: (25 + (Screen.width / 4) * 1.2),
         itemCount: _shelfModel.shelf.length,
         itemBuilder: (context, i) {
           return GestureDetector(
@@ -231,6 +231,7 @@ class _BooksWidgetState extends State<BooksWidget> {
       child: Stack(
         children: [
           Container(
+
             child: Row(
               children: <Widget>[
                 Column(
@@ -277,6 +278,18 @@ class _BooksWidgetState extends State<BooksWidget> {
                         style: TextStyle(
                             fontSize: 18.0, fontWeight: FontWeight.bold),
                       ),
+
+                    ),
+                    Container(
+                      width: ScreenUtil.getScreenW(context) - 120,
+                      padding: const EdgeInsets.only(
+                          left: 10.0,  right: 10),
+                      child: Text(
+                        item.Author,
+                        style: TextStyle(
+                            fontSize: 12.0,),
+                      ),
+
                     ),
                     Container(
                       padding: const EdgeInsets.only(
@@ -297,7 +310,6 @@ class _BooksWidgetState extends State<BooksWidget> {
                     ),
                   ],
                 ),
-
               ],
             ),
           ),

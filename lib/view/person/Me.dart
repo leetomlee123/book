@@ -76,7 +76,7 @@ class Me extends StatelessWidget {
                   height: 60,
                   width: 60,
                   child: CircleAvatar(
-                    backgroundImage: AssetImage("images/account.png"),
+                    backgroundImage: AssetImage("images/fu.png"),
                   ),
                 ),
                 SizedBox(
@@ -103,7 +103,6 @@ class Me extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ColorModel _colorModel = Store.value<ColorModel>(context);
     Color c =
         Color(!Store.value<ColorModel>(context).dark ? 0x4D000000 : 0xFBFFFFFF);
     return Scaffold(

@@ -29,13 +29,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.1"
-  better_player:
-    dependency: "direct main"
-    description:
-      name: better_player
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.0.62"
   boolean_selector:
     dependency: transitive
     description:
@@ -106,13 +99,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "3.0.0"
-  csslib:
-    dependency: transitive
-    description:
-      name: csslib
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.17.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -265,13 +251,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.1.2"
-  flutter_page_indicator:
-    dependency: transitive
-    description:
-      name: flutter_page_indicator
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.0.3"
   flutter_spinkit:
     dependency: "direct main"
     description:
@@ -288,13 +267,6 @@ packages:
       url: "https://github.com/Gentleflow/flutter_statusbar_manager.git"
     source: git
     version: "2.0.0"
-  flutter_swiper:
-    dependency: "direct main"
-    description:
-      name: flutter_swiper
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.1.6"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -305,13 +277,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_widget_from_html_core:
-    dependency: transitive
-    description:
-      name: flutter_widget_from_html_core
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.6.0-rc.2021031201"
   get_it:
     dependency: "direct main"
     description:
@@ -319,13 +284,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "6.0.0"
-  html:
-    dependency: transitive
-    description:
-      name: html
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.15.0"
   http:
     dependency: transitive
     description:
@@ -646,13 +604,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.2.19"
-  transformer_page_view:
-    dependency: transitive
-    description:
-      name: transformer_page_view
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.1.6"
   typed_data:
     dependency: transitive
     description:
@@ -716,41 +667,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.1.0"
-  visibility_detector:
-    dependency: transitive
-    description:
-      name: visibility_detector
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0-nullsafety.1"
-  wakelock:
-    dependency: transitive
-    description:
-      name: wakelock
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.4.0"
-  wakelock_macos:
-    dependency: transitive
-    description:
-      name: wakelock_macos
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.1.0"
-  wakelock_platform_interface:
-    dependency: transitive
-    description:
-      name: wakelock_platform_interface
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
-  wakelock_web:
-    dependency: transitive
-    description:
-      name: wakelock_web
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.2.0"
   win32:
     dependency: transitive
     description:

@@ -10,19 +10,13 @@ import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/ReadBook.dart';
 import 'package:book/view/book/Search.dart';
 import 'package:book/view/book/SortShelf.dart';
-import 'package:book/view/movie/LookVideo.dart';
-import 'package:book/view/movie/TagVideo.dart';
-import 'package:book/view/movie/VideoDetail.dart';
 import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/system/FontSet.dart';
-import 'package:book/view/voice/CateVoices.dart';
-import 'package:book/view/voice/VoiceList.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
-import '../view/voice/VoiceDetailView.dart';
 
 // 根目录
 var rootHandler =
@@ -62,46 +56,7 @@ var allTagBookHandler =
   List<GBook> list2 = list.map((f) => GBook.fromJson(f)).toList();
   return AllTagBook(title, list2);
 });
-var vDetailHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String gbook = (params['gbook'][0]);
 
-  return VideoDetail(GBook.fromJson(convert.jsonDecode(gbook)));
-});
-var lookVideoHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String id = (params['id'][0]);
-  String name = (params['name'][0]);
-  String cover = (params['cover'][0]);
-  List mcids = convert.jsonDecode(params['mcids'][0]);
-
-  return LookVideo(id, mcids, name, cover);
-});
-var voiceDetailHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String link = params['link'][0];
-  int idx = int.parse(params['idx'][0]);
-
-  return VoiceDetailView(link, idx);
-});
-var voicesHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String url = params['url'][0];
-
-  return CateVoices(url);
-});
-var voiceListHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  return VoiceList();
-});
-
-var tagVideoHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String category = (params['category'][0]);
-  String name = (params['name'][0]);
-
-  return TagVideo(category, name);
-});
 var sortShelfHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   return SortShelf();

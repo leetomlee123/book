@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
-import 'package:book/entity/MRecords.dart';
-import 'package:book/entity/VoiceHs.dart';
 import 'package:flustars/flustars.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -194,20 +192,7 @@ class DbHelper {
     }
   }
 
-  Future<List<VocieHs>> voices() async {
-    List<VocieHs> data = [];
-    var dbClient = await db4;
-    List list = await dbClient.rawQuery(
-        "select title,author,cover,position,key,idx ,chapter from $_tableName4 order by tm desc ",
-        []);
-    list.forEach((e) {
-      //   VocieHs(this.title, this.cover, this.author, this.position, this.key,
-      // this.chapter,this.idx);
-      data.add(VocieHs(e['title'], e['cover'], e['author'], e['position'],
-          e['key'], e['chapter'], e['idx']));
-    });
-    return data;
-  }
+
 
   Future<int> saveVoiceRecord(String key, String cover, String title,
       String author, int position, int idx, String chapter) async {
@@ -268,36 +253,7 @@ class DbHelper {
     await dbClient.rawDelete("delete from $_tableName3 where key=?", [key]);
   }
 
-  Future<Null> addMovies(List<MRecords> ms) async {
-    var dbClient = await db2;
-    var batch = dbClient.batch();
-    for (MRecords mRecords in ms) {
-      batch.rawInsert(
-          "insert into  $_tableName2 (cover,name,cid,cname,mcids) values(?,?,?,?,?)",
-          [
-            mRecords.cover,
-            mRecords.name,
-            mRecords.cid,
-            mRecords.cname,
-            mRecords.mcids
-          ]);
-    }
-    await batch.commit(noResult: true);
-    // await close();
-  }
 
-  Future<List<MRecords>> getMovies() async {
-    var dbClient = await db2;
-    List<MRecords> movies = [];
-    var list = await dbClient
-        .rawQuery("select * from $_tableName2 order by id asc", []);
-    for (var i in list) {
-      movies.add(
-          MRecords(i['cover'], i['name'], i['cid'], i['cname'], i['mcids']));
-    }
-    // await close();
-    return movies;
-  }
 
   Future<Null> updBookStatus(String bookId, int s) async {
     var dbClient = await db1;
