@@ -51,9 +51,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.reSetPages();
       readModel.initPageContent(readModel.book.cur, true);
     });
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      readModel.pageController.positions.take(  readModel.pageController.positions.length-1);
-    });
+
 
     WidgetsBinding.instance.addObserver(this);
     eventBus.on<ZEvent>().listen((event) {
