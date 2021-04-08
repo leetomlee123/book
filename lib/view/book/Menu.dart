@@ -5,7 +5,6 @@ import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
@@ -93,7 +92,7 @@ class _MenuState extends State<Menu> {
           width: double.infinity,
         ),
         onTap: () {
-          type=Type.SLIDE;
+          type = Type.SLIDE;
           _readModel.toggleShowMenu();
           if (_readModel.font) {
             _readModel.reCalcPages();
@@ -538,12 +537,11 @@ class _MenuState extends State<Menu> {
         ),
       ),
       onTap: () {
-        print(title.toString());
         switch (title) {
           case '目录':
             {
-              eventBus.fire(OpenChapters("dd"));
-
+              // eventBus.fire(OpenChapters("dd"));
+              Routes.navigateTo(context, Routes.chapters);
               _readModel.toggleShowMenu();
             }
             break;
@@ -591,7 +589,6 @@ class _MenuState extends State<Menu> {
       wds.add(RawMaterialButton(
         onPressed: () {
           setState(() {
-
             _readModel.switchBgColor(i);
           });
         },

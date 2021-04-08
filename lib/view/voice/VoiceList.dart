@@ -76,7 +76,7 @@ class _VoiceListState extends State<VoiceList> {
                           "link": data[i].key,
                           "idx": data[i].idx.toString(),
                         },
-                        replace: true);
+                       );
                   },
                 );
               },

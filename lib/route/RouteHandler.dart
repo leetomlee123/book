@@ -122,30 +122,11 @@ var sortShelfHandler =
 // 示例：传多个model参数
 var readHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-//  print('params: $params');
-//  String model = params['userInfoModel']?.first;
-//  print('model: $model');
-//  // model: {name: yuanzhiying, age: 30, height: 1.78, weight: 74.0}
-//  Map<String, dynamic> jsonMap = convert.jsonDecode(model);
-//  print('jsonMap: $jsonMap');
-//  UserInfoModel _model = UserInfoModel.fromJson(jsonMap);
-
   Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read'][0]));
-
   return ReadBook(_bookInfo);
 });
 var chaptersHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-//  print('params: $params');
-//  String model = params['userInfoModel']?.first;
-//  print('model: $model');
-//  // model: {name: yuanzhiying, age: 30, height: 1.78, weight: 74.0}
-//  Map<String, dynamic> jsonMap = convert.jsonDecode(model);
-//  print('jsonMap: $jsonMap');
-//  UserInfoModel _model = UserInfoModel.fromJson(jsonMap);
-
-  // Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read'][0]));
-
   return ChapterView();
 });
 

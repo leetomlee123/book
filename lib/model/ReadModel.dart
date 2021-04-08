@@ -114,6 +114,7 @@ class ReadModel with ChangeNotifier {
     readPages = [];
     ladderH = [];
     getEveyPoet();
+
     if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
 
@@ -139,15 +140,13 @@ class ReadModel with ChangeNotifier {
               (curPage?.pageOffsets?.length ?? 0) -
               1;
         }
-        pageController =
-            PageController(initialPage: book.index, keepPage: false);
+        pageController = PageController(initialPage: book.index);
       } else {
         if (book.cur == chapters.length - 1) {
           //最后一页
           book.position = ladderH[cursor];
         }
-        listController = ScrollController(
-            initialScrollOffset: book.position, keepScrollOffset: false);
+        listController = ScrollController(initialScrollOffset: book.position);
       }
       loadOk = true;
       //本书已读过
@@ -175,16 +174,16 @@ class ReadModel with ChangeNotifier {
       if (isPage) {
         int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
         book.index = idx;
-        pageController = PageController(initialPage: idx, keepPage: false);
+        pageController = PageController(initialPage: idx);
       } else {
         double z1 = book.cur == 0 ? 0 : (prePage?.height ?? 0);
 
-        listController =
-            ScrollController(initialScrollOffset: z1, keepScrollOffset: false);
+        listController = ScrollController(initialScrollOffset: z1);
       }
       loadOk = true;
     }
     // listen();
+
 
     notifyListeners();
   }
@@ -1037,10 +1036,10 @@ class ReadModel with ChangeNotifier {
         cursor = 1;
         ladderH = [];
         SpUtil.putBool("isPage", false);
-        SpUtil.getKeys().forEach(
-            (v) => {if (v.contains("height") || v.contains("pages")) {
-              SpUtil.remove(v)
-            }});
+        SpUtil.getKeys().forEach((v) => {
+              if (v.contains("height") || v.contains("pages"))
+                {SpUtil.remove(v)}
+            });
         if (listController == null) {
           print('init');
           await initPageContent(book.cur, false);
@@ -1049,7 +1048,6 @@ class ReadModel with ChangeNotifier {
               keepScrollOffset: false);
           notifyListeners();
         } else {
-          print('re');
           await initPageContent(book.cur, true);
         }
 
@@ -1057,10 +1055,10 @@ class ReadModel with ChangeNotifier {
       case FlipType.PAGE_VIEW_SMOOTH:
         isPage = true;
         SpUtil.putBool("isPage", true);
-               SpUtil.getKeys().forEach(
-            (v) => {if (v.contains("height") || v.contains("pages")) {
-              SpUtil.remove(v)
-            }});
+        SpUtil.getKeys().forEach((v) => {
+              if (v.contains("height") || v.contains("pages"))
+                {SpUtil.remove(v)}
+            });
         initPageContent(book.cur, true);
         pageController = PageController(
             keepPage: false, initialPage: curPage?.pageOffsets?.length ?? 0);

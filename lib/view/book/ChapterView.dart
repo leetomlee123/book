@@ -3,12 +3,15 @@ import 'dart:convert';
 import 'package:book/common/Http.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
+import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class ChapterView extends StatefulWidget {
@@ -19,9 +22,9 @@ class ChapterView extends StatefulWidget {
 }
 
 class _ChapterViewItem extends State<ChapterView> {
-  ScrollController _scrollController = new ScrollController();
+  ScrollController _scrollController;
 
-  double itemHeight = 45.0;
+  double itemHeight = 40.0;
 
   bool up = false;
   int curIndex = 0;
@@ -36,10 +39,13 @@ class _ChapterViewItem extends State<ChapterView> {
   @override
   void initState() {
     super.initState();
-    var widgetsBinding = WidgetsBinding.instance;
-    widgetsBinding.addPostFrameCallback((callback) {
-      scrollTo();
-    });
+    _scrollController = ScrollController(
+        initialScrollOffset:
+            (Store.value<ReadModel>(context).book.cur - 8) * itemHeight);
+    // var widgetsBinding = WidgetsBinding.instance;
+    // widgetsBinding.addPostFrameCallback((callback) {
+    //   scrollTo();
+    // });
     //监听滚动事件，打印滚动位置
     _scrollController.addListener(() {
       if (_scrollController.offset < itemHeight * 8 && showToTopBtn) {
@@ -56,96 +62,78 @@ class _ChapterViewItem extends State<ChapterView> {
 
 //滚动到当前阅读位置
   scrollTo() async {
-    if (_scrollController.hasClients) {
-      curIndex = Store.value<ReadModel>(context).book.cur - 8;
-      await _scrollController.animateTo(
-          (Store.value<ReadModel>(context).book.cur - 8) * itemHeight,
-          duration: Duration(microseconds: 1),
-          curve: Curves.ease);
-    }
+    // if (_scrollController.hasClients) {
+    //   // curIndex = Store.value<ReadModel>(context).book.cur - 8;
+    //   await _scrollController.animateTo(
+    //       (Store.value<ReadModel>(context).book.cur - 8) * itemHeight,
+    //       duration: Duration(microseconds: 1),
+    //       curve: Curves.ease);
+    // }
   }
 
   @override
   Widget build(BuildContext context) {
+    ColorModel colorModel=Store.value<ColorModel>(context);
     return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
       return Scaffold(
         appBar: PreferredSize(
-          child: Container(
-            padding: EdgeInsets.only(left: 10, top: 30),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      child: CachedNetworkImage(
-                        imageUrl: data.book.Img,
-                        width: 85,
-                        height: 80,
-                      ),
-                      onTap: () async {
-                        await goDetail(data, context);
-                      },
-                    ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 5,
-                        ),
-                        Text(
-                          data.book.Name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                          overflow: TextOverflow.clip,
-                        ),
-                        Text(
-                          data.book.Author,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w100,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Padding(
-                  padding: EdgeInsets.only(left: 10, right: 15),
-                  child: Row(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: EdgeInsets.only(
+                  left: 10,
+                  top: ScreenUtil.getStatusBarH(context) + 10,
+                  right: 20),
+              height: 120,
+              width: ScreenUtil.getScreenW(context),
+              child: Row(
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: data.book.Img,
+                    width: 85,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
+                      Text(
+                        data.book.Name,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                        overflow: TextOverflow.clip,
+                      ),
+                      Text(
+                        data.book.Author,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w100,
+                          fontSize: 10,
+                        ),
+                      ),
                       Text(
                         '共${data.chapters.length}章',
                         style: TextStyle(fontSize: 12),
                       ),
-                      Expanded(child: Container()),
-                      GestureDetector(
-                        child: Text(
-                          '简介',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                        onTap: () async {
-                          await goDetail(data, context);
-                        },
-                      )
                     ],
                   ),
-                ),
-                Divider()
-              ],
+                  Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios_sharp,
+                    color: colorModel.dark?Colors.white24:Colors.black26,
+                  )
+                ],
+              ),
             ),
+            onTap: () async {
+              await goDetail(data, context);
+            },
           ),
-          preferredSize: Size.fromHeight(160),
+          preferredSize: Size.fromHeight(140),
         ),
         body: Column(
           children: [
+            SizedBox(height: 10,),
             Expanded(
               child: Scrollbar(
                 child: ListView.builder(
@@ -189,11 +177,6 @@ class _ChapterViewItem extends State<ChapterView> {
                     child: Text(!showToTopBtn ? "回到底部" : "回到顶部"))
               ],
             ),
-
-            // ButtonBar(children: [
-            //   Text('a'),
-            //   Text('a'),
-            // ],)
           ],
         ),
       );
@@ -206,10 +189,9 @@ class _ChapterViewItem extends State<ChapterView> {
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);
     Routes.navigateTo(context, Routes.detail,
-        params: {"detail": jsonEncode(bookInfo)}, replace: true);
+        params: {"detail": jsonEncode(bookInfo)});
     data.saveData();
-    data.loadOk = false;
-    // data.clear();
+
   }
 
   topOrBottom() async {

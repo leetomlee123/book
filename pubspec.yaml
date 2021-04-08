@@ -17,17 +17,13 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
-#  firebase_admob: ^0.11.0+1
   firebase_analytics: ^7.1.1
-  firebase_core: ^1.0.1
-  # flutter_bugly: ^0.3.1
-#  just_audio: ^0.7.1
+  firebase_core: ^1.0.2
   extended_tabs: ^2.0.0
   palette_generator: ^0.3.0
   install_plugin: ^2.0.1
   flutter_cache_manager: ^2.1.2
   permission_handler: ^6.1.0
-#  flutter_rating_bar: ^3.0.1+1
   better_player: ^0.0.62
   battery: ^2.0.1
   flutter_swiper: ^1.1.6

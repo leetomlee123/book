@@ -58,9 +58,8 @@ class MyApp extends StatelessWidget {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
       return MaterialApp(
-        // showPerformanceOverlay: true,
         title: '清阅',
-        home: SpUtil.haveKey("username")?MainPage():Login(),
+        home: MainPage(),
         builder: BotToastInit(),
         navigatorObservers: [
           BotToastNavigatorObserver(),

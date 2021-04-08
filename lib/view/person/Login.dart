@@ -43,10 +43,10 @@ class Login extends StatelessWidget {
           }
         }
       }
-      Routes.navigateTo(context, Routes.root);
-
-      // Navigator.of(context).popUntil(ModalRoute.withName('/'));
-      eventBus.fire(new NavEvent(0));
+      // Routes.navigateTo(context, Routes.root);
+      //
+      Navigator.of(context).popUntil(ModalRoute.withName('/'));
+      // eventBus.fire(new NavEvent(0));
     }
   }
 
