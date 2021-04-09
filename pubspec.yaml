@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  html: ^0.15.0
   firebase_analytics: ^7.1.1
   firebase_core: ^1.0.2
   extended_tabs: ^2.0.0
