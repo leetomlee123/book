@@ -275,7 +275,7 @@ class _BookDetailState extends State<BookDetail> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 17.0, top: 15.0,bottom: 10),
+            padding: const EdgeInsets.only(left: 17.0, top: 15.0, bottom: 10),
             child: Text(
               '作者还写过:',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -484,7 +484,16 @@ class _BookDetailState extends State<BookDetail> {
                 switch (i) {
                   case 0:
                     {
-                      Store.value<ShelfModel>(context).modifyShelf(book);
+                      if (mounted) {
+                        setState(() {
+                          Store.value<ShelfModel>(context).modifyShelf(book);
+
+                          inShelf = _shelfModel.shelf
+                              .map((f) => f.Id)
+                              .toList()
+                              .contains(this.widget._bookInfo.Id);
+                        });
+                      }
                     }
                     break;
                   case 1:

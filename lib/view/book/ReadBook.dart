@@ -52,7 +52,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.initPageContent(readModel.book.cur, true);
     });
 
-
     WidgetsBinding.instance.addObserver(this);
     eventBus.on<ZEvent>().listen((event) {
       move(event.isPage, event.offset);
@@ -71,7 +70,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
     readModel.contentW = Screen.width - 30.0;
     FlutterStatusbarManager.setFullscreen(true);
-
   }
 
   @override
@@ -88,12 +86,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   }
 
   @override
-  void deactivate() {
+  Future<void> deactivate() async {
     super.deactivate();
     FlutterStatusbarManager.setFullscreen(false);
-
-    readModel.saveData();
+   await readModel.saveData();
     readModel.clear();
+
   }
 
   @override
@@ -104,9 +102,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         await confirmAddToShelf(context);
       }
       return true;
-    }, child: Scaffold(
-        body: Store.connect<ReadModel>(
-            builder: (context, ReadModel model, child) {
+    }, child: Scaffold(body:
+        Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
       return model.loadOk
           ? Stack(
               children: <Widget>[
