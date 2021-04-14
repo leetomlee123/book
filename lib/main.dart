@@ -90,14 +90,14 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/book_shelf.png"),
-        size: 30,
+        size: 27,
       ),
       label: '书架',
     ),
     BottomNavigationBarItem(
       icon: ImageIcon(
         AssetImage("images/good.png"),
-        size: 30,
+        size: 27,
       ),
       label: '精选',
     ),

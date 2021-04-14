@@ -4,10 +4,8 @@
     <item android:drawable="@android:color/white" />
 
  <item>
-
      <bitmap
          android:gravity="center"
-         android:src="@drawable/ic_launcher"/>
-
+         android:src="@drawable/z"/>
  </item>
 </layer-list>

@@ -48,7 +48,7 @@ class _BookShelfState extends State<BookShelf>
                           final result = await showMenu(
                               context: context,
                               position: RelativeRect.fromLTRB(2000.0,
-                                  Screen.navigationBarHeight, 0.0, 0.0),
+                                  .0, 0.0, 0.0),
                               items: <PopupMenuItem<String>>[
                                 PopupMenuItem(
                                     value: shelfModelName,
