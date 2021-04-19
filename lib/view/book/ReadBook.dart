@@ -158,20 +158,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             Container(
                               width: Screen.width,
                               height: model.contentH,
-                              child: NotificationListener<ScrollNotification>(
-                                // 添加 NotificationListener 作为父容器
-                                onNotification: (scrollNotification) {
-                                  // 注册通知回调
-                                  if (scrollNotification
-                                      is ScrollEndNotification) {
-                                    readModel.notifyOffset();
-                                  }
-                                  return true;
-                                },
-                                // child: SingleChildScrollView(child:
-                                // Column(children: model.allContent,),controller: model.listController
-                                // ,),
-                                child: ListView.builder(
+                              child: ListView.builder(
                                   itemCount: model.readPages.length,
                                   itemBuilder:
                                       (BuildContext context, int index) {
@@ -181,7 +168,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                   cacheExtent:
                                       model.readPages[model.cursor].height,
                                 ),
-                              ),
+                             
                             ),
                             Store.connect<ReadModel>(builder:
                                 (context, ReadModel _readModel, child) {
@@ -238,14 +225,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
         builder: (context) => AlertDialog(
               content: Text('是否加入本书'),
               actions: <Widget>[
-                FlatButton(
+                TextButton(
                     onPressed: () {
                       Navigator.pop(context);
                       Store.value<ShelfModel>(context)
                           .modifyShelf(this.widget.book);
                     },
                     child: Text('确定')),
-                FlatButton(
+                TextButton(
                     onPressed: () {
                       readModel.sSave = false;
 

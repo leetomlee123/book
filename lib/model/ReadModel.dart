@@ -146,6 +146,7 @@ class ReadModel with ChangeNotifier {
           //最后一页
           book.position = ladderH[cursor];
         }
+        calcPercent();
         listController = ScrollController(initialScrollOffset: book.position);
       }
       loadOk = true;
@@ -177,13 +178,12 @@ class ReadModel with ChangeNotifier {
         pageController = PageController(initialPage: idx);
       } else {
         double z1 = book.cur == 0 ? 0 : (prePage?.height ?? 0);
-
+        calcPercent();
         listController = ScrollController(initialScrollOffset: z1);
       }
       loadOk = true;
     }
     // listen();
-
 
     notifyListeners();
   }
@@ -202,7 +202,6 @@ class ReadModel with ChangeNotifier {
             book.cur -= 1;
           }
         }
-        calcPercent();
       }
     } catch (e) {
       print(e);
@@ -211,24 +210,7 @@ class ReadModel with ChangeNotifier {
   }
 
   void calcPercent() {
-    double preH = (cursor - 1) < 0 ? 0 : ladderH[cursor - 1];
-    int k1;
-    if ((readPages[cursor].height) == 0) {
-      k1 = 0;
-    } else {
-      k1 = (((listController.offset - preH) / (readPages[cursor].height)) * 100)
-          .toInt();
-      if (k1 < 0) {
-        k1 = 0;
-      } else if (k1 > 100) {
-        k1 = 100;
-      }
-    }
-
-    if (k1 != _percent) {
-      _percent = k1.abs();
-      notifyListeners();
-    }
+    _percent = ((book.cur / chapters.length) * 100).toInt();
   }
 
   loadPreChapter() async {
@@ -298,7 +280,7 @@ class ReadModel with ChangeNotifier {
       }
     }
     load = Load.Done;
-
+    calcPercent();
     notifyListeners();
   }
 
@@ -514,35 +496,6 @@ class ReadModel with ChangeNotifier {
     }
     return r;
   }
-
-//章节内容变动 刷新
-// freshPageContents(ReadPage readPage, {bool refresh = true}) async {
-//   switch (readPage.position) {
-//     case -1:
-//       if (prePage != null) {
-//         allContent.addAll(chapterContent(prePage));
-//         pageController.jumpToPage(
-//             prePage.pageOffsets.length + pageController.page.toInt());
-//         print("pre load ok ${pageController.page}");
-//       }
-//       break;
-//     case 0:
-//       if (curPage != null) {
-//         allContent.addAll(chapterContent(curPage));
-//         pageController.jumpToPage(0);
-//         print("cur load ok ${pageController.page}");
-//       }
-//       break;
-//     case 1:
-//       if (nextPage != null) {
-//         allContent.addAll(chapterContent(nextPage));
-//       }
-//       break;
-//   }
-//   //每次翻页刷新电池电量
-//   electricQuantity = (await Battery().batteryLevel) / 100;
-//   notifyListeners();
-// }
 
   modifyFont() async {
     if (!font) {

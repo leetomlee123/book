@@ -192,8 +192,6 @@ class DbHelper {
     }
   }
 
-
-
   Future<int> saveVoiceRecord(String key, String cover, String title,
       String author, int position, int idx, String chapter) async {
     var dbClient = await db4;
@@ -253,8 +251,6 @@ class DbHelper {
     await dbClient.rawDelete("delete from $_tableName3 where key=?", [key]);
   }
 
-
-
   Future<Null> updBookStatus(String bookId, int s) async {
     var dbClient = await db1;
     dbClient.rawUpdate(
@@ -262,12 +258,12 @@ class DbHelper {
     // await close();
   }
 
-  Future<Null> updBook(
-      String lastChapter, int newStatus, String utime, String bookId) async {
+  Future<Null> updBook(String lastChapter, int newStatus, String utime,
+      String img, String bookId) async {
     var dbClient = await db1;
     dbClient.rawUpdate(
-        "update $_tableName1 set lastChapter=?,newChapter=?,utime=? where book_id=?",
-        [lastChapter, newStatus, utime, bookId]);
+        "update $_tableName1 set lastChapter=?,newChapter=?,utime=?,img=? where book_id=?",
+        [lastChapter, newStatus, utime, img, bookId]);
   }
 
   Future<Null> delBookAndCps(String bookId) async {

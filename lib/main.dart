@@ -94,13 +94,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       ),
       label: '书架',
     ),
-    BottomNavigationBarItem(
-      icon: ImageIcon(
-        AssetImage("images/good.png"),
-        size: 27,
-      ),
-      label: '精选',
-    ),
+    // BottomNavigationBarItem(
+    //   icon: ImageIcon(
+    //     AssetImage("images/good.png"),
+    //     size: 27,
+    //   ),
+    //   label: '精选',
+    // ),
 
   ];
 
@@ -109,7 +109,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   /*
    * 存储的四个页面，和Fragment一样
    */
-  var _pages = [BookShelf(), GoodBook()];
+  var _pages = [BookShelf()];
 
   // var _pages = [BookShelf(), GoodBook(), Video(), YoutubePlayerDemoApp()];
 
@@ -163,16 +163,16 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
                 //回调函数
                 itemCount: _pages.length,
                 itemBuilder: (context, index) => _pages[index]),
-            bottomNavigationBar: BottomNavigationBar(
-              unselectedItemColor: model.dark ? Colors.white : Colors.black,
-              elevation: 3,
-              items: bottoms,
-              type: BottomNavigationBarType.fixed,
-              currentIndex: _tabIndex,
-              onTap: (index) {
-                _pageController.jumpToPage(index);
-              },
-            ),
+            // bottomNavigationBar: BottomNavigationBar(
+            //   unselectedItemColor: model.dark ? Colors.white : Colors.black,
+            //   elevation: 3,
+            //   items: bottoms,
+            //   type: BottomNavigationBarType.fixed,
+            //   currentIndex: _tabIndex,
+            //   onTap: (index) {
+            //     _pageController.jumpToPage(index);
+            //   },
+            // ),
           );
         }),
         data: model.theme,

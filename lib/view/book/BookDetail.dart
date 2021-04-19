@@ -36,7 +36,6 @@ class _BookDetailState extends State<BookDetail> {
   ColorModel _colorModel;
   ShelfModel _shelfModel;
   ReadModel _readModel;
-  bool inShelf = false;
   bool reading = false;
   int maxLines = 3;
   List<Color> colors = [];
@@ -66,10 +65,7 @@ class _BookDetailState extends State<BookDetail> {
     _shelfModel = Store.value<ShelfModel>(context);
     _readModel = Store.value<ReadModel>(context);
     getBkColor();
-    inShelf = _shelfModel.shelf
-        .map((f) => f.Id)
-        .toList()
-        .contains(this.widget._bookInfo.Id);
+
     reading = ((_readModel?.book?.Id ?? "") == book.Id);
   }
 
@@ -445,88 +441,80 @@ class _BookDetailState extends State<BookDetail> {
               ])),
             ],
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              unselectedItemColor: _colorModel.dark ? Colors.white : null,
-              //底部导航栏的创建需要对应的功能标签作为子项，这里我就写了3个，每个子项包含一个图标和一个title。
-              items: [
-                inShelf
-                    ? BottomNavigationBarItem(
-                        icon: Icon(
-                          Icons.clear,
+          Store.connect<ShelfModel>(
+              builder: (context, ShelfModel model, child) {
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
+                unselectedItemColor: _colorModel.dark ? Colors.white : null,
+                items: [
+                  model.inShelf(this.widget._bookInfo.Id)
+                      ? BottomNavigationBarItem(
+                          icon: Icon(
+                            Icons.clear,
+                          ),
+                          label: '移除书架',
+                        )
+                      : BottomNavigationBarItem(
+                          icon: Icon(
+                            Icons.playlist_add,
+                          ),
+                          label: '加入书架',
                         ),
-                        label: '移除书架',
-                      )
-                    : BottomNavigationBarItem(
-                        icon: Icon(
-                          Icons.playlist_add,
-                        ),
-                        label: '加入书架',
-                      ),
 
-                BottomNavigationBarItem(
-                  icon: ImageIcon(
-                    AssetImage("images/read.png"),
+                  BottomNavigationBarItem(
+                    icon: ImageIcon(
+                      AssetImage("images/read.png"),
+                    ),
+                    label: '${reading ? "继续" : "立即"}阅读',
                   ),
-                  label: '${reading ? "继续" : "立即"}阅读',
-                ),
-                // BottomNavigationBarItem(
-                //   icon: Icon(
-                //     Icons.cloud_download,
-                //   ),
-                //   label: '全本缓存',
-                // ),
-              ],
-
-              onTap: (int i) {
-                switch (i) {
-                  case 0:
-                    {
-                      if (mounted) {
-                        setState(() {
-                          Store.value<ShelfModel>(context).modifyShelf(book);
-
-                          inShelf = _shelfModel.shelf
-                              .map((f) => f.Id)
-                              .toList()
-                              .contains(this.widget._bookInfo.Id);
-                        });
+                  // BottomNavigationBarItem(
+                  //   icon: Icon(
+                  //     Icons.cloud_download,
+                  //   ),
+                  //   label: '全本缓存',
+                  // ),
+                ],
+                onTap: (int i) {
+                  switch (i) {
+                    case 0:
+                      {
+                        Store.value<ShelfModel>(context).modifyShelf(book);
                       }
-                    }
-                    break;
-                  case 1:
-                    {
-                      if (reading) {
-                        Navigator.pop(context);
-                        Navigator.pop(context);
-                      } else {
-                        Routes.navigateTo(
-                          context,
-                          Routes.read,
-                          params: {
-                            'read': jsonEncode(book),
-                          },
-                        );
+                      break;
+                    case 1:
+                      {
+                        if (reading) {
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                        } else {
+                          Routes.navigateTo(
+                            context,
+                            Routes.read,
+                            params: {
+                              'read': jsonEncode(book),
+                            },
+                          );
+                        }
                       }
-                    }
-                    break;
-                  // case 2:
-                  //   {
-                  //     BotToast.showText(text: "开始下载...");
-                  //
-                  //     var value = Store.value<ReadModel>(context);
-                  //     value.book = _bookInfo as Book;
-                  //     value.book.UTime = _bookInfo.LastTime;
-                  //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
-                  //     value.downloadAll();
-                  //   }
-                  //   break;
-                }
-              },
-            ),
-          )
+                      break;
+                    // case 2:
+                    //   {
+                    //     BotToast.showText(text: "开始下载...");
+                    //
+                    //     var value = Store.value<ReadModel>(context);
+                    //     value.book = _bookInfo as Book;
+                    //     value.book.UTime = _bookInfo.LastTime;
+                    //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
+                    //     value.downloadAll();
+                    //   }
+                    //   break;
+                  }
+                },
+              ),
+            );
+          }),
         ],
       ),
     );

@@ -73,7 +73,6 @@ class Login extends StatelessWidget {
                 shrinkWrap: true,
                 padding: EdgeInsets.only(left: 24.0, right: 24.0),
                 children: <Widget>[
-                  Center(child: Text('登录',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 25),),),
                   SizedBox(height: 68.0),
                   TextFormField(
                     autofocus: false,

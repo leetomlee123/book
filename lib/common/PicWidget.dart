@@ -23,6 +23,19 @@ class PicWidget extends StatelessWidget {
       // ]),
       child: CachedNetworkImage(
         imageUrl: url,
+        placeholder: (context,imageProvider)=>Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+              borderRadius:
+              roll ? BorderRadius.circular(35) : BorderRadius.circular(0),
+              image: DecorationImage(
+                image: AssetImage(
+                  "images/nocover.jpg",
+                ),
+                fit: BoxFit.cover,
+              )),
+        ),
         imageBuilder: (context, imageProvider) => ClipRRect(
 //        borderRadius: BorderRadius.circular(5),
           child: Container(

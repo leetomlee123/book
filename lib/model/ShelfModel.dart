@@ -10,6 +10,10 @@ import 'package:flutter/cupertino.dart';
 class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
 
+  bool inShelf(var id) {
+    return shelf.map((f) => f.Id).toList().contains(id);
+  }
+
   Future<void> setShelf() async {
     if (_dbHelper == null) {
       _dbHelper = DbHelper();
@@ -132,7 +136,9 @@ class ShelfModel with ChangeNotifier {
               shelf[i].UTime = bs[j].UTime;
               shelf[i].LastChapter = bs[j].LastChapter;
               shelf[i].NewChapterCount = 1;
-              _dbHelper.updBook(bs[j].LastChapter, 1, bs[j].UTime, shelf[i].Id);
+              shelf[i].Img = bs[j].Img;
+              _dbHelper.updBook(
+                  bs[j].LastChapter, 1, bs[j].UTime, bs[j].Img, shelf[i].Id);
             }
           }
         }
