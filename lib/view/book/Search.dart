@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
@@ -185,16 +185,10 @@ class _SearchState extends State<Search> {
                                 const EdgeInsets.only(left: 10.0, top: 10.0),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(5),
-                              child: Container(
+                              child: PicWidget(
+                                searchModel.bks[i]?.Img ?? "",
                                 height: 115,
                                 width: 90,
-                                decoration: BoxDecoration(
-                                  image: DecorationImage(
-                                    image: NetworkImage(
-                                        searchModel.bks[i]?.Img ?? ""),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
                               ),
                             ),
                           )
@@ -244,7 +238,8 @@ class _SearchState extends State<Search> {
                   ),
                   onTap: () async {
                     String url = Common.detail + '/${searchModel.bks[i].Id}';
-                    Response future = await HttpUtil(showLoading: true).http().get(url);
+                    Response future =
+                        await HttpUtil(showLoading: true).http().get(url);
                     var d = future.data['data'];
                     BookInfo b = BookInfo.fromJson(d);
                     Routes.navigateTo(context, Routes.detail,
@@ -276,9 +271,7 @@ class _SearchState extends State<Search> {
             width: (ScreenUtil.getScreenW(context) - 40) / 3,
             height: ((ScreenUtil.getScreenW(context) - 40) / 3) * 1.2,
           ),
-          Expanded(
-            child: Container(),
-          ),
+          Spacer(),
           Text(
             gbk.name,
             maxLines: 1,

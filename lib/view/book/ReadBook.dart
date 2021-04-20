@@ -89,9 +89,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Future<void> deactivate() async {
     super.deactivate();
     FlutterStatusbarManager.setFullscreen(false);
-   await readModel.saveData();
+    await readModel.saveData();
     readModel.clear();
-
   }
 
   @override
@@ -120,17 +119,27 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         fit: BoxFit.cover)),
                 //内容
                 model.isPage
-                    ? PageView.builder(
-                        controller: model.pageController,
-                        physics: AlwaysScrollableScrollPhysics(),
-                        itemBuilder: (BuildContext context, int position) {
-                          return model.allContent[position];
+                    ? NotificationListener<ScrollNotification>(
+                        onNotification: (ScrollNotification notification) {
+                          if (notification.depth == 0 &&
+                              notification is ScrollEndNotification) {
+                            final PageMetrics metrics = notification.metrics;
+                            final int currentPage = metrics.page.round();
+                            model.changeChapter(currentPage);
+                          }
+                          return false;
                         },
-                        //条目个数
-                        itemCount: (model.prePage?.pageOffsets?.length ?? 0) +
-                            (model.curPage?.pageOffsets?.length ?? 0) +
-                            (model.nextPage?.pageOffsets?.length ?? 0),
-                        onPageChanged: (idx) => model.changeChapter(idx),
+                        child: PageView.builder(
+                          controller: model.pageController,
+                          physics: AlwaysScrollableScrollPhysics(),
+                          itemBuilder: (BuildContext context, int position) {
+                            return model.allContent[position];
+                          },
+                          //条目个数
+                          itemCount: (model.prePage?.pageOffsets?.length ?? 0) +
+                              (model.curPage?.pageOffsets?.length ?? 0) +
+                              (model.nextPage?.pageOffsets?.length ?? 0),
+                        ),
                       )
                     : Container(
                         width: Screen.width,
@@ -159,16 +168,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                               width: Screen.width,
                               height: model.contentH,
                               child: ListView.builder(
-                                  itemCount: model.readPages.length,
-                                  itemBuilder:
-                                      (BuildContext context, int index) {
-                                    return model.allContent[index];
-                                  },
-                                  controller: model.listController,
-                                  cacheExtent:
-                                      model.readPages[model.cursor].height,
-                                ),
-                             
+                                itemCount: model.readPages.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  return model.allContent[index];
+                                },
+                                controller: model.listController,
+                                cacheExtent:
+                                    model.readPages[model.cursor].height,
+                              ),
                             ),
                             Store.connect<ReadModel>(builder:
                                 (context, ReadModel _readModel, child) {

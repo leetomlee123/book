@@ -13,9 +13,10 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/widgets/text_ellipsis.dart';
+import 'package:book/widgets/text_two.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
-import 'package:extended_text/extended_text.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
@@ -34,10 +35,10 @@ class BookDetail extends StatefulWidget {
 class _BookDetailState extends State<BookDetail> {
   Book book;
   ColorModel _colorModel;
-  ShelfModel _shelfModel;
   ReadModel _readModel;
   bool reading = false;
   int maxLines = 3;
+  bool ellipsis = true;
   List<Color> colors = [];
 
   @override
@@ -62,7 +63,7 @@ class _BookDetailState extends State<BookDetail> {
         this.widget._bookInfo.LastTime);
     super.initState();
     _colorModel = Store.value<ColorModel>(context);
-    _shelfModel = Store.value<ShelfModel>(context);
+
     _readModel = Store.value<ReadModel>(context);
     getBkColor();
 
@@ -168,47 +169,7 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   Widget _bookDesc() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(
-            left: 17.0,
-            top: 5.0,
-          ),
-          child: Text(
-            '简介',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-        ),
-        Padding(
-            padding: const EdgeInsets.only(
-                left: 17.0, top: 5.0, right: 17.0, bottom: 10.0),
-            child: ExtendedText(
-              this.widget._bookInfo.Desc ?? "".trim(),
-              maxLines: maxLines,
-              overflowWidget: TextOverflowWidget(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const Text('\u2026 '),
-                    GestureDetector(
-                      child: const Text(
-                        '更多',
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                      onTap: () {
-                        setState(() {
-                          maxLines = 100;
-                        });
-                      },
-                    )
-                  ],
-                ),
-              ),
-            )),
-      ],
-    );
+    return TextEllipsis(this.widget._bookInfo.Desc ?? "".trim());
   }
 
   Widget _bookMenu() {
@@ -222,9 +183,8 @@ class _BookDetailState extends State<BookDetail> {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.only(left: 17.0, top: 15.0),
-          child: new Text(
+          child: Text(
             '目录',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
         ),
         ListTile(
@@ -232,20 +192,23 @@ class _BookDetailState extends State<BookDetail> {
           leading: Container(
             width: 70,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Icon(Icons.access_time),
                 SizedBox(
                   width: 5,
                 ),
-                Text('最新')
+                TextTwo(
+                  '最新',
+                )
               ],
             ),
           ),
-          title: Text(
+          title: TextTwo(
             this.widget._bookInfo.LastChapter,
-            style: TextStyle(fontSize: 14),
+            fontSize: 14,
             maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           onTap: () {
             //标志是从书的最后一章开始看
@@ -274,7 +237,7 @@ class _BookDetailState extends State<BookDetail> {
             padding: const EdgeInsets.only(left: 17.0, top: 15.0, bottom: 10),
             child: Text(
               '作者还写过:',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 15),
             ),
           ),
           ListView.builder(
@@ -422,9 +385,15 @@ class _BookDetailState extends State<BookDetail> {
               SliverList(
                   delegate: SliverChildListDelegate([
                 _bookDesc(),
-                Divider(),
+                Divider(
+                  endIndent: 12,
+                  indent: 12,
+                ),
                 _bookMenu(),
-                Divider(),
+                Divider(
+                  endIndent: 12,
+                  indent: 12,
+                ),
                 _sameAuthorBooks(),
                 Padding(
                   padding: const EdgeInsets.only(left: 17.0, top: 15.0),
