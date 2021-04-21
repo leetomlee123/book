@@ -8,6 +8,8 @@ class ReadSetting {
   static String latterSpace = "LATTER_SPACE";
   static double listPageChapterName=200;
   static double listPageBottom=Screen.height/2;
+  static String temp_w="temp_w";
+  static String temp_h="temp_h";
 
   static String poet = '世人为荣利缠缚，动曰尘世苦海，不知云白山青，川行石立，花迎鸟笑，谷答樵讴，世亦不尘、海亦不苦、彼自尘苦其心尔';
   static String lawWarn =
@@ -55,5 +57,17 @@ class ReadSetting {
 
   static void calcFontSize(double size) {
     setFontSize(getFontSize() + size);
+  }
+  static double getTempH() {
+    return SpUtil.getDouble(temp_h, defValue: 0);
+  }
+  static void setTempH(double h) {
+     SpUtil.putDouble(temp_h, h);
+  }
+  static double getTempW() {
+    return SpUtil.getDouble(temp_w, defValue: 0);
+  }
+  static void setTempW(double w) {
+    SpUtil.putDouble(temp_w, w);
   }
 }

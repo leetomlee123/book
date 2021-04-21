@@ -34,7 +34,7 @@ dependencies:
   dio: ^3.0.10
   convert: ^3.0.0
   extended_text: ^5.0.2
-  json_annotation: ^2.0.0
+  json_annotation: ^4.0.0
   event_bus: ^2.0.0
   flustars: ^2.0.1
   flutter_statusbar_manager: 
@@ -55,8 +55,8 @@ dependencies:
   cupertino_icons: ^1.0.2
 
 dev_dependencies:
-#  build_runner: ^1.12.1
-#  json_serializable: ^4.0.2
+  build_runner: ^1.12.1
+  json_serializable: ^4.0.2
   flutter_test:
     sdk: flutter
 

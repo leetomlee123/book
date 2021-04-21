@@ -11,11 +11,13 @@ import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
+import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/EveryPoet.dart';
 import 'package:book/entity/ReadPage.dart';
+import 'package:book/entity/TextPage.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
@@ -39,7 +41,6 @@ class ReadModel with ChangeNotifier {
   var currentPageValue = 0.0;
   String poet = "";
   var topSafeHeight = .0;
-
   var electricQuantity = 1.0;
 
   // double allContentHeight = 0;
@@ -56,9 +57,7 @@ class ReadModel with ChangeNotifier {
   ReadPage curPage;
   ReadPage nextPage;
   List<Widget> allContent = [];
-  int _percent = 0;
-
-  int get percent => _percent;
+  double percent = 0;
 
   //页面控制器
   PageController pageController;
@@ -136,9 +135,8 @@ class ReadModel with ChangeNotifier {
       if (isPage) {
         if (book.index == -1) {
           //最后一页
-          book.index = (prePage?.pageOffsets?.length ?? 0) +
-              (curPage?.pageOffsets?.length ?? 0) -
-              1;
+          book.index =
+              (prePage?.pageOffsets ?? 0) + (curPage?.pageOffsets ?? 0) - 1;
         }
         pageController = PageController(initialPage: book.index);
       } else {
@@ -173,7 +171,7 @@ class ReadModel with ChangeNotifier {
       }
       await initPageContent(book?.cur ?? 0, false);
       if (isPage) {
-        int idx = (cur == 0) ? 0 : (prePage?.pageOffsets?.length ?? 0);
+        int idx = (cur == 0) ? 0 : (prePage?.pageOffsets ?? 0);
         book.index = idx;
         pageController = PageController(initialPage: idx);
       } else {
@@ -210,7 +208,7 @@ class ReadModel with ChangeNotifier {
   }
 
   void calcPercent() {
-    _percent = ((book.cur / chapters.length) * 100).toInt();
+    percent = (((book.cur) / (chapters.length)) * 100).toDouble();
   }
 
   loadPreChapter() async {
@@ -349,9 +347,8 @@ class ReadModel with ChangeNotifier {
 //触发章节
   changeChapter(int idx) async {
     book.index = idx;
-    int preLen = prePage?.pageOffsets?.length ?? 0;
-    int curLen = curPage?.pageOffsets?.length ?? 0;
-
+    int preLen = prePage?.pageOffsets ?? 0;
+    int curLen = curPage?.pageOffsets ?? 0;
     if ((idx + 1 - preLen) > (curLen)) {
       //下一章
       int tempCur = book.cur + 1;
@@ -361,14 +358,14 @@ class ReadModel with ChangeNotifier {
       } else {
         book.cur += 1;
         prePage = curPage;
-        if (nextPage.chapterName == "-1") {
+        if ((nextPage?.chapterName ?? "") == "-1") {
           BotToast.showCustomLoading(
               toastBuilder: (_) => LoadingDialog(),
               clickClose: true,
               backgroundColor: Colors.transparent);
           curPage = await loadChapter(book.cur);
-          int preLen = prePage?.pageOffsets?.length ?? 0;
-          int curLen = curPage?.pageOffsets?.length ?? 0;
+          int preLen = prePage?.pageOffsets ?? 0;
+          int curLen = curPage?.pageOffsets ?? 0;
           book.index = preLen + curLen - 1;
           BotToast.closeAllLoading();
         } else {
@@ -376,7 +373,7 @@ class ReadModel with ChangeNotifier {
         }
         nextPage = null;
         fillAllContent();
-        pageController.jumpToPage(prePage?.pageOffsets?.length ?? 0);
+        pageController.jumpToPage(prePage?.pageOffsets ?? 0);
         ReadPage temp = await loadChapter(book.cur + 1);
         if (book.cur == tempCur) {
           nextPage = temp;
@@ -385,7 +382,6 @@ class ReadModel with ChangeNotifier {
       }
     } else if (idx < preLen) {
       //上一章
-      print('上一张');
       int tempCur = book.cur - 1;
       if (tempCur < 0) {
         return;
@@ -395,13 +391,13 @@ class ReadModel with ChangeNotifier {
         curPage = prePage;
         prePage = null;
         fillAllContent();
-        var p = curPage?.pageOffsets?.length ?? 0;
+        var p = curPage?.pageOffsets ?? 0;
         pageController.jumpToPage(p > 0 ? p - 1 : 0);
         ReadPage temp = await loadChapter(book.cur - 1);
         if (tempCur == book.cur) {
           prePage = temp;
           fillAllContent();
-          int ix = (prePage?.pageOffsets?.length ?? 0) + idx;
+          int ix = (prePage?.pageOffsets ?? 0) + idx;
           pageController.jumpToPage(ix);
         }
       }
@@ -441,13 +437,11 @@ class ReadModel with ChangeNotifier {
     ReadPage r = new ReadPage();
     if (idx < 0) {
       r.chapterName = "1";
-      r.pageOffsets = List(1);
       r.height = Screen.height;
       r.chapterContent = "Fall In Love At First Sight ,Miss.Zhang";
       return r;
     } else if (idx == chapters.length) {
       r.chapterName = "-1";
-      r.pageOffsets = List(1);
       r.height = Screen.height;
       r.chapterContent = "没有更多内容,等待作者更新";
       return r;
@@ -468,7 +462,6 @@ class ReadModel with ChangeNotifier {
     }
     if (r.chapterContent.isEmpty) {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
-      r.pageOffsets = [(r.chapterContent.length - 1).toString()];
       return r;
     }
     //本地是否有分页的缓存
@@ -476,14 +469,15 @@ class ReadModel with ChangeNotifier {
       var k = '${book.Id}pages' + r.chapterName;
 
       if (SpUtil.haveKey(k)) {
-        r.pageOffsets = SpUtil.getStringList(k);
+        r.textComposition = TextComposition.parContent(r);
+        List<TextPage> list =
+            SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
+        r.textComposition.pages = list;
         SpUtil.remove(k);
       } else {
-        r.pageOffsets = ReaderPageAgent()
-            .getPageOffsets(r.chapterContent, contentH, contentW);
+        r.textComposition = TextComposition.parContent(r, parse: true);
       }
     } else {
-      r.pageOffsets = [r.chapterContent];
       String k = '${book.Id}height' + r.chapterName;
       if (SpUtil.haveKey(k)) {
         r.height = SpUtil.getDouble(k);
@@ -527,12 +521,12 @@ class ReadModel with ChangeNotifier {
       if (isPage) {
         await DbHelper.instance
             .updBookProcess(book?.cur ?? 0, book?.index ?? 0, 0.0, book.Id);
-        SpUtil.putStringList('${book.Id}pages${prePage?.chapterName ?? ' '}',
-            prePage?.pageOffsets ?? []);
-        SpUtil.putStringList('${book.Id}pages${curPage?.chapterName ?? ''}',
-            curPage?.pageOffsets ?? []);
-        SpUtil.putStringList('${book.Id}pages${nextPage?.chapterName ?? ''}',
-            nextPage?.pageOffsets ?? []);
+        SpUtil.putObjectList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+            prePage?.textComposition?.pages ?? []);
+        SpUtil.putObjectList('${book.Id}pages${curPage?.chapterName ?? ''}',
+            curPage?.textComposition?.pages ?? []);
+        SpUtil.putObjectList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+            nextPage?.textComposition?.pages ?? []);
       } else {
         double p1 = ladderH[cursor + 1] - listController.offset;
         p1 = (readPages[cursor - 1].height +
@@ -663,7 +657,6 @@ class ReadModel with ChangeNotifier {
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
-    String cts = r.chapterContent;
 
     if (r.chapterName == "-1" || r.chapterName == "1") {
       contents.add(GestureDetector(
@@ -674,19 +667,8 @@ class ReadModel with ChangeNotifier {
         },
       ));
     } else {
-      int sum = r.pageOffsets.length;
+      int sum = r.pageOffsets;
       for (int i = 0; i < sum; i++) {
-        String content;
-        if (isPage) {
-          int end = int.parse(r.pageOffsets[i]);
-          content = cts.substring(0, end);
-
-          cts = cts.substring(end, cts.length);
-
-          while (cts.startsWith("\n")) {
-            cts = cts.substring(1);
-          }
-        }
         contents.add(Store.connect<ColorModel>(
             builder: (context, ColorModel model, child) {
           return GestureDetector(
@@ -698,9 +680,9 @@ class ReadModel with ChangeNotifier {
                   ? Container(
                       child: Column(
                         children: <Widget>[
-                          SizedBox(height: topSafeHeight),
+                          SizedBox(height: topSafeHeight - 2),
                           pageHead(r, model),
-                          pageMiddleContent(content, model, (i + 1) == sum),
+                          r.textComposition.getPageWidget(i),
                           pageFoot(model, i, r)
                         ],
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -794,7 +776,7 @@ class ReadModel with ChangeNotifier {
           ),
           Spacer(),
           Text(
-            '第${i + 1}/${r.pageOffsets.length}页',
+            '第${i + 1}/${r.pageOffsets}页',
             style: TextStyle(
               fontSize: 12 / Screen.textScaleFactor,
               color: model.dark ? Color(0x8FFFFFFF) : Colors.black54,
@@ -1014,7 +996,7 @@ class ReadModel with ChangeNotifier {
             });
         initPageContent(book.cur, true);
         pageController = PageController(
-            keepPage: false, initialPage: curPage?.pageOffsets?.length ?? 0);
+            keepPage: false, initialPage: curPage?.pageOffsets ?? 0);
         notifyListeners();
         break;
       default:
