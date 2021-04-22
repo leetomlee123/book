@@ -35,6 +35,8 @@ enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
+  TextComposition textComposition;
+
   Book book;
   List<Chapter> chapters = [];
   EveryPoet _everyPoet;
@@ -326,6 +328,25 @@ class ReadModel with ChangeNotifier {
     BotToast.closeAllLoading();
   }
 
+  colorModelSwitch() async {
+    var model = Store.value<ColorModel>(context);
+    var color = model.dark ? Color(0x8FFFFFFF) : Colors.black;
+    if ((prePage?.textComposition ?? null) != null) {
+      prePage.textComposition.style =
+          prePage.textComposition.style.copyWith(color: color);
+    }
+    if ((curPage?.textComposition ?? null) != null) {
+      curPage.textComposition.style =
+          curPage.textComposition.style.copyWith(color: color);
+    }
+    if ((nextPage?.textComposition ?? null) != null) {
+      nextPage.textComposition.style =
+          nextPage.textComposition.style.copyWith(color: color);
+    }
+
+    fillAllContent();
+  }
+
   fillAllContent({bool refresh = true}) async {
     allContent = [];
     if (prePage != null) {
@@ -464,18 +485,27 @@ class ReadModel with ChangeNotifier {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
       return r;
     }
+    var model = Store.value<ColorModel>(context);
+
     //本地是否有分页的缓存
     if (isPage) {
       var k = '${book.Id}pages' + r.chapterName;
-
       if (SpUtil.haveKey(k)) {
-        r.textComposition = TextComposition.parContent(r);
+        r.textComposition = TextComposition.parContent(
+            r, model.dark ? Color(0x8FFFFFFF) : Colors.black);
         List<TextPage> list =
             SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
         r.textComposition.pages = list;
         SpUtil.remove(k);
       } else {
-        r.textComposition = TextComposition.parContent(r, parse: true);
+        if ((r?.textComposition?.pages ?? null) != null) {
+          r.textComposition = TextComposition.parContent(
+              r, model.dark ? Color(0x8FFFFFFF) : Colors.black);
+        } else {
+          r.textComposition = TextComposition.parContent(
+              r, model.dark ? Color(0x8FFFFFFF) : Colors.black,
+              parse: true);
+        }
       }
     } else {
       String k = '${book.Id}height' + r.chapterName;

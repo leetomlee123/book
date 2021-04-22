@@ -1,4 +1,8 @@
+import 'dart:ui' as ui;
+
+import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -28,6 +32,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Widget body;
   ReadModel readModel;
   ColorModel colorModel;
+  TextComposition textComposition;
   List<String> bgImg = [
     "QR_bg_1.jpg",
     "QR_bg_2.jpg",
@@ -65,6 +70,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       readModel.bgIdx = SpUtil.getInt('bgIdx');
     }
     readModel.topSafeHeight = Screen.topSafeHeight;
+
+
     // readModel.contentH =
     //     Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
     // ReadSetting.setTempH(Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight);
@@ -118,6 +125,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             : "images/${bgImg[model?.bgIdx ?? 0]}",
                         fit: BoxFit.cover)),
                 //内容
+                // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
                 GestureDetector(
                   child: model.isPage
                       ? PageView.builder(

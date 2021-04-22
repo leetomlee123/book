@@ -19,9 +19,10 @@ class TextComposition {
   /// 已经预处理: 不重新计算空行 不重新缩进
   final List<String> paragraphs;
   bool parse;
+  bool justRender;
 
   /// 字体样式 字号 [size] 行高 [height] 字体 [family] 字色[Color]
-  final TextStyle style;
+  TextStyle style;
 
   /// 段间距
   final double paragraph;
@@ -88,6 +89,7 @@ class TextComposition {
     List<String> paragraphs,
     this.style,
     this.parse,
+    this.justRender,
     Size boxSize,
     this.padding,
     this.shouldJustifyHeight = true,
@@ -173,15 +175,22 @@ class TextComposition {
             tp.layout();
             spacing = (_width - tp.width) / textCount;
           }
-          lines.add(TextLine(text, dx, dy, spacing??0));
+          lines.add(TextLine(text, dx, dy, spacing ?? 0));
           dy += tp.height;
-          if (p.length == textCount) {
-            newParagraph();
-            break;
+          if (justRender) {
+            if (p.length == textCount) {
+              newParagraph();
+              break;
+            }
           } else {
-            p = p.substring(textCount);
-            if (dy > _height2) {
-              newPage();
+            if (p.length == textCount) {
+              newParagraph();
+              break;
+            } else {
+              p = p.substring(textCount);
+              if (dy > _height2) {
+                newPage();
+              }
             }
           }
         }
@@ -224,14 +233,15 @@ class TextComposition {
         .paint(canvas, boxSize);
   }
 
-  static TextComposition parContent(ReadPage readPage,
-      {shouldJustifyHeight = true, parse = false}) {
+  static TextComposition parContent(ReadPage readPage, Color color,
+      {shouldJustifyHeight = true, parse = false, justRender = false}) {
     final width = ui.window.physicalSize.width / ui.window.devicePixelRatio;
     TextComposition textComposition = TextComposition(
       text: readPage.chapterContent,
       parse: parse,
+      justRender: justRender,
       style: TextStyle(
-          color: Colors.black,
+          color: color,
           locale: Locale('zh_CN'),
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
           fontSize: ReadSetting.getFontSize(),
@@ -243,7 +253,7 @@ class TextComposition {
           : width > 500
               ? 2
               : 1,
-      paragraph: 10.0,
+      paragraph: 13.0,
       boxSize: Size(Screen.width,
           Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight),
       padding: EdgeInsets.only(left: 17, right: 13),

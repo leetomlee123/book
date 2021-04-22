@@ -508,8 +508,9 @@ class _MenuState extends State<Menu> {
                   ],
                 ),
               ),
-              onTap: () {
+              onTap: () async {
                 Store.value<ColorModel>(context).switchModel();
+                await _readModel.colorModelSwitch();
               }),
           buildBottomItem('缓存', Icons.cloud_download),
           buildBottomItem('设置', Icons.settings),
