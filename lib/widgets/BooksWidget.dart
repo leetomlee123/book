@@ -88,12 +88,12 @@ class _BooksWidgetState extends State<BooksWidget> {
   Widget coverModel() {
     return GridView(
       shrinkWrap: true,
-      padding: EdgeInsets.all(10.0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 10.0,
-          crossAxisSpacing: 10.0,
-          childAspectRatio: 0.75),
+      padding: EdgeInsets.symmetric(horizontal: 15,vertical: 5),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 90,
+          // mainAxisSpacing: 10.0,
+          crossAxisSpacing: 20.0,
+          childAspectRatio: 0.43),
       children: cover(),
     );
   }
@@ -111,35 +111,24 @@ class _BooksWidgetState extends State<BooksWidget> {
             Stack(
               alignment: AlignmentDirectional.topCenter,
               children: <Widget>[
-                Container(
-                  child: PicWidget(
+              Column(children: [
+                  PicWidget(
                     book.Img,
-                    width: (ScreenUtil.getScreenW(context) - 100) / 3,
-                    height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
+                    // width: 100,
+                    // height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
                   ),
-                  decoration:
-                      BoxDecoration(shape: BoxShape.rectangle, boxShadow: [
-                    BoxShadow(
-                        offset: Offset(2, 1), //x,y轴
-                        color: Colors.black38, //投影颜色
-                        blurRadius: 10.0 //投影距离
-                        )
-                  ]),
-                ),
+                  SizedBox(height: 5,),
+                  Center(child: Text(book.Name),)
+              ],),
                 book.NewChapterCount == 1
-                    ? Container(
-                        width: (ScreenUtil.getScreenW(context) - 100) / 3,
-                        height:
-                            ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
-                        child: Align(
+                    ? Align(
                           alignment: Alignment.topRight,
                           child: Image.asset(
                             'images/h6.png',
                             width: 30,
                             height: 30,
                           ),
-                        ),
-                      )
+                        )
                     : Container(),
                 this.widget.type == "sort"
                     ? GestureDetector(
