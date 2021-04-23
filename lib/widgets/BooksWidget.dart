@@ -118,7 +118,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                     // height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
                   ),
                   SizedBox(height: 5,),
-                  Center(child: Text(book.Name),)
+                  Center(child: Text(book.Name,maxLines: 2,overflow: TextOverflow.ellipsis,),)
               ],),
                 book.NewChapterCount == 1
                     ? Align(

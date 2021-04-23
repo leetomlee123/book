@@ -113,7 +113,7 @@ class _ChapterViewItem extends State<ChapterView> {
                   ),
                   Spacer(),
                   Icon(
-                    Icons.arrow_forward_ios_sharp,
+                    Icons.arrow_forward_sharp,
                     color: colorModel.dark?Colors.white24:Colors.black26,
                   )
                 ],

@@ -8,7 +8,6 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
-import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/parse_html.dart';
@@ -36,6 +35,7 @@ enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
+  Color darkFont = Color(0x5FFFFFFF);
   TextComposition textComposition;
 
   Book book;
@@ -94,6 +94,7 @@ class ReadModel with ChangeNotifier {
   bool jump = true;
 
   //阅读方式
+  // bool isPage = false;
   bool isPage = SpUtil.getBool("isPage", defValue: true);
 
   //页面上下文
@@ -331,7 +332,7 @@ class ReadModel with ChangeNotifier {
 
   colorModelSwitch() async {
     var model = Store.value<ColorModel>(context);
-    var color = model.dark ? Color(0x8FFFFFFF) : Colors.black;
+    var color = model.dark ? darkFont : Colors.black;
     if ((prePage?.textComposition ?? null) != null) {
       prePage.textComposition.style =
           prePage.textComposition.style.copyWith(color: color);
@@ -459,12 +460,12 @@ class ReadModel with ChangeNotifier {
     ReadPage r = new ReadPage();
     if (idx < 0) {
       r.chapterName = "1";
-      r.height = Screen.height;
+      // r.height = Screen.height;
       r.chapterContent = "Fall In Love At First Sight ,Miss.Zhang";
       return r;
     } else if (idx == chapters.length) {
       r.chapterName = "-1";
-      r.height = Screen.height;
+      // r.height = Screen.height;
       r.chapterContent = "没有更多内容,等待作者更新";
       return r;
     }
@@ -493,8 +494,8 @@ class ReadModel with ChangeNotifier {
     if (isPage) {
       var k = '${book.Id}pages' + r.chapterName;
       if (SpUtil.haveKey(k)) {
-        r.textComposition = TextComposition.parContent(
-            r, model.dark ? Color(0x8FFFFFFF) : Colors.black);
+        r.textComposition =
+            TextComposition.parContent(r, model.dark ? darkFont : Colors.black);
         List<TextPage> list =
             SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
         r.textComposition.pages = list;
@@ -502,10 +503,10 @@ class ReadModel with ChangeNotifier {
       } else {
         if ((r?.textComposition?.pages ?? null) != null) {
           r.textComposition = TextComposition.parContent(
-              r, model.dark ? Color(0x8FFFFFFF) : Colors.black);
+              r, model.dark ? darkFont : Colors.black);
         } else {
           r.textComposition = TextComposition.parContent(
-              r, model.dark ? Color(0x8FFFFFFF) : Colors.black,
+              r, model.dark ? darkFont : Colors.black,
               parse: true);
         }
       }
@@ -515,8 +516,11 @@ class ReadModel with ChangeNotifier {
         r.height = SpUtil.getDouble(k);
         SpUtil.remove(k);
       } else {
-        r.height = ReaderPageAgent().getPageHeight(r.chapterContent, contentW);
+        r.textComposition = TextComposition.parContent(
+            r, model.dark ? darkFont : Colors.black,
+            justRender: true, parse: true);
         //章节内容不满一页 按一页算
+        r.height = (r.textComposition?.pages?.first?.height ?? 0)+ReadSetting.listPageBottom;
         r.height = r.height >= Screen.height ? r.height : Screen.height;
       }
     }
@@ -722,64 +726,7 @@ class ReadModel with ChangeNotifier {
                       width: double.infinity,
                       height: double.infinity,
                     )
-                  : Container(
-                      margin: const EdgeInsets.only(left: 17, right: 13),
-                      alignment: Alignment.centerLeft,
-                      child: Column(
-                        children: [
-                          Container(
-                            child: Center(
-                              child: Text(
-                                r.chapterName,
-                                style: TextStyle(
-                                    fontFamily: SpUtil.getString("fontName",
-                                        defValue: "Roboto"),
-                                    color: model.dark
-                                        ? Color(0x8FFFFFFF)
-                                        : Colors.black,
-                                    locale: Locale('zh_CN'),
-                                    letterSpacing: ReadSetting.getLatterSpace(),
-                                    fontSize: ReadSetting.getFontSize() + 3,
-                                    height: ReadSetting.getLineHeight()),
-                              ),
-                            ),
-                            height: ReadSetting.listPageChapterName,
-                          ),
-                          RichText(
-                            textAlign: TextAlign.justify,
-                            textScaleFactor: Screen.textScaleFactor,
-                            text: TextSpan(children: [
-                              TextSpan(
-                                text: r.chapterContent,
-                                style: TextStyle(
-                                    fontFamily: SpUtil.getString("fontName",
-                                        defValue: "Roboto"),
-                                    color: model.dark
-                                        ? Color(0x8FFFFFFF)
-                                        : Colors.black,
-                                    locale: Locale('zh_CN'),
-                                    decorationStyle: TextDecorationStyle.wavy,
-                                    letterSpacing: ReadSetting.getLatterSpace(),
-                                    fontSize: ReadSetting.getFontSize(),
-                                    height: ReadSetting.getLineHeight()),
-                              )
-                            ]),
-                          ),
-                          Container(
-                            child: Center(
-                              child: Text(
-                                poet,
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    color: randomColor(),
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            width: Screen.width,
-                            height: ReadSetting.listPageBottom,
-                          )
-                        ],
-                      )));
+                  : Padding(padding: EdgeInsets.only(bottom: ReadSetting.listPageBottom),child: r.textComposition.getPageWidget(),));
         }));
       }
     }
@@ -803,7 +750,7 @@ class ReadModel with ChangeNotifier {
             '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
             style: TextStyle(
               fontSize: 12 / Screen.textScaleFactor,
-              color: model.dark ? Color(0x8FFFFFFF) : Colors.black54,
+              color: model.dark ? darkFont : Colors.black54,
             ),
           ),
           Spacer(),
@@ -811,7 +758,7 @@ class ReadModel with ChangeNotifier {
             '第${i + 1}/${r.pageOffsets}页',
             style: TextStyle(
               fontSize: 12 / Screen.textScaleFactor,
-              color: model.dark ? Color(0x8FFFFFFF) : Colors.black54,
+              color: model.dark ? darkFont : Colors.black54,
             ),
             textAlign: TextAlign.center,
           ),
@@ -834,7 +781,7 @@ class ReadModel with ChangeNotifier {
                   style: TextStyle(
                       fontFamily:
                           SpUtil.getString("fontName", defValue: "Roboto"),
-                      color: model.dark ? Color(0x8FFFFFFF) : Colors.black,
+                      color: model.dark ? darkFont : Colors.black,
                       locale: Locale('zh_CN'),
                       decorationStyle: TextDecorationStyle.wavy,
                       letterSpacing: ReadSetting.getLatterSpace(),
@@ -854,7 +801,7 @@ class ReadModel with ChangeNotifier {
         r.chapterName,
         style: TextStyle(
           fontSize: 12 / Screen.textScaleFactor,
-          color: model.dark ? Color(0x8FFFFFFF) : Colors.black54,
+          color: model.dark ? darkFont : Colors.black54,
         ),
         overflow: TextOverflow.ellipsis,
       ),
@@ -1010,12 +957,12 @@ class ReadModel with ChangeNotifier {
   }
 
   getEveyPoet() async {
-    if (!isPage) {
-      var url = "https://v2.jinrishici.com/one.json";
+    // if (!isPage) {
+    //   var url = "https://v2.jinrishici.com/one.json";
 
-      var future = await HttpUtil().http().get(url);
-      poet = future.data['data']['content'];
-    }
+    //   var future = await HttpUtil().http().get(url);
+    //   poet = future.data['data']['content'];
+    // }
   }
 
   Future<void> switchFlipType(FlipType flipType) async {
@@ -1025,13 +972,13 @@ class ReadModel with ChangeNotifier {
         readPages = [];
         cursor = 1;
         ladderH = [];
+        calcPercent();
         SpUtil.putBool("isPage", false);
         SpUtil.getKeys().forEach((v) => {
               if (v.contains("height") || v.contains("pages"))
                 {SpUtil.remove(v)}
             });
         if (listController == null) {
-          print('init');
           await initPageContent(book.cur, false);
           listController = ScrollController(
               initialScrollOffset: ladderH[cursor - 1],
@@ -1071,7 +1018,7 @@ class ReadModel with ChangeNotifier {
   void addReadPage(ReadPage r) {
     int len = ladderH.length;
     if (len == 0) {
-      ladderH.add(r.height);
+      ladderH.add(r?.height??Screen.height/2);
     } else {
       ladderH.add(ladderH[len - 1] + r.height);
     }

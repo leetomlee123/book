@@ -1,6 +1,3 @@
-import 'dart:ui' as ui;
-
-import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
@@ -10,6 +7,7 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/Menu.dart';
+import 'package:book/view/book/ScrollViewBook.dart';
 import 'package:book/view/system/BatteryView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -71,9 +69,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     }
     readModel.topSafeHeight = Screen.topSafeHeight;
 
-
-    // readModel.contentH =
-    //     Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
+    readModel.contentH =
+        Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
     // ReadSetting.setTempH(Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight);
     // ReadSetting.setTempW(Screen.width - 30.0);
     FlutterStatusbarManager.setFullscreen(true);
@@ -135,7 +132,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             return model.allContent[position];
                           },
                           //条目个数
-                          itemCount: model?.allContent?.length??0,
+                          itemCount: model?.allContent?.length ?? 0,
                           onPageChanged: (page) => model.changeChapter(page),
                         )
                       : Container(
@@ -161,37 +158,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Container(
-                                  width: Screen.width,
-                                  height: model.contentH,
-                                  child:
-                                      NotificationListener<ScrollNotification>(
-                                    onNotification:
-                                        (ScrollNotification notification) {
-                                      if (notification.depth == 0 &&
-                                          notification
-                                              is ScrollEndNotification) {
-                                        model.notifyOffset();
-                                      }
-                                      return false;
-                                    },
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        children: model.allContent,
-                                      ),
-                                      controller: model.listController,
-                                    ),
-                                  )
-                                  // child: ListView.builder(
-                                  //   itemCount: model.readPages.length,
-                                  //   itemBuilder: (BuildContext context, int index) {
-                                  //     return model.allContent[index];
-                                  //   },
-                                  //   controller: model.listController,
-                                  //   cacheExtent:
-                                  //       model.readPages[model.cursor].height,
-                                  // ),
-                                  ),
+                              BookScrollView(),
                               Store.connect<ReadModel>(builder:
                                   (context, ReadModel _readModel, child) {
                                 return Container(

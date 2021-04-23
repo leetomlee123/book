@@ -13,13 +13,12 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/BookHeadBgColor.dart';
 import 'package:book/widgets/text_ellipsis.dart';
 import 'package:book/widgets/text_two.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-import 'package:palette_generator/palette_generator.dart';
 
 class BookDetail extends StatefulWidget {
   final BookInfo _bookInfo;
@@ -39,7 +38,6 @@ class _BookDetailState extends State<BookDetail> {
   bool reading = false;
   int maxLines = 3;
   bool ellipsis = true;
-  List<Color> colors = [];
 
   @override
   void initState() {
@@ -65,21 +63,8 @@ class _BookDetailState extends State<BookDetail> {
     _colorModel = Store.value<ColorModel>(context);
 
     _readModel = Store.value<ReadModel>(context);
-    getBkColor();
 
     reading = ((_readModel?.book?.Id ?? "") == book.Id);
-  }
-
-  getBkColor() async {
-    PaletteGenerator fromImageProvider =
-        await PaletteGenerator.fromImageProvider(
-            CachedNetworkImageProvider(book.Img));
-    fromImageProvider.paletteColors.forEach((element) {
-      colors.add(element.color);
-    });
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   Widget _bookHead() {
@@ -363,17 +348,7 @@ class _BookDetailState extends State<BookDetail> {
                   // title: const Text('Demo'),
                   background: Stack(
                     children: [
-                      Offstage(
-                          offstage: colors.isEmpty,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: colors,
-                              ),
-                            ),
-                          )),
+                      BookHeadBgColor(book.Img),
                       Padding(
                         padding: EdgeInsets.only(top: 100),
                         child: _bookHead(),

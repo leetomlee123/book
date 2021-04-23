@@ -393,13 +393,13 @@ class _MenuState extends State<Menu> {
           width: 10,
         ),
         operate(Text("上下"), () {
-          _readModel.switchFlipType(FlipType.LIST_VIEW);
+          // _readModel.switchFlipType(FlipType.LIST_VIEW);
         }),
         SizedBox(
           width: 10,
         ),
         operate(Text("平滑"), () {
-          _readModel.switchFlipType(FlipType.PAGE_VIEW_SMOOTH);
+          // _readModel.switchFlipType(FlipType.PAGE_VIEW_SMOOTH);
         }),
       ],
     );

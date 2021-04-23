@@ -1,5 +1,6 @@
 library text_composition;
 
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
@@ -123,7 +124,8 @@ class TextComposition {
     final _width = columnWidth;
     final _width2 = _width - size;
     final _height = this.boxSize.height - (padding?.vertical ?? 0);
-    final _height2 = _height - size * (style.height ?? 1.0);
+    final _height2 =
+        justRender ? 100000000000 : _height - size * (style.height ?? 1.0);
 
     var lines = <TextLine>[];
     var columnNum = 1;
@@ -177,20 +179,14 @@ class TextComposition {
           }
           lines.add(TextLine(text, dx, dy, spacing ?? 0));
           dy += tp.height;
-          if (justRender) {
-            if (p.length == textCount) {
-              newParagraph();
-              break;
-            }
+
+          if (p.length == textCount) {
+            newParagraph();
+            break;
           } else {
-            if (p.length == textCount) {
-              newParagraph();
-              break;
-            } else {
-              p = p.substring(textCount);
-              if (dy > _height2) {
-                newPage();
-              }
+            p = p.substring(textCount);
+            if (dy > _height2) {
+              newPage();
             }
           }
         }
@@ -211,21 +207,28 @@ class TextComposition {
     // if (pageIndex != null && !changePage(pageIndex)) return Container();
     return Container(
       width: boxSize.width,
-      height:
-          boxSize.height.isInfinite ? pages[pageIndex].height : boxSize.height,
+      height: justRender
+          ? pages[pageIndex].height
+          : (boxSize.height.isInfinite
+              ? pages[pageIndex].height
+              : boxSize.height),
       child: CustomPaint(
           painter: PagePainter(pageIndex, pages[pageIndex], style, debug)),
     );
   }
 
-  Future<ui.Image> getImage(int pageIndex) async {
+  Future<ByteData> getImage(int pageIndex) async {
     final recorder = ui.PictureRecorder();
     final canvas = new Canvas(recorder,
         Rect.fromPoints(Offset.zero, Offset(boxSize.width, boxSize.height)));
     PagePainter(pageIndex, pages[pageIndex], style, debug)
         .paint(canvas, boxSize);
     final picture = recorder.endRecording();
-    return await picture.toImage(boxSize.width.floor(), boxSize.height.floor());
+    final img =
+        await picture.toImage(boxSize.width.floor(), boxSize.height.floor());
+
+    final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    return pngBytes;
   }
 
   void paint(int pageIndex, Canvas canvas) {
