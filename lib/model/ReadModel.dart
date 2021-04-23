@@ -11,6 +11,7 @@ import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/ReaderPageAgent.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
+import 'package:book/common/parse_html.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
@@ -472,7 +473,8 @@ class ReadModel with ChangeNotifier {
     String id = chapters[idx].id;
     //本地内容是否存在
     if (chapters[idx].hasContent != 2) {
-      r.chapterContent = await compute(requestDataWithCompute, id);
+      // r.chapterContent = await compute(requestDataWithCompute, id);
+      r.chapterContent = await getChapterContent(id, idx: idx);
       if (r.chapterContent.isNotEmpty) {
         var temp = [ChapterNode(r.chapterContent, id)];
         DbHelper.instance.udpChapter(temp);
@@ -886,10 +888,7 @@ class ReadModel with ChangeNotifier {
   Future<void> reloadCurrentPage() async {
     toggleShowMenu();
     var chapter = chapters[book.cur];
-    var future = await HttpUtil(showLoading: true)
-        .http()
-        .get(Common.reload + '/${chapter.id}/reload');
-    var content = future.data['data']['content'];
+    var content = await getChapterContent(chapter.id, idx: book.cur);
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.id)];
       await DbHelper.instance.udpChapter(temp);
@@ -927,7 +926,8 @@ class ReadModel with ChangeNotifier {
       Chapter chapter = temp[i];
       var id = chapter.id;
       if (chapter.hasContent != 2) {
-        String content = await compute(requestDataWithCompute, id);
+        // String content = await compute(requestDataWithCompute, id);
+        String content = await getChapterContent(id);
         if (content.isNotEmpty) {
           cpNodes.add(ChapterNode(content, id));
         }
@@ -942,6 +942,31 @@ class ReadModel with ChangeNotifier {
       cpNodes.clear();
     }
     BotToast.showText(text: "${book?.Name ?? ""}下载完成");
+  }
+
+  Future<String> getChapterContent(String id, {int idx}) async {
+    var url = Common.bookContentUrl + '/$id';
+    var responseBody = await HttpUtil().http().get(url);
+
+    var data = responseBody.data['data'];
+    var link = data['link'];
+    if (chapters.isNotEmpty && idx != null) {
+      chapters[idx].link = link;
+    }
+    var content = data['content'].toString();
+    if (content.isNotEmpty &&
+        !content.contains("DEMOONE") &&
+        !content.contains("请重新刷新页面")) {
+      return content;
+    }
+    try {
+      content = await ParseHtml.content(link);
+      var formData = FormData.fromMap({"id": id, "content": content});
+      HttpUtil().http().patch(Common.bookContentUpload, data: formData);
+    } catch (e) {
+      content = "章节内容加载失败,请重试.......";
+    }
+    return content;
   }
 
   static Future<String> requestDataWithCompute(String id) async {

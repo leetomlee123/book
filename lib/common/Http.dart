@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_retry/dio_retry.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,46 +16,44 @@ class HttpUtil {
   HttpUtil({this.showLoading = false});
 
   Dio http() {
-    _dio = new Dio();
-    // _dio.options.connectTimeout = 10000;
+    _dio = new Dio()
+      ..interceptors.add(RetryInterceptor(
+          options: const RetryOptions(
+        retries: 3, // Number of retries before a failure
+        retryInterval:
+            const Duration(seconds: 1), // Interval between each retry
+      )))
+      ..interceptors
+          .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
+        // Do something before request is sent
+        if (showLoading) {
+          BotToast.showCustomLoading(
+              toastBuilder: (_) => LoadingDialog(),
+              backgroundColor: Colors.transparent);
+        }
+        if (SpUtil.haveKey("auth")) {
+          options.headers.addAll(({"auth": SpUtil.getString("auth")}));
+        }
+        return options; //continue
+        // If you want to resolve the request with some custom data，
+        // you can return a `Response` object or return `dio.resolve(data)`.
+        // If you want to reject the request with a error message,
+        // you can return a `DioError` object or return `dio.reject(errMsg)`
+      }, onResponse: (Response response) async {
+        // Do something with response data
+        if (showLoading) {
+          BotToast.closeAllLoading();
+        }
+        // if (response.data['code'] != 200) {
+        //   BotToast.showText(text: response.data['msg']);
+        // }
+        return response; // continue
+      }, onError: (DioError e) async {
+        // Do something with response error
 
-//    var dic = DirectoryUtil.getAppDocPath();
-//    _dio.httpClientAdapter = Http2Adapter(
-//      ConnectionManager(
-//        idleTimeout: 10000,
-//        /// Ignore bad certificate
-//        onClientCreate: (_, clientSetting) => clientSetting.onBadCertificate = (_) => true,
-//      ),
-//    );
-    _dio.interceptors
-        .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
-      // Do something before request is sent
-      if (showLoading) {
-        BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog(),backgroundColor: Colors.transparent);
-      }
-      if (SpUtil.haveKey("auth")) {
-        options.headers.addAll(({"auth": SpUtil.getString("auth")}));
-      }
-      return options; //continue
-      // If you want to resolve the request with some custom data，
-      // you can return a `Response` object or return `dio.resolve(data)`.
-      // If you want to reject the request with a error message,
-      // you can return a `DioError` object or return `dio.reject(errMsg)`
-    }, onResponse: (Response response) async {
-      // Do something with response data
-      if (showLoading) {
-        BotToast.closeAllLoading();
-      }
-      // if (response.data['code'] != 200) {
-      //   BotToast.showText(text: response.data['msg']);
-      // }
-      return response; // continue
-    }, onError: (DioError e) async {
-      // Do something with response error
-
-      formatError(e);
-      return e; //continue
-    }));
+        formatError(e);
+        return e; //continue
+      }));
     return _dio;
   }
 

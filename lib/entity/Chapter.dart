@@ -7,6 +7,7 @@ class Chapter {
   int hasContent = 1;
   String id;
   String name;
+  String link;
 
   factory Chapter.fromJson(Map<String, dynamic> json) =>
       _$ChapterFromJson(json);

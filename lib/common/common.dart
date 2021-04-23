@@ -23,6 +23,7 @@ class Common {
   static String bookInfo = domain + "/book/info/";
   static String chaptersUrl = domain + "/book/chapters";
   static String bookContentUrl = domain + '/book/chapter';
+  static String bookContentUpload = domain + '/book/chapter/content';
   static String reload = domain + '/book/chapter';
   static String bookAction = domain + '/book/action';
   static String process = domain + '/book/process';

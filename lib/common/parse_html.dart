@@ -9,10 +9,16 @@ import 'Http.dart';
 class ParseHtml {
   //
   static Future<String> content(String url) async {
+    print("base parse $url");
     var c = "";
     var html = await HttpUtil().http().get(url);
     var document = parse(html.data);
-    Element content = document.getElementById("content");
+    Element content;
+    if (url.contains("qvyue")) {
+      content = document.getElementById("BookText");
+    } else {
+      content = document.getElementById("content");
+    }
     content.nodes.forEach((element) {
       var text = element.text.trim();
       if (text.isNotEmpty) {

@@ -90,18 +90,18 @@ class SearchModel with ChangeNotifier {
       print(bks.length);
     } else {
 //    /movies
-      var url = '${Common.movie_search}/$word/search/$page/tv';
-
-      Response res = await HttpUtil(showLoading: true).http().get(url);
-      List data = res.data;
-      if (data?.isEmpty ?? true) {
-        refreshController.loadNoData();
-      } else {
-        for (var d in data) {
-          mks.add(GBook.fromJson(d));
-        }
-        refreshController.loadComplete();
-      }
+//       var url = '${Common.movie_search}/$word/search/$page/tv';
+//
+//       Response res = await HttpUtil(showLoading: true).http().get(url);
+//       List data = res.data;
+//       if (data?.isEmpty ?? true) {
+//         refreshController.loadNoData();
+//       } else {
+//         for (var d in data) {
+//           mks.add(GBook.fromJson(d));
+//         }
+//         refreshController.loadComplete();
+//       }
     }
   }
 
@@ -342,20 +342,20 @@ class SearchModel with ChangeNotifier {
 
   Future<void> initMovieHot() async {
     hot = [];
-    Response res = await HttpUtil().http().get(Common.movie_hot);
-    List data = res.data;
-    List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
-    for (var i = 0; i < hbs.length; i++) {
-      hot.add(GestureDetector(
-        child: Chip(
-          label: Text(hbs[i].name),
-        ),
-        onTap: () async {
-          Routes.navigateTo(context, Routes.vDetail,
-              params: {"gbook": jsonEncode(hbs[i])});
-        },
-      ));
-    }
+    // Response res = await HttpUtil().http().get(Common.movie_hot);
+    // List data = res.data;
+    // List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
+    // for (var i = 0; i < hbs.length; i++) {
+    //   hot.add(GestureDetector(
+    //     child: Chip(
+    //       label: Text(hbs[i].name),
+    //     ),
+    //     onTap: () async {
+    //       Routes.navigateTo(context, Routes.vDetail,
+    //           params: {"gbook": jsonEncode(hbs[i])});
+    //     },
+    //   ));
+    // }
     notifyListeners();
   }
 

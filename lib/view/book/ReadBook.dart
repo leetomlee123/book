@@ -135,7 +135,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             return model.allContent[position];
                           },
                           //条目个数
-                          itemCount: model.allContent.length,
+                          itemCount: model?.allContent?.length??0,
                           onPageChanged: (page) => model.changeChapter(page),
                         )
                       : Container(
