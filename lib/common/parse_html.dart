@@ -16,6 +16,8 @@ class ParseHtml {
     Element content;
     if (url.contains("qvyue")) {
       content = document.getElementById("BookText");
+    } else if (url.contains("iqb5")) {
+      content = document.getElementById("contents");
     } else {
       content = document.getElementById("content");
     }
