@@ -594,6 +594,8 @@ class _MenuState extends State<Menu> {
             if (cv.dark) {
               cv.switchModel();
             }
+            await _readModel.colorModelSwitch();
+
             _readModel.switchBgColor(i);
           });
         },
