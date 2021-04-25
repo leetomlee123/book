@@ -589,7 +589,11 @@ class _MenuState extends State<Menu> {
       var f = "images/${bgImg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () {
-          setState(() {
+          setState(() async {
+            var cv = Store.value<ColorModel>(context);
+            if (cv.dark) {
+              cv.switchModel();
+            }
             _readModel.switchBgColor(i);
           });
         },
