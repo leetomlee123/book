@@ -520,7 +520,8 @@ class ReadModel with ChangeNotifier {
             r, model.dark ? darkFont : Colors.black,
             justRender: true, parse: true);
         //章节内容不满一页 按一页算
-        r.height = (r.textComposition?.pages?.first?.height ?? 0)+ReadSetting.listPageBottom;
+        r.height = (r.textComposition?.pages?.first?.height ?? 0) +
+            ReadSetting.listPageBottom;
         r.height = r.height >= Screen.height ? r.height : Screen.height;
       }
     }
@@ -726,7 +727,11 @@ class ReadModel with ChangeNotifier {
                       width: double.infinity,
                       height: double.infinity,
                     )
-                  : Padding(padding: EdgeInsets.only(bottom: ReadSetting.listPageBottom),child: r.textComposition.getPageWidget(),));
+                  : Padding(
+                      padding:
+                          EdgeInsets.only(bottom: ReadSetting.listPageBottom),
+                      child: r.textComposition.getPageWidget(),
+                    ));
         }));
       }
     }
@@ -835,7 +840,12 @@ class ReadModel with ChangeNotifier {
   Future<void> reloadCurrentPage() async {
     toggleShowMenu();
     var chapter = chapters[book.cur];
+    BotToast.showCustomLoading(
+        toastBuilder: (_) => LoadingDialog(),
+        clickClose: true,
+        backgroundColor: Colors.transparent);
     var content = await getChapterContent(chapter.id, idx: book.cur);
+    BotToast.closeAllLoading();
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.id)];
       await DbHelper.instance.udpChapter(temp);
@@ -911,7 +921,7 @@ class ReadModel with ChangeNotifier {
       var formData = FormData.fromMap({"id": id, "content": content});
       HttpUtil().http().patch(Common.bookContentUpload, data: formData);
     } catch (e) {
-      content = "章节内容加载失败,请重试.......";
+      content = "章节内容加载失败,请重试......./n$link";
     }
     return content;
   }
@@ -1018,7 +1028,7 @@ class ReadModel with ChangeNotifier {
   void addReadPage(ReadPage r) {
     int len = ladderH.length;
     if (len == 0) {
-      ladderH.add(r?.height??Screen.height/2);
+      ladderH.add(r?.height ?? Screen.height / 2);
     } else {
       ladderH.add(ladderH[len - 1] + r.height);
     }

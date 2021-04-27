@@ -35,7 +35,6 @@ dependencies:
   path_provider: ^2.0.1
   dio: ^3.0.10
   convert: ^3.0.0
-  extended_text: ^5.0.2
   json_annotation: ^4.0.0
   event_bus: ^2.0.0
   flustars: ^2.0.1
@@ -43,7 +42,6 @@ dependencies:
       git:
         url: https://github.com/Gentleflow/flutter_statusbar_manager.git
   bot_toast: ^4.0.1
-  flutter_spinkit: ^4.1.2
   pull_to_refresh: ^1.6.4
   provider: ^5.0.0
   url_launcher: ^6.0.2

@@ -148,20 +148,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.0"
-  extended_text:
-    dependency: "direct main"
-    description:
-      name: extended_text
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "5.0.2"
-  extended_text_library:
-    dependency: transitive
-    description:
-      name: extended_text_library
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "5.0.2"
   fake_async:
     dependency: transitive
     description:
@@ -265,13 +251,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.1.2"
-  flutter_spinkit:
-    dependency: "direct main"
-    description:
-      name: flutter_spinkit
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "4.1.2+1"
   flutter_statusbar_manager:
     dependency: "direct main"
     description:

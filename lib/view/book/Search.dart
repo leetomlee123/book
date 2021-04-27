@@ -170,6 +170,7 @@ class _SearchState extends State<Search> {
       onLoading: searchModel.onLoading,
       child: isBookSearch
           ? ListView.builder(
+            itemExtent: 130,
               itemBuilder: (context, i) {
                 var auth = searchModel.bks[i].Author;
 //                var cate = searchModel.bks[i].CName??"";
