@@ -1,7 +1,6 @@
-### 抽个时间把前后端部署文档整理一下[博客](https://leetomlee123.github.io/)
+### [博客](https://leetomlee123.github.io/)
 
-### 写flutter图个乐 牛逼还是java
-### 第一次写app 代码写的平铺直叙 初学者借鉴很容易  高手勿喷 
+
 
 # 小书屋
 一款网络小说阅读器📕,采用纯flutter编写，支持追书、看书等功能 
@@ -11,8 +10,6 @@ dart,provider,eventbus,dio等
 感谢Jetbrain 的支持 😀😀😀
 ## QQ群 会发Release包
 953457248
-## 有机场需要的朋友 低至1元每月哦
-[邀请链接](https://www.googo.ml/auth/register?code=5nrE)
 ## TIP
 服务器是阿里云1Core2G弱鸡服务器,请各位大神手下留情不要攻击或者爬取数据,供大家学习使用
 ## 待解决问题
