@@ -5,6 +5,7 @@ import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
@@ -541,8 +542,8 @@ class _MenuState extends State<Menu> {
         switch (title) {
           case '目录':
             {
-              // eventBus.fire(OpenChapters("dd"));
-              Routes.navigateTo(context, Routes.chapters);
+              eventBus.fire(OpenChapters("dd"));
+              // Routes.navigateTo(context, Routes.chapters,replace: true);
               _readModel.toggleShowMenu();
             }
             break;

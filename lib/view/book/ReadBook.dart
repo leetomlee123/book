@@ -6,6 +6,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/ScrollViewBook.dart';
 import 'package:book/view/system/BatteryView.dart';
@@ -29,6 +30,7 @@ class ReadBook extends StatefulWidget {
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Widget body;
   ReadModel readModel;
+ final _scaffoldKey = GlobalKey<ScaffoldState>();
   ColorModel colorModel;
   TextComposition textComposition;
   List<String> bgImg = [
@@ -58,7 +60,9 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     eventBus.on<ZEvent>().listen((event) {
       move(event.isPage, event.offset);
     });
-
+    eventBus.on<OpenChapters>().listen((event) {
+     _scaffoldKey.currentState.openDrawer();
+    });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
     readModel.context = context;
@@ -91,6 +95,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   @override
   Future<void> deactivate() async {
+    print("deactuvate");
     super.deactivate();
     FlutterStatusbarManager.setFullscreen(false);
     await readModel.saveData();
@@ -99,116 +104,129 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(onWillPop: () async {
-      if (!Store.value<ShelfModel>(context)
-          .exitsInBookShelfById(readModel.book.Id)) {
-        await confirmAddToShelf(context);
-      }
-      return true;
-    }, child: Scaffold(body:
-        Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
-      return model.loadOk
-          ? Stack(
-              children: <Widget>[
-                //背景
-                Positioned(
-                    left: 0,
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Image.asset(
-                        Store.value<ColorModel>(context).dark
-                            ? 'images/QR_bg_4.jpg'
-                            : "images/${bgImg[model?.bgIdx ?? 0]}",
-                        fit: BoxFit.cover)),
-                //内容
-                // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
-                GestureDetector(
-                  child: model.isPage
-                      ? PageView.builder(
-                          controller: model.pageController,
-                          physics: AlwaysScrollableScrollPhysics(),
-                          itemBuilder: (BuildContext context, int position) {
-                            return model.allContent[position];
-                          },
-                          //条目个数
-                          itemCount: model?.allContent?.length ?? 0,
-                          onPageChanged: (page) => model.changeChapter(page),
-                        )
-                      : Container(
-                          width: Screen.width,
-                          height: Screen.height,
-                          child: Column(
-                            children: [
-                              SizedBox(
-                                height: model.topSafeHeight,
-                              ),
-                              Container(
-                                height: 30,
-                                alignment: Alignment.centerLeft,
-                                padding: EdgeInsets.only(left: 20),
-                                child: Text(
-                                  model.readPages[model.cursor].chapterName,
-                                  style: TextStyle(
-                                    fontSize: 12 / Screen.textScaleFactor,
-                                    color: colorModel.dark
-                                        ? Color(0x8FFFFFFF)
-                                        : Colors.black54,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              BookScrollView(),
-                              Store.connect<ReadModel>(builder:
-                                  (context, ReadModel _readModel, child) {
-                                return Container(
-                                  height: 30,
-                                  padding: EdgeInsets.symmetric(horizontal: 20),
-                                  child: Row(
-                                    children: <Widget>[
-                                      BatteryView(
-                                        electricQuantity:
-                                            _readModel.electricQuantity,
-                                      ),
+    return WillPopScope(
+        onWillPop: () async {
+          if (!Store.value<ShelfModel>(context)
+              .exitsInBookShelfById(readModel.book.Id)) {
+            await confirmAddToShelf(context);
+          }
+          return true;
+        },
+        child: Scaffold(
+          key: _scaffoldKey,
+            drawer:Drawer(child: ChapterView(),),
+            body: Store.connect<ReadModel>(
+                builder: (context, ReadModel model, child) {
+              return model.loadOk
+                  ? Stack(
+                      children: <Widget>[
+                        //背景
+                        Positioned(
+                            left: 0,
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Image.asset(
+                                Store.value<ColorModel>(context).dark
+                                    ? 'images/QR_bg_4.jpg'
+                                    : "images/${bgImg[model?.bgIdx ?? 0]}",
+                                fit: BoxFit.cover)),
+                        //内容
+                        // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
+                        GestureDetector(
+                          child: model.isPage
+                              ? PageView.builder(
+                                  controller: model.pageController,
+                                  physics: AlwaysScrollableScrollPhysics(),
+                                  itemBuilder:
+                                      (BuildContext context, int position) {
+                                    return model.allContent[position];
+                                  },
+                                  //条目个数
+                                  itemCount: model?.allContent?.length ?? 0,
+                                  onPageChanged: (page) =>
+                                      model.changeChapter(page),
+                                )
+                              : Container(
+                                  width: Screen.width,
+                                  height: Screen.height,
+                                  child: Column(
+                                    children: [
                                       SizedBox(
-                                        width: 4,
+                                        height: model.topSafeHeight,
                                       ),
-                                      Text(
-                                        '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                                        style: TextStyle(
-                                          fontSize: 12 / Screen.textScaleFactor,
-                                          color: colorModel.dark
-                                              ? Color(0x8FFFFFFF)
-                                              : Colors.black54,
+                                      Container(
+                                        height: 30,
+                                        alignment: Alignment.centerLeft,
+                                        padding: EdgeInsets.only(left: 20),
+                                        child: Text(
+                                          model.readPages[model.cursor]
+                                              .chapterName,
+                                          style: TextStyle(
+                                            fontSize:
+                                                12 / Screen.textScaleFactor,
+                                            color: colorModel.dark
+                                                ? Color(0x8FFFFFFF)
+                                                : Colors.black54,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      Spacer(),
-                                      Text(
-                                        '${_readModel.percent.toStringAsFixed(1)}%',
-                                        style: TextStyle(
-                                          fontSize: 12 / Screen.textScaleFactor,
-                                          color: colorModel.dark
-                                              ? Color(0x8FFFFFFF)
-                                              : Colors.black54,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      // Expanded(child: Container()),
+                                      BookScrollView(),
+                                      Store.connect<ReadModel>(builder:
+                                          (context, ReadModel _readModel,
+                                              child) {
+                                        return Container(
+                                          height: 30,
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 20),
+                                          child: Row(
+                                            children: <Widget>[
+                                              BatteryView(
+                                                electricQuantity:
+                                                    _readModel.electricQuantity,
+                                              ),
+                                              SizedBox(
+                                                width: 4,
+                                              ),
+                                              Text(
+                                                '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                                                style: TextStyle(
+                                                  fontSize: 12 /
+                                                      Screen.textScaleFactor,
+                                                  color: colorModel.dark
+                                                      ? Color(0x8FFFFFFF)
+                                                      : Colors.black54,
+                                                ),
+                                              ),
+                                              Spacer(),
+                                              Text(
+                                                '${_readModel.percent.toStringAsFixed(1)}%',
+                                                style: TextStyle(
+                                                  fontSize: 12 /
+                                                      Screen.textScaleFactor,
+                                                  color: colorModel.dark
+                                                      ? Color(0x8FFFFFFF)
+                                                      : Colors.black54,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                              // Expanded(child: Container()),
+                                            ],
+                                          ),
+                                        );
+                                      }),
                                     ],
-                                  ),
-                                );
-                              }),
-                            ],
-                          )),
-                  onTapDown: (TapDownDetails details) =>
-                      model.tapPage(context, details),
-                ),
-                //菜单
-                Offstage(offstage: !model.showMenu, child: Menu()),
-              ],
-            )
-          : Container();
-    })));
+                                  )),
+                          onTapDown: (TapDownDetails details) =>
+                              model.tapPage(context, details),
+                        ),
+                        //菜单
+                        Offstage(offstage: !model.showMenu, child: Menu()),
+                      ],
+                    )
+                  : Container();
+            })));
   }
 
   Future confirmAddToShelf(BuildContext context) async {

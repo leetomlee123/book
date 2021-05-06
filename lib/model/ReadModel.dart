@@ -817,6 +817,7 @@ class ReadModel with ChangeNotifier {
     allContent = null;
     chapters = [];
     loadOk = false;
+    book = null;
   }
 
   Future<void> reloadChapters() async {
@@ -921,7 +922,7 @@ class ReadModel with ChangeNotifier {
       var formData = FormData.fromMap({"id": id, "content": content});
       HttpUtil().http().patch(Common.bookContentUpload, data: formData);
     } catch (e) {
-      content = "章节内容加载失败,请重试......./n$link";
+      content = "章节内容加载失败,请重试.......\n$link";
     }
     return content;
   }

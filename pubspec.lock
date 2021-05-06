@@ -126,14 +126,7 @@ packages:
       name: dio
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "3.0.10"
-  dio_retry:
-    dependency: "direct main"
-    description:
-      name: dio_retry
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.1.9-beta"
+    version: "4.0.0"
   event_bus:
     dependency: "direct main"
     description:
@@ -175,7 +168,7 @@ packages:
       name: firebase
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "8.0.0"
+    version: "9.0.1"
   firebase_analytics:
     dependency: "direct main"
     description:
@@ -290,14 +283,14 @@ packages:
       name: http
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "0.12.2"
+    version: "0.13.2"
   http_parser:
     dependency: transitive
     description:
       name: http_parser
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "3.1.4"
+    version: "4.0.0"
   image:
     dependency: transitive
     description:
@@ -326,13 +319,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "4.0.1"
-  logging:
-    dependency: transitive
-    description:
-      name: logging
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.11.4"
   matcher:
     dependency: transitive
     description:
@@ -361,13 +347,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.3.0"
-  page_turn:
-    dependency: "direct main"
-    description:
-      name: page_turn
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "1.0.1"
   palette_generator:
     dependency: "direct main"
     description:

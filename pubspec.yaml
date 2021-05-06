@@ -17,8 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
-  dio_retry: ^0.1.9-beta
-  page_turn: ^1.0.1
+
   html: ^0.15.0
   firebase_analytics: ^7.1.1
   firebase_core: ^1.0.2
@@ -33,7 +32,7 @@ dependencies:
   shared_preferences: ^2.0.4
   cached_network_image: ^2.5.1
   path_provider: ^2.0.1
-  dio: ^3.0.10
+  dio: ^4.0.0
   convert: ^3.0.0
   json_annotation: ^4.0.0
   event_bus: ^2.0.0

@@ -7,6 +7,7 @@ class Common {
   static String video_domain = "http://134.175.83.19:8012";
 
   static String login = domain + "/login";
+  static String gitHubLogin = domain + "/oauth/redirect";
   static String freshToken = domain + "/book/freshToken";
   static String info = domain + '/info';
   static String modifypassword = domain + "/password";

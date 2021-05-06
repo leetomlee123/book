@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
@@ -35,7 +36,6 @@ class _BookDetailState extends State<BookDetail> {
   Book book;
   ColorModel _colorModel;
   ReadModel _readModel;
-  bool reading = false;
   int maxLines = 3;
   bool ellipsis = true;
 
@@ -63,8 +63,6 @@ class _BookDetailState extends State<BookDetail> {
     _colorModel = Store.value<ColorModel>(context);
 
     _readModel = Store.value<ReadModel>(context);
-
-    reading = ((_readModel?.book?.Id ?? "") == book.Id);
   }
 
   Widget _bookHead() {
@@ -411,7 +409,7 @@ class _BookDetailState extends State<BookDetail> {
                     icon: ImageIcon(
                       AssetImage("images/read.png"),
                     ),
-                    label: '${reading ? "继续" : "立即"}阅读',
+                    label: '立即阅读',
                   ),
                   // BottomNavigationBarItem(
                   //   icon: Icon(
@@ -420,7 +418,7 @@ class _BookDetailState extends State<BookDetail> {
                   //   label: '全本缓存',
                   // ),
                 ],
-                onTap: (int i) {
+                onTap: (int i) async {
                   switch (i) {
                     case 0:
                       {
@@ -429,18 +427,15 @@ class _BookDetailState extends State<BookDetail> {
                       break;
                     case 1:
                       {
-                        if (reading) {
-                          Navigator.pop(context);
-                          Navigator.pop(context);
-                        } else {
-                          Routes.navigateTo(
-                            context,
-                            Routes.read,
-                            params: {
-                              'read': jsonEncode(book),
-                            },
-                          );
-                        }
+                        Book b = await DbHelper.instance.getBook(book.Id);
+
+                        Routes.navigateTo(
+                          context,
+                          Routes.read,
+                          params: {
+                            'read': jsonEncode(b == null ? book : b),
+                          },
+                        );
                       }
                       break;
                     // case 2:

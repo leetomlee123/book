@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
-import 'package:dio_retry/dio_retry.dart';
+import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,14 +17,7 @@ class HttpUtil {
 
   Dio http() {
     _dio = new Dio()
-      ..interceptors.add(RetryInterceptor(
-          options: const RetryOptions(
-        retries: 3, // Number of retries before a failure
-        retryInterval:
-            const Duration(seconds: 1), // Interval between each retry
-      )))
-      ..interceptors
-          .add(InterceptorsWrapper(onRequest: (RequestOptions options) async {
+      ..interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
         // Do something before request is sent
         if (showLoading) {
           BotToast.showCustomLoading(
@@ -34,25 +27,28 @@ class HttpUtil {
         if (SpUtil.haveKey("auth")) {
           options.headers.addAll(({"auth": SpUtil.getString("auth")}));
         }
-        return options; //continue
+        return handler.next(options); //continue
         // If you want to resolve the request with some custom data，
-        // you can return a `Response` object or return `dio.resolve(data)`.
+        // you can resolve a `Response` object eg: `handler.resolve(response)`.
         // If you want to reject the request with a error message,
-        // you can return a `DioError` object or return `dio.reject(errMsg)`
-      }, onResponse: (Response response) async {
+        // you can reject a `DioError` object eg: `handler.reject(dioError)`
+      }, onResponse: (response, handler) {
         // Do something with response data
         if (showLoading) {
           BotToast.closeAllLoading();
         }
-        // if (response.data['code'] != 200) {
-        //   BotToast.showText(text: response.data['msg']);
-        // }
-        return response; // continue
-      }, onError: (DioError e) async {
+        return handler.next(response); // continue
+        // If you want to reject the request with a error message,
+        // you can reject a `DioError` object eg: `handler.reject(dioError)`
+      }, onError: (DioError e, handler) {
         // Do something with response error
-
+        if (showLoading) {
+          BotToast.closeAllLoading();
+        }
         formatError(e);
-        return e; //continue
+        return handler.next(e); //continue
+        // If you want to resolve the request with some custom data，
+        // you can resolve a `Response` object eg: `handler.resolve(response)`.
       }));
     return _dio;
   }
@@ -64,19 +60,19 @@ class HttpUtil {
     if (showLoading) {
       BotToast.closeAllLoading();
     }
-    if (e.type == DioErrorType.CONNECT_TIMEOUT) {
+    if (e.type == DioErrorType.connectTimeout) {
       // It occurs when url is opened timeout.
       BotToast.showText(text: "连接超时");
-    } else if (e.type == DioErrorType.SEND_TIMEOUT) {
+    } else if (e.type == DioErrorType.sendTimeout) {
       // It occurs when url is sent timeout.
       BotToast.showText(text: "请求超时");
-    } else if (e.type == DioErrorType.RECEIVE_TIMEOUT) {
+    } else if (e.type == DioErrorType.receiveTimeout) {
       //It occurs when receiving timeout
       BotToast.showText(text: "响应超时");
-    } else if (e.type == DioErrorType.RESPONSE) {
+    } else if (e.type == DioErrorType.response) {
       // When the server response, but with a incorrect status, such as 404, 503...
       BotToast.showText(text: "出现异常");
-    } else if (e.type == DioErrorType.CANCEL) {
+    } else if (e.type == DioErrorType.cancel) {
       // When the request is cancelled, dio will throw a error with this type.
       BotToast.showText(text: "请求取消");
     } else {
