@@ -10,7 +10,7 @@ class BookHeadBgColor extends StatefulWidget {
 }
 
 class _BookHeadBgColorState extends State<BookHeadBgColor> {
-  List<Color> colors = [Colors.black12];
+  List<Color> colors = [];
   @override
   void initState() {
     super.initState();
