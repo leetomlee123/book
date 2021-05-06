@@ -10,7 +10,7 @@ class BookHeadBgColor extends StatefulWidget {
 }
 
 class _BookHeadBgColorState extends State<BookHeadBgColor> {
-  List<Color> colors = [];
+  List<Color> colors = [Colors.black12];
   @override
   void initState() {
     super.initState();
@@ -18,15 +18,17 @@ class _BookHeadBgColorState extends State<BookHeadBgColor> {
   }
 
   getBkColor() async {
-    PaletteGenerator fromImageProvider =
-        await PaletteGenerator.fromImageProvider(
-            CachedNetworkImageProvider(this.widget.imgUrl));
-    fromImageProvider.paletteColors.forEach((element) {
-      colors.add(element.color);
+    PaletteGenerator.fromImageProvider(
+            CachedNetworkImageProvider(this.widget.imgUrl))
+        .then((fromImageProvider) {
+      if (mounted) {
+        setState(() {
+          fromImageProvider.paletteColors.forEach((element) {
+            colors.add(element.color);
+          });
+        });
+      }
     });
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override

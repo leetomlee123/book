@@ -18,6 +18,8 @@ class ColorModel with ChangeNotifier {
   String savePath = "";
   Map fonts = {
     "Roboto": "默认字体",
+    "方正新楷体": "https://oss-asq-download.11222.cn/font/package/FZXKTK.TTF",
+    "方正稚艺": "http://oss-asq-download.11222.cn/font/package/FZZHYK.TTF",
     "方正魏碑": "http://oss-asq-download.11222.cn/font/package/FZWBK.TTF",
     "方正苏新诗柳楷": "https://oss-asq-download.11222.cn/font/package/FZSXSLKJW.TTF",
     "方正宋刻本秀楷体": "https://oss-asq-download.11222.cn/font/package/FZSKBXKK.TTF",

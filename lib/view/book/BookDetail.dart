@@ -35,7 +35,6 @@ class BookDetail extends StatefulWidget {
 class _BookDetailState extends State<BookDetail> {
   Book book;
   ColorModel _colorModel;
-  ReadModel _readModel;
   int maxLines = 3;
   bool ellipsis = true;
 
@@ -61,8 +60,6 @@ class _BookDetailState extends State<BookDetail> {
         this.widget._bookInfo.LastTime);
     super.initState();
     _colorModel = Store.value<ColorModel>(context);
-
-    _readModel = Store.value<ReadModel>(context);
   }
 
   Widget _bookHead() {
