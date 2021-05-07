@@ -41,7 +41,7 @@ dependencies:
       git:
         url: https://github.com/Gentleflow/flutter_statusbar_manager.git
   bot_toast: ^4.0.1
-  pull_to_refresh: ^1.6.4
+  pull_to_refresh: ^1.6.5
   provider: ^5.0.0
   url_launcher: ^6.0.2
   get_it: ^6.0.0

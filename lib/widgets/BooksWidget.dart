@@ -79,7 +79,11 @@ class _BooksWidgetState extends State<BooksWidget> {
   //刷新书架
   freshShelf() async {
     if (SpUtil.haveKey('auth')) {
-      await _shelfModel.refreshShelf();
+      try {
+        await _shelfModel.refreshShelf();
+      } catch (e) {
+        _refreshController.refreshCompleted();
+      }
     }
     _refreshController.refreshCompleted();
   }
@@ -88,12 +92,12 @@ class _BooksWidgetState extends State<BooksWidget> {
   Widget coverModel() {
     return GridView(
       shrinkWrap: true,
-      padding: EdgeInsets.symmetric(horizontal: 15,vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 22, vertical: 5),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 90,
           // mainAxisSpacing: 10.0,
           crossAxisSpacing: 20.0,
-          childAspectRatio: 0.43),
+          childAspectRatio: 0.42),
       children: cover(),
     );
   }
@@ -111,24 +115,34 @@ class _BooksWidgetState extends State<BooksWidget> {
             Stack(
               alignment: AlignmentDirectional.topCenter,
               children: <Widget>[
-              Column(children: [
-                  PicWidget(
-                    book.Img,
-                    // width: 100,
-                    // height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
-                  ),
-                  SizedBox(height: 5,),
-                  Center(child: Text(book.Name,maxLines: 2,overflow: TextOverflow.ellipsis,),)
-              ],),
+                Column(
+                  children: [
+                    PicWidget(
+                      book.Img,
+                      // width: 100,
+                      // height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
+                    ),
+                    SizedBox(
+                      height: 5,
+                    ),
+                    Center(
+                      child: Text(
+                        book.Name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )
+                  ],
+                ),
                 book.NewChapterCount == 1
                     ? Align(
-                          alignment: Alignment.topRight,
-                          child: Image.asset(
-                            'images/h6.png',
-                            width: 30,
-                            height: 30,
-                          ),
-                        )
+                        alignment: Alignment.topRight,
+                        child: Image.asset(
+                          'images/h6.png',
+                          width: 30,
+                          height: 30,
+                        ),
+                      )
                     : Container(),
                 this.widget.type == "sort"
                     ? GestureDetector(
@@ -215,174 +229,171 @@ class _BooksWidgetState extends State<BooksWidget> {
   }
 
   getBookItemView(Book item, int i) {
-    return Container(child: Dismissible(
-      key: Key(item.Id.toString()),
-      child: Stack(
-        children: [
-          Container(
-
-            child: Row(
-              children: <Widget>[
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: <Widget>[
-                    Container(
-                      padding: const EdgeInsets.only(left: 15.0, top: 10.0),
-                      child: Stack(
-                        children: <Widget>[
-                          PicWidget(
-                            item.Img,
-                            height: (Screen.width / 4) * 1.2,
-                            width: Screen.width / 4,
-                          ),
-                          item.NewChapterCount == 1
-                              ? Container(
-                            height: (Screen.width / 4) * 1.2,
-                            width: Screen.width / 4,
-                            child: Align(
-                              alignment: Alignment.topRight,
-                              child: Image.asset(
-                                'images/h6.png',
-                                width: 30,
-                                height: 30,
-                              ),
+    return Container(
+      child: Dismissible(
+        key: Key(item.Id.toString()),
+        child: Stack(
+          children: [
+            Container(
+              child: Row(
+                children: <Widget>[
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        padding: const EdgeInsets.only(left: 15.0, top: 10.0),
+                        child: Stack(
+                          children: <Widget>[
+                            PicWidget(
+                              item.Img,
+                              height: (Screen.width / 4) * 1.2,
+                              width: Screen.width / 4,
                             ),
-                          )
-                              : Container(),
-                        ],
+                            item.NewChapterCount == 1
+                                ? Container(
+                                    height: (Screen.width / 4) * 1.2,
+                                    width: Screen.width / 4,
+                                    child: Align(
+                                      alignment: Alignment.topRight,
+                                      child: Image.asset(
+                                        'images/h6.png',
+                                        width: 30,
+                                        height: 30,
+                                      ),
+                                    ),
+                                  )
+                                : Container(),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        width: ScreenUtil.getScreenW(context) - 120,
+                        padding: const EdgeInsets.only(left: 10.0, right: 10),
+                        child: Text(
+                          item.Name,
+                          style: TextStyle(
+                              fontSize: 18.0, fontWeight: FontWeight.bold),
+                        ),
                       ),
-                    )
-                  ],
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Container(
-                      width: ScreenUtil.getScreenW(context) - 120,
-                      padding: const EdgeInsets.only(
-                          left: 10.0,  right: 10),
-                      child: Text(
-                        item.Name,
-                        style: TextStyle(
-                            fontSize: 18.0, fontWeight: FontWeight.bold),
+                      Container(
+                        width: ScreenUtil.getScreenW(context) - 120,
+                        padding: const EdgeInsets.only(left: 10.0, right: 10),
+                        child: Text(
+                          item.Author,
+                          style: TextStyle(
+                            fontSize: 12.0,
+                          ),
+                        ),
                       ),
-
-                    ),
-                    Container(
-                      width: ScreenUtil.getScreenW(context) - 120,
-                      padding: const EdgeInsets.only(
-                          left: 10.0,  right: 10),
-                      child: Text(
-                        item.Author,
-                        style: TextStyle(
-                            fontSize: 12.0,),
+                      Container(
+                        padding: const EdgeInsets.only(left: 10.0, right: 10),
+                        child: Text(
+                          item.LastChapter,
+                          style: TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                        ),
+                        width: ScreenUtil.getScreenW(context) - 120,
                       ),
-
-                    ),
-                    Container(
-                      padding: const EdgeInsets.only(
-                          left: 10.0, right: 10),
-                      child: Text(
-                        item.LastChapter,
-                        style: TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                      Container(
+                        padding: const EdgeInsets.only(left: 10.0, right: 10),
+                        child: Text(item?.UTime ?? '',
+                            style: TextStyle(color: Colors.grey, fontSize: 11)),
                       ),
-                      width: ScreenUtil.getScreenW(context) - 120,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.only(
-                          left: 10.0, right: 10),
-                      child: Text(item?.UTime ?? '',
-                          style: TextStyle(color: Colors.grey, fontSize: 11)),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Align(
+                alignment: Alignment.topRight,
+                child: this.widget.type == "sort"
+                    ? GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          margin: EdgeInsets.only(right: 20),
+                          height: 115,
+                          width: ScreenUtil.getScreenW(context),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Image.asset(
+                              'images/pick.png',
+                              color: !_shelfModel.picks(i)
+                                  ? Colors.black38
+                                  : Store.value<ColorModel>(context)
+                                      .theme
+                                      .primaryColor,
+                              width: 30,
+                              height: 30,
+                            ),
+                          ),
+                        ),
+                        onTap: () {
+                          _shelfModel.changePick(i);
+                        },
+                      )
+                    : Container())
+          ],
+        ),
+        onDismissed: (direction) {
+          _shelfModel.modifyShelf(item);
+        },
+        background: Container(
+          color: Colors.green,
+          // 这里使用 ListTile 因为可以快速设置左右两端的Icon
+          child: ListTile(
+            leading: Icon(
+              Icons.bookmark,
+              color: Colors.white,
             ),
           ),
-          Align(
-              alignment: Alignment.topRight,
-              child: this.widget.type == "sort"
-                  ? GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                child: Container(
-                  margin: EdgeInsets.only(right: 20),
-                  height: 115,
-                  width: ScreenUtil.getScreenW(context),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Image.asset(
-                      'images/pick.png',
-                      color: !_shelfModel.picks(i)
-                          ? Colors.black38
-                          : Store.value<ColorModel>(context)
-                          .theme
-                          .primaryColor,
-                      width: 30,
-                      height: 30,
-                    ),
-                  ),
-                ),
-                onTap: () {
-                  _shelfModel.changePick(i);
-                },
-              )
-                  : Container())
-        ],
-      ),
-      onDismissed: (direction) {
-        _shelfModel.modifyShelf(item);
-      },
-      background: Container(
-        color: Colors.green,
-        // 这里使用 ListTile 因为可以快速设置左右两端的Icon
-        child: ListTile(
-          leading: Icon(
-            Icons.bookmark,
-            color: Colors.white,
+        ),
+        secondaryBackground: Container(
+          color: Colors.red,
+          // 这里使用 ListTile 因为可以快速设置左右两端的Icon
+          child: ListTile(
+            trailing: Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
           ),
         ),
-      ),
-      secondaryBackground: Container(
-        color: Colors.red,
-        // 这里使用 ListTile 因为可以快速设置左右两端的Icon
-        child: ListTile(
-          trailing: Icon(
-            Icons.delete,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      confirmDismiss: (direction) async {
-        var _confirmContent;
+        confirmDismiss: (direction) async {
+          var _confirmContent;
 
-        var _alertDialog;
+          var _alertDialog;
 
-        if (direction == DismissDirection.endToStart) {
-          // 从右向左  也就是删除
-          _confirmContent = '确认删除     ${item.Name}';
-          _alertDialog = ConfirmDialog(
-            _confirmContent,
-                () {
-              // 展示 SnackBar
-              Navigator.of(context).pop(true);
-            },
-                () {
-              Navigator.of(context).pop(false);
-            },
-          );
-        } else {
-          return false;
-        }
-        var isDismiss = await showDialog(
-            context: context,
-            builder: (context) {
-              return _alertDialog;
-            });
-        return isDismiss;
-      },
-    ),padding: EdgeInsets.only(bottom: 5),);
+          if (direction == DismissDirection.endToStart) {
+            // 从右向左  也就是删除
+            _confirmContent = '确认删除     ${item.Name}';
+            _alertDialog = ConfirmDialog(
+              _confirmContent,
+              () {
+                // 展示 SnackBar
+                Navigator.of(context).pop(true);
+              },
+              () {
+                Navigator.of(context).pop(false);
+              },
+            );
+          } else {
+            return false;
+          }
+          var isDismiss = await showDialog(
+              context: context,
+              builder: (context) {
+                return _alertDialog;
+              });
+          return isDismiss;
+        },
+      ),
+      padding: EdgeInsets.only(bottom: 5),
+    );
   }
 }
