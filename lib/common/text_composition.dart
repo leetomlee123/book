@@ -256,9 +256,9 @@ class TextComposition {
           : width > 500
               ? 2
               : 1,
-      paragraph: ReadSetting.getFontSize()*ReadSetting.getLineHeight()*1.05,
+      paragraph: ReadSetting.getFontSize()*ReadSetting.getLineHeight()*.8,
       boxSize: Size(Screen.width,
-          Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight),
+          Screen.height  - 62 - Screen.bottomSafeHeight),
       padding: EdgeInsets.only(left: 17, right: 13),
       shouldJustifyHeight: shouldJustifyHeight,
       debug: false,

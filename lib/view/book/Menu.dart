@@ -345,21 +345,21 @@ class _MenuState extends State<Menu> {
                   width: 10,
                 ),
                 operate(ImageIcon(AssetImage("images/side1.png")), () {
-                  ReadSetting.setLineHeight(1.4);
-                  _readModel.modifyFont();
-                }),
-                SizedBox(
-                  width: 10,
-                ),
-                operate(ImageIcon(AssetImage("images/side2.png")), () {
                   ReadSetting.setLineHeight(1.5);
                   _readModel.modifyFont();
                 }),
                 SizedBox(
                   width: 10,
                 ),
-                operate(ImageIcon(AssetImage("images/side3.png")), () {
+                operate(ImageIcon(AssetImage("images/side2.png")), () {
                   ReadSetting.setLineHeight(1.6);
+                  _readModel.modifyFont();
+                }),
+                SizedBox(
+                  width: 10,
+                ),
+                operate(ImageIcon(AssetImage("images/side3.png")), () {
+                  ReadSetting.setLineHeight(1.8);
                   _readModel.modifyFont();
                 }),
               ],

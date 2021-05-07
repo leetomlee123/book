@@ -21,6 +21,7 @@ import 'package:book/entity/TextPage.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/NoMorePage.dart';
 import 'package:book/view/system/BatteryView.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -40,7 +41,7 @@ class ReadModel with ChangeNotifier {
 
   Book book;
   List<Chapter> chapters = [];
-  EveryPoet _everyPoet;
+ 
   var currentPageValue = 0.0;
   String poet = "";
   var topSafeHeight = .0;
@@ -675,29 +676,14 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-  Widget noMorePage() {
-    return _everyPoet == null
-        ? Center(
-            child: Text('等待作者更新'),
-          )
-        : Container(
-            width: Screen.width,
-            height: Screen.height,
-            decoration: BoxDecoration(
-                image: DecorationImage(
-                    image:
-                        CachedNetworkImageProvider('${_everyPoet.share ?? ''}'),
-                    fit: BoxFit.fitWidth)),
-          );
-    // return Ad();
-  }
+
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
 
     if (r.chapterName == "-1" || r.chapterName == "1") {
       contents.add(GestureDetector(
-        child: r.chapterName == "1" ? firstPage() : noMorePage(),
+        child: r.chapterName == "1" ? firstPage() : NoMorePage(),
         behavior: HitTestBehavior.opaque,
         onTapDown: (TapDownDetails details) {
           tapPage(context, details);
@@ -717,7 +703,7 @@ class ReadModel with ChangeNotifier {
                   ? Container(
                       child: Column(
                         children: <Widget>[
-                          SizedBox(height: topSafeHeight - 2),
+                          SizedBox(height: 2),
                           pageHead(r, model),
                           r.textComposition.getPageWidget(i),
                           pageFoot(model, i, r)
@@ -950,22 +936,6 @@ class ReadModel with ChangeNotifier {
     super.dispose();
   }
 
-  getEveryNote() async {
-    if (_everyPoet != null) {
-      return;
-    }
-    var url = "http://open.iciba.com/dsapi";
-    var client = new HttpClient();
-
-    var request = await client.getUrl(Uri.parse(url));
-    var response = await request.close();
-
-    var responseBody = await response.transform(utf8.decoder).join();
-    var dataList = await parseJson(responseBody);
-
-    _everyPoet = EveryPoet(dataList['note'], dataList['picture4'],
-        dataList['content'], dataList['fenxiang_img']);
-  }
 
   getEveyPoet() async {
     // if (!isPage) {
