@@ -138,7 +138,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       _pageController.jumpToPage(navEvent.idx);
     });
     // _checkUpdate();
-    Store.value<ReadModel>(context).getEveryNote();
+    // Store.value<ReadModel>(context).getEveryNote();
   }
 
   @override

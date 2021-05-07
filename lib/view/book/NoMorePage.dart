@@ -17,24 +17,27 @@ class _NoMorePageState extends State<NoMorePage> {
   @override
   void initState() {
     super.initState();
+    getEveryNote();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Visibility(
-        child: Container(
-          width: Screen.width,
-          height: Screen.height,
-          decoration: BoxDecoration(
-              image: DecorationImage(
-                  image:
-                      CachedNetworkImageProvider('${_everyPoet.share ?? ''}'),
-                  fit: BoxFit.fitWidth)),
-        ),
-        replacement: Center(
-          child: Text('等待作者更新'),
-        ),
-        visible: _everyPoet != null);
+    return Scaffold(
+      body: Visibility(
+          child: Container(
+            width: Screen.width,
+            height: Screen.height,
+            decoration: BoxDecoration(
+                image: DecorationImage(
+                    image:
+                        CachedNetworkImageProvider('${_everyPoet.share ?? ''}'),
+                    fit: BoxFit.fitWidth)),
+          ),
+          replacement: Center(
+            child: Text('等待作者更新'),
+          ),
+          visible: _everyPoet != null),
+    );
 
     // return Ad();
   }
@@ -54,5 +57,8 @@ class _NoMorePageState extends State<NoMorePage> {
 
     _everyPoet = EveryPoet(dataList['note'], dataList['picture4'],
         dataList['content'], dataList['fenxiang_img']);
+    if (mounted) {
+      setState(() {});
+    }
   }
 }
