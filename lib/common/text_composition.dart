@@ -238,7 +238,6 @@ class TextComposition {
 
   static TextComposition parContent(ReadPage readPage, Color color,
       {shouldJustifyHeight = true, parse = false, justRender = false}) {
-
     final width = ui.window.physicalSize.width / ui.window.devicePixelRatio;
     TextComposition textComposition = TextComposition(
       text: readPage.chapterContent,
@@ -249,7 +248,7 @@ class TextComposition {
           locale: Locale('zh_CN'),
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
           fontSize: ReadSetting.getFontSize(),
-          wordSpacing: ReadSetting.getLatterSpace(),
+          // letterSpacing: ReadSetting.getLatterSpace(),
           height: ReadSetting.getLineHeight()),
       columnGap: 40,
       columnCount: width > 1200
@@ -257,7 +256,9 @@ class TextComposition {
           : width > 500
               ? 2
               : 1,
-      paragraph: ReadSetting.getParagraph()*ReadSetting.getFontSize()*ReadSetting.getLineHeight(),
+      paragraph: ReadSetting.getParagraph() *
+          ReadSetting.getFontSize() *
+          ReadSetting.getLineHeight(),
       boxSize: Size(Screen.width, Screen.height - 62 - Screen.bottomSafeHeight),
       padding: EdgeInsets.symmetric(horizontal: 15),
       shouldJustifyHeight: shouldJustifyHeight,

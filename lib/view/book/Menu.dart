@@ -36,7 +36,7 @@ class _MenuState extends State<Menu> {
     "QR_bg_8.png",
     // "QR_bg_4.jpg",
   ];
-  double settingH = 350;
+  double settingH = 320;
   bool _SwitchItemA = false;
   @override
   void initState() {
@@ -325,35 +325,35 @@ class _MenuState extends State<Menu> {
             ],
           ),
 
-          Row(
-            children: [
-              Text("词距", style: TextStyle(fontSize: 13.0)),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.subLatterSpace();
-                  _readModel.modifyFont();
-                },
-                icon: Icon(Icons.remove),
-              ),
-              Slider.adaptive(
-                value: ReadSetting.getLatterSpace(),
-                onChanged: (v) {
-                  ReadSetting.setLatterSpace(v);
-                  _readModel.modifyFont();
-                },
-                min: .1,
-                max: 4.0,
-              ),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.addLatterSpace();
-                  _readModel.modifyFont();
-                },
-                icon: Icon(Icons.add),
-              ),
-              Text('${ReadSetting.getLatterSpace().toStringAsFixed(1)}')
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     Text("词距", style: TextStyle(fontSize: 13.0)),
+          //     IconButton(
+          //       onPressed: () {
+          //         ReadSetting.subLatterSpace();
+          //         _readModel.modifyFont();
+          //       },
+          //       icon: Icon(Icons.remove),
+          //     ),
+          //     Slider.adaptive(
+          //       value: ReadSetting.getLatterSpace(),
+          //       onChanged: (v) {
+          //         ReadSetting.setLatterSpace(v);
+          //         _readModel.modifyFont();
+          //       },
+          //       min: -5,
+          //       max: 20.0,
+          //     ),
+          //     IconButton(
+          //       onPressed: () {
+          //         ReadSetting.addLatterSpace();
+          //         _readModel.modifyFont();
+          //       },
+          //       icon: Icon(Icons.add),
+          //     ),
+          //     Text('${ReadSetting.getLatterSpace().toStringAsFixed(1)}')
+          //   ],
+          // ),
 
           Row(
             children: [
@@ -372,7 +372,7 @@ class _MenuState extends State<Menu> {
                   _readModel.modifyFont();
                 },
                 min: .1,
-                max: 4.0,
+                max: 2.0,
               ),
               IconButton(
                 onPressed: () {

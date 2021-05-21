@@ -51,14 +51,14 @@ static void addLineHeight() {
     SpUtil.putDouble(latterHeight, getLineHeight()-.1);
   }
   static void addLatterSpace() {
-    SpUtil.putDouble(latterSpace, getLatterSpace()+.1);
+    SpUtil.putDouble(latterSpace, getLatterSpace()+1);
   }
   static void subLatterSpace() {
-    SpUtil.putDouble(latterSpace, getLatterSpace()-.1);
+    SpUtil.putDouble(latterSpace, getLatterSpace()-1);
   }
 
   static double getLatterSpace() {
-    return SpUtil.getDouble(latterSpace, defValue: 1.0);
+    return SpUtil.getDouble(latterSpace, defValue: 3.0);
   }
   static void setLatterSpace(double v) {
      SpUtil.putDouble(latterSpace, v);

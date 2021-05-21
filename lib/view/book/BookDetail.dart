@@ -325,6 +325,7 @@ class _BookDetailState extends State<BookDetail> {
                         '书架',
                         style: TextStyle(
                           color: Colors.white,
+                    
                         ),
                       ),
                     ),
