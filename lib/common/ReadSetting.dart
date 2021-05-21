@@ -6,6 +6,8 @@ class ReadSetting {
   static String latterHeight = "LINE_HEIGHT";
   static String latterLead = "LATTER_LEAD";
   static String latterSpace = "LATTER_SPACE";
+  static String paragraph = "paragraph";
+  
   static double listPageChapterName=200;
   static double listPageBottom=Screen.height/2;
   static String temp_w="temp_w";
@@ -42,9 +44,38 @@ class ReadSetting {
   static void setLineHeight(double lineHeight) {
     SpUtil.putDouble(latterHeight, lineHeight);
   }
+static void addLineHeight() {
+    SpUtil.putDouble(latterHeight, getLineHeight()+.1);
+  }
+  static void subLineHeight() {
+    SpUtil.putDouble(latterHeight, getLineHeight()-.1);
+  }
+  static void addLatterSpace() {
+    SpUtil.putDouble(latterSpace, getLatterSpace()+.1);
+  }
+  static void subLatterSpace() {
+    SpUtil.putDouble(latterSpace, getLatterSpace()-.1);
+  }
 
   static double getLatterSpace() {
     return SpUtil.getDouble(latterSpace, defValue: 1.0);
+  }
+  static void setLatterSpace(double v) {
+     SpUtil.putDouble(latterSpace, v);
+  }
+
+  static void addParagraph() {
+    SpUtil.putDouble(paragraph, getParagraph()+.1);
+  }
+  static void subParagraph() {
+    SpUtil.putDouble(paragraph, getParagraph()-.1);
+  }
+
+  static double getParagraph() {
+    return SpUtil.getDouble(paragraph, defValue: .8);
+  }
+  static void setParagraph(double v) {
+     SpUtil.putDouble(paragraph, v);
   }
 
   static double getLatterLead() {

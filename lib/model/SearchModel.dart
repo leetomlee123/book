@@ -37,9 +37,15 @@ class SearchModel with ChangeNotifier {
   TextEditingController controller;
 
   List<Color> colors = Colors.accents;
+  clear1() {
+    searchHistory = [];
+    page = 1;
+    size = 10;
+    notifyListeners();
+  }
 
   clear() {
-    searchHistory = new List();
+    searchHistory = [];
     isBookSearch = false;
     idx = 0;
     showResult = false;
@@ -62,7 +68,7 @@ class SearchModel with ChangeNotifier {
     if (temp == "") {
       temp = word;
     } else {
-      if (temp != word&&page<=1) {
+      if (temp != word && page <= 1) {
         page = 1;
       }
     }
@@ -150,16 +156,17 @@ class SearchModel with ChangeNotifier {
           search(value);
           notifyListeners();
         },
-        child: ListTile(
-          leading: Icon(Icons.update),
-          title: Text(value),
-          trailing: IconButton(
-            icon: Icon(Icons.clear),
-            onPressed: () {
-              deleteHistoryItem(value);
-            },
-          ),
-        ),
+        child: Chip(label: Text(value)),
+        // child: ListTile(
+        //   leading: Icon(Icons.update),
+        //   title: Text(value),
+        //   trailing: IconButton(
+        //     icon: Icon(Icons.clear),
+        //     onPressed: () {
+        //       deleteHistoryItem(value);
+        //     },
+        //   ),
+        // ),
 //        child: Container(
 //          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
 //          decoration: BoxDecoration(

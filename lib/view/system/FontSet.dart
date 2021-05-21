@@ -104,12 +104,12 @@ class StateFontSet extends State<FontSet> {
                                                 return LoadingDialog();
                                               },
                                             );
-                                            FileInfo fileInfo =
+                                       
                                                 await CustomCacheManager
                                                     .instanceFont
                                                     .downloadFile(e.value,
                                                         key: e.key);
-                                            print(fileInfo.file.path);
+                                     
                                             Navigator.pop(context);
                                           } else {
                                             if (e.key == "Roboto") {

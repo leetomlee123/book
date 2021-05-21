@@ -27,7 +27,7 @@ class AllTagBook extends StatelessWidget {
             GestureDetector(
               child: PicWidget(
                 gbk.cover,
-                fitOk: true,
+            
               ),
               onTap: () async {
                 String url = Common.two + '/${gbk.name}/${gbk.author}';

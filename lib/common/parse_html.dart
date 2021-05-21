@@ -1,25 +1,39 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:book/common/common.dart';
+import 'package:book/entity/ParseContentConfig.dart';
+import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
 import 'Http.dart';
 
 class ParseHtml {
+  List<ParseContentConfig> configs = [];
+  ParseHtml() {
+    if (configs.isEmpty) {
+     configs= SpUtil.getObjectList(Common.parse_html_config).map((e) => ParseContentConfig.fromJson(e)).toList();
+    }
+  }
+
   //
-  static Future<String> content(String url) async {
+  Future<String> content(String url) async {
     var c = "";
     var html = await HttpUtil().http().get(url);
 
     Element content;
-    if (url.contains("qvyue")) {
-      content = parse(html.data).getElementById("BookText");
-    } else if (url.contains("iqb5")) {
-      content = parse(html.data, encoding: "gbk").getElementById("contents");
-    } else {
+    configs.forEach((element) {
+      if (url.contains(element.domain)) {
+        content = parse(html.data, encoding: element.encode)
+            .getElementById(element.documentId);
+      }
+    });
+    if (content == null) {
       content = parse(html.data).getElementById("content");
     }
+
     content.nodes.forEach((element) {
       var text = element.text.trim();
       if (text.isNotEmpty) {
@@ -29,7 +43,7 @@ class ParseHtml {
     return c;
   }
 
-  static Future getHTML(String url) async {
+  Future getHTML(String url) async {
     var dataList;
     try {
       var client = new HttpClient();

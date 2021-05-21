@@ -5,12 +5,34 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-void main() {
-  List<int> a = [1, 2, 3, 4, 5];
-  int cursor = 1;
-  a.removeAt(cursor);
-  a.insert(cursor, 6);
-  print(a);
+import 'package:book/common/Http.dart';
+import 'package:book/entity/ParseContentConfig.dart';
+
+Future<void> main() async {
+  String msg = '''
+     [
+  {
+    "domain": "biquwx",
+    "encode": "UTF-8",
+    "documentId": "content"
+  },
+  {
+    "domain": "iqb5",
+    "encode": "gbk",
+    "documentId": "contents"
+  },
+  {
+    "domain": "shizongzui",
+    "encode": "",
+    "documentId": "BookText"
+  }
+]
+     ''';
+
+  List msg1 = await parseJson(msg);
+
+  List<ParseContentConfig> configs =
+      msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
 
 //  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
 //    // Build our app and trigger a frame.

@@ -10,6 +10,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/system/MenuConfig.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -35,8 +36,8 @@ class _MenuState extends State<Menu> {
     "QR_bg_8.png",
     // "QR_bg_4.jpg",
   ];
-  double settingH = 240;
-
+  double settingH = 350;
+  bool _SwitchItemA = false;
   @override
   void initState() {
     super.initState();
@@ -95,9 +96,9 @@ class _MenuState extends State<Menu> {
         onTap: () {
           type = Type.SLIDE;
           _readModel.toggleShowMenu();
-          if (_readModel.font) {
-            _readModel.reCalcPages();
-          }
+          // if (_readModel.font) {
+          //   _readModel.reCalcPages();
+          // }
         },
       ),
     );
@@ -268,111 +269,144 @@ class _MenuState extends State<Menu> {
       ),
       height: settingH,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: <Widget>[
-                Container(
-                  child: Center(
-                    child: Text('字号', style: TextStyle(fontSize: 13.0)),
-                  ),
-                  height: 40,
-                  width: 40,
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                operate(ImageIcon(AssetImage("images/fontsmall.png")), () {
-                  ReadSetting.calcFontSize(-1.0);
-                  _readModel.modifyFont();
-                }),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 5.0),
-                  child: Center(
-                    child: Text(ReadSetting.getFontSize().toString(),
-                        style: TextStyle(fontSize: 12.0)),
-                  ),
-                  height: 40,
-                  width: 50,
-                ),
-                operate(ImageIcon(AssetImage("images/fontbig.png")), () {
-                  ReadSetting.calcFontSize(1.0);
-                  _readModel.modifyFont();
-                }),
-                Container(
-                  child: FlatButton(
-                    onPressed: () {
-                      Routes.navigateTo(
-                        context,
-                        Routes.fontSet,
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        Text(
-                          '字体',
-                          style: TextStyle(
-                              color: _colorModel.dark
-                                  ? Colors.white
-                                  : Colors.black),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 12,
-                        )
-                      ],
-                    ),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(20.0))),
-                  ),
-                ),
-              ],
-            ),
+          TextButton(
+              onPressed: () {
+                Routes.navigateTo(context, Routes.fontSet);
+              },
+              child: Text('字体')),
+          MenuConfig(
+            () {
+              ReadSetting.calcFontSize(-1);
+              _readModel.modifyFont();
+            },
+            () {
+              ReadSetting.calcFontSize(1);
+              _readModel.modifyFont();
+            },
+            (v) {
+              ReadSetting.setFontSize(v);
+              _readModel.modifyFont();
+            },
+            ReadSetting.getFontSize(),
+            "字号",
+            min: 10,
+            max: 40,
           ),
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: <Widget>[
-                Container(
-                  child: Center(
-                    child: Text('行距', style: TextStyle(fontSize: 13.0)),
-                  ),
-                  height: 40,
-                  width: 40,
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                operate(ImageIcon(AssetImage("images/side1.png")), () {
-                  ReadSetting.setLineHeight(1.5);
+
+          Row(
+            children: [
+              Text("行距", style: TextStyle(fontSize: 13.0)),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.subLineHeight();
                   _readModel.modifyFont();
-                }),
-                SizedBox(
-                  width: 10,
-                ),
-                operate(ImageIcon(AssetImage("images/side2.png")), () {
-                  ReadSetting.setLineHeight(1.6);
+                },
+                icon: Icon(Icons.remove),
+              ),
+              Slider.adaptive(
+                value: ReadSetting.getLineHeight(),
+                onChanged: (v) {
+                  ReadSetting.setLineHeight(v);
                   _readModel.modifyFont();
-                }),
-                SizedBox(
-                  width: 10,
-                ),
-                operate(ImageIcon(AssetImage("images/side3.png")), () {
-                  ReadSetting.setLineHeight(1.8);
+                },
+                min: .1,
+                max: 4.0,
+              ),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.addLineHeight();
                   _readModel.modifyFont();
-                }),
-              ],
-            ),
+                },
+                icon: Icon(Icons.add),
+              ),
+              Text('${ReadSetting.getLineHeight().toStringAsFixed(1)}')
+            ],
           ),
+
+          Row(
+            children: [
+              Text("词距", style: TextStyle(fontSize: 13.0)),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.subLatterSpace();
+                  _readModel.modifyFont();
+                },
+                icon: Icon(Icons.remove),
+              ),
+              Slider.adaptive(
+                value: ReadSetting.getLatterSpace(),
+                onChanged: (v) {
+                  ReadSetting.setLatterSpace(v);
+                  _readModel.modifyFont();
+                },
+                min: .1,
+                max: 4.0,
+              ),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.addLatterSpace();
+                  _readModel.modifyFont();
+                },
+                icon: Icon(Icons.add),
+              ),
+              Text('${ReadSetting.getLatterSpace().toStringAsFixed(1)}')
+            ],
+          ),
+
+          Row(
+            children: [
+              Text("段距", style: TextStyle(fontSize: 13.0)),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.subParagraph();
+                  _readModel.modifyFont();
+                },
+                icon: Icon(Icons.remove),
+              ),
+              Slider.adaptive(
+                value: ReadSetting.getParagraph(),
+                onChanged: (v) {
+                  ReadSetting.setParagraph(v);
+                  _readModel.modifyFont();
+                },
+                min: .1,
+                max: 4.0,
+              ),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.addParagraph();
+                  _readModel.modifyFont();
+                },
+                icon: Icon(Icons.add),
+              ),
+              Text('${ReadSetting.getParagraph().toStringAsFixed(1)}')
+            ],
+          ),
+
           Expanded(
               child: ListView(
             children: bgThemes(),
             scrollDirection: Axis.horizontal,
           )),
-          Expanded(
-            child: flipType(),
-          )
+          // Expanded(
+          //   child: flipType(),
+          // ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.only(left: 15),
+            value: _readModel.leftClickNext,
+            onChanged: (value) {
+              _readModel.switchClickNextPage();
+            },
+            title: Text(
+              '左侧点击下一页',
+              style: TextStyle(
+                  fontSize: 13,
+                  color: _colorModel.dark ? Colors.white : Colors.black),
+            ),
+            selected: _readModel.leftClickNext,
+          ),
         ],
       ),
       padding: EdgeInsets.only(left: 15.0),
@@ -465,7 +499,6 @@ class _MenuState extends State<Menu> {
                 //   color: _colorModel.dark ? Colors.black : Colors.white,
                 //   height: Screen.topSafeHeight,
                 // ),
-                // head(),
                 midTransparent(),
                 bottom(),
               ],
@@ -475,9 +508,10 @@ class _MenuState extends State<Menu> {
             _readModel.toggleShowMenu();
           },
         ),
+        // head(),
         Positioned(
           child: reloadCurChapterWidget(),
-          bottom: 350,
+          bottom: settingH + 100,
           right: 20,
         ),
       ],
@@ -576,16 +610,14 @@ class _MenuState extends State<Menu> {
 
   List<Widget> bgThemes() {
     List<Widget> wds = [];
-    wds.add(Container(
-      width: 40.0,
-      height: 40.0,
-      child: Center(
+    wds.add(
+      Center(
         child: Text(
           '背景',
           style: TextStyle(fontSize: 13.0),
         ),
       ),
-    ));
+    );
     for (int i = 0; i < bgImg.length; i++) {
       var f = "images/${bgImg[i]}";
       wds.add(RawMaterialButton(

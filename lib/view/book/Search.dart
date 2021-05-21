@@ -109,6 +109,7 @@ class _SearchState extends State<Search> {
             child: TextField(
               controller: controller,
               onSubmitted: (word) {
+                // searchModel.clear1();
                 searchModel.search(word);
               },
               style: TextStyle(
@@ -170,7 +171,7 @@ class _SearchState extends State<Search> {
       onLoading: searchModel.onLoading,
       child: isBookSearch
           ? ListView.builder(
-            itemExtent: 130,
+              itemExtent: 130,
               itemBuilder: (context, i) {
                 var auth = searchModel.bks[i].Author;
 //                var cate = searchModel.bks[i].CName??"";
@@ -320,8 +321,8 @@ class _SearchState extends State<Search> {
             Wrap(
               children: searchModel?.getHistory() ?? [],
               spacing: 10, //主轴上子控件的间距
-              alignment: WrapAlignment.start, //交叉轴上子控件之间的间距
             ),
+
             Row(
               children: <Widget>[
                 Text(

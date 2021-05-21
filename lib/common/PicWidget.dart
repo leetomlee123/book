@@ -6,11 +6,11 @@ class PicWidget extends StatelessWidget {
   String url;
   double height;
   double width;
-  bool fitOk;
+  BoxFit fit;
   bool roll;
 
   PicWidget(this.url,
-      {this.height = 115, this.width = 97, this.fitOk, this.roll = false});
+      {this.height = 115, this.width = 97, this.fit=BoxFit.cover, this.roll = false});
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +33,7 @@ class PicWidget extends StatelessWidget {
                 image: AssetImage(
                   "images/nocover.jpg",
                 ),
-                fit: BoxFit.cover,
+                fit:fit,
               )),
         ),
         imageBuilder: (context, imageProvider) => ClipRRect(
@@ -61,7 +61,7 @@ class PicWidget extends StatelessWidget {
                 image: AssetImage(
                   "images/nocover.jpg",
                 ),
-                fit: BoxFit.cover,
+                fit: fit,
               )),
         ),
       ),

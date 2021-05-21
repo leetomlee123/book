@@ -16,6 +16,7 @@ class Common {
   static String detail = domain + "/book/detail";
   static String shelf = domain + "/book/shelf";
   static String rank = domain + "/book/rank";
+  static String config = domain + "/book/config";
 
 //  static String search = video_domain + "/book/search";
   static String two = domain + "/book/two";
@@ -54,4 +55,5 @@ class Common {
   static String movie_search_history = "movie_search_history";
   static String notice_info = "notice_info";
   static String reading_style = "READINGSTYLE";
+  static String parse_html_config = "parse_html_config";
 }

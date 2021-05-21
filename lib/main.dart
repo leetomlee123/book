@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:book/common/Http.dart';
+import 'package:book/common/common.dart';
+import 'package:book/entity/ParseContentConfig.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -10,21 +12,20 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/person/Me.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_analytics/observer.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:dio/dio.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
+import 'package:jpush_flutter/jpush_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
-FirebaseAnalytics analytics = FirebaseAnalytics();
-FirebaseAnalyticsObserver observer =
-    FirebaseAnalyticsObserver(analytics: analytics);
+// FirebaseAnalytics analytics = FirebaseAnalytics();
+// FirebaseAnalyticsObserver observer =
+//     FirebaseAnalyticsObserver(analytics: analytics);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,7 @@ Future<void> main() async {
     Routes.router = router;
     runApp(Store.init(child: MyApp()));
     await DirectoryUtil.getInstance();
-    await Firebase.initializeApp();
+    // await Firebase.initializeApp();
     if (Platform.isAndroid) {
       SystemUiOverlayStyle systemUiOverlayStyle =
           SystemUiOverlayStyle(statusBarColor: Colors.transparent);
@@ -52,7 +53,7 @@ class MyApp extends StatelessWidget {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
       return MaterialApp(
-        title: '清阅',
+        title: '即刻追书',
         home: MainPage(),
         builder: BotToastInit(),
         navigatorObservers: [
@@ -70,7 +71,7 @@ class MainPage extends StatefulWidget {
   _MainPageState createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
+class _MainPageState extends State<MainPage> {
   int _tabIndex = 0;
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
@@ -100,10 +101,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     //   ),
     //   label: '精选',
     // ),
-
   ];
-
-
 
   /*
    * 存储的四个页面，和Fragment一样
@@ -117,12 +115,28 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     // await _checkUpdate();
     // await Firebase.initializeApp();
   }
+  getConfigFromServer() async {
+    Response res = await HttpUtil().http().get(Common.config);
+    List msg1 = await parseJson(res.data['data']);
+
+  List<ParseContentConfig> configs =
+      msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
+    SpUtil.putObjectList(Common.parse_html_config, configs);
+  }
 
   @override
   void initState() {
     initEnv();
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    getConfigFromServer();
+    JPush jpush = new JPush();
+    jpush.setup(
+      appKey: "f90562283a6e6bffa036d5dd",
+      channel: "flutter_channel",
+      production: true,
+      debug: false, //是否打印debug日志
+    );
+
     eventBus.on<OpenEvent>().listen((openEvent) {
       if (openEvent.name == "m") {
         isMovie = true;

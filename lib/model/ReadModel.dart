@@ -15,7 +15,6 @@ import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
-import 'package:book/entity/EveryPoet.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/event/event.dart';
@@ -41,7 +40,7 @@ class ReadModel with ChangeNotifier {
 
   Book book;
   List<Chapter> chapters = [];
- 
+
   var currentPageValue = 0.0;
   String poet = "";
   var topSafeHeight = .0;
@@ -97,12 +96,12 @@ class ReadModel with ChangeNotifier {
   //阅读方式
   // bool isPage = false;
   bool isPage = SpUtil.getBool("isPage", defValue: true);
-
+  //点击上下页方式
+  bool leftClickNext = SpUtil.getBool("leftClickNext", defValue: false);
   //页面上下文
   BuildContext context;
 
 //是否修改font
-  bool font = false;
   bool sSave;
   Load load;
 
@@ -110,7 +109,6 @@ class ReadModel with ChangeNotifier {
   getBookRecord() async {
     electricQuantity = (await Battery().batteryLevel) / 100;
     showMenu = false;
-    font = false;
     loadOk = false;
     sSave = true;
     load = Load.Done;
@@ -530,9 +528,6 @@ class ReadModel with ChangeNotifier {
   }
 
   modifyFont() async {
-    if (!font) {
-      font = !font;
-    }
 
     // SpUtil.putDouble('fontSize', fontSize);
 
@@ -600,15 +595,25 @@ class ReadModel with ChangeNotifier {
     var curH = details.globalPosition.dy;
 
     if (isPage && (curWid > 0 && curWid < space)) {
-      pageController.previousPage(
-          duration: Duration(microseconds: 1), curve: Curves.ease);
+      if (leftClickNext) {
+        pageController.nextPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
+      } else {
+        pageController.previousPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
+      }
     } else if ((curWid > space) &&
         (curWid < 2 * space) &&
         (curH < hSpace * 3)) {
       toggleShowMenu();
     } else if (isPage && (curWid > space * 2)) {
-      pageController.nextPage(
-          duration: Duration(microseconds: 1), curve: Curves.ease);
+      if (leftClickNext) {
+        pageController.previousPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
+      } else {
+        pageController.nextPage(
+            duration: Duration(microseconds: 1), curve: Curves.ease);
+      }
     }
   }
 
@@ -675,8 +680,6 @@ class ReadModel with ChangeNotifier {
       ),
     );
   }
-
-
 
   List<Widget> chapterContent(ReadPage r) {
     List<Widget> contents = [];
@@ -786,8 +789,8 @@ class ReadModel with ChangeNotifier {
   Widget pageHead(var r, var model) {
     return Container(
       height: 30,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.only(left: 20),
+      alignment: Alignment.bottomLeft,
+      padding: const EdgeInsets.only(left: 50),
       child: Text(
         r.chapterName,
         style: TextStyle(
@@ -904,7 +907,7 @@ class ReadModel with ChangeNotifier {
       return content;
     }
     try {
-      content = await ParseHtml.content(link);
+      content = await ParseHtml().content(link);
       var formData = FormData.fromMap({"id": id, "content": content});
       HttpUtil().http().patch(Common.bookContentUpload, data: formData);
     } catch (e) {
@@ -935,7 +938,6 @@ class ReadModel with ChangeNotifier {
   Future<void> dispose() async {
     super.dispose();
   }
-
 
   getEveyPoet() async {
     // if (!isPage) {
@@ -1010,5 +1012,11 @@ class ReadModel with ChangeNotifier {
     var rng = Random();
 
     return skins[rng.nextInt(skins.length)];
+  }
+
+  switchClickNextPage() {
+    leftClickNext = !leftClickNext;
+    SpUtil.putBool("leftClickNext", leftClickNext);
+    notifyListeners();
   }
 }
