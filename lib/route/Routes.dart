@@ -48,6 +48,7 @@ class Routes {
   static Future navigateTo(BuildContext context, String path,
       {Map<String, dynamic> params,
       TransitionType transition = TransitionType.native,bool replace = false,}) {
+
     String query = "";
 
     if (params != null) {

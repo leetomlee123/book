@@ -133,11 +133,10 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                 fit: BoxFit.cover)),
                         //内容
                         // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
-                        GestureDetector(
-                          child: model.isPage
+                      model.isPage
                               ? PageView.builder(
                                   controller: model.pageController,
-                                  physics: AlwaysScrollableScrollPhysics(),
+                                  physics: NeverScrollableScrollPhysics(),
                                   itemBuilder:
                                       (BuildContext context, int position) {
                                     return model.allContent[position];
@@ -218,9 +217,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                                       }),
                                     ],
                                   )),
-                          onTapDown: (TapDownDetails details) =>
-                              model.tapPage(context, details),
-                        ),
+                   
                         //菜单
                         Offstage(offstage: !model.showMenu, child: Menu()),
                       ],

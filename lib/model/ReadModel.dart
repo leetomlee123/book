@@ -35,6 +35,8 @@ enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
+  Offset _initialSwipeOffset;
+  Offset _finalSwipeOffset;
   Color darkFont = Color(0x5FFFFFFF);
   TextComposition textComposition;
 
@@ -528,7 +530,6 @@ class ReadModel with ChangeNotifier {
   }
 
   modifyFont() async {
-
     // SpUtil.putDouble('fontSize', fontSize);
 
     book.index = 0;
@@ -691,6 +692,9 @@ class ReadModel with ChangeNotifier {
         onTapDown: (TapDownDetails details) {
           tapPage(context, details);
         },
+        onHorizontalDragStart: _onHorizontalDragStart,
+        onHorizontalDragUpdate: _onHorizontalDragUpdate,
+        onHorizontalDragEnd: _onHorizontalDragEnd,
       ));
     } else {
       int sum = r.pageOffsets;
@@ -702,6 +706,9 @@ class ReadModel with ChangeNotifier {
               onTapDown: (TapDownDetails details) {
                 tapPage(context, details);
               },
+              onHorizontalDragStart: _onHorizontalDragStart,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
               child: isPage
                   ? Container(
                       child: Column(
@@ -1018,5 +1025,24 @@ class ReadModel with ChangeNotifier {
     leftClickNext = !leftClickNext;
     SpUtil.putBool("leftClickNext", leftClickNext);
     notifyListeners();
+  }
+
+  void _onHorizontalDragStart(DragStartDetails details) {
+    _initialSwipeOffset = details.globalPosition;
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    _finalSwipeOffset = details.globalPosition;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (_initialSwipeOffset != null) {
+      final offsetDifference = _initialSwipeOffset.dx - _finalSwipeOffset.dx;
+      offsetDifference > 0
+          ? pageController.nextPage(
+              duration: Duration(microseconds: 1), curve: Curves.ease)
+          : pageController.previousPage(
+              duration: Duration(microseconds: 1), curve: Curves.ease);
+    }
   }
 }
