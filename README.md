@@ -29,7 +29,7 @@ dart,provider,eventbus,dio等
 
 感谢 [JetBrains](https://www.jetbrains.com/?from=fluttercandies) 为开源项目提供免费的 [IntelliJ IDEA](https://www.jetbrains.com/idea/?from=fluttercandies) 等 IDE 的授权。
 
-[<img src=".github/jetbrains-variant.png" width="200"/>](https://www.jetbrains.com)
+[<img src="https://cdn.jsdelivr.net/gh/leetomlee123/hugoblogtalks@master/20210528/下载.6f482qcio000.svg" width="200"/>](https://www.jetbrains.com)
 
 
 
