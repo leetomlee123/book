@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  image_picker: ^0.7.5+3
   jpush_flutter: ^2.0.5
   html: ^0.15.0
   # firebase_analytics: ^7.1.1

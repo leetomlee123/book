@@ -29,6 +29,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   RefreshController _refreshController;
   ShelfModel _shelfModel;
   bool isShelf;
+    double picHeight = (Screen.width / 4) * 1.3;
 
   @override
   void initState() {
@@ -197,7 +198,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
-        itemExtent: (25 + (Screen.width / 4) * 1.2),
+        itemExtent: (25 + picHeight),
         itemCount: _shelfModel.shelf.length,
         itemBuilder: (context, i) {
           return GestureDetector(
@@ -246,12 +247,12 @@ class _BooksWidgetState extends State<BooksWidget> {
                           children: <Widget>[
                             PicWidget(
                               item.Img,
-                              height: (Screen.width / 4) * 1.2,
+                              height: picHeight,
                               width: Screen.width / 4,
                             ),
                             item.NewChapterCount == 1
                                 ? Container(
-                                    height: (Screen.width / 4) * 1.2,
+                                    height: picHeight,
                                     width: Screen.width / 4,
                                     child: Align(
                                       alignment: Alignment.topRight,

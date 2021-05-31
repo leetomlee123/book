@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 class WhiteArea extends StatelessWidget {
   final Widget _widget;
-final double height;
-  WhiteArea(this._widget,this.height);
+  final double height;
+  WhiteArea(this._widget, this.height);
 
   @override
   Widget build(BuildContext context) {

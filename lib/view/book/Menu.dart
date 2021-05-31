@@ -15,6 +15,7 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class Menu extends StatefulWidget {
   @override
@@ -27,17 +28,9 @@ class _MenuState extends State<Menu> {
   Type type = Type.SLIDE;
   ReadModel _readModel;
   ColorModel _colorModel;
-  List<String> bgImg = [
-    "QR_bg_1.jpg",
-    "QR_bg_2.jpg",
-    "QR_bg_3.jpg",
-    "QR_bg_5.jpg",
-    "QR_bg_7.png",
-    "QR_bg_8.png",
-    // "QR_bg_4.jpg",
-  ];
+
   double settingH = 320;
-  bool _SwitchItemA = false;
+
   @override
   void initState() {
     super.initState();
@@ -618,19 +611,47 @@ class _MenuState extends State<Menu> {
         ),
       ),
     );
-    for (int i = 0; i < bgImg.length; i++) {
-      var f = "images/${bgImg[i]}";
-      wds.add(RawMaterialButton(
-        onPressed: () {
-          setState(() async {
-            var cv = Store.value<ColorModel>(context);
-            if (cv.dark) {
-              cv.switchModel();
-            }
-            await _readModel.colorModelSwitch();
+    wds.add(RawMaterialButton(
+      constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
+      onPressed: () async {
+        final PickedFile pickedFile =
+            await ImagePicker().getImage(source: ImageSource.gallery);
+        if (pickedFile != null) {
+          String path = pickedFile.path;
 
-            _readModel.switchBgColor(i);
-          });
+          SpUtil.putString(ReadSetting.bgsKey, path);
+
+          var cv = Store.value<ColorModel>(context);
+          if (cv.dark) {
+            cv.switchModel();
+          }
+          await _readModel.colorModelSwitch();
+          _readModel.switchBgColor(6);
+        }
+      },
+      child: Container(
+        margin: EdgeInsets.only(top: 5.0, bottom: 5.0),
+        width: 45.0,
+        height: 45.0,
+        child: Center(child: Text('自')),
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+            border: Border.all(
+              width: 1.5,
+              color: Color(!_colorModel.dark ? 0x4D000000 : 0xFBFFFFFF),
+            )),
+      ),
+    ));
+    for (int i = 0; i < ReadSetting.bgImg.length; i++) {
+      var f = "images/${ReadSetting.bgImg[i]}";
+      wds.add(RawMaterialButton(
+        onPressed: () async {
+          var cv = Store.value<ColorModel>(context);
+          if (cv.dark) {
+            cv.switchModel();
+          }
+          await _readModel.colorModelSwitch();
+          _readModel.switchBgColor(i);
         },
         constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
         child: Container(

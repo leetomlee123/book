@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
@@ -30,18 +33,9 @@ class ReadBook extends StatefulWidget {
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Widget body;
   ReadModel readModel;
- final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   ColorModel colorModel;
   TextComposition textComposition;
-  List<String> bgImg = [
-    "QR_bg_1.jpg",
-    "QR_bg_2.jpg",
-    "QR_bg_3.jpg",
-    "QR_bg_5.jpg",
-    "QR_bg_7.png",
-    "QR_bg_8.png",
-    "QR_bg_4.jpg",
-  ];
 
   @override
   void initState() {
@@ -61,7 +55,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
       move(event.isPage, event.offset);
     });
     eventBus.on<OpenChapters>().listen((event) {
-     _scaffoldKey.currentState.openDrawer();
+      _scaffoldKey.currentState.openDrawer();
     });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
@@ -113,8 +107,10 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           return true;
         },
         child: Scaffold(
-          key: _scaffoldKey,
-            drawer:Drawer(child: ChapterView(),),
+            key: _scaffoldKey,
+            drawer: Drawer(
+              child: ChapterView(),
+            ),
             body: Store.connect<ReadModel>(
                 builder: (context, ReadModel model, child) {
               return model.loadOk
@@ -126,98 +122,99 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             top: 0,
                             right: 0,
                             bottom: 0,
-                            child: Image.asset(
-                                Store.value<ColorModel>(context).dark
-                                    ? 'images/QR_bg_4.jpg'
-                                    : "images/${bgImg[model?.bgIdx ?? 0]}",
-                                fit: BoxFit.cover)),
+                            child: model.bgIdx > 5
+                                ? Image.file(
+                                    File(SpUtil.getString(ReadSetting.bgsKey)),fit: BoxFit.cover,)
+                                : Image.asset(
+                                    Store.value<ColorModel>(context).dark
+                                        ? 'images/QR_bg_4.jpg'
+                                        : "images/${ReadSetting.bgImg[model?.bgIdx ?? 0]}",
+                                    fit: BoxFit.cover)),
                         //内容
                         // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
-                      model.isPage
-                              ? PageView.builder(
-                                  controller: model.pageController,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemBuilder:
-                                      (BuildContext context, int position) {
-                                    return model.allContent[position];
-                                  },
-                                  //条目个数
-                                  itemCount: model?.allContent?.length ?? 0,
-                                  onPageChanged: (page) =>
-                                      model.changeChapter(page),
-                                )
-                              : Container(
-                                  width: Screen.width,
-                                  height: Screen.height,
-                                  child: Column(
-                                    children: [
-                                      SizedBox(
-                                        height: model.topSafeHeight,
-                                      ),
-                                      Container(
-                                        height: 30,
-                                        alignment: Alignment.centerLeft,
-                                        padding: EdgeInsets.only(left: 20),
-                                        child: Text(
-                                          model.readPages[model.cursor]
-                                              .chapterName,
-                                          style: TextStyle(
-                                            fontSize:
-                                                12 / Screen.textScaleFactor,
-                                            color: colorModel.dark
-                                                ? Color(0x8FFFFFFF)
-                                                : Colors.black54,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
+                        model.isPage
+                            ? PageView.builder(
+                                controller: model.pageController,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemBuilder:
+                                    (BuildContext context, int position) {
+                                  return model.allContent[position];
+                                },
+                                //条目个数
+                                itemCount: model?.allContent?.length ?? 0,
+                                onPageChanged: (page) =>
+                                    model.changeChapter(page),
+                              )
+                            : Container(
+                                width: Screen.width,
+                                height: Screen.height,
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      height: model.topSafeHeight,
+                                    ),
+                                    Container(
+                                      height: 30,
+                                      alignment: Alignment.centerLeft,
+                                      padding: EdgeInsets.only(left: 20),
+                                      child: Text(
+                                        model.readPages[model.cursor]
+                                            .chapterName,
+                                        style: TextStyle(
+                                          fontSize: 12 / Screen.textScaleFactor,
+                                          color: colorModel.dark
+                                              ? Color(0x8FFFFFFF)
+                                              : Colors.black54,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      BookScrollView(),
-                                      Store.connect<ReadModel>(builder:
-                                          (context, ReadModel _readModel,
-                                              child) {
-                                        return Container(
-                                          height: 30,
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 20),
-                                          child: Row(
-                                            children: <Widget>[
-                                              BatteryView(
-                                                electricQuantity:
-                                                    _readModel.electricQuantity,
+                                    ),
+                                    BookScrollView(),
+                                    Store.connect<ReadModel>(builder:
+                                        (context, ReadModel _readModel, child) {
+                                      return Container(
+                                        height: 30,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 20),
+                                        child: Row(
+                                          children: <Widget>[
+                                            BatteryView(
+                                              electricQuantity:
+                                                  _readModel.electricQuantity,
+                                            ),
+                                            SizedBox(
+                                              width: 4,
+                                            ),
+                                            Text(
+                                              '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                                              style: TextStyle(
+                                                fontSize:
+                                                    12 / Screen.textScaleFactor,
+                                                color: colorModel.dark
+                                                    ? Color(0x8FFFFFFF)
+                                                    : Colors.black54,
                                               ),
-                                              SizedBox(
-                                                width: 4,
+                                            ),
+                                            Spacer(),
+                                            Text(
+                                              '${_readModel.percent.toStringAsFixed(1)}%',
+                                              style: TextStyle(
+                                                fontSize:
+                                                    12 / Screen.textScaleFactor,
+                                                color: colorModel.dark
+                                                    ? Color(0x8FFFFFFF)
+                                                    : Colors.black54,
                                               ),
-                                              Text(
-                                                '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                                                style: TextStyle(
-                                                  fontSize: 12 /
-                                                      Screen.textScaleFactor,
-                                                  color: colorModel.dark
-                                                      ? Color(0x8FFFFFFF)
-                                                      : Colors.black54,
-                                                ),
-                                              ),
-                                              Spacer(),
-                                              Text(
-                                                '${_readModel.percent.toStringAsFixed(1)}%',
-                                                style: TextStyle(
-                                                  fontSize: 12 /
-                                                      Screen.textScaleFactor,
-                                                  color: colorModel.dark
-                                                      ? Color(0x8FFFFFFF)
-                                                      : Colors.black54,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                              // Expanded(child: Container()),
-                                            ],
-                                          ),
-                                        );
-                                      }),
-                                    ],
-                                  )),
-                   
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            // Expanded(child: Container()),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                )),
+
                         //菜单
                         Offstage(offstage: !model.showMenu, child: Menu()),
                       ],
