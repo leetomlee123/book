@@ -11,6 +11,7 @@ class MenuConfig extends StatefulWidget {
 
   MenuConfig(this.sub, this.add, this.change, this.value, this.title,
       {this.min = .1, this.max = 4.0});
+
   @override
   _MenuConfigState createState() => _MenuConfigState();
 }
@@ -25,16 +26,30 @@ class _MenuConfigState extends State<MenuConfig> {
           onPressed: this.widget.sub,
           icon: Icon(Icons.remove),
         ),
-        Slider.adaptive(
-          value: this.widget.value,
-          onChanged: (v) {
-            setState(() {
-            this.widget.change(v);
-              
-            });
-          },
-          min: this.widget.min,
-          max: this.widget.max,
+        Expanded(
+          child: Container(
+            height: 12,
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: Color(0xFF3075EE),
+                inactiveTrackColor: Color(0x1A3075EE),
+                trackHeight: 2,
+                thumbColor: Color(0xFF3075EE),
+                thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: SliderComponentShape.noOverlay,
+              ),
+              child: Slider(
+                value: this.widget.value,
+                onChanged: (v) {
+                  setState(() {
+                    this.widget.change(v);
+                  });
+                },
+                min: this.widget.min,
+                max: this.widget.max,
+              ),
+            ),
+          ),
         ),
         IconButton(
           onPressed: this.widget.add,

@@ -16,6 +16,7 @@ class ReadSetting {
   static String latterLead = "LATTER_LEAD";
   static String latterSpace = "LATTER_SPACE";
   static String paragraph = "paragraph";
+  static String pageDis = "pageDis";
 
   static double listPageChapterName = 200;
   static double listPageBottom = Screen.height / 2;
@@ -104,6 +105,18 @@ class ReadSetting {
 
   static void calcFontSize(double size) {
     setFontSize(getFontSize() + size);
+  }
+
+  static void setPageDis(int s) {
+    SpUtil.putInt(pageDis, s);
+  }
+
+  static int getPageDis() {
+    return SpUtil.getInt(pageDis, defValue: 18);
+  }
+
+  static void calcPageDis(int s) {
+    SpUtil.putInt(pageDis, getPageDis() + s);
   }
 
   static double getTempH() {

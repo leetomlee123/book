@@ -30,7 +30,7 @@ class _NoMorePageState extends State<NoMorePage> {
             decoration: BoxDecoration(
                 image: DecorationImage(
                     image:
-                        CachedNetworkImageProvider('${_everyPoet.share ?? ''}'),
+                        CachedNetworkImageProvider('${_everyPoet?.share ?? ''}'),
                     fit: BoxFit.fitWidth)),
           ),
           offstage: _everyPoet == null),

@@ -29,7 +29,7 @@ class _MenuState extends State<Menu> {
   ReadModel _readModel;
   ColorModel _colorModel;
 
-  double settingH = 320;
+  double settingH = 360;
 
   @override
   void initState() {
@@ -298,14 +298,29 @@ class _MenuState extends State<Menu> {
                 },
                 icon: Icon(Icons.remove),
               ),
-              Slider.adaptive(
-                value: ReadSetting.getLineHeight(),
-                onChanged: (v) {
-                  ReadSetting.setLineHeight(v);
-                  _readModel.modifyFont();
-                },
-                min: .1,
-                max: 4.0,
+              Expanded(
+                child: Container(
+                  height: 12,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: Color(0xFF3075EE),
+                      inactiveTrackColor: Color(0x1A3075EE),
+                      trackHeight: 2,
+                      thumbColor: Color(0xFF3075EE),
+                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: SliderComponentShape.noOverlay,
+                    ),
+                    child: Slider(
+                      value: ReadSetting.getLineHeight(),
+                      onChanged: (v) {
+                        ReadSetting.setLineHeight(v);
+                        _readModel.modifyFont();
+                      },
+                      min: .1,
+                      max: 4.0,
+                    ),
+                  ),
+                ),
               ),
               IconButton(
                 onPressed: () {
@@ -358,14 +373,29 @@ class _MenuState extends State<Menu> {
                 },
                 icon: Icon(Icons.remove),
               ),
-              Slider.adaptive(
-                value: ReadSetting.getParagraph(),
-                onChanged: (v) {
-                  ReadSetting.setParagraph(v);
-                  _readModel.modifyFont();
-                },
-                min: .1,
-                max: 2.0,
+              Expanded(
+                child: Container(
+                  height: 12,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: Color(0xFF3075EE),
+                      inactiveTrackColor: Color(0x1A3075EE),
+                      trackHeight: 2,
+                      thumbColor: Color(0xFF3075EE),
+                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: SliderComponentShape.noOverlay,
+                    ),
+                    child: Slider(
+                      value: ReadSetting.getParagraph(),
+                      onChanged: (v) {
+                        ReadSetting.setParagraph(v);
+                        _readModel.modifyFont();
+                      },
+                      min: .1,
+                      max: 2.0,
+                    ),
+                  ),
+                ),
               ),
               IconButton(
                 onPressed: () {
@@ -377,7 +407,50 @@ class _MenuState extends State<Menu> {
               Text('${ReadSetting.getParagraph().toStringAsFixed(1)}')
             ],
           ),
-
+          Row(
+            children: [
+              Text("页距", style: TextStyle(fontSize: 13.0)),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.calcPageDis(-1);
+                  _readModel.modifyFont();
+                },
+                icon: Icon(Icons.remove),
+              ),
+              Expanded(
+                child: Container(
+                  height: 12,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: Color(0xFF3075EE),
+                      inactiveTrackColor: Color(0x1A3075EE),
+                      trackHeight: 2,
+                      thumbColor: Color(0xFF3075EE),
+                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                      overlayShape: SliderComponentShape.noOverlay,
+                    ),
+                    child: Slider(
+                      value: ReadSetting.getPageDis().toDouble(),
+                      onChanged: (v) {
+                        ReadSetting.setPageDis(v.toInt());
+                        _readModel.modifyFont();
+                      },
+                      min: 0,
+                      max: 30,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  ReadSetting.calcPageDis(1);
+                  _readModel.modifyFont();
+                },
+                icon: Icon(Icons.add),
+              ),
+              Text('${ReadSetting.getPageDis()}')
+            ],
+          ),
           Expanded(
               child: ListView(
             children: bgThemes(),
@@ -393,7 +466,7 @@ class _MenuState extends State<Menu> {
               _readModel.switchClickNextPage();
             },
             title: Text(
-              '左侧点击下一页',
+              '单手模式',
               style: TextStyle(
                   fontSize: 13,
                   color: _colorModel.dark ? Colors.white : Colors.black),
@@ -402,7 +475,7 @@ class _MenuState extends State<Menu> {
           ),
         ],
       ),
-      padding: EdgeInsets.only(left: 15.0),
+      padding: EdgeInsets.symmetric(horizontal: 15),
     );
   }
 

@@ -52,7 +52,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addObserver(this);
     eventBus.on<ZEvent>().listen((event) {
-      move(event.isPage, event.offset);
+      move(event.off);
     });
     eventBus.on<OpenChapters>().listen((event) {
       _scaffoldKey.currentState.openDrawer();
@@ -124,7 +124,9 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                             bottom: 0,
                             child: model.bgIdx > 5
                                 ? Image.file(
-                                    File(SpUtil.getString(ReadSetting.bgsKey)),fit: BoxFit.cover,)
+                                    File(SpUtil.getString(ReadSetting.bgsKey)),
+                                    fit: BoxFit.cover,
+                                  )
                                 : Image.asset(
                                     Store.value<ColorModel>(context).dark
                                         ? 'images/QR_bg_4.jpg'
@@ -133,17 +135,29 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                         //内容
                         // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
                         model.isPage
-                            ? PageView.builder(
-                                controller: model.pageController,
-                                physics: NeverScrollableScrollPhysics(),
-                                itemBuilder:
-                                    (BuildContext context, int position) {
-                                  return model.allContent[position];
+                            ? GestureDetector(
+                                child: PageView.builder(
+                                  controller: model.pageController,
+                                  physics: PageScrollPhysics(),
+                                  itemBuilder:
+                                      (BuildContext context, int position) {
+                                    return model.allContent[position];
+                                  },
+                                  //条目个数
+                                  itemCount: model?.allContent?.length ?? 0,
+                                  onPageChanged: (page) =>
+                                      model.changeChapter(page),
+                                ),
+                                behavior: HitTestBehavior.opaque,
+                                onTapDown: (TapDownDetails details) {
+                                  readModel.tapPage(context, details);
                                 },
-                                //条目个数
-                                itemCount: model?.allContent?.length ?? 0,
-                                onPageChanged: (page) =>
-                                    model.changeChapter(page),
+                                // onHorizontalDragStart:
+                                //     readModel.onHorizontalDragStart,
+                                // onHorizontalDragUpdate:
+                                //     readModel.onHorizontalDragUpdate,
+                                // onHorizontalDragEnd:
+                                //     readModel.onHorizontalDragEnd,
                               )
                             : Container(
                                 width: Screen.width,
@@ -248,22 +262,27 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               ],
             ));
   }
+void move(int off){
+  var widgetsBinding = WidgetsBinding.instance;
 
-  void move(bool isPage, double offset) {
-    var widgetsBinding = WidgetsBinding.instance;
-
-    widgetsBinding.addPostFrameCallback((callback) {
-      if (isPage) {
-        int ix = readModel.prePage?.pageOffsets ?? 0;
-        readModel.pageController.jumpToPage(ix);
-      } else {
-        if (offset == 0.0) {
-          readModel.listController
-              .jumpTo((readModel.ladderH[readModel.cursor - 1]));
-        } else {
-          readModel.listController.jumpTo(offset);
-        }
-      }
-    });
-  }
+  widgetsBinding.addPostFrameCallback((callback) {
+    readModel.pageController.jumpToPage(off);
+  });
+}
+  // void move(bool isPage, double offset) {
+  //   var widgetsBinding = WidgetsBinding.instance;
+  //
+  //   widgetsBinding.addPostFrameCallback((callback) {
+  //     if (isPage) {
+  //       readModel.pageController.jumpToPage(1);
+  //     } else {
+  //       if (offset == 0.0) {
+  //         readModel.listController
+  //             .jumpTo((readModel.ladderH[readModel.cursor - 1]));
+  //       } else {
+  //         readModel.listController.jumpTo(offset);
+  //       }
+  //     }
+  //   });
+  // }
 }

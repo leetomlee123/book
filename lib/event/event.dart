@@ -16,10 +16,10 @@ class OpenEvent {
   OpenEvent(this.name);
 }
 class ZEvent {
-  bool isPage;
-  double offset;
 
-  ZEvent(this.isPage,this.offset);
+  int off;
+
+  ZEvent(this.off);
 }
 class PlayEvent {
   String name;
