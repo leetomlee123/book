@@ -304,17 +304,15 @@ class ReadModel with ChangeNotifier {
         backgroundColor: Colors.transparent);
 
     try {
-      if (book.cur == 0) {
-      } else {
-        // await Future.wait([
-        curPage = await loadChapter(idx);
-        Future.delayed(Duration(milliseconds: 500), () {
-          loadChapter(idx + 1).then((value) => {nextPage = value});
-        });
-        Future.delayed(Duration(seconds: 1), () {
-          loadChapter(idx - 1).then((value) => {prePage = value});
-        });
-      }
+      // await Future.wait([
+      curPage = await loadChapter(idx);
+      Future.delayed(Duration(milliseconds: 500), () {
+        loadChapter(idx + 1).then((value) => {nextPage = value});
+      });
+      Future.delayed(Duration(seconds: 1), () {
+        loadChapter(idx - 1).then((value) => {prePage = value});
+      });
+
       // ]);
       // loadChapter(idx - 2);
       // loadChapter(idx + 2);
@@ -585,18 +583,16 @@ class ReadModel with ChangeNotifier {
   }
 
   modifyFont() async {
-    // SpUtil.putDouble('fontSize', fontSize);
-
-    book.index = 0;
-
+    book.index = 1;
     var keys = SpUtil.getKeys();
     for (var key in keys) {
       if (key.contains("pages")) {
         SpUtil.remove(key);
       }
     }
+    curPage = await loadChapter(book.cur);
     await fillAllContent(refresh: true);
-    initPageContent(book.cur, true);
+    pageController.jumpToPage(1);
   }
 
   toggleShowMenu() {
