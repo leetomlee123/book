@@ -40,12 +40,34 @@ class ReadModel with ChangeNotifier {
   Color darkFont = Color(0x5FFFFFFF);
   TextComposition textComposition;
 
+  Stack stackContent;
+
+  Future<void> next() async {
+    book.index += 1;
+    await changeChapter(book.index);
+    notifyListeners();
+  }
+
+  Future<void> pre() async {
+    book.index -= 1;
+    await changeChapter(book.index);
+    notifyListeners();
+  }
+
+  Widget get topWidget {
+    return allContent[book.index];
+  }
+
+  Widget get bottomWidget {
+    return allContent[book.index - 1];
+  }
+
   Book book;
   List<Chapter> chapters = [];
 
   var currentPageValue = 0.0;
   String poet = "";
-  var topSafeHeight = .0;
+
   var electricQuantity = 1.0;
 
   // double allContentHeight = 0;
@@ -62,6 +84,7 @@ class ReadModel with ChangeNotifier {
   ReadPage curPage;
   ReadPage nextPage;
   List<Widget> allContent = [];
+
   double percent = 0;
 
   //页面控制器
@@ -85,14 +108,13 @@ class ReadModel with ChangeNotifier {
   bool showMenu = false;
 
   //背景色索引
-  int bgIdx = 0;
+  int bgIdx = SpUtil.getInt(Common.bgIdx, defValue: 0);
 
 //章节翻页标志
   bool loadOk = false;
 
   //页面宽高
-  double contentH;
-  double contentW;
+
   bool jump = true;
 
   //阅读方式
@@ -103,7 +125,6 @@ class ReadModel with ChangeNotifier {
   bool leftClickNext = SpUtil.getBool("leftClickNext", defValue: false);
 
   //页面上下文
-  BuildContext context;
 
 //是否修改font
   bool sSave;
@@ -130,10 +151,10 @@ class ReadModel with ChangeNotifier {
         getChapters();
       }
 
-      //书的最后一章
-      if (book.CId == "-1") {
-        book.cur = chapters.length - 1;
-      }
+      // //书的最后一章
+      // if (book.CId == "-1") {
+      //   book.cur = chapters.length - 1;
+      // }
       checkCur();
 
       await initPageContent(book.cur, false);
@@ -142,7 +163,7 @@ class ReadModel with ChangeNotifier {
       if (isPage) {
         if (book.index == -1) {
           //最后一页
-          book.index = curPage?.pageOffsets ?? 0;
+          book.index =curPage.pageOffsets;
         }
         pageController = PageController(initialPage: book.index);
       } else {
@@ -172,9 +193,9 @@ class ReadModel with ChangeNotifier {
       } else {
         await getChapters();
       }
-      if (book.CId == "-1") {
-        book.cur = chapters.length - 1;
-      }
+      // if (book.CId == "-1") {
+      //   book.cur = chapters.length - 1;
+      // }
       await initPageContent(book?.cur ?? 0, false);
       if (isPage) {
         int idx = (cur == 0) ? 0 : 1;
@@ -309,7 +330,7 @@ class ReadModel with ChangeNotifier {
       Future.delayed(Duration(milliseconds: 500), () {
         loadChapter(idx + 1).then((value) => {nextPage = value});
       });
-      Future.delayed(Duration(seconds: 1), () {
+      Future.delayed(Duration(milliseconds: 600), () {
         loadChapter(idx - 1).then((value) => {prePage = value});
       });
 
@@ -340,8 +361,7 @@ class ReadModel with ChangeNotifier {
   }
 
   colorModelSwitch() async {
-    var model = Store.value<ColorModel>(context);
-    var color = model.dark ? darkFont : Colors.black;
+    var color = SpUtil.getBool('dark') ? darkFont : Colors.black;
     if ((prePage?.textComposition ?? null) != null) {
       prePage.textComposition.style =
           prePage.textComposition.style.copyWith(color: color);
@@ -360,15 +380,10 @@ class ReadModel with ChangeNotifier {
 
   fillAllContent({bool refresh = true}) async {
     allContent = [];
-    // if (prePage != null) {
-    //   allContent.addAll(chapterContent(prePage));
-    // }
     if (curPage != null) {
       allContent.addAll(chapterContent(curPage));
     }
-    // if (nextPage != null) {
-    //   allContent.addAll(chapterContent(nextPage));
-    // }
+
     //每次翻页刷新电池电量
     electricQuantity = (await Battery().batteryLevel) / 100;
     if (refresh) {
@@ -400,7 +415,7 @@ class ReadModel with ChangeNotifier {
           curPage = nextPage;
         }
         fillAllContent();
-        Future.delayed(Duration(seconds: 1), () {
+        Future.delayed(Duration(milliseconds: 500), () {
           loadChapter(book.cur + 1).then((value) => nextPage = value);
         });
 
@@ -419,7 +434,7 @@ class ReadModel with ChangeNotifier {
       curPage = prePage;
       fillAllContent();
       book.cur -= 1;
-      Future.delayed(Duration(seconds: 1), () {
+      Future.delayed(Duration(milliseconds: 500), () {
         loadChapter(book.cur - 1).then((value) => prePage = value);
       });
 
@@ -428,64 +443,12 @@ class ReadModel with ChangeNotifier {
       book.index = curPage.pageOffsets;
       return;
     }
-    // if ((idx + 1 - preLen) > (curLen)) {
-    //   //下一章
-    //   int tempCur = book.cur + 1;
-    //   if (tempCur >= chapters.length) {
-    //     //到最后一页
-    //     book.index = -1;
-    //   } else {
-    //     book.cur += 1;
-    //     prePage = curPage;
-    //     if ((nextPage?.chapterName ?? "") == "-1") {
-    //       BotToast.showCustomLoading(
-    //           toastBuilder: (_) => LoadingDialog(),
-    //           clickClose: true,
-    //           backgroundColor: Colors.transparent);
-    //       curPage = await loadChapter(book.cur);
-    //       int preLen = prePage?.pageOffsets ?? 0;
-    //       int curLen = curPage?.pageOffsets ?? 0;
-    //       book.index = preLen + curLen - 1;
-    //       BotToast.closeAllLoading();
-    //     } else {
-    //       curPage = nextPage;
-    //     }
-    //     nextPage = null;
-    //     fillAllContent();
-    //     pageController.jumpToPage(prePage?.pageOffsets ?? 0);
-    //     ReadPage temp = await loadChapter(book.cur + 1);
-    //     if (book.cur == tempCur) {
-    //       nextPage = temp;
-    //       fillAllContent();
-    //     }
-    //   }
-    // } else if (idx < preLen) {
-    //   //上一章
-    //   int tempCur = book.cur - 1;
-    //   if (tempCur < 0) {
-    //     return;
-    //   } else {
-    //     book.cur -= 1;
-    //     nextPage = curPage;
-    //     curPage = prePage;
-    //     prePage = null;
-    //     fillAllContent();
-    //     var p = curPage?.pageOffsets ?? 0;
-    //     pageController.jumpToPage(p > 0 ? p - 1 : 0);
-    //     ReadPage temp = await loadChapter(book.cur - 1);
-    //     if (tempCur == book.cur) {
-    //       prePage = temp;
-    //       fillAllContent();
-    //       int ix = (prePage?.pageOffsets ?? 0) + idx;
-    //       pageController.jumpToPage(ix);
-    //     }
-    //   }
-    // }
   }
 
-  switchBgColor(i) {
+  switchBgColor(i) async {
     bgIdx = i;
-    SpUtil.putInt('bgIdx', i);
+    SpUtil.putInt(Common.bgIdx, i);
+    await colorModelSwitch();
     notifyListeners();
   }
 
@@ -542,26 +505,22 @@ class ReadModel with ChangeNotifier {
       r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
       return r;
     }
-    var model = Store.value<ColorModel>(context);
 
     //本地是否有分页的缓存
     if (isPage) {
       var k = '${book.Id}pages' + r.chapterName;
       if (SpUtil.haveKey(k)) {
-        r.textComposition =
-            TextComposition.parContent(r, model.dark ? darkFont : Colors.black);
+        r.textComposition = TextComposition.parContent(r, electricQuantity);
         List<TextPage> list =
             SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
         r.textComposition.pages = list;
         SpUtil.remove(k);
       } else {
         if ((r?.textComposition?.pages ?? null) != null) {
-          r.textComposition = TextComposition.parContent(
-              r, model.dark ? darkFont : Colors.black);
+          r.textComposition = TextComposition.parContent(r, electricQuantity);
         } else {
-          r.textComposition = TextComposition.parContent(
-              r, model.dark ? darkFont : Colors.black,
-              parse: true);
+          r.textComposition =
+              TextComposition.parContent(r, electricQuantity, parse: true);
         }
       }
     } else {
@@ -570,8 +529,7 @@ class ReadModel with ChangeNotifier {
         r.height = SpUtil.getDouble(k);
         SpUtil.remove(k);
       } else {
-        r.textComposition = TextComposition.parContent(
-            r, model.dark ? darkFont : Colors.black,
+        r.textComposition = TextComposition.parContent(r, electricQuantity,
             justRender: true, parse: true);
         //章节内容不满一页 按一页算
         r.height = (r.textComposition?.pages?.first?.height ?? 0) +
@@ -746,19 +704,7 @@ class ReadModel with ChangeNotifier {
         contents.add(Store.connect<ColorModel>(
             builder: (context, ColorModel model, child) {
           return isPage
-              ? Container(
-                  child: Column(
-                    children: <Widget>[
-                      SizedBox(height: 2),
-                      pageHead(r, model),
-                      r.textComposition.getPageWidget(i),
-                      pageFoot(model, i, r)
-                    ],
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                  ),
-                  width: double.infinity,
-                  height: double.infinity,
-                )
+              ? r.textComposition.getPageWidget(i)
               : Padding(
                   padding: EdgeInsets.only(bottom: ReadSetting.listPageBottom),
                   child: r.textComposition.getPageWidget(),
@@ -826,22 +772,6 @@ class ReadModel with ChangeNotifier {
                 )
               ]),
             )));
-  }
-
-  Widget pageHead(var r, var model) {
-    return Container(
-      height: 30,
-      alignment: Alignment.bottomLeft,
-      padding: const EdgeInsets.only(left: 50),
-      child: Text(
-        r.chapterName,
-        style: TextStyle(
-          fontSize: 12 / Screen.textScaleFactor,
-          color: model.dark ? darkFont : Colors.black54,
-        ),
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
   }
 
   clear() async {

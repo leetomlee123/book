@@ -1,4 +1,3 @@
-import 'package:book/entity/Chapter.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'BookTag.g.dart';

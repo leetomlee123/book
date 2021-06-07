@@ -1,4 +1,8 @@
+
+import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/common.dart';
+import 'package:book/entity/Update.dart';
 import 'package:book/event/event.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
@@ -8,12 +12,15 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/view/system/white_area.dart';
-import 'package:bot_toast/bot_toast.dart';
+import 'package:package_info/package_info.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:bot_toast/bot_toast.dart';
 
 class Me extends StatelessWidget {
   Widget getItem(imageIcon, text, func, Color c) {
@@ -152,7 +159,7 @@ class Me extends StatelessWidget {
                               ),
                             ),
                             actions: <Widget>[
-                              FlatButton(
+                              TextButton(
                                 child: Text(
                                   "确定",
                                 ),
@@ -257,7 +264,21 @@ class Me extends StatelessWidget {
                 ImageIcon(AssetImage("images/upgrade.png")),
                 '应用更新',
                 () async {
-                  BotToast.showText(text: "已经是最新版本");
+                  Navigator.pop(context);
+                  Response response =
+                      await HttpUtil().http().get(Common.update);
+                  var data = response.data['data'];
+                  Update update = Update.fromJson(data);
+                  PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+                  String version = packageInfo.version;
+                  if (update.version != version) {
+                    BotToast.showWidget(toastBuilder: (context) {
+                      return Center(
+                        child: UpdateDialog(update),
+                      );
+                    });
+                  }
                   // if (Platform.isAndroid) {
                   //   FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
                   //   var info = await FlutterBugly.getUpgradeInfo();
@@ -281,13 +302,15 @@ class Me extends StatelessWidget {
                   showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                            title: Text(('清阅揽胜  ')),
+                            title: Text(('清阅揽胜 V${SpUtil.getString(
+                              "version",
+                            )}')),
                             content: Text(
                               ReadSetting.poet,
                               style: TextStyle(fontSize: 15, height: 2.1),
                             ),
                             actions: <Widget>[
-                              FlatButton(
+                              TextButton(
                                 child: new Text(
                                   "确定",
                                 ),
@@ -305,11 +328,12 @@ class Me extends StatelessWidget {
                   ? Store.connect<ShelfModel>(
                       builder: (context, ShelfModel model, child) {
                       return GestureDetector(
-                        child :WhiteArea(         Text(
-                          "退出登录",
-                          style: TextStyle(color: Colors.redAccent),
-                        ),50),
-
+                        child: WhiteArea(
+                            Text(
+                              "退出登录",
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                            50),
                         onTap: () {
                           model.dropAccountOut();
                           eventBus.fire(new BooksEvent([]));

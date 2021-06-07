@@ -5,8 +5,11 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:io';
+
 import 'package:book/common/Http.dart';
 import 'package:book/entity/ParseContentConfig.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
   String msg = '''
@@ -29,11 +32,13 @@ Future<void> main() async {
 ]
      ''';
 
-  List msg1 = await parseJson(msg);
+  // List msg1 = await parseJson(msg);
 
-  List<ParseContentConfig> configs =
-      msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
-
+  // List<ParseContentConfig> configs =
+  //     msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
+  Directory storageDir = await getExternalStorageDirectory();
+  String storagePath = storageDir.path;
+  print(storagePath);
 //  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
 //    // Build our app and trigger a frame.
 //    await tester.pumpWidget(MyApp());

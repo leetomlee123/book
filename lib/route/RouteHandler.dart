@@ -3,6 +3,7 @@ import 'dart:convert' as convert;
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
+import 'package:book/entity/Update.dart';
 import 'package:book/main.dart';
 import 'package:book/view/book/AllTagBook.dart';
 import 'package:book/view/book/BookDetail.dart';
@@ -14,9 +15,9 @@ import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/system/FontSet.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
-
 
 // 根目录
 var rootHandler =
@@ -35,6 +36,11 @@ var searchHandler =
 var loginHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
   return Login();
+});
+var updateHandler =
+    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+  Update update = Update.fromJson(convert.jsonDecode(params['update'][0]));
+  return UpdateDialog(update);
 });
 var registerHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {

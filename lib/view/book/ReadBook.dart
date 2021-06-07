@@ -10,6 +10,7 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
+import 'package:book/view/book/CoverReadView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/ScrollViewBook.dart';
 import 'package:book/view/system/BatteryView.dart';
@@ -59,18 +60,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
-    readModel.context = context;
     readModel.getBookRecord();
-
-    if (SpUtil.haveKey('bgIdx')) {
-      readModel.bgIdx = SpUtil.getInt('bgIdx');
-    }
-    readModel.topSafeHeight = Screen.topSafeHeight;
-
-    readModel.contentH =
-        Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight;
-    // ReadSetting.setTempH(Screen.height - Screen.topSafeHeight - 60 - Screen.bottomSafeHeight);
-    // ReadSetting.setTempW(Screen.width - 30.0);
     FlutterStatusbarManager.setFullscreen(true);
   }
 
@@ -116,118 +106,102 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               return model.loadOk
                   ? Stack(
                       children: <Widget>[
-                        //背景
-                        Positioned(
-                            left: 0,
-                            top: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: model.bgIdx > 5
-                                ? Image.file(
-                                    File(SpUtil.getString(ReadSetting.bgsKey)),
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.asset(
-                                    Store.value<ColorModel>(context).dark
-                                        ? 'images/QR_bg_4.jpg'
-                                        : "images/${ReadSetting.bgImg[model?.bgIdx ?? 0]}",
-                                    fit: BoxFit.cover)),
+                        // CoverReadView(),
                         //内容
-                        // PageTurn(key: GlobalKey<PageTurnState>(),children: model.allContent,o),
-                        model.isPage
-                            ? GestureDetector(
-                                child: PageView.builder(
-                                  controller: model.pageController,
-                                  physics: PageScrollPhysics(),
-                                  itemBuilder:
-                                      (BuildContext context, int position) {
-                                    return model.allContent[position];
-                                  },
-                                  //条目个数
-                                  itemCount: model?.allContent?.length ?? 0,
-                                  onPageChanged: (page) =>
-                                      model.changeChapter(page),
-                                ),
-                                behavior: HitTestBehavior.opaque,
-                                onTapDown: (TapDownDetails details) {
-                                  readModel.tapPage(context, details);
-                                },
-                                // onHorizontalDragStart:
-                                //     readModel.onHorizontalDragStart,
-                                // onHorizontalDragUpdate:
-                                //     readModel.onHorizontalDragUpdate,
-                                // onHorizontalDragEnd:
-                                //     readModel.onHorizontalDragEnd,
-                              )
-                            : Container(
-                                width: Screen.width,
-                                height: Screen.height,
-                                child: Column(
-                                  children: [
-                                    SizedBox(
-                                      height: model.topSafeHeight,
-                                    ),
-                                    Container(
-                                      height: 30,
-                                      alignment: Alignment.centerLeft,
-                                      padding: EdgeInsets.only(left: 20),
-                                      child: Text(
-                                        model.readPages[model.cursor]
-                                            .chapterName,
-                                        style: TextStyle(
-                                          fontSize: 12 / Screen.textScaleFactor,
-                                          color: colorModel.dark
-                                              ? Color(0x8FFFFFFF)
-                                              : Colors.black54,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    BookScrollView(),
-                                    Store.connect<ReadModel>(builder:
-                                        (context, ReadModel _readModel, child) {
-                                      return Container(
-                                        height: 30,
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 20),
-                                        child: Row(
-                                          children: <Widget>[
-                                            BatteryView(
-                                              electricQuantity:
-                                                  _readModel.electricQuantity,
-                                            ),
-                                            SizedBox(
-                                              width: 4,
-                                            ),
-                                            Text(
-                                              '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    12 / Screen.textScaleFactor,
-                                                color: colorModel.dark
-                                                    ? Color(0x8FFFFFFF)
-                                                    : Colors.black54,
-                                              ),
-                                            ),
-                                            Spacer(),
-                                            Text(
-                                              '${_readModel.percent.toStringAsFixed(1)}%',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    12 / Screen.textScaleFactor,
-                                                color: colorModel.dark
-                                                    ? Color(0x8FFFFFFF)
-                                                    : Colors.black54,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            // Expanded(child: Container()),
-                                          ],
-                                        ),
-                                      );
-                                    }),
-                                  ],
-                                )),
+
+                        // model.isPage
+                        //     ?
+                        GestureDetector(
+                          child: PageView.builder(
+                            controller: model.pageController,
+                            physics: PageScrollPhysics(),
+                            itemBuilder: (BuildContext context, int position) {
+                              return model.allContent[position];
+                            },
+                            //条目个数
+                            itemCount: model?.allContent?.length ?? 0,
+                            onPageChanged: (page) => model.changeChapter(page),
+                          ),
+                          behavior: HitTestBehavior.opaque,
+                          onTapDown: (TapDownDetails details) {
+                            readModel.tapPage(context, details);
+                          },
+                          // onHorizontalDragStart:
+                          //     readModel.onHorizontalDragStart,
+                          // onHorizontalDragUpdate:
+                          //     readModel.onHorizontalDragUpdate,
+                          // onHorizontalDragEnd:
+                          //     readModel.onHorizontalDragEnd,
+                        ),
+                        // : Container(
+                        //     width: Screen.width,
+                        //     height: Screen.height,
+                        //     child: Column(
+                        //       children: [
+                        //         SizedBox(
+                        //           height: model.topSafeHeight,
+                        //         ),
+                        //         Container(
+                        //           height: 30,
+                        //           alignment: Alignment.centerLeft,
+                        //           padding: EdgeInsets.only(left: 20),
+                        //           child: Text(
+                        //             model.readPages[model.cursor]
+                        //                 .chapterName,
+                        //             style: TextStyle(
+                        //               fontSize: 12 / Screen.textScaleFactor,
+                        //               color: colorModel.dark
+                        //                   ? Color(0x8FFFFFFF)
+                        //                   : Colors.black54,
+                        //             ),
+                        //             overflow: TextOverflow.ellipsis,
+                        //           ),
+                        //         ),
+                        //         BookScrollView(),
+                        //         Store.connect<ReadModel>(builder:
+                        //             (context, ReadModel _readModel, child) {
+                        //           return Container(
+                        //             height: 30,
+                        //             padding: EdgeInsets.symmetric(
+                        //                 horizontal: 20),
+                        //             child: Row(
+                        //               children: <Widget>[
+                        //                 BatteryView(
+                        //                   electricQuantity:
+                        //                       _readModel.electricQuantity,
+                        //                 ),
+                        //                 SizedBox(
+                        //                   width: 4,
+                        //                 ),
+                        //                 Text(
+                        //                   '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                        //                   style: TextStyle(
+                        //                     fontSize:
+                        //                         12 / Screen.textScaleFactor,
+                        //                     color: colorModel.dark
+                        //                         ? Color(0x8FFFFFFF)
+                        //                         : Colors.black54,
+                        //                   ),
+                        //                 ),
+                        //                 Spacer(),
+                        //                 Text(
+                        //                   '${_readModel.percent.toStringAsFixed(1)}%',
+                        //                   style: TextStyle(
+                        //                     fontSize:
+                        //                         12 / Screen.textScaleFactor,
+                        //                     color: colorModel.dark
+                        //                         ? Color(0x8FFFFFFF)
+                        //                         : Colors.black54,
+                        //                   ),
+                        //                   textAlign: TextAlign.center,
+                        //                 ),
+                        //                 // Expanded(child: Container()),
+                        //               ],
+                        //             ),
+                        //           );
+                        //         }),
+                        //       ],
+                        //     )),
 
                         //菜单
                         Offstage(offstage: !model.showMenu, child: Menu()),
@@ -262,13 +236,14 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
               ],
             ));
   }
-void move(int off){
-  var widgetsBinding = WidgetsBinding.instance;
 
-  widgetsBinding.addPostFrameCallback((callback) {
-    readModel.pageController.jumpToPage(off);
-  });
-}
+  void move(int off) {
+    var widgetsBinding = WidgetsBinding.instance;
+
+    widgetsBinding.addPostFrameCallback((callback) {
+      readModel.pageController.jumpToPage(off);
+    });
+  }
   // void move(bool isPage, double offset) {
   //   var widgetsBinding = WidgetsBinding.instance;
   //

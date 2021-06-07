@@ -17,22 +17,22 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
-  image_picker: ^0.7.5+3
-  jpush_flutter: ^2.0.5
+  package_info: ^2.0.2
+  image_picker: ^0.8.0+1
+  jpush_flutter: ^2.1.2
   html: ^0.15.0
   # firebase_analytics: ^7.1.1
   # firebase_core: ^1.0.2
   extended_tabs: ^2.0.0
   palette_generator: ^0.3.0
   install_plugin: ^2.0.1
-  flutter_cache_manager: ^2.1.2
-  permission_handler: ^6.1.0
+  permission_handler: ^8.0.1
   battery: ^2.0.1
   fluro: ^2.0.3
   screen: ^0.0.5
   protobuf: ^2.0.0
-  shared_preferences: ^2.0.4
-  cached_network_image: ^2.5.1
+  shared_preferences: ^2.0.6
+  cached_network_image: ^3.0.0
   path_provider: ^2.0.1
   dio: ^4.0.0
   convert: ^3.0.0

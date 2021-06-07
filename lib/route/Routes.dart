@@ -25,6 +25,7 @@ class Routes {
   static String voices = '/voices';
   static String voiceList = '/voiceList';
   static String videoTest = '/videoTest';
+  static String update = '/update';
 
 
   // 配置route
@@ -32,6 +33,7 @@ class Routes {
     // 未发现对应route
 
     router.define(root, handler: rootHandler);
+    router.define(update, handler: updateHandler);
     router.define(search, handler: searchHandler);
     router.define(read, handler: readHandler);
     router.define(login, handler: loginHandler);

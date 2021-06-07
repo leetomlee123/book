@@ -12,6 +12,7 @@ class Common {
   static String info = domain + '/info';
   static String modifypassword = domain + "/password";
   static String register = domain + "/register";
+  static String update = domain + "/update";
   static String hot = domain + '/hot';
   static String detail = domain + "/book/detail";
   static String shelf = domain + "/book/shelf";
@@ -34,6 +35,7 @@ class Common {
   static String listbookname = "booklist";
   static String toplist = "toplist";
   static String downloadlist = "downloadlist";
+  static String bgIdx = "bgIdx";
 
 //  static String video_domain = "http://192.168.3.56:8082";
 

@@ -13,6 +13,16 @@ class CustomCacheManager {
       fileService: HttpFileService(),
     ),
   );
+  static CacheManager apk = CacheManager(
+    Config(
+      fontKey,
+      stalePeriod: const Duration(days: 1),
+      maxNrOfCacheObjects: 20,
+      repo: JsonCacheInfoRepository(databaseName: "apk"),
+      // fileSystem: IOFileSystem(key),
+      fileService: HttpFileService(),
+    ),
+  );
   static CacheManager instanceVoice = CacheManager(
     Config(
       voiceKey,
@@ -23,7 +33,7 @@ class CustomCacheManager {
       fileService: HttpFileService(),
     ),
   );
-    static CacheManager instanceVideo = CacheManager(
+  static CacheManager instanceVideo = CacheManager(
     Config(
       voiceKey,
       stalePeriod: const Duration(days: 1),

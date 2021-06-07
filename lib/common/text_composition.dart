@@ -1,13 +1,16 @@
 library text_composition;
 
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/common.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
+import 'package:book/view/system/BatteryView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -18,9 +21,12 @@ import 'package:flutter/material.dart';
 class TextComposition {
   /// 待渲染文本段落
   /// 已经预处理: 不重新计算空行 不重新缩进
+  static Color darkFont = Color(0x5FFFFFFF);
+  ReadPage readPage;
   final List<String> paragraphs;
   bool parse;
   bool justRender;
+  double electricQuantity;
 
   /// 字体样式 字号 [size] 行高 [height] 字体 [family] 字色[Color]
   TextStyle style;
@@ -89,7 +95,9 @@ class TextComposition {
     String text,
     List<String> paragraphs,
     this.style,
+    this.electricQuantity,
     this.parse,
+    this.readPage,
     this.justRender,
     Size boxSize,
     this.padding,
@@ -206,14 +214,70 @@ class TextComposition {
   Widget getPageWidget([int pageIndex = 0]) {
     // if (pageIndex != null && !changePage(pageIndex)) return Container();
     return Container(
-      width: boxSize.width,
-      height: justRender
-          ? pages[pageIndex].height
-          : (boxSize.height.isInfinite
-              ? pages[pageIndex].height
-              : boxSize.height),
-      child: CustomPaint(
-          painter: PagePainter(pageIndex, pages[pageIndex], style, debug)),
+      width: Screen.width,
+      height: Screen.height,
+      decoration: BoxDecoration(
+          image: DecorationImage(
+              fit: BoxFit.fill,
+              image: SpUtil.getInt(Common.bgIdx) > 5
+                  ? FileImage(
+                      File(SpUtil.getString(ReadSetting.bgsKey)),
+                    )
+                  : AssetImage(SpUtil.getBool("dark")
+                      ? 'images/QR_bg_4.jpg'
+                      : "images/${ReadSetting.bgImg[SpUtil.getInt(Common.bgIdx)]}"))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 2),
+          Container(
+            height: 30,
+            alignment: Alignment.bottomLeft,
+            padding: const EdgeInsets.only(left: 50),
+            child: Text(
+              readPage.chapterName,
+              style: TextStyle(
+                fontSize: 12 / Screen.textScaleFactor,
+                color: SpUtil.getBool("dark") ? darkFont : Colors.black54,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          CustomPaint(
+              painter: PagePainter(pageIndex, pages[pageIndex], style, debug)),
+          Spacer(),
+          Container(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: <Widget>[
+                BatteryView(
+                  electricQuantity: electricQuantity,
+                ),
+                SizedBox(
+                  width: 4,
+                ),
+                Text(
+                  '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+                  style: TextStyle(
+                    fontSize: 12 / Screen.textScaleFactor,
+                    color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
+                  ),
+                ),
+                Spacer(),
+                Text(
+                  '第${pageIndex + 1}/${pages.length}页',
+                  style: TextStyle(
+                    fontSize: 12 / Screen.textScaleFactor,
+                    color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 
@@ -236,15 +300,17 @@ class TextComposition {
         .paint(canvas, boxSize);
   }
 
-  static TextComposition parContent(ReadPage readPage, Color color,
+  static TextComposition parContent(ReadPage readPage, double electricQuantity,
       {shouldJustifyHeight = true, parse = false, justRender = false}) {
     final width = ui.window.physicalSize.width / ui.window.devicePixelRatio;
     TextComposition textComposition = TextComposition(
       text: readPage.chapterContent,
       parse: parse,
+      electricQuantity: electricQuantity,
       justRender: justRender,
+      readPage: readPage,
       style: TextStyle(
-          color: color,
+          color: SpUtil.getBool('dark') ? darkFont : Colors.black,
           locale: Locale('zh_CN'),
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
           fontSize: ReadSetting.getFontSize(),

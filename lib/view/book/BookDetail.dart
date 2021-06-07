@@ -168,7 +168,7 @@ class _BookDetailState extends State<BookDetail> {
           ),
         ),
         ListTile(
-          trailing: Icon(Icons.keyboard_arrow_right),
+          // trailing: Icon(Icons.keyboard_arrow_right),
           leading: Container(
             width: 70,
             child: Row(
@@ -190,18 +190,18 @@ class _BookDetailState extends State<BookDetail> {
             fontSize: 14,
             maxLines: 1,
           ),
-          onTap: () {
-            //标志是从书的最后一章开始看
-            this.widget._bookInfo.CId = "-1";
-
-            Routes.navigateTo(
-              context,
-              Routes.read,
-              params: {
-                'read': jsonEncode(book),
-              },
-            );
-          },
+          // onTap: () {
+          //   //标志是从书的最后一章开始看
+          //   this.widget._bookInfo.CId = "-1";
+          //
+          //   Routes.navigateTo(
+          //     context,
+          //     Routes.read,
+          //     params: {
+          //       'read': jsonEncode(book),
+          //     },
+          //   );
+          // },
         ),
       ],
     );

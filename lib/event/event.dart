@@ -15,12 +15,13 @@ class OpenEvent {
 
   OpenEvent(this.name);
 }
-class ZEvent {
 
+class ZEvent {
   int off;
 
   ZEvent(this.off);
 }
+
 class PlayEvent {
   String name;
 
@@ -31,6 +32,11 @@ class OpenChapters {
   String name;
 
   OpenChapters(this.name);
+}
+
+class CleanEvent {
+  int x;
+  CleanEvent(this.x);
 }
 
 class NavEvent {

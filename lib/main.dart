@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book/common/Http.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/ParseContentConfig.dart';
+import 'package:book/entity/Update.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -11,6 +12,7 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:fluro/fluro.dart';
@@ -20,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
+import 'package:package_info/package_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
@@ -112,15 +115,17 @@ class _MainPageState extends State<MainPage> {
 
   // var _pages = [Video(), VoiceBook()];
   initEnv() async {
-    // await _checkUpdate();
+    _checkUpdate();
+    getConfigFromServer();
     // await Firebase.initializeApp();
   }
+
   getConfigFromServer() async {
     Response res = await HttpUtil().http().get(Common.config);
     List msg1 = await parseJson(res.data['data']);
 
-  List<ParseContentConfig> configs =
-      msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
+    List<ParseContentConfig> configs =
+        msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
     SpUtil.putObjectList(Common.parse_html_config, configs);
   }
 
@@ -128,7 +133,6 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     initEnv();
     super.initState();
-    getConfigFromServer();
     JPush jpush = new JPush();
     jpush.setup(
       appKey: "f90562283a6e6bffa036d5dd",
@@ -150,6 +154,9 @@ class _MainPageState extends State<MainPage> {
     });
     eventBus.on<NavEvent>().listen((navEvent) {
       _pageController.jumpToPage(navEvent.idx);
+    });
+    eventBus.on<CleanEvent>().listen((navEvent) {
+      BotToast.cleanAll();
     });
     // _checkUpdate();
     // Store.value<ReadModel>(context).getEveryNote();
@@ -193,14 +200,26 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Store.value<VoiceModel>(context).saveHis();
-  }
-
   void _pageChanged(int index) {
     setState(() {
       if (_tabIndex != index) _tabIndex = index;
     });
+  }
+
+  Future<void> _checkUpdate() async {
+    Response response = await HttpUtil().http().get(Common.update);
+    var data = response.data['data'];
+    Update update = Update.fromJson(data);
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    SpUtil.putString("version", packageInfo.version);
+
+    String version = packageInfo.version;
+    if (update.version != version) {
+      BotToast.showWidget(toastBuilder: (context) {
+        return Center(
+          child: UpdateDialog(update),
+        );
+      });
+    }
   }
 }
