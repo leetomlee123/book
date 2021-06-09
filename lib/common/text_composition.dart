@@ -1,16 +1,15 @@
 library text_composition;
 
-import 'dart:io';
+import 'dart:convert';
+import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
-import 'package:book/view/system/BatteryView.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -24,9 +23,7 @@ class TextComposition {
   static Color darkFont = Color(0x5FFFFFFF);
   ReadPage readPage;
   final List<String> paragraphs;
-  bool parse;
   bool justRender;
-  double electricQuantity;
 
   /// 字体样式 字号 [size] 行高 [height] 字体 [family] 字色[Color]
   TextStyle style;
@@ -38,12 +35,6 @@ class TextComposition {
   List<TextPage> pages;
 
   int get pageCount => pages.length;
-
-  /// 分栏个数
-  final int columnCount;
-
-  /// 分栏间距
-  final double columnGap;
 
   /// 单栏宽度
   final double columnWidth;
@@ -95,16 +86,12 @@ class TextComposition {
     String text,
     List<String> paragraphs,
     this.style,
-    this.electricQuantity,
-    this.parse,
     this.readPage,
     this.justRender,
     Size boxSize,
     this.padding,
     this.shouldJustifyHeight = true,
     this.paragraph = 10.0,
-    this.columnCount = 1,
-    this.columnGap = 0.0,
     this.getForeground,
     this.getBackground,
     this.debug = false,
@@ -118,11 +105,7 @@ class TextComposition {
         paragraphs = paragraphs ?? text?.split("\n") ?? <String>[],
         boxSize =
             boxSize ?? ui.window.physicalSize / ui.window.devicePixelRatio,
-        columnWidth = ((boxSize?.width ??
-                    ui.window.physicalSize.width / ui.window.devicePixelRatio) -
-                (padding?.horizontal ?? 0) -
-                (columnCount - 1) * columnGap) /
-            columnCount {
+        columnWidth = (boxSize.width - (padding?.horizontal ?? 0)) {
     // [_width2] [_height2] 用于调整判断
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
     final offset = Offset(columnWidth, 1);
@@ -150,14 +133,14 @@ class TextComposition {
           lines[i + startLine].justifyDy(justify * i);
         }
       }
-      if (columnNum == columnCount || lastPage) {
+      if (columnNum == 1 || lastPage) {
         this.pages.add(TextPage(lines, dy));
         lines = <TextLine>[];
         columnNum = 1;
         dx = _dx;
       } else {
         columnNum++;
-        dx += columnWidth + columnGap;
+        dx += columnWidth + 40;
       }
       dy = _dy;
       startLine = lines.length;
@@ -172,114 +155,42 @@ class TextComposition {
       }
     }
 
-    if (parse) {
-      for (var p in this.paragraphs) {
-        while (true) {
-          tp.text = TextSpan(text: p, style: style);
-          tp.layout(maxWidth: columnWidth);
-          final textCount = tp.getPositionForOffset(offset).offset;
-          double spacing;
-          final text = p.substring(0, textCount);
-          if (tp.width > _width2) {
-            tp.text = TextSpan(text: text, style: style);
-            tp.layout();
-            spacing = (_width - tp.width) / textCount;
-          }
-          lines.add(TextLine(text, dx, dy, spacing ?? 0));
-          dy += tp.height;
+    for (var p in this.paragraphs) {
+      while (true) {
+        tp.text = TextSpan(text: p, style: style);
+        tp.layout(maxWidth: columnWidth);
+        final textCount = tp.getPositionForOffset(offset).offset;
+        double spacing;
+        final text = p.substring(0, textCount);
+        if (tp.width > _width2) {
+          tp.text = TextSpan(text: text, style: style);
+          tp.layout();
+          spacing = (_width - tp.width) / textCount;
+        }
+        lines.add(TextLine(text, dx, dy, spacing ?? 0));
+        dy += tp.height;
 
-          if (p.length == textCount) {
-            newParagraph();
-            break;
-          } else {
-            p = p.substring(textCount);
-            if (dy > _height2) {
-              newPage();
-            }
+        if (p.length == textCount) {
+          newParagraph();
+          break;
+        } else {
+          p = p.substring(textCount);
+          if (dy > _height2) {
+            newPage();
           }
         }
       }
-      if (lines.isNotEmpty) {
-        newPage(false, true);
-      }
-      if (this.pages.length == 0) {
-        this.pages.add(TextPage([], 0));
-      }
+    }
+    if (lines.isNotEmpty) {
+      newPage(false, true);
+    }
+    if (this.pages.length == 0) {
+      this.pages.add(TextPage([], 0));
     }
   }
 
   /// 调试模式 输出布局信息
   bool debug;
-
-  Widget getPageWidget([int pageIndex = 0]) {
-    // if (pageIndex != null && !changePage(pageIndex)) return Container();
-    return Container(
-      width: Screen.width,
-      height: Screen.height,
-      decoration: BoxDecoration(
-          image: DecorationImage(
-              fit: BoxFit.fill,
-              image: SpUtil.getInt(Common.bgIdx) > 5
-                  ? FileImage(
-                      File(SpUtil.getString(ReadSetting.bgsKey)),
-                    )
-                  : AssetImage(SpUtil.getBool("dark")
-                      ? 'images/QR_bg_4.jpg'
-                      : "images/${ReadSetting.bgImg[SpUtil.getInt(Common.bgIdx)]}"))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 2),
-          Container(
-            height: 30,
-            alignment: Alignment.bottomLeft,
-            padding: const EdgeInsets.only(left: 50),
-            child: Text(
-              readPage.chapterName,
-              style: TextStyle(
-                fontSize: 12 / Screen.textScaleFactor,
-                color: SpUtil.getBool("dark") ? darkFont : Colors.black54,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          CustomPaint(
-              painter: PagePainter(pageIndex, pages[pageIndex], style, debug)),
-          Spacer(),
-          Container(
-            height: 30,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: <Widget>[
-                BatteryView(
-                  electricQuantity: electricQuantity,
-                ),
-                SizedBox(
-                  width: 4,
-                ),
-                Text(
-                  '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                  style: TextStyle(
-                    fontSize: 12 / Screen.textScaleFactor,
-                    color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
-                  ),
-                ),
-                Spacer(),
-                Text(
-                  '第${pageIndex + 1}/${pages.length}页',
-                  style: TextStyle(
-                    fontSize: 12 / Screen.textScaleFactor,
-                    color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
 
   Future<ByteData> getImage(int pageIndex) async {
     final recorder = ui.PictureRecorder();
@@ -300,14 +211,59 @@ class TextComposition {
         .paint(canvas, boxSize);
   }
 
-  static TextComposition parContent(ReadPage readPage, double electricQuantity,
-      {shouldJustifyHeight = true, parse = false, justRender = false}) {
-    final width = ui.window.physicalSize.width / ui.window.devicePixelRatio;
+  static void dataLoader(SendPort sendPort) async {
+    // 打开ReceivePort①以接收传入的消息
+    ReceivePort port = ReceivePort();
+
+    // 通知其他的isolates，本isolate 所监听的端口
+    sendPort.send(port.sendPort);
+    // 获取其他端口发送的异步消息 msg② -> ["https://jsonplaceholder.typicode.com/posts", response.sendPort]
+    await for (var msg in port) {
+      SendPort replyToPort = msg[0];
+      ReadPage readPage = ReadPage.fromJson(jsonDecode(msg[1]));
+
+      double w = double.parse(msg[2].toString());
+      double h = double.parse(msg[3].toString());
+      int dark = int.parse(msg[4].toString());
+      String fontFamily = msg[5].toString();
+      double fontSize = double.parse(msg[6].toString());
+      double height = double.parse(msg[7].toString());
+      double dis = double.parse(msg[8].toString());
+
+      double paragraph = double.parse(msg[9].toString());
+
+      // print(w);
+      // print(h);
+      TextComposition textComposition = TextComposition(
+        text: readPage.chapterContent,
+        readPage: readPage,
+        style: TextStyle(
+            color: dark == 1 ? darkFont : Colors.black,
+            locale: Locale('zh_CN'),
+            fontFamily: fontFamily,
+            fontSize: fontSize,
+            // letterSpacing: ReadSetting.getLatterSpace(),
+            height: height),
+        paragraph: paragraph,
+        justRender: true,
+        boxSize: Size(w, h),
+        padding: EdgeInsets.symmetric(horizontal: dis),
+        shouldJustifyHeight: false,
+        debug: false,
+      );
+      List<TextPage> parseContent2 = textComposition.pages;
+
+      String result = jsonEncode(parseContent2);
+
+      replyToPort.send([result]);
+    }
+  }
+
+  static List<TextPage> parseContent(ReadPage readPage,
+      {shouldJustifyHeight = true, justRender = false}) {
+    // final width = ui.window.physicalSize.width / ui.window.devicePixelRatio;
     TextComposition textComposition = TextComposition(
       text: readPage.chapterContent,
-      parse: parse,
-      electricQuantity: electricQuantity,
-      justRender: justRender,
       readPage: readPage,
       style: TextStyle(
           color: SpUtil.getBool('dark') ? darkFont : Colors.black,
@@ -316,22 +272,18 @@ class TextComposition {
           fontSize: ReadSetting.getFontSize(),
           // letterSpacing: ReadSetting.getLatterSpace(),
           height: ReadSetting.getLineHeight()),
-      columnGap: 40,
-      columnCount: width > 1200
-          ? 3
-          : width > 500
-              ? 2
-              : 1,
       paragraph: ReadSetting.getParagraph() *
           ReadSetting.getFontSize() *
           ReadSetting.getLineHeight(),
-      boxSize: Size(Screen.width, Screen.height - 62 - Screen.bottomSafeHeight),
+      justRender: justRender,
+            boxSize: Size(Screen.width, Screen.height - 62 - Screen.bottomSafeHeight),
+
       padding:
           EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
       shouldJustifyHeight: shouldJustifyHeight,
       debug: false,
     );
-    return textComposition;
+    return textComposition.pages;
   }
 }
 

@@ -112,7 +112,7 @@ class ReadSetting {
   }
 
   static int getPageDis() {
-    return SpUtil.getInt(pageDis, defValue: 18);
+    return SpUtil.getInt(pageDis, defValue: 20);
   }
 
   static void calcPageDis(int s) {

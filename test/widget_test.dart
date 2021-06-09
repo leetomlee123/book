@@ -8,6 +8,7 @@
 import 'dart:io';
 
 import 'package:book/common/Http.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/entity/ParseContentConfig.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -36,9 +37,7 @@ Future<void> main() async {
 
   // List<ParseContentConfig> configs =
   //     msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
-  Directory storageDir = await getExternalStorageDirectory();
-  String storagePath = storageDir.path;
-  print(storagePath);
+
 //  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
 //    // Build our app and trigger a frame.
 //    await tester.pumpWidget(MyApp());

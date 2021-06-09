@@ -29,7 +29,12 @@ class _BooksWidgetState extends State<BooksWidget> {
   RefreshController _refreshController;
   ShelfModel _shelfModel;
   bool isShelf;
-    double picHeight = (Screen.width / 4) * 1.3;
+  double picHeight = (Screen.width / 4) * 1.3;
+  final double coverWidth = 76.0;
+  final double aspectRatio = 0.62;
+  final double coverHeight = 122.58;
+  int spacingLen = 20;
+  int axisLen = 4;
 
   @override
   void initState() {
@@ -91,16 +96,19 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   //书架封面模式
   Widget coverModel() {
-    return GridView(
-      shrinkWrap: true,
-      padding: EdgeInsets.symmetric(horizontal: 22, vertical: 5),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 90,
-          // mainAxisSpacing: 10.0,
-          crossAxisSpacing: 20.0,
-          childAspectRatio: 0.42),
-      children: cover(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: Wrap(
+        alignment: WrapAlignment.spaceEvenly,
+        spacing: 5, //主轴上子控件的间距
+        runSpacing: 15, //交叉轴上子控件之间的间距
+        children: cover(), //要显示的子控件集合
+      ),
     );
+    // return Flow(
+    //   children: cover(),
+    //   delegate: MyFlowDelegate(coverWidth),
+    // );
   }
 
   List<Widget> cover() {
@@ -109,89 +117,101 @@ class _BooksWidgetState extends State<BooksWidget> {
     Book book;
     for (var i = 0; i < books.length; i++) {
       book = books[i];
-      wds.add(GestureDetector(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Stack(
-              alignment: AlignmentDirectional.topCenter,
-              children: <Widget>[
-                Column(
-                  children: [
-                    PicWidget(
-                      book.Img,
-                      // width: 100,
-                      // height: ((ScreenUtil.getScreenW(context) - 100) / 3) * 1.3,
+      wds.add(Container(
+        width: coverWidth,
+        child: GestureDetector(
+          child: Stack(
+            alignment: AlignmentDirectional.topCenter,
+            children: <Widget>[
+              Column(
+                children: [
+                  PicWidget(
+                    book.Img,
+                    width: coverWidth,
+                    height: coverHeight,
+                  ),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  Center(
+                    child: Text(
+                      book.Name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Center(
-                      child: Text(
-                        book.Name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )
-                  ],
+                  )
+                ],
+              ),
+              Offstage(
+                offstage: book.NewChapterCount != 1,
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Image.asset(
+                    'images/h6.png',
+                    width: 30,
+                    height: 30,
+                  ),
                 ),
-                book.NewChapterCount == 1
-                    ? Align(
-                        alignment: Alignment.topRight,
-                        child: Image.asset(
-                          'images/h6.png',
-                          width: 30,
-                          height: 30,
-                        ),
-                      )
-                    : Container(),
-                this.widget.type == "sort"
-                    ? GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          width: (ScreenUtil.getScreenW(context) - 80) / 3,
-                          height:
-                              ((ScreenUtil.getScreenW(context) - 80) / 3) * 1.2,
-                          child: Align(
-                            alignment: Alignment.topRight,
-                            child: Image.asset(
-                              'images/pick.png',
-                              color: !_shelfModel.picks(i)
-                                  ? Colors.white
-                                  : Store.value<ColorModel>(context)
-                                      .theme
-                                      .primaryColor,
-                              width: 30,
-                              height: 30,
-                            ),
-                          ),
-                        ),
-                        onTap: () {
-                          _shelfModel.changePick(i);
-                        },
-                      )
-                    : Container()
-              ],
-            ),
-            // Text(
-            //   book.Name,
-            //   maxLines: 1,
-            //   overflow: TextOverflow.ellipsis,
-            // )
-          ],
+              ),
+              Offstage(
+                offstage: this.widget.type != "sort",
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: coverWidth,
+                    height: coverHeight,
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: Image.asset(
+                        'images/pick.png',
+                        color: !_shelfModel.picks(i)
+                            ? Colors.white
+                            : Store.value<ColorModel>(context)
+                                .theme
+                                .primaryColor,
+                        width: 30,
+                        height: 30,
+                      ),
+                    ),
+                  ),
+                  onTap: () {
+                    _shelfModel.changePick(i);
+                  },
+                ),
+              ),
+            ],
+          ),
+          onTap: () async {
+            await goRead(_shelfModel.shelf[i], i);
+          },
+          onLongPress: () {
+            Routes.navigateTo(
+              context,
+              Routes.sortShelf,
+            );
+          },
         ),
-        onTap: () async {
-          await goRead(_shelfModel.shelf[i], i);
-        },
-        onLongPress: () {
-          Routes.navigateTo(
-            context,
-            Routes.sortShelf,
-          );
-        },
       ));
     }
-
+    int len = 0;
+    if (SpUtil.haveKey("lenx")) {
+      len = SpUtil.getInt("lenx");
+    } else {
+      len = (Screen.width - 20) ~/ coverWidth;
+      if (((Screen.width - 20) % coverWidth) < (len - 1) * 5) {
+        len -= 1;
+      }
+      SpUtil.putInt("lenx", len);
+    }
+    //不满4的倍数填充container
+    int z = wds.length % len;
+    if (z != 0) {
+      for (var i = 0; i < z; i++) {
+        wds.add(Container(
+          width: coverWidth,
+        ));
+      }
+    }
     return wds;
   }
 
@@ -244,26 +264,24 @@ class _BooksWidgetState extends State<BooksWidget> {
                       Container(
                         padding: const EdgeInsets.only(left: 15.0, top: 10.0),
                         child: Stack(
+                          alignment: AlignmentDirectional.topEnd,
                           children: <Widget>[
                             PicWidget(
                               item.Img,
                               height: picHeight,
                               width: Screen.width / 4,
                             ),
-                            item.NewChapterCount == 1
-                                ? Container(
-                                    height: picHeight,
-                                    width: Screen.width / 4,
-                                    child: Align(
-                                      alignment: Alignment.topRight,
-                                      child: Image.asset(
-                                        'images/h6.png',
-                                        width: 30,
-                                        height: 30,
-                                      ),
-                                    ),
-                                  )
-                                : Container(),
+                            Offstage(
+                              offstage: item.NewChapterCount != 1,
+                              child: Align(
+                                alignment: Alignment.topRight,
+                                child: Image.asset(
+                                  'images/h6.png',
+                                  width: 30,
+                                  height: 30,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -312,34 +330,35 @@ class _BooksWidgetState extends State<BooksWidget> {
                 ],
               ),
             ),
-            Align(
-                alignment: Alignment.topRight,
-                child: this.widget.type == "sort"
-                    ? GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          margin: EdgeInsets.only(right: 20),
-                          height: 115,
-                          width: ScreenUtil.getScreenW(context),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Image.asset(
-                              'images/pick.png',
-                              color: !_shelfModel.picks(i)
-                                  ? Colors.black38
-                                  : Store.value<ColorModel>(context)
-                                      .theme
-                                      .primaryColor,
-                              width: 30,
-                              height: 30,
-                            ),
-                          ),
+            Offstage(
+              offstage: this.widget.type != "sort",
+              child: Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      margin: EdgeInsets.only(right: 20),
+                      height: 115,
+                      width: ScreenUtil.getScreenW(context),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Image.asset(
+                          'images/pick.png',
+                          color: !_shelfModel.picks(i)
+                              ? Colors.black38
+                              : Store.value<ColorModel>(context)
+                                  .theme
+                                  .primaryColor,
+                          width: 30,
+                          height: 30,
                         ),
-                        onTap: () {
-                          _shelfModel.changePick(i);
-                        },
-                      )
-                    : Container())
+                      ),
+                    ),
+                    onTap: () {
+                      _shelfModel.changePick(i);
+                    },
+                  )),
+            )
           ],
         ),
         onDismissed: (direction) {

@@ -1,15 +1,25 @@
-import 'package:book/common/text_composition.dart';
+import 'package:book/entity/TextPage.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'ReadPage.g.dart';
+
+@JsonSerializable()
 class ReadPage {
-  int get pageOffsets => textComposition?.pageCount ?? 1;
-  TextComposition textComposition;
+  int get pageOffsets => pages?.length ?? 1;
+  List<TextPage> pages;
   String chapterContent;
-
-  String chapterName;
-
-  //滚动翻页 长度
   double height;
+  String chapterName;
+  // double h;
+  // double w;
 
-  // pre:-1 cur:0 next:1
-  int position;
+  ReadPage.kong();
+
+  ReadPage( this.chapterContent, this.chapterName,this.height, this.pages);
+
+  factory ReadPage.fromJson(Map<String, dynamic> json) =>
+      _$ReadPageFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ReadPageToJson(this);
+
 }
