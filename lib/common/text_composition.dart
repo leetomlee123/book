@@ -224,13 +224,11 @@ class TextComposition {
 
       double w = double.parse(msg[2].toString());
       double h = double.parse(msg[3].toString());
-      int dark = int.parse(msg[4].toString());
-      String fontFamily = msg[5].toString();
-      double fontSize = double.parse(msg[6].toString());
-      double height = double.parse(msg[7].toString());
-      double dis = double.parse(msg[8].toString());
-
-      double paragraph = double.parse(msg[9].toString());
+      String fontFamily = msg[4].toString();
+      double fontSize = double.parse(msg[5].toString());
+      double height = double.parse(msg[6].toString());
+      double dis = double.parse(msg[7].toString());
+      double paragraph = double.parse(msg[8].toString());
 
       // print(w);
       // print(h);
@@ -238,9 +236,9 @@ class TextComposition {
         text: readPage.chapterContent,
         readPage: readPage,
         style: TextStyle(
-            color: dark == 1 ? darkFont : Colors.black,
-            locale: Locale('zh_CN'),
-            fontFamily: fontFamily,
+            // color: dark == 1 ? darkFont : Colors.black,
+            // locale: Locale('zh_CN'),
+            // fontFamily: fontFamily,
             fontSize: fontSize,
             // letterSpacing: ReadSetting.getLatterSpace(),
             height: height),
@@ -266,7 +264,6 @@ class TextComposition {
       text: readPage.chapterContent,
       readPage: readPage,
       style: TextStyle(
-          color: SpUtil.getBool('dark') ? darkFont : Colors.black,
           locale: Locale('zh_CN'),
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
           fontSize: ReadSetting.getFontSize(),

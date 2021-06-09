@@ -48,7 +48,7 @@ class ReadSetting {
   }
 
   static double getLineHeight() {
-    return SpUtil.getDouble(latterHeight, defValue: 1.7);
+    return SpUtil.getDouble(latterHeight, defValue: 1.8);
   }
 
   static void setLineHeight(double lineHeight) {

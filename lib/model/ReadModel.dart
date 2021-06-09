@@ -512,7 +512,6 @@ class ReadModel with ChangeNotifier {
 
         // double w = Screen.width;
         // double h = Screen.height - 62 - Screen.bottomSafeHeight;
-        // int dark = SpUtil.getBool("dark") ? 1 : 0;
         // String fontFamily = SpUtil.getString("fontName", defValue: "Roboto");
         // double fontSize = ReadSetting.getFontSize();
         // double height = ReadSetting.getLineHeight();
@@ -526,7 +525,6 @@ class ReadModel with ChangeNotifier {
         //   jsonEncode(r),
         //   w,
         //   h,
-        //   dark,
         //   fontFamily,
         //   fontSize,
         //   height,
