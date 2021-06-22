@@ -17,14 +17,15 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
-  flutter_isolate: ^2.0.0
+  indexed_list_view: ^2.0.0
+  # flutter_isolate: ^2.0.0
   package_info: ^2.0.2
   image_picker: ^0.8.0+1
   jpush_flutter: ^2.1.2
   html: ^0.15.0
   # firebase_analytics: ^7.1.1
   # firebase_core: ^1.0.2
-  extended_tabs: ^2.0.0
+ 
   palette_generator: ^0.3.0
   install_plugin: ^2.0.1
   permission_handler: ^8.0.1
@@ -44,7 +45,7 @@ dependencies:
       git:
         url: https://github.com/Gentleflow/flutter_statusbar_manager.git
   bot_toast: ^4.0.1
-  pull_to_refresh: ^1.6.5
+  pull_to_refresh: ^2.0.0
   provider: ^5.0.0
   url_launcher: ^6.0.2
   get_it: ^6.0.0

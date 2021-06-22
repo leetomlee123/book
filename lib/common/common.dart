@@ -36,6 +36,7 @@ class Common {
   static String toplist = "toplist";
   static String downloadlist = "downloadlist";
   static String bgIdx = "bgIdx";
+  static String turnPageAnima = "turnPageAnima";
 
 //  static String video_domain = "http://192.168.3.56:8082";
 

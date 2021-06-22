@@ -115,8 +115,7 @@ class TextComposition {
     final _width = columnWidth;
     final _width2 = _width - size;
     final _height = this.boxSize.height - (padding?.vertical ?? 0);
-    final _height2 =
-        justRender ? 100000000000 : _height - size * (style.height ?? 1.0);
+    final _height2 = _height - size * (style.height ?? 1.0);
 
     var lines = <TextLine>[];
     var columnNum = 1;
@@ -230,15 +229,13 @@ class TextComposition {
       double dis = double.parse(msg[7].toString());
       double paragraph = double.parse(msg[8].toString());
 
-      // print(w);
-      // print(h);
       TextComposition textComposition = TextComposition(
         text: readPage.chapterContent,
         readPage: readPage,
         style: TextStyle(
             // color: dark == 1 ? darkFont : Colors.black,
             // locale: Locale('zh_CN'),
-            // fontFamily: fontFamily,
+            fontFamily: fontFamily,
             fontSize: fontSize,
             // letterSpacing: ReadSetting.getLatterSpace(),
             height: height),
@@ -246,7 +243,7 @@ class TextComposition {
         justRender: true,
         boxSize: Size(w, h),
         padding: EdgeInsets.symmetric(horizontal: dis),
-        shouldJustifyHeight: false,
+        shouldJustifyHeight: true,
         debug: false,
       );
       List<TextPage> parseContent2 = textComposition.pages;
@@ -273,8 +270,7 @@ class TextComposition {
           ReadSetting.getFontSize() *
           ReadSetting.getLineHeight(),
       justRender: justRender,
-            boxSize: Size(Screen.width, Screen.height - 62 - Screen.bottomSafeHeight),
-
+      boxSize: Size(Screen.width, Screen.height - 72 - Screen.bottomSafeHeight),
       padding:
           EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
       shouldJustifyHeight: shouldJustifyHeight,

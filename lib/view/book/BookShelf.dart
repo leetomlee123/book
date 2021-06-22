@@ -21,32 +21,68 @@ class _BookShelfState extends State<BookShelf>
     super.build(context);
     return Store.connect<ShelfModel>(
         builder: (context, ShelfModel shelfModel, child) {
-          return Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: shelfModel.sortShelf
-                  ? null
-                  : PreferredSize(
+      return Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: shelfModel.sortShelf
+              ? null
+              : PreferredSize(
                   child: Container(
                     child: AppBar(
                       backgroundColor: Colors.transparent,
                       leading: MyIcon( Icons.person,() {
                         eventBus.fire(OpenEvent("p"));
                       }),
-
+                      // leading: GestureDetector(
+                      //   child: Container(
+                      //     padding: EdgeInsets.only(left: 10),
+                      //     child: ClipOval(
+                      //       child: Image.network(
+                      //         "https://pics5.baidu.com/feed/8326cffc1e178a82fd1566182e5ac98ba977e839.jpeg?token=e947682a1f1b2aa6e7ba7c87ee026c24",
+                      //         height: 20,
+                      //         width: 20,
+                      //         fit: BoxFit.cover,
+                      //       ),
+                      //     ),
+                      //   ),
+                      //   onTap: () {
+                      //     eventBus.fire(OpenEvent("p"));
+                      //   },
+                      // ),
+                      // leading: GestureDetector(
+                      //   onTap: () {
+                      //     eventBus.fire(OpenEvent("p"));
+                      //   },
+                      //   child: Padding(
+                      //     padding: const EdgeInsets.all(8.0),
+                      //     child: SizedBox(
+                      //       height: 22.0,
+                      //       width: 22.0,
+                      //       child: ClipOval(
+                      //         child: Align(
+                      //           alignment: Alignment.center,
+                      //           child: Image.network(
+                      //             "https://pics5.baidu.com/feed/8326cffc1e178a82fd1566182e5ac98ba977e839.jpeg?token=e947682a1f1b2aa6e7ba7c87ee026c24",
+                      //             fit: BoxFit.cover,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                       elevation: 0,
                       centerTitle: true,
                       actions: <Widget>[
-                        MyIcon(Icons.search,() {
+                        MyIcon(Icons.search, () {
                           Routes.navigateTo(context, Routes.search,
                               params: {"type": "book", "name": ""});
                         }),
-                        MyIcon(Icons.more_vert,() async {
+                        MyIcon(Icons.more_vert, () async {
                           String shelfModelName =
-                          shelfModel.model ? "列表模式" : "封面模式";
+                              shelfModel.model ? "列表模式" : "封面模式";
                           final result = await showMenu(
                               context: context,
-                              position: RelativeRect.fromLTRB(2000.0,
-                                  .0, 0.0, 0.0),
+                              position:
+                                  RelativeRect.fromLTRB(2000.0, .0, 0.0, 0.0),
                               items: <PopupMenuItem<String>>[
                                 PopupMenuItem(
                                     value: shelfModelName,
@@ -64,7 +100,6 @@ class _BookShelfState extends State<BookShelf>
                             );
                           }
                         }),
-
                       ],
                     ),
                     // decoration: BoxDecoration(
@@ -75,7 +110,7 @@ class _BookShelfState extends State<BookShelf>
                     //         fit: BoxFit.fitWidth)),
                   ),
                   preferredSize: Size.fromHeight(kToolbarHeight)),
-              body: BooksWidget(""));
+          body: BooksWidget(""));
     });
   }
 

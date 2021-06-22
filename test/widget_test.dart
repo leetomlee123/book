@@ -32,6 +32,16 @@ Future<void> main() async {
   }
 ]
      ''';
+  List a = [1, 2, 3, 4];
+  List b = [41, 51, 31, 44];
+
+  int x = a.length;
+  int x1 = b.length;
+
+  a.replaceRange(x - 1, x, [b[x1-1]]);
+  a.forEach((element) {
+    print(element);
+  });
 
   // List msg1 = await parseJson(msg);
 

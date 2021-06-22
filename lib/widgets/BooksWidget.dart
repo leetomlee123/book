@@ -39,6 +39,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   @override
   void initState() {
     isShelf = this.widget.type == '';
+
     _refreshController =
         RefreshController(initialRefresh: SpUtil.haveKey('auth') && isShelf);
     _shelfModel = Store.value<ShelfModel>(context);
@@ -194,17 +195,17 @@ class _BooksWidgetState extends State<BooksWidget> {
       ));
     }
     int len = 0;
-    if (SpUtil.haveKey("lenx")) {
-      len = SpUtil.getInt("lenx");
-    } else {
-      len = (Screen.width - 20) ~/ coverWidth;
-      if (((Screen.width - 20) % coverWidth) < (len - 1) * 5) {
-        len -= 1;
-      }
-      SpUtil.putInt("lenx", len);
+    // if (SpUtil.haveKey("lenx")) {
+    //   len = SpUtil.getInt("lenx");
+    // } else {
+    len = (Screen.width - 20) ~/ coverWidth;
+    if (((Screen.width - 20) % coverWidth) < (len - 1) * 5) {
+      len -= 1;
     }
+    SpUtil.putInt("lenx", len);
+    // }
     //不满4的倍数填充container
-    int z = wds.length % len;
+    int z = wds.length < len ? len - wds.length : len - wds.length % len;
     if (z != 0) {
       for (var i = 0; i < z; i++) {
         wds.add(Container(
@@ -218,7 +219,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架列表模式
   Widget listModel() {
     return ListView.builder(
-        itemExtent: (25 + picHeight),
+        itemExtent: (20 + picHeight),
         itemCount: _shelfModel.shelf.length,
         itemBuilder: (context, i) {
           return GestureDetector(
@@ -269,7 +270,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                             PicWidget(
                               item.Img,
                               height: picHeight,
-                              width: Screen.width / 4,
+                              width: Screen.width / 4 - 10,
                             ),
                             Offstage(
                               offstage: item.NewChapterCount != 1,
@@ -413,7 +414,6 @@ class _BooksWidgetState extends State<BooksWidget> {
           return isDismiss;
         },
       ),
-      padding: EdgeInsets.only(bottom: 5),
     );
   }
 }

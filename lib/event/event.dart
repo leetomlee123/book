@@ -21,6 +21,11 @@ class ZEvent {
 
   ZEvent(this.off);
 }
+class ScrollEvent {
+  int off;
+
+  ScrollEvent(this.off);
+}
 
 class PlayEvent {
   String name;
@@ -33,7 +38,11 @@ class OpenChapters {
 
   OpenChapters(this.name);
 }
+class OpenBottom {
+  String name;
 
+  OpenBottom(this.name);
+}
 class CleanEvent {
   int x;
   CleanEvent(this.x);

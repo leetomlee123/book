@@ -46,10 +46,7 @@ class _LoginState extends State<Login> {
     } else {
       //收起键盘
       SpUtil.putString('email', data['data']['email']);
-      // SpUtil.putString('vip', data['data']['vip']);
-//        SpUtil.putString('pwd', pwd);
       SpUtil.putString('username', username);
-      // SpUtil.putBool('login', true);
       SpUtil.putString("auth", data['data']['token']);
       eventBus.fire(SyncShelfEvent(""));
 
@@ -62,10 +59,7 @@ class _LoginState extends State<Login> {
           }
         }
       }
-      // Routes.navigateTo(context, Routes.root);
-      //
       Navigator.of(context).popUntil(ModalRoute.withName('/'));
-      // eventBus.fire(new NavEvent(0));
     }
   }
 
@@ -78,13 +72,17 @@ class _LoginState extends State<Login> {
             key: UniqueKey(),
             children: <Widget>[
               SizedBox(
-                height: Screen.topSafeHeight + 100,
+                height: Screen.topSafeHeight + 80,
               ),
               CircleAvatar(
                 radius: 60,
                 backgroundImage: AssetImage("images/login.jpg"),
                 backgroundColor: Colors.white,
               ),
+              SizedBox(
+                height: 10,
+              ),
+              Center(child: Text('即刻追书')),
               SizedBox(
                 height: 40,
               ),
@@ -102,7 +100,7 @@ class _LoginState extends State<Login> {
                 },
               ),
               SizedBox(
-                height: 20,
+                height: 15,
               ),
               TextFormField(
                 autofocus: false,
@@ -127,7 +125,7 @@ class _LoginState extends State<Login> {
                   height: 44.0,
                   alignment: FractionalOffset.center,
                   decoration: BoxDecoration(
-                    color: const Color.fromRGBO(247, 0, 106, 1.0),
+                    color: Theme.of(context).primaryColor,
                     borderRadius: BorderRadius.all(const Radius.circular(22.0)),
                   ),
                   child: Text(

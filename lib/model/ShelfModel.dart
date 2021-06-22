@@ -86,6 +86,11 @@ class ShelfModel with ChangeNotifier {
         _picks.add(false);
       }
     }
+    if (_picks.length < shelf.length) {
+      for (var i = 0; i < shelf.length - _picks.length; i++) {
+        _picks.add(false);
+      }
+    }
     return _picks[i];
   }
 

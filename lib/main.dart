@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:book/common/Http.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/ParseContentConfig.dart';
 import 'package:book/entity/Update.dart';
@@ -116,12 +115,6 @@ class _MainPageState extends State<MainPage> {
 
   // var _pages = [Video(), VoiceBook()];
   initEnv() async {
-    if (!SpUtil.haveKey("screenW")) {
-      SpUtil.putDouble("screenW", Screen.width);
-    }
-    if (!SpUtil.haveKey("screenH")) {
-      SpUtil.putDouble("screenH", Screen.height - 62 - Screen.bottomSafeHeight);
-    }
     _checkUpdate();
     getConfigFromServer();
     // await Firebase.initializeApp();

@@ -9,7 +9,6 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
-import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
@@ -23,7 +22,7 @@ class GoodBook extends StatefulWidget {
 class StateGoodBook extends State<GoodBook>
     with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   TabController controller;
-  var tabs = <ExtendedTab>[];
+  var tabs = <Tab>[];
 
   @override
   void initState() {
@@ -36,10 +35,10 @@ class StateGoodBook extends State<GoodBook>
       // Tab(
       //   text: "听书",
       // ),
-      ExtendedTab(
+      Tab(
         text: "男生",
       ),
-      ExtendedTab(
+      Tab(
         text: "女生",
       ),
       // Tab(
@@ -67,7 +66,7 @@ class StateGoodBook extends State<GoodBook>
         child: Scaffold(
             appBar: AppBar(
               backgroundColor: Colors.transparent,
-              title: ExtendedTabBar(
+              title: TabBar(
                 labelColor:
                     value.dark ? Colors.white : value.theme.primaryColor,
                 unselectedLabelColor:
@@ -87,10 +86,9 @@ class StateGoodBook extends State<GoodBook>
               elevation: 0,
               automaticallyImplyLeading: false,
             ),
-            body: ExtendedTabBarView(
+            body: TabBarView(
               controller: controller,
               children: [TabItem("1"), TabItem("2")],
-              cacheExtent: 2,
               // children: [TabItem("1"), TabItem("2"),VoiceBook()],
               // children: [VoiceList(), VoiceBook(), TabItem("1"), TabItem("2")],
             )),

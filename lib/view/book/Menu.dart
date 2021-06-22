@@ -29,7 +29,7 @@ class _MenuState extends State<Menu> {
   ReadModel _readModel;
   ColorModel _colorModel;
 
-  double settingH = 360;
+  double settingH = 420;
 
   @override
   void initState() {
@@ -285,7 +285,7 @@ class _MenuState extends State<Menu> {
             ReadSetting.getFontSize(),
             "字号",
             min: 10,
-            max: 40,
+            max: 60,
           ),
 
           Row(
@@ -456,9 +456,9 @@ class _MenuState extends State<Menu> {
             children: bgThemes(),
             scrollDirection: Axis.horizontal,
           )),
-          // Expanded(
-          //   child: flipType(),
-          // ),
+          Expanded(
+            child: flipType(),
+          ),
           SwitchListTile(
             contentPadding: EdgeInsets.only(left: 15),
             value: _readModel.leftClickNext,
@@ -480,12 +480,11 @@ class _MenuState extends State<Menu> {
   }
 
   Widget flipType() {
-    return ListView(
-      scrollDirection: Axis.horizontal,
+    return Row(
       children: <Widget>[
         Container(
           child: Center(
-            child: Text('翻页', style: TextStyle(fontSize: 13.0)),
+            child: Text('翻页动画', style: TextStyle(fontSize: 13.0)),
           ),
           height: 40,
           width: 40,
@@ -493,15 +492,47 @@ class _MenuState extends State<Menu> {
         SizedBox(
           width: 10,
         ),
-        operate(Text("上下"), () {
-          // _readModel.switchFlipType(FlipType.LIST_VIEW);
-        }),
+        TextButton(
+            style: ButtonStyle(
+              side: MaterialStateProperty.all(BorderSide(
+                  color: !SpUtil.getBool(Common.turnPageAnima)
+                      ? _colorModel.dark
+                          ? Colors.white
+                          : _colorModel.theme.primaryColor
+                      : Colors.white10,
+                  width: 1)),
+            ),
+            onPressed: () {
+              if (mounted) {
+                setState(() {
+                  SpUtil.putBool(Common.turnPageAnima, false);
+                  eventBus.fire(ZEvent(200));
+                });
+              }
+            },
+            child: Text('无')),
         SizedBox(
           width: 10,
         ),
-        operate(Text("平滑"), () {
-          // _readModel.switchFlipType(FlipType.PAGE_VIEW_SMOOTH);
-        }),
+        TextButton(
+            style: ButtonStyle(
+              side: MaterialStateProperty.all(BorderSide(
+                  color: SpUtil.getBool(Common.turnPageAnima)
+                      ? _colorModel.dark
+                          ? Colors.white
+                          : _colorModel.theme.primaryColor
+                      : Colors.white10,
+                  width: 1)),
+            ),
+            onPressed: () {
+              if (mounted) {
+                setState(() {
+                  SpUtil.putBool(Common.turnPageAnima, true);
+                  eventBus.fire(ZEvent(200));
+                });
+              }
+            },
+            child: Text('覆盖')),
       ],
     );
   }

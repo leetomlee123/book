@@ -1,6 +1,6 @@
-
 import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/Update.dart';
 import 'package:book/event/event.dart';
@@ -11,16 +11,15 @@ import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
-import 'package:book/view/person/Skin.dart';
 import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/view/system/white_area.dart';
-import 'package:package_info/package_info.dart';
+import 'package:bot_toast/bot_toast.dart';
+import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info/package_info.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:dio/dio.dart';
-import 'package:bot_toast/bot_toast.dart';
 
 class Me extends StatelessWidget {
   Widget getItem(imageIcon, text, func, Color c) {
@@ -37,36 +36,32 @@ class Me extends StatelessWidget {
           preferredSize: Size.fromHeight(150),
           child: Store.connect<ColorModel>(
               builder: (context, ColorModel model, child) {
-            return Stack(
-              children: [
-                UserAccountsDrawerHeader(
-                  margin: EdgeInsets.all(0),
-                  accountEmail: Text(
-                    SpUtil.getString('email') ?? "",
-                    style: TextStyle(
-                        color: model.dark ? Colors.white : Colors.black),
-                  ),
-                  accountName: Text(
-                    SpUtil.getString('username') ?? "",
-                    style: TextStyle(
-                        color: model.dark ? Colors.white : Colors.black),
-                  ),
-                  currentAccountPicture: CircleAvatar(
-                    backgroundImage: AssetImage("images/fu.png"),
-                  ),
-                  otherAccountsPictures: [
-                    // CircleAvatar(
-                    //   backgroundImage: AssetImage("images/vip.png"),
-                    // )
-                  ],
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: AssetImage(
-                            "images/a0${model.dark ? 'r' : 's'}.png",
-                          ),
-                          fit: BoxFit.fill)),
-                ),
+            return UserAccountsDrawerHeader(
+              margin: EdgeInsets.all(0),
+              accountEmail: Text(
+                SpUtil.getString('email') ?? "",
+                style:
+                    TextStyle(color: model.dark ? Colors.white : Colors.black),
+              ),
+              accountName: Text(
+                SpUtil.getString('username') ?? "",
+                style:
+                    TextStyle(color: model.dark ? Colors.white : Colors.black),
+              ),
+              currentAccountPicture: CircleAvatar(
+                backgroundImage: AssetImage("images/fu.png"),
+              ),
+              otherAccountsPictures: [
+                // CircleAvatar(
+                //   backgroundImage: AssetImage("images/vip.png"),
+                // )
               ],
+              decoration: BoxDecoration(
+                  image: DecorationImage(
+                      image: AssetImage(
+                        "images/a0${model.dark ? 'r' : 's'}.png",
+                      ),
+                      fit: BoxFit.cover)),
             );
           }));
     } else {
@@ -115,12 +110,10 @@ class Me extends StatelessWidget {
     return Scaffold(
       appBar: _appBar(context),
       body: Container(
-        width: ScreenUtil.getScreenW(context),
-        height: double.infinity,
+        height: Screen.height,
         child: Padding(
           padding: EdgeInsets.only(right: 5, left: 5),
-          child: ListView(
-            shrinkWrap: true,
+          child: Column(
             children: <Widget>[
               getItem(
                 ImageIcon(AssetImage("images/info.png")),
@@ -172,69 +165,30 @@ class Me extends StatelessWidget {
                 },
                 c,
               ),
-              getItem(
-                ImageIcon(AssetImage("images/co.png")),
-                '交流联系',
-                ({int number = 953457248, bool isGroup = true}) async {
-                  String url = isGroup
-                      ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
-                      : 'mqqwpa://im/chat?chat_type=wpa&uin=${number ?? 0}&version=1&src_type=web&web_src=oicqzone.com';
-                  if (await canLaunch(url)) {
-                    await launch(url);
-                  } else {
-                    print('不能访问');
-                  }
-
-//                  showDialog(
-//                      context: context,
-//                      builder: (context) => AlertDialog(
-//                            title: Text(
-//                              ('QQ群'),
-//                            ),
-//                            content: Row(
-//                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                              children: <Widget>[
-//                                Text(
-//                                  '953457248',
-//                                ),
-//                                SizedBox(
-//                                  width: 50,
-//                                ),
-//                                IconButton(
-//                                  onPressed: () {
-//                                    ClipboardData data =
-//                                        ClipboardData(text: "953457248");
-//                                    Clipboard.setData(data);
-//                                  },
-//                                  icon: Icon(
-//                                    Icons.content_copy,
-//                                  ),
-//                                ),
-//                              ],
-//                            ),
-//                            actions: <Widget>[
-//                              FlatButton(
-//                                child: Text(
-//                                  "确定",
-//                                ),
-//                                onPressed: () {
-//                                  Navigator.of(context).pop();
-//                                },
-//                              ),
-//                            ],
-//                          ));
-                },
-                c,
-              ),
-              getItem(
-                ImageIcon(AssetImage("images/skin.png")),
-                '主题',
-                () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) => Skin()));
-                },
-                c,
-              ),
+              // getItem(
+              //   ImageIcon(AssetImage("images/co.png")),
+              //   '应用反馈',
+              //   ({int number = 953457248, bool isGroup = true}) async {
+              //     String url = isGroup
+              //         ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
+              //         : 'mqqwpa://im/chat?chat_type=wpa&uin=${number ?? 0}&version=1&src_type=web&web_src=oicqzone.com';
+              //     if (await canLaunch(url)) {
+              //       await launch(url);
+              //     } else {
+              //       print('不能访问');
+              //     }
+              //   },
+              //   c,
+              // ),
+              // getItem(
+              //   ImageIcon(AssetImage("images/skin.png")),
+              //   '主题',
+              //   () {
+              //     Navigator.of(context).push(MaterialPageRoute(
+              //         builder: (BuildContext context) => Skin()));
+              //   },
+              //   c,
+              // ),
               // getItem(
               //   ImageIcon(AssetImage("images/cache_manager.png")),
               //   '缓存管理',
@@ -264,7 +218,6 @@ class Me extends StatelessWidget {
                 ImageIcon(AssetImage("images/upgrade.png")),
                 '应用更新',
                 () async {
-                  Navigator.pop(context);
                   Response response =
                       await HttpUtil().http().get(Common.update);
                   var data = response.data['data'];
@@ -273,25 +226,16 @@ class Me extends StatelessWidget {
 
                   String version = packageInfo.version;
                   if (update.version != version) {
+                    Navigator.pop(context);
+
                     BotToast.showWidget(toastBuilder: (context) {
                       return Center(
                         child: UpdateDialog(update),
                       );
                     });
+                  } else {
+                    BotToast.showText(text: "暂无更新");
                   }
-                  // if (Platform.isAndroid) {
-                  //   FlutterBugly.checkUpgrade(isManual: true, isSilence: false);
-                  //   var info = await FlutterBugly.getUpgradeInfo();
-                  //   if (info != null && info.id != null) {
-                  //     Navigator.pop(context);
-                  //     await showDialog(
-                  //       barrierDismissible: false,
-                  //       context: context,
-                  //       builder: (_) => UpdateDialog(info?.versionName ?? '',
-                  //           info?.newFeature ?? '', info?.apkUrl ?? ''),
-                  //     );
-                  //   }
-                  // }
                 },
                 c,
               ),
@@ -323,24 +267,28 @@ class Me extends StatelessWidget {
                 },
                 c,
               ),
-
-              SpUtil.haveKey("username")
-                  ? Store.connect<ShelfModel>(
-                      builder: (context, ShelfModel model, child) {
-                      return GestureDetector(
-                        child: WhiteArea(
-                            Text(
-                              "退出登录",
-                              style: TextStyle(color: Colors.redAccent),
-                            ),
-                            50),
-                        onTap: () {
-                          model.dropAccountOut();
-                          eventBus.fire(new BooksEvent([]));
-                        },
-                      );
-                    })
-                  : Container(),
+              Spacer(),
+              Offstage(
+                offstage: !SpUtil.haveKey("username"),
+                child: Store.connect<ShelfModel>(
+                    builder: (context, ShelfModel model, child) {
+                  return GestureDetector(
+                    child: WhiteArea(
+                        Text(
+                          "退出登录",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                        50),
+                    onTap: () {
+                      model.dropAccountOut();
+                      eventBus.fire(new BooksEvent([]));
+                    },
+                  );
+                }),
+              ),
+              SizedBox(
+                height: 5,
+              )
             ],
           ),
         ),

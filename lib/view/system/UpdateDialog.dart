@@ -63,8 +63,7 @@ class UpdateDialogState extends State<UpdateDialog> {
     Dio dio = HttpUtil().http();
     Directory storageDir = await getExternalStorageDirectory();
     String storagePath = storageDir.path;
-    File file =
-        new File('$storagePath/deerbook.apk');
+    File file = new File('$storagePath/deerbook.apk');
 
     if (file.existsSync()) {
       file.delete();
@@ -111,6 +110,5 @@ class UpdateDialogState extends State<UpdateDialog> {
 
     String msg =
         await InstallPlugin.installApk(_apkFilePath, "com.leetomlee.book");
-    eventBus.fire(new CleanEvent(1));
   }
 }
