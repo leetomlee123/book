@@ -39,10 +39,8 @@ class _BooksWidgetState extends State<BooksWidget> {
   @override
   void initState() {
     isShelf = this.widget.type == '';
-
-    _refreshController =
-        RefreshController(initialRefresh: SpUtil.haveKey('auth') && isShelf);
     _shelfModel = Store.value<ShelfModel>(context);
+    _refreshController = RefreshController();
     eventBus
         .on<SyncShelfEvent>()
         .listen((SyncShelfEvent booksEvent) => freshShelf());
@@ -54,6 +52,8 @@ class _BooksWidgetState extends State<BooksWidget> {
       if (isShelf) {
         _shelfModel.freshToken();
       }
+      if (SpUtil.haveKey('auth') && isShelf)
+        _refreshController.requestRefresh();
     });
   }
 

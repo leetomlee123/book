@@ -25,7 +25,8 @@ class ReadBook extends StatefulWidget {
   }
 }
 
-class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
+class _ReadBookState extends State<ReadBook>
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   Widget body;
   ReadModel readModel;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -36,6 +37,11 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   void initState() {
     setUp();
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   setUp() async {
@@ -50,7 +56,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     //   move(event.off);
     // });
     eventBus.on<OpenChapters>().listen((event) {
-      _scaffoldKey.currentState.openDrawer();
+      _scaffoldKey?.currentState?.openDrawer();
     });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
@@ -106,13 +112,15 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                 builder: (context, ReadModel model, child) {
               return Stack(
                 children: [
-                  Offstage(
-                    child: NovelRoteView(),
-                    offstage: !model.loadOk,
+                  Visibility(
+                    child: RepaintBoundary(child: NovelRoteView()),
+                    visible: model.loadOk,
+                    replacement: Container(),
                   ),
-                  Offstage(
+                  Visibility(
                     child: Menu(),
-                    offstage: !model.showMenu,
+                    visible: model.showMenu,
+                    replacement: Container(),
                   ),
                 ],
               );

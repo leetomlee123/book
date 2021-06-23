@@ -18,6 +18,7 @@ import 'package:dio/dio.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
@@ -32,7 +33,7 @@ GetIt locator = GetIt.instance;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  GestureBinding.instance.resamplingEnabled = true;
   if (await Permission.storage.request().isGranted) {
     await SpUtil.getInstance();
     locator.registerSingleton(TelAndSmsService());

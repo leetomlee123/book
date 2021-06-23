@@ -770,6 +770,7 @@ class ReadModel with ChangeNotifier {
             ),
           ),
           CustomPaint(
+            isComplex: true,
               painter: PagePainter(
                   pageIndex,
                   r.pages[pageIndex],

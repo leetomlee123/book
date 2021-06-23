@@ -329,7 +329,7 @@ class _MenuState extends State<Menu> {
                 },
                 icon: Icon(Icons.add),
               ),
-              Text('${ReadSetting.getLineHeight().toStringAsFixed(1)}')
+              // Text('${ReadSetting.getLineHeight().toStringAsFixed(1)}')
             ],
           ),
 
@@ -404,7 +404,7 @@ class _MenuState extends State<Menu> {
                 },
                 icon: Icon(Icons.add),
               ),
-              Text('${ReadSetting.getParagraph().toStringAsFixed(1)}')
+              // Text('${ReadSetting.getParagraph().toStringAsFixed(1)}')
             ],
           ),
           Row(
@@ -448,7 +448,7 @@ class _MenuState extends State<Menu> {
                 },
                 icon: Icon(Icons.add),
               ),
-              Text('${ReadSetting.getPageDis()}')
+              // Text('${ReadSetting.getPageDis()}')
             ],
           ),
           Expanded(

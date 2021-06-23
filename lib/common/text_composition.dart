@@ -279,6 +279,49 @@ class TextComposition {
     return textComposition.pages;
   }
 }
+//  static void painterPage(SendPort sendPort) async {
+//     // 打开ReceivePort①以接收传入的消息
+//     ReceivePort port = ReceivePort();
+
+//     // 通知其他的isolates，本isolate 所监听的端口
+//     sendPort.send(port.sendPort);
+//     // 获取其他端口发送的异步消息 msg② -> ["https://jsonplaceholder.typicode.com/posts", response.sendPort]
+//     await for (var msg in port) {
+//       SendPort replyToPort = msg[0];
+//       ReadPage readPage = ReadPage.fromJson(jsonDecode(msg[1]));
+
+//       double w = double.parse(msg[2].toString());
+//       double h = double.parse(msg[3].toString());
+//       String fontFamily = msg[4].toString();
+//       double fontSize = double.parse(msg[5].toString());
+//       double height = double.parse(msg[6].toString());
+//       double dis = double.parse(msg[7].toString());
+//       double paragraph = double.parse(msg[8].toString());
+
+//       TextComposition textComposition = TextComposition(
+//         text: readPage.chapterContent,
+//         readPage: readPage,
+//         style: TextStyle(
+//             // color: dark == 1 ? darkFont : Colors.black,
+//             // locale: Locale('zh_CN'),
+//             fontFamily: fontFamily,
+//             fontSize: fontSize,
+//             // letterSpacing: ReadSetting.getLatterSpace(),
+//             height: height),
+//         paragraph: paragraph,
+//         justRender: true,
+//         boxSize: Size(w, h),
+//         padding: EdgeInsets.symmetric(horizontal: dis),
+//         shouldJustifyHeight: true,
+//         debug: false,
+//       );
+//       List<TextPage> parseContent2 = textComposition.pages;
+
+//       String result = jsonEncode(parseContent2);
+
+//       replyToPort.send([result]);
+//     }
+//   }
 
 class PagePainter extends CustomPainter {
   final TextPage page;
@@ -307,12 +350,10 @@ class PagePainter extends CustomPainter {
         tp.text = TextSpan(text: line.text, style: style);
       }
       final offset = Offset(line.dx, line.dy);
-      if (debug) print("$offset ${line.text}");
       tp.layout();
       tp.paint(canvas, offset);
     }
-    if (debug)
-      print("****** [TextComposition paint end  ] [${DateTime.now()}] ******");
+
   }
 
   @override

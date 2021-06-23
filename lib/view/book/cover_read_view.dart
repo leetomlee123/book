@@ -88,7 +88,7 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
   AnimationController _controller;
   Animation<double> _animation;
 
-  final LayerLink layerLink = LayerLink();
+
   @override
   void initState() {
     // eventBus.on<ScrollEvent>().listen((event) {

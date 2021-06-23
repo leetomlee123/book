@@ -55,7 +55,7 @@ class _MenuConfigState extends State<MenuConfig> {
           onPressed: this.widget.add,
           icon: Icon(Icons.add),
         ),
-        Text('${this.widget.value.toStringAsFixed(1)}')
+        // Text('${this.widget.value.toStringAsFixed(1)}')
       ],
     );
   }

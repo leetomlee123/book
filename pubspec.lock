@@ -277,13 +277,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.1.0"
-  indexed_list_view:
-    dependency: "direct main"
-    description:
-      name: indexed_list_view
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "2.0.0"
   install_plugin:
     dependency: "direct main"
     description:

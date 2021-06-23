@@ -17,7 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
-  indexed_list_view: ^2.0.0
+  # indexed_list_view: ^2.0.0
   # flutter_isolate: ^2.0.0
   package_info: ^2.0.2
   image_picker: ^0.8.0+1
