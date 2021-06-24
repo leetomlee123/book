@@ -5,7 +5,6 @@ import 'package:book/common/PicWidget.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -13,6 +12,7 @@ import 'package:book/widgets/ConfirmDialog.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class BooksWidget extends StatefulWidget {
@@ -167,9 +167,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                         'images/pick.png',
                         color: !_shelfModel.picks(i)
                             ? Colors.white
-                            : Store.value<ColorModel>(context)
-                                .theme
-                                .primaryColor,
+                            : Theme.of(context).primaryColor,
                         width: 30,
                         height: 30,
                       ),
@@ -218,24 +216,35 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   //书架列表模式
   Widget listModel() {
-    return ListView.builder(
-        itemExtent: (20 + picHeight),
-        itemCount: _shelfModel.shelf.length,
-        itemBuilder: (context, i) {
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () async {
-              await goRead(_shelfModel.shelf[i], i);
-            },
-            child: getBookItemView(_shelfModel.shelf[i], i),
-            onLongPress: () {
-              Routes.navigateTo(
-                context,
-                Routes.sortShelf,
-              );
-            },
-          );
-        });
+    return AnimationLimiter(
+      child: ListView.builder(
+          itemExtent: (20 + picHeight),
+          itemCount: _shelfModel.shelf.length,
+          itemBuilder: (context, i) {
+            return AnimationConfiguration.staggeredList(
+              position: i,
+              duration: const Duration(milliseconds: 375),
+              child: SlideAnimation(
+                verticalOffset: 50.0,
+                child: FadeInAnimation(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      await goRead(_shelfModel.shelf[i], i);
+                    },
+                    child: getBookItemView(_shelfModel.shelf[i], i),
+                    onLongPress: () {
+                      Routes.navigateTo(
+                        context,
+                        Routes.sortShelf,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          }),
+    );
   }
 
   Future goRead(Book book, int i) async {
@@ -338,18 +347,16 @@ class _BooksWidgetState extends State<BooksWidget> {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     child: Container(
-                      margin: EdgeInsets.only(right: 20),
+                      margin: EdgeInsets.only(left: 20),
                       height: 115,
                       width: ScreenUtil.getScreenW(context),
                       child: Align(
-                        alignment: Alignment.centerRight,
+                        alignment: Alignment.centerLeft,
                         child: Image.asset(
                           'images/pick.png',
                           color: !_shelfModel.picks(i)
-                              ? Colors.black38
-                              : Store.value<ColorModel>(context)
-                                  .theme
-                                  .primaryColor,
+                              ? Colors.white
+                              : Theme.of(context).primaryColor,
                           width: 30,
                           height: 30,
                         ),

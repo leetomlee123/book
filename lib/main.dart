@@ -15,6 +15,7 @@ import 'package:book/view/person/Me.dart';
 import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -64,7 +65,9 @@ class MyApp extends StatelessWidget {
           BotToastNavigatorObserver(),
         ],
         onGenerateRoute: Routes.router.generator,
-        theme: model.theme, // 配置route generate
+        theme: FlexColorScheme.light(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
+        darkTheme: FlexColorScheme.dark(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
+        themeMode: model.dark?ThemeMode.dark:ThemeMode.light,
       );
     });
   }
@@ -167,37 +170,34 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel model, child) {
-      return Theme(
-        child: Store.connect<ShelfModel>(
-            builder: (context, ShelfModel shelfModel, child) {
-          return Scaffold(
-            drawer: Drawer(
-              child: Me(),
-            ),
-            key: q,
-            body: PageView.builder(
-                //要点1
-                physics: NeverScrollableScrollPhysics(),
-                //禁止页面左右滑动切换
-                controller: _pageController,
-                onPageChanged: _pageChanged,
-                //回调函数
-                itemCount: _pages.length,
-                itemBuilder: (context, index) => _pages[index]),
-            // bottomNavigationBar: BottomNavigationBar(
-            //   unselectedItemColor: model.dark ? Colors.white : Colors.black,
-            //   elevation: 3,
-            //   items: bottoms,
-            //   type: BottomNavigationBarType.fixed,
-            //   currentIndex: _tabIndex,
-            //   onTap: (index) {
-            //     _pageController.jumpToPage(index);
-            //   },
-            // ),
-          );
-        }),
-        data: model.theme,
-      );
+      return Store.connect<ShelfModel>(
+          builder: (context, ShelfModel shelfModel, child) {
+        return Scaffold(
+          drawer: Drawer(
+            child: Me(),
+          ),
+          key: q,
+          body: PageView.builder(
+              //要点1
+              physics: NeverScrollableScrollPhysics(),
+              //禁止页面左右滑动切换
+              controller: _pageController,
+              onPageChanged: _pageChanged,
+              //回调函数
+              itemCount: _pages.length,
+              itemBuilder: (context, index) => _pages[index]),
+          // bottomNavigationBar: BottomNavigationBar(
+          //   unselectedItemColor: model.dark ? Colors.white : Colors.black,
+          //   elevation: 3,
+          //   items: bottoms,
+          //   type: BottomNavigationBarType.fixed,
+          //   currentIndex: _tabIndex,
+          //   onTap: (index) {
+          //     _pageController.jumpToPage(index);
+          //   },
+          // ),
+        );
+      });
     });
   }
 

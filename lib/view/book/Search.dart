@@ -13,6 +13,7 @@ import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class Search extends StatefulWidget {
@@ -146,122 +147,121 @@ class _SearchState extends State<Search> {
 
   Widget resultWidget() {
     return SmartRefresher(
-      enablePullDown: true,
-      enablePullUp: true,
-      header: WaterDropHeader(),
-      footer: CustomFooter(
-        builder: (BuildContext context, LoadStatus mode) {
-          if (mode == LoadStatus.idle) {
-          } else if (mode == LoadStatus.loading) {
-            body = CupertinoActivityIndicator();
-          } else if (mode == LoadStatus.failed) {
-            body = Text("加载失败！点击重试！");
-          } else if (mode == LoadStatus.canLoading) {
-            body = Text("松手,加载更多!");
-          } else {
-            body = Text("到底了!");
-          }
-          return Center(
-            child: body,
-          );
-        },
-      ),
-      controller: searchModel.refreshController,
-      onRefresh: searchModel.onRefresh,
-      onLoading: searchModel.onLoading,
-      child: isBookSearch
-          ? ListView.builder(
-              itemExtent: 130,
-              itemBuilder: (context, i) {
-                var auth = searchModel.bks[i].Author;
-//                var cate = searchModel.bks[i].CName??"";
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: <Widget>[
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(5),
-                              child: PicWidget(
-                                searchModel.bks[i]?.Img ?? "",
-                                height: 115,
-                                width: 90,
+        enablePullDown: true,
+        enablePullUp: true,
+        header: WaterDropHeader(),
+        footer: CustomFooter(
+          builder: (BuildContext context, LoadStatus mode) {
+            if (mode == LoadStatus.idle) {
+            } else if (mode == LoadStatus.loading) {
+              body = CupertinoActivityIndicator();
+            } else if (mode == LoadStatus.failed) {
+              body = Text("加载失败！点击重试！");
+            } else if (mode == LoadStatus.canLoading) {
+              body = Text("松手,加载更多!");
+            } else {
+              body = Text("到底了!");
+            }
+            return Center(
+              child: body,
+            );
+          },
+        ),
+        controller: searchModel.refreshController,
+        onRefresh: searchModel.onRefresh,
+        onLoading: searchModel.onLoading,
+        child: AnimationLimiter(
+          child: ListView.builder(
+            itemExtent: 130,
+            itemBuilder: (context, i) {
+              var auth = searchModel.bks[i].Author;
+
+              return AnimationConfiguration.staggeredList(
+                position: i,
+                duration: const Duration(milliseconds: 375),
+                child: SlideAnimation(
+                  verticalOffset: 50.0,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      children: <Widget>[
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: <Widget>[
+                            Container(
+                              padding:
+                                  const EdgeInsets.only(left: 10.0, top: 10.0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(5),
+                                child: PicWidget(
+                                  searchModel.bks[i]?.Img ?? "",
+                                  height: 115,
+                                  width: 90,
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.max,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          verticalDirection: VerticalDirection.down,
+                          // textDirection:,
+                          textBaseline: TextBaseline.alphabetic,
+
+                          children: <Widget>[
+                            Container(
+                              width: ScreenUtil.getScreenW(context) - 120,
+                              padding:
+                                  const EdgeInsets.only(left: 10.0, top: 10.0),
+                              child: Text(
+                                searchModel.bks[i].Name,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 15),
                               ),
                             ),
-                          )
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        verticalDirection: VerticalDirection.down,
-                        // textDirection:,
-                        textBaseline: TextBaseline.alphabetic,
-
-                        children: <Widget>[
-                          Container(
-                            width: ScreenUtil.getScreenW(context) - 120,
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(
-                              searchModel.bks[i].Name,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 15),
+                            Container(
+                              padding:
+                                  const EdgeInsets.only(left: 10.0, top: 10.0),
+                              child: new Text('$auth',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                  )),
                             ),
-                          ),
-                          Container(
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: new Text('$auth',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                )),
-                          ),
-                          Container(
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(searchModel.bks[i].Desc ?? "",
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                )),
-                            width: ScreenUtil.getScreenW(context) - 120,
-                          ),
-                        ],
-                      ),
-                    ],
+                            Container(
+                              padding:
+                                  const EdgeInsets.only(left: 10.0, top: 10.0),
+                              child: Text(searchModel.bks[i].Desc ?? "",
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                  )),
+                              width: ScreenUtil.getScreenW(context) - 120,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    onTap: () async {
+                      String url = Common.detail + '/${searchModel.bks[i].Id}';
+                      Response future =
+                          await HttpUtil(showLoading: true).http().get(url);
+                      var d = future.data['data'];
+                      BookInfo b = BookInfo.fromJson(d);
+                      Routes.navigateTo(context, Routes.detail,
+                          params: {"detail": jsonEncode(b)});
+                    },
                   ),
-                  onTap: () async {
-                    String url = Common.detail + '/${searchModel.bks[i].Id}';
-                    Response future =
-                        await HttpUtil(showLoading: true).http().get(url);
-                    var d = future.data['data'];
-                    BookInfo b = BookInfo.fromJson(d);
-                    Routes.navigateTo(context, Routes.detail,
-                        params: {"detail": jsonEncode(b)});
-                  },
-                );
-              },
-              itemCount: searchModel.bks.length,
-            )
-          : GridView(
-              shrinkWrap: true,
-              padding: EdgeInsets.all(5.0),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 1.0,
-                  crossAxisSpacing: 10.0,
-                  childAspectRatio: 0.7),
-              children: searchModel.mks.map((i) => img(i)).toList(),
-            ),
-    );
+                ),
+              );
+
+//                var cate = searchModel.bks[i].CName??"";
+            },
+            itemCount: searchModel.bks.length,
+          ),
+        ));
   }
 
   Widget img(GBook gbk) {

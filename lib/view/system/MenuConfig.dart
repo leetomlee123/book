@@ -31,10 +31,7 @@ class _MenuConfigState extends State<MenuConfig> {
             height: 12,
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                activeTrackColor: Color(0xFF3075EE),
-                inactiveTrackColor: Color(0x1A3075EE),
-                trackHeight: 2,
-                thumbColor: Color(0xFF3075EE),
+                trackHeight: 1,
                 thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                 overlayShape: SliderComponentShape.noOverlay,
               ),

@@ -28,10 +28,10 @@ class _CacheManager extends State<CacheManager> {
                   automaticallyImplyLeading: false,
                 ),
                 body: ListView(
-                  children: managers(data.theme.primaryColor),
+                  children: managers(Theme.of(context).primaryColor),
                 ),
               ),
-              data: data.theme,
+              // data: data.theme,
             ));
   }
 

@@ -10,10 +10,11 @@ class BookHeadBgColor extends StatefulWidget {
 }
 
 class _BookHeadBgColorState extends State<BookHeadBgColor> {
-  List<Color> colors = [];
+  Color color;
   @override
   void initState() {
     super.initState();
+
     getBkColor();
   }
 
@@ -23,9 +24,9 @@ class _BookHeadBgColorState extends State<BookHeadBgColor> {
         .then((fromImageProvider) {
       if (mounted) {
         setState(() {
-          fromImageProvider.paletteColors.forEach((element) {
-            colors.add(element.color);
-          });
+          if (fromImageProvider.colors.isNotEmpty) {
+            color = fromImageProvider.colors.first;
+          }
         });
       }
     });
@@ -33,16 +34,12 @@ class _BookHeadBgColorState extends State<BookHeadBgColor> {
 
   @override
   Widget build(BuildContext context) {
-    return Offstage(
-        offstage: colors.isEmpty,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: colors,
-            ),
-          ),
-        ));
+    return Visibility(
+      visible: color != null,
+      child: Container(
+        decoration:
+            BoxDecoration(color: color ?? Theme.of(context).primaryColor),
+      ),
+    );
   }
 }

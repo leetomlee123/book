@@ -32,9 +32,7 @@ class _TextEllipsisState extends State<TextEllipsis> {
               GestureDetector(
                 child: Text(
                   "${ellipsis ? "展开" : "收起"}",
-                  style: TextStyle(
-                      color:
-                          Store.value<ColorModel>(context).theme.primaryColor),
+             
                 ),
                 onTap: () {
                   if (mounted) {

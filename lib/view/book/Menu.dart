@@ -84,7 +84,6 @@ class _MenuState extends State<Menu> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           color: Colors.transparent,
-          width: double.infinity,
         ),
         onTap: () {
           type = Type.SLIDE;
@@ -102,18 +101,17 @@ class _MenuState extends State<Menu> {
         padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
         child: Row(
           children: <Widget>[
-            GestureDetector(
-              child: Container(child: Text('上一章')),
-              onTap: () async {
-                if ((_readModel.book.cur - 1) < 0) {
-                  BotToast.showText(text: '已经是第一章');
-                  return;
-                }
-                _readModel.book.cur -= 1;
-                await _readModel.initPageContent(_readModel.book.cur, true);
-                BotToast.showText(text: _readModel.curPage.chapterName);
-              },
-            ),
+            TextButton(
+                onPressed: () async {
+                  if ((_readModel.book.cur - 1) < 0) {
+                    BotToast.showText(text: '已经是第一章');
+                    return;
+                  }
+                  _readModel.book.cur -= 1;
+                  await _readModel.initPageContent(_readModel.book.cur, true);
+                  BotToast.showText(text: _readModel.curPage.chapterName);
+                },
+                child: Text('上一章')),
             Expanded(
               child: Container(
                 child: Slider(
@@ -135,44 +133,20 @@ class _MenuState extends State<Menu> {
                 ),
               ),
             ),
-            GestureDetector(
-              child: Container(child: Text('下一章')),
-              onTap: () async {
-                if ((_readModel.book.cur + 1) >= _readModel.chapters.length) {
-                  BotToast.showText(text: "已经是最后一章");
-                  return;
-                }
-                _readModel.book.cur += 1;
+            TextButton(
+                onPressed: () async {
+                  if ((_readModel.book.cur + 1) >= _readModel.chapters.length) {
+                    BotToast.showText(text: "已经是最后一章");
+                    return;
+                  }
+                  _readModel.book.cur += 1;
 
-                await _readModel.initPageContent(_readModel.book.cur, true);
-                BotToast.showText(text: _readModel.curPage.chapterName);
-              },
-            ),
+                  await _readModel.initPageContent(_readModel.book.cur, true);
+                  BotToast.showText(text: _readModel.curPage.chapterName);
+                },
+                child: Text('下一章')),
           ],
         ));
-  }
-
-  Widget operate(Widget child, func) {
-    return Container(
-      decoration:
-          BoxDecoration(color: _colorModel.dark ? Colors.black : Colors.white),
-      height: 40,
-      width: Screen.width / 4,
-      padding: EdgeInsets.only(top: 18, bottom: 15),
-      child: GestureDetector(
-        onTap: func,
-        child: Container(
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(25.0)),
-              border: Border.all(
-                width: 1,
-                color: _colorModel.dark ? Colors.white : Colors.black,
-              )),
-          alignment: Alignment(0, 0),
-          child: child,
-        ),
-      ),
-    );
   }
 
   Widget downloadWidget() {
@@ -257,7 +231,7 @@ class _MenuState extends State<Menu> {
   Widget moreSetting() {
     return Container(
       decoration: BoxDecoration(
-        color: _colorModel.dark ? Colors.black : Colors.white,
+        // color: _colorModel.dark ? Colors.black : Colors.white,
         borderRadius: BorderRadius.all(Radius.circular(10.0)),
       ),
       height: settingH,
@@ -287,7 +261,6 @@ class _MenuState extends State<Menu> {
             min: 10,
             max: 60,
           ),
-
           Row(
             children: [
               Text("行距", style: TextStyle(fontSize: 13.0)),
@@ -303,10 +276,8 @@ class _MenuState extends State<Menu> {
                   height: 12,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Color(0xFF3075EE),
-                      inactiveTrackColor: Color(0x1A3075EE),
-                      trackHeight: 2,
-                      thumbColor: Color(0xFF3075EE),
+                      trackHeight: 1,
+              
                       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape: SliderComponentShape.noOverlay,
                     ),
@@ -332,37 +303,6 @@ class _MenuState extends State<Menu> {
               // Text('${ReadSetting.getLineHeight().toStringAsFixed(1)}')
             ],
           ),
-
-          // Row(
-          //   children: [
-          //     Text("词距", style: TextStyle(fontSize: 13.0)),
-          //     IconButton(
-          //       onPressed: () {
-          //         ReadSetting.subLatterSpace();
-          //         _readModel.modifyFont();
-          //       },
-          //       icon: Icon(Icons.remove),
-          //     ),
-          //     Slider.adaptive(
-          //       value: ReadSetting.getLatterSpace(),
-          //       onChanged: (v) {
-          //         ReadSetting.setLatterSpace(v);
-          //         _readModel.modifyFont();
-          //       },
-          //       min: -5,
-          //       max: 20.0,
-          //     ),
-          //     IconButton(
-          //       onPressed: () {
-          //         ReadSetting.addLatterSpace();
-          //         _readModel.modifyFont();
-          //       },
-          //       icon: Icon(Icons.add),
-          //     ),
-          //     Text('${ReadSetting.getLatterSpace().toStringAsFixed(1)}')
-          //   ],
-          // ),
-
           Row(
             children: [
               Text("段距", style: TextStyle(fontSize: 13.0)),
@@ -378,10 +318,9 @@ class _MenuState extends State<Menu> {
                   height: 12,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Color(0xFF3075EE),
-                      inactiveTrackColor: Color(0x1A3075EE),
-                      trackHeight: 2,
-                      thumbColor: Color(0xFF3075EE),
+              
+                      trackHeight: 1,
+              
                       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape: SliderComponentShape.noOverlay,
                     ),
@@ -422,10 +361,8 @@ class _MenuState extends State<Menu> {
                   height: 12,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Color(0xFF3075EE),
-                      inactiveTrackColor: Color(0x1A3075EE),
-                      trackHeight: 2,
-                      thumbColor: Color(0xFF3075EE),
+                 
+                      trackHeight: 1,
                       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape: SliderComponentShape.noOverlay,
                     ),
@@ -481,8 +418,7 @@ class _MenuState extends State<Menu> {
 
   Widget flipType() {
     return Row(
-      children: <Widget>[
-        Container(
+      children: <Widget>[  Container(
           child: Center(
             child: Text('翻页动画', style: TextStyle(fontSize: 13.0)),
           ),
@@ -498,7 +434,7 @@ class _MenuState extends State<Menu> {
                   color: !SpUtil.getBool(Common.turnPageAnima)
                       ? _colorModel.dark
                           ? Colors.white
-                          : _colorModel.theme.primaryColor
+                          : Theme.of(context).primaryColor
                       : Colors.white10,
                   width: 1)),
             ),
@@ -520,7 +456,7 @@ class _MenuState extends State<Menu> {
                   color: SpUtil.getBool(Common.turnPageAnima)
                       ? _colorModel.dark
                           ? Colors.white
-                          : _colorModel.theme.primaryColor
+                          : Theme.of(context).primaryColor
                       : Colors.white10,
                   width: 1)),
             ),
@@ -550,21 +486,6 @@ class _MenuState extends State<Menu> {
     }
   }
 
-  Widget bottom() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _colorModel.dark ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(10.0)),
-      ),
-      // height: 140,
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[bottomHead(), buildBottomMenus()],
-      ),
-    );
-  }
-
   Widget reloadCurChapterWidget() {
     return GestureDetector(
       child: Container(
@@ -586,78 +507,68 @@ class _MenuState extends State<Menu> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        GestureDetector(
-          child: Container(
-            child: Column(
-              children: <Widget>[
-                // Container(
-                //   color: _colorModel.dark ? Colors.black : Colors.white,
-                //   height: Screen.topSafeHeight,
-                // ),
-                midTransparent(),
-                bottom(),
-              ],
-            ),
-          ),
-          onTap: () {
-            _readModel.toggleShowMenu();
-          },
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: GestureDetector(
+        child: Column(
+          children: <Widget>[
+            midTransparent(),
+            Container(
+              decoration: BoxDecoration(
+                color: _colorModel.dark?Colors.black:Colors.white,
+                borderRadius: BorderRadius.all(Radius.circular(10.0)),
+              ),
+              // height: 140,
+              // width: double.infinity,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[bottomHead(), buildBottomMenus()],
+              ),
+            )
+          ],
         ),
-        // head(),
-        Positioned(
-          child: reloadCurChapterWidget(),
-          bottom: settingH + 100,
-          right: 20,
-        ),
-      ],
+        onTap: () {
+          _readModel.toggleShowMenu();
+        },
+      ),
     );
   }
 
   buildBottomMenus() {
-    return Theme(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: <Widget>[
-          buildBottomItem('目录', Icons.menu),
-          GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                width: ScreenUtil.getScreenW(context) / 4,
-                padding: EdgeInsets.symmetric(vertical: 7),
-                child: Column(
-                  children: <Widget>[
-                    ImageIcon(
-                      _colorModel.dark
-                          ? AssetImage("images/sun.png")
-                          : AssetImage("images/moon.png"),
-                      // color: Colors.white,
-                    ),
-                    SizedBox(height: 5),
-                    Text(_colorModel.dark ? '日间' : '夜间',
-                        style: TextStyle(fontSize: 12)),
-                  ],
-                ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: <Widget>[
+        buildBottomItem('目录', Icons.menu),
+        TextButton(
+            child: Container(
+              child: Column(
+                children: <Widget>[
+                  ImageIcon(
+                    _colorModel.dark
+                        ? AssetImage("images/sun.png")
+                        : AssetImage("images/moon.png"),
+                    // color: Colors.white,
+                  ),
+                  SizedBox(height: 5),
+                  Text(_colorModel.dark ? '日间' : '夜间',
+                      style: TextStyle(fontSize: 12)),
+                ],
               ),
-              onTap: () async {
-                Store.value<ColorModel>(context).switchModel();
-                await _readModel.colorModelSwitch();
-              }),
-          buildBottomItem('缓存', Icons.cloud_download),
-          buildBottomItem('设置', Icons.settings),
-        ],
-      ),
-      data: _colorModel.theme,
+            ),
+            onPressed: () async {
+              
+              Store.value<ColorModel>(context).switchModel();
+              await _readModel.colorModelSwitch();
+            }),
+        buildBottomItem('缓存', Icons.cloud_download),
+        buildBottomItem('设置', Icons.settings),
+      ],
     );
   }
 
   buildBottomItem(String title, IconData iconData) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return TextButton(
       child: Container(
-        width: ScreenUtil.getScreenW(context) / 4,
-        padding: EdgeInsets.symmetric(vertical: 7),
         child: Column(
           children: <Widget>[
             Icon(
@@ -669,7 +580,7 @@ class _MenuState extends State<Menu> {
           ],
         ),
       ),
-      onTap: () {
+      onPressed: () {
         switch (title) {
           case '目录':
             {
@@ -765,10 +676,11 @@ class _MenuState extends State<Menu> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.all(Radius.circular(25.0)),
               border: Border.all(
-                  width: 1.5,
-                  color: _readModel.bgIdx == i
-                      ? _colorModel.theme.primaryColor
-                      : Colors.white10),
+                width: 1.5,
+                color: _readModel.bgIdx == i
+                      ? Theme.of(context).primaryColor
+                      : Colors.white10,
+              ),
               image: DecorationImage(
                 image: AssetImage(f),
                 fit: BoxFit.cover,

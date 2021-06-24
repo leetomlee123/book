@@ -17,6 +17,8 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  flex_color_scheme: ^2.1.1
+  flutter_staggered_animations: ^1.0.0
   # indexed_list_view: ^2.0.0
   # flutter_isolate: ^2.0.0
   package_info: ^2.0.2
@@ -42,8 +44,8 @@ dependencies:
   event_bus: ^2.0.0
   flustars: ^2.0.1
   flutter_statusbar_manager: 
-      git:
-        url: https://github.com/Gentleflow/flutter_statusbar_manager.git
+    git:
+      url: https://github.com/Gentleflow/flutter_statusbar_manager.git
   bot_toast: ^4.0.1
   pull_to_refresh: ^2.0.0
   provider: ^5.0.0

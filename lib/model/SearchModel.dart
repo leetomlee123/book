@@ -271,6 +271,7 @@ class SearchModel with ChangeNotifier {
     }
     bks = [];
     mks = [];
+    notifyListeners();
     showResult = true;
     word = w;
     loading = true;
@@ -323,7 +324,7 @@ class SearchModel with ChangeNotifier {
           "images/hot.png",
         ),
         size: 20.0,
-        color: value.dark ? Colors.white : value.theme.primaryColor,
+        // color: value.dark ? Colors.white : value.theme.primaryColor,
       ));
     }
     return wds;

@@ -14,7 +14,6 @@ class LabelTitle extends StatelessWidget {
             Container(
               width: 4,
               height: 20,
-              color: model.dark ? Colors.white : model.theme.primaryColor,
             ),
             SizedBox(
               width: 5,
@@ -24,7 +23,7 @@ class LabelTitle extends StatelessWidget {
               style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: model.dark ? Colors.white : model.theme.primaryColor,),
+          ),
             ),
           ],
         ),

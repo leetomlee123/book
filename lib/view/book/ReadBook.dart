@@ -8,7 +8,6 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/cover_read_view.dart';
-import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
@@ -70,11 +69,12 @@ class _ReadBookState extends State<ReadBook>
     readModel?.pageController?.dispose();
     readModel?.listController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
-    if (SpUtil.getBool("dark")) {
-      await FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
-    } else {
-      await FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
-    }
+    FlutterStatusbarManager.setFullscreen(false);
+    //    if (SpUtil.getBool("dark")) {
+    //   await FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
+    // } else {
+    //   await FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
+    // }
   }
 
   @override
@@ -84,10 +84,7 @@ class _ReadBookState extends State<ReadBook>
 
   @override
   Future<void> deactivate() async {
-    print("deactuvate");
     super.deactivate();
-
-    FlutterStatusbarManager.setFullscreen(false);
 
     await readModel.saveData();
     readModel.clear();

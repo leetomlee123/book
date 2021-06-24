@@ -65,7 +65,7 @@ class InfoState extends State<InfoPage> {
                   padding: EdgeInsets.all(15),
                 ),
               ),
-              data: data.theme,
+              // data: data.theme,
             ));
   }
 

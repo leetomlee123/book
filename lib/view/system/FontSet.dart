@@ -5,6 +5,7 @@ import 'package:book/common/LoadDialog.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -33,12 +34,9 @@ class StateFontSet extends State<FontSet> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         title: Text(
           "字体",
-          style: TextStyle(
-            color: _colorModel.dark ? Colors.white : Colors.black,
-          ),
+          style: TextStyle(),
         ),
         elevation: 0,
         centerTitle: true,
@@ -51,7 +49,6 @@ class StateFontSet extends State<FontSet> {
                 "\t\t\t\t\t\t\t\t\t\t\t\t\t\t问刘十九\r\n绿蚁新醅酒，红泥小火炉。\r\n晚来天欲雪，能饮一杯无？",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontFamily: _colorModel.font,
                 ),
               ),
             ),
@@ -104,12 +101,12 @@ class StateFontSet extends State<FontSet> {
                                                 return LoadingDialog();
                                               },
                                             );
-                                       
-                                                await CustomCacheManager
-                                                    .instanceFont
-                                                    .downloadFile(e.value,
-                                                        key: e.key);
-                                     
+
+                                            await CustomCacheManager
+                                                .instanceFont
+                                                .downloadFile(e.value,
+                                                    key: e.key);
+
                                             Navigator.pop(context);
                                           } else {
                                             if (e.key == "Roboto") {
@@ -131,6 +128,7 @@ class StateFontSet extends State<FontSet> {
                                                       readAsBytes.buffer)));
                                               await fontLoader.load();
                                               _colorModel.setFontFamily(e.key);
+                                            //  Theme.of(context).textTheme.
                                             }
                                           }
                                           if (mounted) {

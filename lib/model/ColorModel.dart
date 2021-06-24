@@ -9,12 +9,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
 class ColorModel with ChangeNotifier {
   BuildContext buildContext;
   bool dark = false;
-  List<Color> skins = Colors.accents;
+  // List<FlexScheme> skins = FlexThemeModeSwitch(themeMode: themeMode, onThemeModeChanged: onThemeModeChanged, flexSchemeData: flexSchemeData)
   String savePath = "";
   Map fonts = {
     "Roboto": "默认字体",
@@ -29,61 +28,47 @@ class ColorModel with ChangeNotifier {
   ThemeData _theme;
   String font = SpUtil.getString("fontName", defValue: "Roboto");
 
-  ThemeData get theme {
-    if (font != "Roboto" && font != "") {
-      readFont(font);
-    }
-    if (SpUtil.haveKey("dark")) {
-      dark = SpUtil.getBool("dark");
-    }
-    _theme = dark
-        ? ThemeData(brightness: Brightness.dark, fontFamily: font)
-        : ThemeData(primaryColor: skins[idx], fontFamily: font);
-    return _theme;
-  }
 
-  getSkins(w, h) {
-    List<Widget> wds = [];
-    for (var i = 0; i < skins.length; i++) {
-      wds.add(GestureDetector(
-        child: Container(
-          width: w,
-          height: h,
-          child: Stack(
-            children: <Widget>[
-              Container(
-                color: skins[i],
-              ),
-              i == idx
-                  ? Align(
-                      alignment: Alignment.topRight,
-                      child: ImageIcon(
-                        AssetImage('images/pick.png'),
-                        color: Colors.white,
-                      ),
-                    )
-                  : Container()
-            ],
-          ),
-        ),
-        onTap: () {
-          idx = i;
-          notifyListeners();
-          SpUtil.putInt('skin', idx);
-        },
-      ));
-    }
-    return wds;
-  }
+
+  // getSkins(w, h) {
+  //   List<Widget> wds = [];
+  //   for (var i = 0; i < skins.length; i++) {
+  //     wds.add(GestureDetector(
+  //       child: Container(
+  //         width: w,
+  //         height: h,
+  //         child: Stack(
+  //           children: <Widget>[
+  //             Container(
+  //               color: skins[i],
+  //             ),
+  //             i == idx
+  //                 ? Align(
+  //                     alignment: Alignment.topRight,
+  //                     child: ImageIcon(
+  //                       AssetImage('images/pick.png'),
+  //                       color: Colors.white,
+  //                     ),
+  //                   )
+  //                 : Container()
+  //           ],
+  //         ),
+  //       ),
+  //       onTap: () {
+  //         idx = i;
+  //         notifyListeners();
+  //         SpUtil.putInt('skin', idx);
+  //       },
+  //     ));
+  //   }
+  //   return wds;
+  // }
 
   switchModel() {
     dark = !dark;
+
     SpUtil.putBool("dark", dark);
-    if (dark) {
-      FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
-    } else {
-      FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
-    }
+
     notifyListeners();
   }
 

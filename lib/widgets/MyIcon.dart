@@ -13,11 +13,11 @@ class MyIcon extends StatelessWidget {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel color, child) {
       return IconButton(
-        color: color.dark ? Colors.white : Colors.black,
+        // color: color.dark ? Colors.white : Colors.black,
         icon: Icon(
           icon,
           size: size,
-          color: color.dark ? Colors.white : Colors.black,
+          // color: color.dark ? Colors.white : Colors.black,
         ),
         onPressed: onTap,
       );
