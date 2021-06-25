@@ -70,11 +70,6 @@ class _ReadBookState extends State<ReadBook>
     readModel?.listController?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     FlutterStatusbarManager.setFullscreen(false);
-    //    if (SpUtil.getBool("dark")) {
-    //   await FlutterStatusbarManager.setStyle(StatusBarStyle.LIGHT_CONTENT);
-    // } else {
-    //   await FlutterStatusbarManager.setStyle(StatusBarStyle.DARK_CONTENT);
-    // }
   }
 
   @override

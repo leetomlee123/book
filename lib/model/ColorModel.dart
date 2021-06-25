@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
 import 'package:book/service/CustomCacheManager.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,12 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 class ColorModel with ChangeNotifier {
   BuildContext buildContext;
   bool dark = false;
+
+  List<Color> skins = FlexScheme.values
+      .map((e) => FlexColorScheme.light(
+            scheme: e,
+          ).toTheme.primaryColor)
+      .toList();
   // List<FlexScheme> skins = FlexThemeModeSwitch(themeMode: themeMode, onThemeModeChanged: onThemeModeChanged, flexSchemeData: flexSchemeData)
   String savePath = "";
   Map fonts = {
@@ -25,44 +32,59 @@ class ColorModel with ChangeNotifier {
     "方正卡通": "http://oss-asq-download.11222.cn/font/package/FZKATK.TTF",
   };
   int idx = SpUtil.getInt('skin', defValue: 5);
+
   ThemeData _theme;
   String font = SpUtil.getString("fontName", defValue: "Roboto");
 
+  ThemeData get theme {
+    if (font != "Roboto" && font != "") {
+      readFont(font);
+    }
+    if (SpUtil.haveKey("dark")) {
+      dark = SpUtil.getBool("dark");
+    }
+    var scheme = FlexScheme.values[idx];
+    _theme = dark
+        ? FlexColorScheme.dark(
+            scheme: scheme,
+            fontFamily: font,
+          ).toTheme
+        : FlexColorScheme.light(
+            scheme: scheme,
+            fontFamily: font,
+          ).toTheme;
+    return _theme;
+  }
 
-
-  // getSkins(w, h) {
-  //   List<Widget> wds = [];
-  //   for (var i = 0; i < skins.length; i++) {
-  //     wds.add(GestureDetector(
-  //       child: Container(
-  //         width: w,
-  //         height: h,
-  //         child: Stack(
-  //           children: <Widget>[
-  //             Container(
-  //               color: skins[i],
-  //             ),
-  //             i == idx
-  //                 ? Align(
-  //                     alignment: Alignment.topRight,
-  //                     child: ImageIcon(
-  //                       AssetImage('images/pick.png'),
-  //                       color: Colors.white,
-  //                     ),
-  //                   )
-  //                 : Container()
-  //           ],
-  //         ),
-  //       ),
-  //       onTap: () {
-  //         idx = i;
-  //         notifyListeners();
-  //         SpUtil.putInt('skin', idx);
-  //       },
-  //     ));
-  //   }
-  //   return wds;
-  // }
+  getSkins() {
+    List<Widget> wds = [];
+    for (var i = 0; i < skins.length; i++) {
+      wds.add(GestureDetector(
+        child: Stack(
+          children: <Widget>[
+            Container(
+              color: skins[i],
+            ),
+            i == idx
+                ? Align(
+                    alignment: Alignment.topRight,
+                    child: ImageIcon(
+                      AssetImage('images/pick.png'),
+                      color: Colors.white,
+                    ),
+                  )
+                : Container()
+          ],
+        ),
+        onTap: () {
+          idx = i;
+          notifyListeners();
+          SpUtil.putInt('skin', idx);
+        },
+      ));
+    }
+    return wds;
+  }
 
   switchModel() {
     dark = !dark;

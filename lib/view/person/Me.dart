@@ -11,6 +11,7 @@ import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
+import 'package:book/view/person/Skin.dart';
 import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -180,15 +181,15 @@ class Me extends StatelessWidget {
               //   },
               //   c,
               // ),
-              // getItem(
-              //   ImageIcon(AssetImage("images/skin.png")),
-              //   '主题',
-              //   () {
-              //     Navigator.of(context).push(MaterialPageRoute(
-              //         builder: (BuildContext context) => Skin()));
-              //   },
-              //   c,
-              // ),
+              getItem(
+                ImageIcon(AssetImage("images/skin.png")),
+                '主题',
+                () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (BuildContext context) => Skin()));
+                },
+                c,
+              ),
               // getItem(
               //   ImageIcon(AssetImage("images/cache_manager.png")),
               //   '缓存管理',
@@ -287,7 +288,7 @@ class Me extends StatelessWidget {
                 }),
               ),
               SizedBox(
-                height: 5,
+                height: 4,
               )
             ],
           ),

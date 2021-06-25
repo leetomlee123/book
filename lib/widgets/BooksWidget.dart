@@ -98,10 +98,10 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架封面模式
   Widget coverModel() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
-        spacing: 5, //主轴上子控件的间距
+        spacing: 4, //主轴上子控件的间距
         runSpacing: 15, //交叉轴上子控件之间的间距
         children: cover(), //要显示的子控件集合
       ),

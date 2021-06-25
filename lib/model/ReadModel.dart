@@ -770,7 +770,7 @@ class ReadModel with ChangeNotifier {
             ),
           ),
           CustomPaint(
-            isComplex: true,
+              isComplex: true,
               painter: PagePainter(
                   pageIndex,
                   r.pages[pageIndex],
@@ -915,20 +915,11 @@ class ReadModel with ChangeNotifier {
       var temp = [ChapterNode(content, chapter.id)];
       await DbHelper.instance.udpChapter(temp);
       chapters[book.cur].hasContent = 2;
-      if (isPage) {
-        curPage = await loadChapter(book.cur);
-        await fillAllContent();
-      } else {
-        var temp = await loadChapter(book.cur);
-        readPages.removeAt(cursor);
-        ladderH.removeAt(cursor);
-        readPages.insert(cursor, temp);
 
-        ladderH.insert(cursor, ladderH[cursor - 1] + temp.height);
-        allContent.removeAt(cursor);
-        allContent.insertAll(cursor, chapterContent(temp));
-        notifyListeners();
-      }
+      curPage = await loadChapter(book.cur);
+      notifyListeners();
+      eventBus.fire(ZEvent(2));
+      // await fillAllContent();
     }
   }
 
@@ -1113,7 +1104,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> changeCoverPage(var offsetDifference) async {
-    int idx = book?.index??0;
+    int idx = book?.index ?? 0;
     // if (idx == -1) {
     //   return;
     // }

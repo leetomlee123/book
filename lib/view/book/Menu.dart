@@ -40,7 +40,10 @@ class _MenuState extends State<Menu> {
 
   Widget head() {
     return Container(
-      color: _colorModel.dark ? Colors.black : Colors.white,
+      decoration: BoxDecoration(
+        color: _colorModel.dark ? Colors.black : Colors.white,
+        borderRadius: BorderRadius.all(Radius.circular(10.0)),
+      ),
       padding: EdgeInsets.symmetric(horizontal: 15.0),
       child: Row(
         children: [
@@ -49,9 +52,7 @@ class _MenuState extends State<Menu> {
             style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
           ),
           // Spacer(),
-          Expanded(
-            child: Container(),
-          ),
+          Spacer(),
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () {
@@ -61,16 +62,13 @@ class _MenuState extends State<Menu> {
           IconButton(
             icon: Icon(Icons.info),
             onPressed: () async {
-              _readModel.saveData();
-              _readModel.clear();
               String url = Common.detail + '/${_readModel.book.Id}';
               Response future =
                   await HttpUtil(showLoading: true).http().get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
-
               Routes.navigateTo(context, Routes.detail,
-                  params: {"detail": jsonEncode(bookInfo)});
+                  params: {"detail": jsonEncode(bookInfo)}, replace: true);
             },
           )
         ],
@@ -277,7 +275,6 @@ class _MenuState extends State<Menu> {
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       trackHeight: 1,
-              
                       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape: SliderComponentShape.noOverlay,
                     ),
@@ -318,9 +315,7 @@ class _MenuState extends State<Menu> {
                   height: 12,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-              
                       trackHeight: 1,
-              
                       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape: SliderComponentShape.noOverlay,
                     ),
@@ -361,7 +356,6 @@ class _MenuState extends State<Menu> {
                   height: 12,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
-                 
                       trackHeight: 1,
                       thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
                       overlayShape: SliderComponentShape.noOverlay,
@@ -418,7 +412,8 @@ class _MenuState extends State<Menu> {
 
   Widget flipType() {
     return Row(
-      children: <Widget>[  Container(
+      children: <Widget>[
+        Container(
           child: Center(
             child: Text('翻页动画', style: TextStyle(fontSize: 13.0)),
           ),
@@ -487,21 +482,21 @@ class _MenuState extends State<Menu> {
   }
 
   Widget reloadCurChapterWidget() {
-    return GestureDetector(
-      child: Container(
-        width: 50,
-        height: 50,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-            color: Colors.grey, borderRadius: BorderRadius.circular(25)),
-        child: Icon(
+    return Container(
+      width: 50,
+      height: 50,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+          color: Colors.grey, borderRadius: BorderRadius.circular(25)),
+      child: IconButton(
+        onPressed: () {
+          _readModel.reloadCurrentPage();
+        },
+        icon: Icon(
           Icons.refresh,
           color: Colors.white,
         ),
       ),
-      onTap: () {
-        _readModel.reloadCurrentPage();
-      },
     );
   }
 
@@ -510,21 +505,32 @@ class _MenuState extends State<Menu> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: GestureDetector(
-        child: Column(
-          children: <Widget>[
-            midTransparent(),
-            Container(
-              decoration: BoxDecoration(
-                color: _colorModel.dark?Colors.black:Colors.white,
-                borderRadius: BorderRadius.all(Radius.circular(10.0)),
-              ),
-              // height: 140,
-              // width: double.infinity,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[bottomHead(), buildBottomMenus()],
-              ),
-            )
+        child: Stack(
+          children: [
+            Column(
+              children: <Widget>[
+                // head(),
+
+                midTransparent(),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: _colorModel.dark ? Colors.black : Colors.white,
+                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[bottomHead(), buildBottomMenus()],
+                  ),
+                )
+              ],
+            ),
+            Offstage(
+                offstage: type != Type.SLIDE,
+                child: Align(
+                  child: reloadCurChapterWidget(),
+                  alignment: Alignment(.9, .5),
+                ))
           ],
         ),
         onTap: () {
@@ -556,7 +562,6 @@ class _MenuState extends State<Menu> {
               ),
             ),
             onPressed: () async {
-              
               Store.value<ColorModel>(context).switchModel();
               await _readModel.colorModelSwitch();
             }),
@@ -678,8 +683,8 @@ class _MenuState extends State<Menu> {
               border: Border.all(
                 width: 1.5,
                 color: _readModel.bgIdx == i
-                      ? Theme.of(context).primaryColor
-                      : Colors.white10,
+                    ? Theme.of(context).primaryColor
+                    : Colors.white10,
               ),
               image: DecorationImage(
                 image: AssetImage(f),

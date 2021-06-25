@@ -65,9 +65,10 @@ class MyApp extends StatelessWidget {
           BotToastNavigatorObserver(),
         ],
         onGenerateRoute: Routes.router.generator,
-        theme: FlexColorScheme.light(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
-        darkTheme: FlexColorScheme.dark(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
-        themeMode: model.dark?ThemeMode.dark:ThemeMode.light,
+        theme: model.theme,
+        // theme: FlexColorScheme.light(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
+        // darkTheme: FlexColorScheme.dark(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
+        // themeMode: model.dark?ThemeMode.dark:ThemeMode.light,
       );
     });
   }

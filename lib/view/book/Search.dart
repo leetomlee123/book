@@ -90,21 +90,16 @@ class _SearchState extends State<Search> {
 
   Widget buildSearchWidget() {
     return Container(
-      decoration: BoxDecoration(
-        color: Color(0xFFF2F2F2),
-        // borderRadius: BorderRadius.circular(25),
-      ),
+      // decoration: BoxDecoration(
+      //   color: Color(0xFFF2F2F2),
+      //   // borderRadius: BorderRadius.circular(25),
+      // ),
       child: Row(
         children: [
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(
-              Icons.search,
-              size: 22,
-              color: Color(0xFF999999),
-            ),
-          ),
+          // SizedBox(
+          //   width: 40,
+          //   height: 40,
+          // ),
           Expanded(
               child: Container(
             child: TextField(
@@ -115,7 +110,7 @@ class _SearchState extends State<Search> {
               },
               style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF333333),
+                // color: Color(0xFF333333),
                 height: 1.3,
               ),
               autofocus: false,
@@ -124,7 +119,12 @@ class _SearchState extends State<Search> {
                 isDense: true,
                 hintStyle: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF999999),
+                  // color: Color(0xFF999999),
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  // size: 22,
+                  // color: Color(0xFF999999),
                 ),
                 suffixIcon: IconButton(
                   icon: Icon(Icons.close),
