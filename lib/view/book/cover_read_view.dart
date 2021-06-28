@@ -91,14 +91,7 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
 
   @override
   void initState() {
-    // eventBus.on<ScrollEvent>().listen((event) {
-    //   // if (_controller != null) {
-    //   //   print("xxx");
-    //   //   x += 1.0;
-    //   //   print("x:::$x");
-    //   //   _controller.forward(from: x);
-    //   // }
-    // });
+
     eventBus.on<ZEvent>().listen((event) {
       if (event.off == 200) {
         _controller?.dispose();
@@ -192,7 +185,7 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
     lastPageIndex = owner.readModel.book.index;
     lastChapterIndex = owner.readModel.book.cur;
     return owner.readModel
-        .getPageWidget(owner.readModel.curPage, lastPageIndex);
+        .getPage();
   }
 
   int get curChapterIndex => owner.readModel.book.cur;

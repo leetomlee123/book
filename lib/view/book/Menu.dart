@@ -244,15 +244,15 @@ class _MenuState extends State<Menu> {
           MenuConfig(
             () {
               ReadSetting.calcFontSize(-1);
-              _readModel.modifyFont();
+              _readModel.updPage();
             },
             () {
               ReadSetting.calcFontSize(1);
-              _readModel.modifyFont();
+              _readModel.updPage();
             },
             (v) {
               ReadSetting.setFontSize(v);
-              _readModel.modifyFont();
+              _readModel.updPage();
             },
             ReadSetting.getFontSize(),
             "字号",
@@ -265,7 +265,7 @@ class _MenuState extends State<Menu> {
               IconButton(
                 onPressed: () {
                   ReadSetting.subLineHeight();
-                  _readModel.modifyFont();
+                  _readModel.updPage();
                 },
                 icon: Icon(Icons.remove),
               ),
@@ -282,7 +282,7 @@ class _MenuState extends State<Menu> {
                       value: ReadSetting.getLineHeight(),
                       onChanged: (v) {
                         ReadSetting.setLineHeight(v);
-                        _readModel.modifyFont();
+                        _readModel.updPage();
                       },
                       min: .1,
                       max: 4.0,
@@ -293,7 +293,7 @@ class _MenuState extends State<Menu> {
               IconButton(
                 onPressed: () {
                   ReadSetting.addLineHeight();
-                  _readModel.modifyFont();
+                  _readModel.updPage();
                 },
                 icon: Icon(Icons.add),
               ),
@@ -306,7 +306,7 @@ class _MenuState extends State<Menu> {
               IconButton(
                 onPressed: () {
                   ReadSetting.subParagraph();
-                  _readModel.modifyFont();
+                  _readModel.updPage();
                 },
                 icon: Icon(Icons.remove),
               ),
@@ -323,7 +323,7 @@ class _MenuState extends State<Menu> {
                       value: ReadSetting.getParagraph(),
                       onChanged: (v) {
                         ReadSetting.setParagraph(v);
-                        _readModel.modifyFont();
+                        _readModel.updPage();
                       },
                       min: .1,
                       max: 2.0,
@@ -334,7 +334,7 @@ class _MenuState extends State<Menu> {
               IconButton(
                 onPressed: () {
                   ReadSetting.addParagraph();
-                  _readModel.modifyFont();
+                  _readModel.updPage();
                 },
                 icon: Icon(Icons.add),
               ),
@@ -347,7 +347,7 @@ class _MenuState extends State<Menu> {
               IconButton(
                 onPressed: () {
                   ReadSetting.calcPageDis(-1);
-                  _readModel.modifyFont();
+                  _readModel.updPage();
                 },
                 icon: Icon(Icons.remove),
               ),
@@ -364,7 +364,7 @@ class _MenuState extends State<Menu> {
                       value: ReadSetting.getPageDis().toDouble(),
                       onChanged: (v) {
                         ReadSetting.setPageDis(v.toInt());
-                        _readModel.modifyFont();
+                        _readModel.updPage();
                       },
                       min: 0,
                       max: 30,
@@ -375,7 +375,7 @@ class _MenuState extends State<Menu> {
               IconButton(
                 onPressed: () {
                   ReadSetting.calcPageDis(1);
-                  _readModel.modifyFont();
+                  _readModel.updPage();
                 },
                 icon: Icon(Icons.add),
               ),

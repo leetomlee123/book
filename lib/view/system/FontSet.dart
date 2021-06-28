@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
@@ -32,6 +33,7 @@ class StateFontSet extends State<FontSet> {
 
   @override
   Widget build(BuildContext context) {
+    var readModel = Store.value<ReadModel>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -112,6 +114,7 @@ class StateFontSet extends State<FontSet> {
                                             if (e.key == "Roboto") {
                                               _colorModel
                                                   .setFontFamily("Roboto");
+                                              readModel.updPage();
                                             } else {
                                               File file =
                                                   await CustomCacheManager
@@ -128,7 +131,8 @@ class StateFontSet extends State<FontSet> {
                                                       readAsBytes.buffer)));
                                               await fontLoader.load();
                                               _colorModel.setFontFamily(e.key);
-                                            //  Theme.of(context).textTheme.
+                                               readModel.updPage();
+                                              //  Theme.of(context).textTheme.
                                             }
                                           }
                                           if (mounted) {

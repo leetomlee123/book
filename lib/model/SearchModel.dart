@@ -124,6 +124,7 @@ class SearchModel with ChangeNotifier {
 
   void onLoading() async {
     page += 1;
+    print(page);
     loading = true;
     await getSearchData();
     loading = false;

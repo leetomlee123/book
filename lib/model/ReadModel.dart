@@ -37,6 +37,7 @@ class ReadModel with ChangeNotifier {
   Offset _finalSwipeOffset;
   Color darkFont = Color(0x9FFFFFFF);
   TextComposition textComposition;
+  Map<String, Widget> widgets = Map();
 
   Stack stackContent;
 
@@ -50,14 +51,6 @@ class ReadModel with ChangeNotifier {
     book.index -= 1;
     await changeChapter(book.index);
     notifyListeners();
-  }
-
-  Widget get topWidget {
-    return allContent[book.index];
-  }
-
-  Widget get bottomWidget {
-    return allContent[book.index - 1];
   }
 
   Book book;
@@ -137,6 +130,7 @@ class ReadModel with ChangeNotifier {
     load = Load.Done;
     cursor = 1;
     readPages = [];
+
     ladderH = [];
     // getEveyPoet();
 
@@ -542,7 +536,8 @@ class ReadModel with ChangeNotifier {
     return r;
   }
 
-  modifyFont() async {
+  updPage() async {
+    widgets.clear();
     var keys = SpUtil.getKeys();
     for (var key in keys) {
       if (key.contains("pages")) {
@@ -726,6 +721,48 @@ class ReadModel with ChangeNotifier {
     return contents;
   }
 
+  Widget getPage() {
+    var key = book.cur.toString() + book.index.toString();
+    if (widgets.containsKey(key)) {
+      return widgets[key];
+    }
+    var widget = getPageWidget(curPage, book.index);
+    Future.delayed(Duration(milliseconds: 800), () {
+      widgets.putIfAbsent(key, () => widget);
+      var pre = book.index - 1;
+      var preKey;
+      if (pre < 0) {
+        preKey =
+            (book.cur - 1).toString() + (prePage.pageOffsets - 1).toString();
+      } else {
+        preKey = book.cur.toString() + pre.toString();
+      }
+      if (!widgets.containsKey(preKey)) {
+        widgets.putIfAbsent(
+            preKey,
+            () => pre < 0
+                ? getPageWidget(prePage, prePage.pageOffsets - 1)
+                : getPageWidget(curPage, book.index - 1));
+      }
+
+      var next = book.index + 1;
+      var nextKey;
+      if (next >= curPage.pageOffsets) {
+        nextKey = (book.cur + 1).toString() + 0.toString();
+      } else {
+        nextKey = book.cur.toString() + next.toString();
+      }
+      if (!widgets.containsKey(nextKey)) {
+        widgets.putIfAbsent(
+            preKey,
+            () => next >= curPage.pageOffsets
+                ? getPageWidget(nextPage)
+                : getPageWidget(nextPage, book.index + 1));
+      }
+    });
+    return widget;
+  }
+
   Widget getPageWidget(ReadPage r, [int pageIndex = 0]) {
     // if (pageIndex != null && !changePage(pageIndex)) return Container();
     // if (book.index == -2) {
@@ -882,6 +919,7 @@ class ReadModel with ChangeNotifier {
     chapters = [];
     loadOk = false;
     book = null;
+    widgets.clear();
   }
 
   Future<void> reloadChapters() async {

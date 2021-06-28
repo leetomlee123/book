@@ -133,7 +133,7 @@ class _SearchState extends State<Search> {
                     searchModel.reset();
                   },
                 ),
-                hintText: isBookSearch ? "书籍/作者名" : "美剧/作者",
+                hintText: "书籍/作者名" 
               ),
             ),
             height: 40,
@@ -170,97 +170,88 @@ class _SearchState extends State<Search> {
         controller: searchModel.refreshController,
         onRefresh: searchModel.onRefresh,
         onLoading: searchModel.onLoading,
-        child: AnimationLimiter(
-          child: ListView.builder(
-            itemExtent: 130,
-            itemBuilder: (context, i) {
-              var auth = searchModel.bks[i].Author;
+        child: ListView.builder(
+          itemExtent: 130,
+          itemBuilder: (context, i) {
+            var auth = searchModel.bks[i].Author;
 
-              return AnimationConfiguration.staggeredList(
-                position: i,
-                duration: const Duration(milliseconds: 375),
-                child: SlideAnimation(
-                  verticalOffset: 50.0,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    child: Row(
-                      children: <Widget>[
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: <Widget>[
-                            Container(
-                              padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10.0),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5),
-                                child: PicWidget(
-                                  searchModel.bks[i]?.Img ?? "",
-                                  height: 115,
-                                  width: 90,
-                                ),
-                              ),
-                            )
-                          ],
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: <Widget>[
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: <Widget>[
+                      Container(
+                        padding:
+                            const EdgeInsets.only(left: 10.0, top: 10.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: PicWidget(
+                            searchModel.bks[i]?.Img ?? "",
+                            height: 115,
+                            width: 90,
+                          ),
                         ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          verticalDirection: VerticalDirection.down,
-                          // textDirection:,
-                          textBaseline: TextBaseline.alphabetic,
-
-                          children: <Widget>[
-                            Container(
-                              width: ScreenUtil.getScreenW(context) - 120,
-                              padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10.0),
-                              child: Text(
-                                searchModel.bks[i].Name,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 15),
-                              ),
-                            ),
-                            Container(
-                              padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10.0),
-                              child: new Text('$auth',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                  )),
-                            ),
-                            Container(
-                              padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10.0),
-                              child: Text(searchModel.bks[i].Desc ?? "",
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                  )),
-                              width: ScreenUtil.getScreenW(context) - 120,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    onTap: () async {
-                      String url = Common.detail + '/${searchModel.bks[i].Id}';
-                      Response future =
-                          await HttpUtil(showLoading: true).http().get(url);
-                      var d = future.data['data'];
-                      BookInfo b = BookInfo.fromJson(d);
-                      Routes.navigateTo(context, Routes.detail,
-                          params: {"detail": jsonEncode(b)});
-                    },
+                      )
+                    ],
                   ),
-                ),
-              );
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.max,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    verticalDirection: VerticalDirection.down,
+                    // textDirection:,
+                    textBaseline: TextBaseline.alphabetic,
+
+                    children: <Widget>[
+                      Container(
+                        width: ScreenUtil.getScreenW(context) - 120,
+                        padding:
+                            const EdgeInsets.only(left: 10.0, top: 10.0),
+                        child: Text(
+                          searchModel.bks[i].Name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 15),
+                        ),
+                      ),
+                      Container(
+                        padding:
+                            const EdgeInsets.only(left: 10.0, top: 10.0),
+                        child: new Text('$auth',
+                            style: TextStyle(
+                              fontSize: 14,
+                            )),
+                      ),
+                      Container(
+                        padding:
+                            const EdgeInsets.only(left: 10.0, top: 10.0),
+                        child: Text(searchModel.bks[i].Desc ?? "",
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            style: TextStyle(
+                              fontSize: 12,
+                            )),
+                        width: ScreenUtil.getScreenW(context) - 120,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              onTap: () async {
+                String url = Common.detail + '/${searchModel.bks[i].Id}';
+                Response future =
+                    await HttpUtil(showLoading: true).http().get(url);
+                var d = future.data['data'];
+                BookInfo b = BookInfo.fromJson(d);
+                Routes.navigateTo(context, Routes.detail,
+                    params: {"detail": jsonEncode(b)});
+              },
+            );
 
 //                var cate = searchModel.bks[i].CName??"";
-            },
-            itemCount: searchModel.bks.length,
-          ),
+          },
+          itemCount: searchModel.bks.length,
         ));
   }
 

@@ -97,16 +97,6 @@ class ColorModel with ChangeNotifier {
   setFontFamily(name) {
     font = name;
     SpUtil.putString("fontName", font);
-
-    var keys = SpUtil.getKeys();
-
-    for (var f in keys) {
-      if (f.contains('pages') || f.startsWith(Common.page_height_pre)) {
-        SpUtil.remove(f);
-      }
-    }
-
-    eventBus.fire(ReadRefresh(""));
     notifyListeners();
   }
 
