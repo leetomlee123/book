@@ -337,6 +337,7 @@ class ReadModel with ChangeNotifier {
   }
 
   colorModelSwitch() async {
+    widgets.clear();
     eventBus.fire(ZEvent(1));
   }
 
