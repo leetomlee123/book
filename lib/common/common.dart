@@ -23,6 +23,7 @@ class Common {
   static String two = domain + "/book/two";
 
   static String search = domain + "/book/search";
+  static String searchAi = domain + "/book/searchAi";
   static String bookInfo = domain + "/book/info/";
   static String chaptersUrl = domain + "/book/chapters";
   static String bookContentUrl = domain + '/book/chapter';
@@ -59,4 +60,5 @@ class Common {
   static String notice_info = "notice_info";
   static String reading_style = "READINGSTYLE";
   static String parse_html_config = "parse_html_config";
+  static String book_pic_width = "book_pic_width";
 }

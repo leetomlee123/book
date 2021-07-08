@@ -23,27 +23,22 @@ class UpdateDialogState extends State<UpdateDialog> {
 
   @override
   Widget build(BuildContext context) {
-    var _textStyle = TextStyle(color: Theme.of(context).textTheme.body1.color);
-
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       title: Text(
         "更新",
-        style: _textStyle,
       ),
       content: progress == 0.0
-          ? Text(
-              "${widget.update.msg}",
-              style: _textStyle,
-            )
+          ? Text('''${this.widget.update.msg}''')
           : LinearProgressIndicator(
               value: progress,
+              semanticsLabel: "$progress %",
+              semanticsValue: "$progress %",
             ),
       actions: <Widget>[
         TextButton(
           child: Text(
             '更新',
-            style: _textStyle,
           ),
           onPressed: () {
             installApk();

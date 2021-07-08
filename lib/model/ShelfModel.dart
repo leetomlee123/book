@@ -2,6 +2,7 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
+import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -14,6 +15,16 @@ class ShelfModel with ChangeNotifier {
     return shelf.map((f) => f.Id).toList().contains(id);
   }
 
+  ShelfModel() {
+    setShelf();
+  }
+  updReadBookProcess(UpdateBookProcess up) {
+    var b = shelf.first;
+    b.cur = up.cur;
+    b.index = up.index;
+    notifyListeners();
+  }
+
   Future<void> setShelf() async {
     if (_dbHelper == null) {
       _dbHelper = DbHelper();
@@ -23,12 +34,10 @@ class ShelfModel with ChangeNotifier {
   }
 
   BuildContext context;
-  bool model = SpUtil.getBool("shelfModel");
+  bool cover = SpUtil.getBool("cover", defValue: true);
   bool sortShelf = false;
   DbHelper _dbHelper = DbHelper.instance;
   List<bool> _picks = [];
-
-  ShelfModel();
 
   bool pickAllFlag = false;
 
@@ -40,14 +49,14 @@ class ShelfModel with ChangeNotifier {
     }
   }
 
-  removePicks() {
+  removePicks() async {
     List<Book> bks = [];
     List<String> ids = [];
     List<bool> pics = [];
 
     for (var i = 0; i < _picks.length; i++) {
       if (_picks[i]) {
-        delLocalCache([shelf[i].Id]);
+        await delLocalCache([shelf[i].Id]);
         ids.add(shelf[i].Id);
       } else {
         bks.add(shelf[i]);
@@ -103,13 +112,9 @@ class ShelfModel with ChangeNotifier {
     return _picks.contains(true);
   }
 
-  saveShelf() {
-    // SpUtil.putString(Common.listbookname, jsonEncode(shelf));
-  }
-
   toggleModel() {
-    model = !model;
-    SpUtil.putBool("shelfModel", model);
+    cover = !cover;
+    SpUtil.putBool("cover", cover);
     notifyListeners();
   }
 
@@ -131,6 +136,7 @@ class ShelfModel with ChangeNotifier {
       bs.forEach((f) {
         if (!ids.contains(f.Id)) {
           _dbHelper.addBooks([f]);
+          f.sortTime = DateUtil.getNowDateMs();
           shelf.add(f);
         }
       });
@@ -149,30 +155,28 @@ class ShelfModel with ChangeNotifier {
         }
       }
     } else {
-      shelf = bs;
+      bs.forEach((element) {
+        element.sortTime = DateUtil.getNowDateMs();
+        shelf.add(element);
+      });
       _dbHelper.addBooks(bs);
     }
     notifyListeners();
-    saveShelf();
   }
 
-  upToTop(Book book, int i) async {
+  sort(int i) async {
+    var book = shelf[i];
     book.NewChapterCount = 0;
-    await _dbHelper.updBookStatus(book.Id, 0);
-    shelf.removeAt(i);
-    shelf.insert(0, book);
-    await _dbHelper.sortBook(book.Id);
+    book.sortTime = DateUtil.getNowDateMs();
 
+    shelf.sort((o1, o2) => o2.sortTime.compareTo(o1.sortTime));
     notifyListeners();
+    await _dbHelper.sortBook(book.Id);
   }
 
-  dropAccountOut() {
-    SpUtil.remove('username');
-    SpUtil.remove('login');
-    SpUtil.remove('email');
-    SpUtil.remove('auth');
-    delLocalCache(shelf.map((f) => f.Id.toString()).toList());
-    // SpUtil.remove(Common.listbookname);
+  dropAccountOut() async {
+    SpUtil.clear();
+    await delLocalCache(shelf.map((f) => f.Id.toString()).toList());
     shelf = [];
     notifyListeners();
   }
@@ -183,16 +187,13 @@ class ShelfModel with ChangeNotifier {
   }
 
   //删除本地记录
-  void delLocalCache(List<String> ids) {
+  Future<void> delLocalCache(List<String> ids) async {
     for (var i = 0; i < ids.length; i++) {
-      SpUtil.remove(ids[i]);
-      SpUtil.remove('${ids[i]}chapters');
-
-      _dbHelper.delBookAndCps(ids[i]);
+      await _dbHelper.delBookAndCps(ids[i]);
     }
   }
 
-  modifyShelf(Book book) {
+  modifyShelf(Book book) async {
     var action =
         shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
@@ -207,13 +208,12 @@ class ShelfModel with ChangeNotifier {
       }
       _dbHelper.delBook(book.Id);
 
-      delLocalCache([book.Id]);
+      await delLocalCache([book.Id]);
       BotToast.showText(text: "已移除出书架");
     }
     if (SpUtil.haveKey("auth")) {
       HttpUtil().http().get(Common.bookAction + '/${book.Id}/$action');
     }
-    saveShelf();
     notifyListeners();
   }
 

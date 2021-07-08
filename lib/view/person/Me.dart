@@ -268,28 +268,28 @@ class Me extends StatelessWidget {
                 },
                 c,
               ),
-              Spacer(),
+
               Offstage(
                 offstage: !SpUtil.haveKey("username"),
-                child: Store.connect<ShelfModel>(
-                    builder: (context, ShelfModel model, child) {
-                  return GestureDetector(
-                    child: WhiteArea(
-                        Text(
-                          "退出登录",
-                          style: TextStyle(color: Colors.redAccent),
-                        ),
-                        50),
-                    onTap: () {
-                      model.dropAccountOut();
-                      eventBus.fire(new BooksEvent([]));
-                    },
-                  );
-                }),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Store.connect<ShelfModel>(
+                      builder: (context, ShelfModel model, child) {
+                    return GestureDetector(
+                      child: WhiteArea(
+                          Text(
+                            "退出登录",
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
+                          50),
+                      onTap: () {
+                        model.dropAccountOut();
+                        eventBus.fire(new BooksEvent([]));
+                      },
+                    );
+                  }),
+                ),
               ),
-              SizedBox(
-                height: 4,
-              )
             ],
           ),
         ),

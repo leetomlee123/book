@@ -1,5 +1,4 @@
-import 'package:book/model/ColorModel.dart';
-import 'package:book/store/Store.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -14,11 +13,10 @@ class BatteryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ColorModel _colorModel = Store.value<ColorModel>(context);
     return Container(
       child: CustomPaint(
           size: Size(width, height),
-          painter: BatteryViewPainter(electricQuantity, _colorModel)),
+          painter: BatteryViewPainter(electricQuantity)),
     );
   }
 }
@@ -28,10 +26,9 @@ class BatteryViewPainter extends CustomPainter {
   Paint mPaint;
   double mStrokeWidth = 1.0;
   double mPaintStrokeWidth = 1.5;
-  ColorModel model;
+  final bool isDark = SpUtil.getBool("dark", defValue: false);
 
-  BatteryViewPainter(electricQuantity, ColorModel model) {
-    this.model = model;
+  BatteryViewPainter(electricQuantity) {
     this.electricQuantity = electricQuantity;
     mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
   }
@@ -62,7 +59,7 @@ class BatteryViewPainter extends CustomPainter {
     double electricQuantityBottom = size.height - 2 * mStrokeWidth;
 
     mPaint.style = PaintingStyle.fill;
-    mPaint.color = model.dark ? Colors.white54 : Colors.black54;
+    mPaint.color = isDark ? Colors.white54 : Colors.black54;
     // mPaint.color = Color(0x80ffffff);
     //画电池头部
     canvas.drawRRect(
@@ -76,7 +73,7 @@ class BatteryViewPainter extends CustomPainter {
             Radius.circular(mStrokeWidth)),
         mPaint);
     mPaint.style = PaintingStyle.fill;
-    mPaint.color = model.dark ? Colors.white38 : Colors.black38;
+    mPaint.color = isDark ? Colors.white38 : Colors.black38;
     //画电池电量
     canvas.drawRRect(
         RRect.fromLTRBR(

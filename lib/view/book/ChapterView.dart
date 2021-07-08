@@ -12,6 +12,7 @@ import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:keframe/frame_separate_widget.dart';
 
 class ChapterView extends StatefulWidget {
   @override
@@ -136,24 +137,26 @@ class _ChapterViewItem extends State<ChapterView> {
                   itemBuilder: (context, index) {
                     var title = data.chapters[index].name;
                     var has = data.chapters[index].hasContent;
-                    return ListTile(
-                      title: Text(
-                        title,
-                        style: TextStyle(fontSize: 13),
+                    return FrameSeparateWidget(
+                                          child: ListTile(
+                        title: Text(
+                          title,
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        trailing: Text(
+                          has == 2 ? "已缓存" : "",
+                          style: TextStyle(fontSize: 8),
+                        ),
+                        selected: index == data.book.cur,
+                        onTap: () async {
+                          Navigator.of(context).pop();
+                          //不是卷目录
+                          data.book.cur = index;
+                          Future.delayed(Duration(milliseconds: 300), () {
+                            data.initPageContent(index, true);
+                          });
+                        },
                       ),
-                      trailing: Text(
-                        has == 2 ? "已缓存" : "",
-                        style: TextStyle(fontSize: 8),
-                      ),
-                      selected: index == data.book.cur,
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        //不是卷目录
-                        data.book.cur = index;
-                        Future.delayed(Duration(milliseconds: 300), () {
-                          data.initPageContent(index, true);
-                        });
-                      },
                     );
                   },
                   itemCount: data.chapters.length,

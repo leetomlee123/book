@@ -1,35 +1,8 @@
-
-
 import 'package:book/common/Screen.dart';
+import 'package:book/model/ReadModel.dart';
+import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:flutter/material.dart';
 
-
-
-class TouchEvent<T> {
-  static const int ACTION_DOWN = 0;
-  static const int ACTION_MOVE = 1;
-  static const int ACTION_UP = 2;
-  static const int ACTION_CANCEL = 3;
-
-  int action;
-  T touchDetail;
-  Offset touchPos =
-      Offset(Screen.width,Screen.height);
-
-  TouchEvent(this.action, this.touchPos);
-
-  @override
-  bool operator ==(other) {
-    if (!(other is TouchEvent)) {
-      return false;
-    }
-
-    return (this.action == other.action) && (this.touchPos == other.touchPos);
-  }
-
-  @override
-  int get hashCode => super.hashCode;
-}
 
 abstract class BaseAnimationPage{
 
@@ -42,7 +15,7 @@ abstract class BaseAnimationPage{
 //  @protected
 //  ReaderContentViewModel contentModel=ReaderContentViewModel.instance;
 
-  // NovelReaderViewModel readerViewModel;
+  ReadModel readerViewModel;
 
 //  void setData(ReaderChapterPageContentConfig prePageConfig,ReaderChapterPageContentConfig currentPageConfig,ReaderChapterPageContentConfig nextPageConfig){
 //    currentPageContentConfig=pageConfig;
@@ -52,10 +25,10 @@ abstract class BaseAnimationPage{
     currentSize=size;
 //    mTouch=Offset(currentSize.width, currentSize.height);
   }
-//   void setContentViewModel(NovelReaderViewModel viewModel){
-//     readerViewModel=viewModel;
-// //    mTouch=Offset(currentSize.width, currentSize.height);
-//   }
+  void setContentViewModel(ReadModel viewModel){
+    readerViewModel=viewModel;
+//    mTouch=Offset(currentSize.width, currentSize.height);
+  }
 
   void onDraw(Canvas canvas);
   void onTouchEvent(TouchEvent event);
@@ -64,14 +37,14 @@ abstract class BaseAnimationPage{
   }
 
   bool isShouldAnimatingInterrupt(){
-   return false;
+    return false;
   }
 
   bool isCanGoNext(){
-    // return readerViewModel.isCanGoNext();
+    return readerViewModel.isCanGoNext();
   }
   bool isCanGoPre(){
-    // return readerViewModel.isCanGoPre();
+    return readerViewModel.isCanGoPre();
   }
 
   bool isCancelArea();

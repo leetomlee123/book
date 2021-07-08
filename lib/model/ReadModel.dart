@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:battery/battery.dart';
 import 'package:book/common/DbHelper.dart';
@@ -18,40 +19,48 @@ import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/event/event.dart';
-import 'package:book/view/book/NoMorePage.dart';
-import 'package:book/view/system/BatteryView.dart';
+import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
-  Offset _initialSwipeOffset;
-  Offset _finalSwipeOffset;
   Color darkFont = Color(0x9FFFFFFF);
   TextComposition textComposition;
-  Map<String, Widget> widgets = Map();
-
+  Map<String, ui.Picture> widgets = Map();
   Stack stackContent;
+  Paint bgPaint = Paint();
+  List<ui.Image> bgImgs = [];
 
-  Future<void> next() async {
-    book.index += 1;
-    await changeChapter(book.index);
-    notifyListeners();
+  initBgs() async {
+    var length2 = ReadSetting.bgImg.length;
+    for (var i = 0; i < length2; i++) {
+      var element = ReadSetting.bgImg[i];
+      ui.Image assetImage = await getAssetImage("images/$element",
+          width: Screen.width.ceil(), height: Screen.height.ceil());
+      bgImgs.add(assetImage);
+    }
   }
 
-  Future<void> pre() async {
-    book.index -= 1;
-    await changeChapter(book.index);
-    notifyListeners();
+  ReadModel() {
+    if (bgImgs.isEmpty) {
+      initBgs();
+    }
   }
+
+  TextPainter textPainter =
+      TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+
+  /// 翻页动画类型
+  int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
 
   Book book;
   List<Chapter> chapters = [];
@@ -63,8 +72,6 @@ class ReadModel with ChangeNotifier {
 
   // double allContentHeight = 0;
   List<Color> skins = Colors.accents;
-  List<ReadPage> readPages = [];
-  List<double> ladderH = [];
 
   //readPages 中 curPage 实际位置
   int cursor = 1;
@@ -74,7 +81,6 @@ class ReadModel with ChangeNotifier {
   ReadPage prePage;
   ReadPage curPage;
   ReadPage nextPage;
-  List<Widget> allContent = [];
 
   double percent = 0;
 
@@ -110,7 +116,7 @@ class ReadModel with ChangeNotifier {
 
   //阅读方式
   // bool isPage = false;
-  bool isPage = SpUtil.getBool("isPage", defValue: true);
+  // bool isPage = SpUtil.getBool("isPage", defValue: true);
 
   //点击上下页方式
   bool leftClickNext = SpUtil.getBool("leftClickNext", defValue: false);
@@ -129,9 +135,7 @@ class ReadModel with ChangeNotifier {
     sSave = true;
     load = Load.Done;
     cursor = 1;
-    readPages = [];
 
-    ladderH = [];
     // getEveyPoet();
 
     if (SpUtil.haveKey(book.Id)) {
@@ -183,6 +187,8 @@ class ReadModel with ChangeNotifier {
       await initPageContent(book?.cur ?? 0, false);
       // if (isPage) {
       book.index = 0;
+
+      SpUtil.putString(book.Id, "");
       // pageController = PageController(initialPage: idx);
       // } else {
       //   double z1 = book.cur == 0 ? 0 : (prePage?.height ?? 0);
@@ -193,102 +199,6 @@ class ReadModel with ChangeNotifier {
     }
     // listen();
 
-    notifyListeners();
-  }
-
-  void notifyOffset() {
-    try {
-      if (load == Load.Done) {
-        if (listController.offset > ladderH[cursor]) {
-          print('预加载下一章');
-          getEveyPoet();
-          loadNextChapter();
-        } else if (listController.offset < ladderH[cursor - 1]) {
-          print("load pre");
-          if (cursor > 0) {
-            cursor -= 1;
-            book.cur -= 1;
-          }
-        }
-      }
-    } catch (e) {
-      print(e);
-      load = Load.Done;
-    }
-  }
-
-  void calcPercent() {
-    percent = (((book.cur) / (chapters.length)) * 100).toDouble();
-  }
-
-  loadPreChapter() async {
-    load = Load.Loading;
-    int tempCur = book.cur - 1;
-    if (tempCur < 0) {
-      return;
-    } else {
-      book.cur -= 1;
-      nextPage = curPage;
-      curPage = prePage;
-      print("notify before offset ${listController.offset}");
-      ReadPage temp = await loadChapter(book.cur - 1);
-      if (tempCur == book.cur) {
-        if (temp != null) {
-          prePage = temp;
-          // allContentHeight += (temp?.height ?? 0);
-          allContent.insertAll(0, chapterContent(temp));
-          var newOffset = (temp?.height ?? 0) + listController.offset;
-          ScrollPosition position = listController.position;
-          position.correctPixels(newOffset);
-          // ScrollPosition newPosition = position.copyWith(
-          //     pixels: newOffset, maxScrollExtent: allContentHeight);
-          // listController.detach(position);
-          // listController.attach(newPosition);
-        }
-        //每次翻页刷新电池电量
-        electricQuantity = (await Battery().batteryLevel) / 100;
-      }
-    }
-    load = Load.Done;
-    notifyListeners();
-  }
-
-  loadNextChapter() async {
-    load = Load.Loading;
-    if (readPages.length - 2 > cursor) {
-      print("已存在");
-      cursor += 1;
-      book.cur += 1;
-      load = Load.Done;
-      return;
-    }
-    //下一章
-    int tempCur = book.cur + 1;
-    if (tempCur >= chapters.length) {
-      //到最后一页
-      book.index = -1;
-    } else {
-      book.cur += 1;
-      cursor += 1;
-
-      // if (nextPage.chapterName == "-1") {
-      //   BotToast.showCustomLoading(toastBuilder: (_) => LoadingDialog());
-      //   curPage = await loadChapter(book.cur);
-      //   BotToast.closeAllLoading();
-      // }
-
-      ReadPage temp = await loadChapter(book.cur + 1);
-      if (book.cur == tempCur) {
-        if (temp != null) {
-          addReadPage(temp);
-          allContent.addAll(chapterContent(temp));
-        }
-        //每次翻页刷新电池电量
-        electricQuantity = (await Battery().batteryLevel) / 100;
-      }
-    }
-    load = Load.Done;
-    calcPercent();
     notifyListeners();
   }
 
@@ -306,29 +216,11 @@ class ReadModel with ChangeNotifier {
 
       loadChapter(idx - 1).then((value) => {prePage = value});
 
-      // ]);
-      // loadChapter(idx - 2);
-      // loadChapter(idx + 2);
-      // if (!isPage) {
-      //   readPages = [];
-      //   ladderH = [];
-      //   cursor = 1;
-      //   addReadPage(prePage);
-      //   addReadPage(curPage);
-      //   addReadPage(nextPage);
-      // }
-      // await fillAllContent(refresh: jump);
       if (jump) {
         book.index = 0;
         eventBus.fire(ZEvent(1));
       }
       notifyListeners();
-      // if (!isPage && listController != null) {
-      //   calcPercent();
-      // }
-      // if (jump) {
-      //   eventBus.fire(ZEvent(1));
-      // }
     } catch (e) {
       print(e);
     }
@@ -339,73 +231,6 @@ class ReadModel with ChangeNotifier {
   colorModelSwitch() async {
     widgets.clear();
     eventBus.fire(ZEvent(1));
-  }
-
-  fillAllContent({bool refresh = true}) async {
-    allContent = [];
-    if (curPage != null) {
-      allContent.addAll(chapterContent(curPage));
-    }
-
-    //每次翻页刷新电池电量
-    electricQuantity = (await Battery().batteryLevel) / 100;
-    if (refresh) {
-      notifyListeners();
-    }
-  }
-
-//触发章节
-  changeChapter(int idx) async {
-    book.index = idx;
-    int curLen = (curPage?.pageOffsets ?? 0) + 2;
-    if (idx == curLen - 1) {
-      int tempCur = book.cur + 1;
-      if (tempCur >= chapters.length) {
-        //到最后一页
-        book.index = -1;
-      } else {
-        book.cur += 1;
-        prePage = curPage;
-        if ((nextPage?.chapterName ?? "") == "-1") {
-          BotToast.showCustomLoading(
-              toastBuilder: (_) => LoadingDialog(),
-              clickClose: true,
-              backgroundColor: Colors.transparent);
-          curPage = await loadChapter(book.cur);
-
-          BotToast.closeAllLoading();
-        } else {
-          curPage = nextPage;
-        }
-        fillAllContent();
-        Future.delayed(Duration(milliseconds: 500), () {
-          loadChapter(book.cur + 1).then((value) => nextPage = value);
-        });
-
-        pageController.jumpToPage(1);
-        // eventBus.fire(ZEvent(1));
-        book.index = 1;
-        return;
-      }
-    }
-    if (idx == 0) {
-      int tempCur = book.cur - 1;
-      if (tempCur < 0) {
-        return;
-      }
-      nextPage = curPage;
-      curPage = prePage;
-      fillAllContent();
-      book.cur -= 1;
-      Future.delayed(Duration(milliseconds: 500), () {
-        loadChapter(book.cur - 1).then((value) => prePage = value);
-      });
-
-      // pageController.jumpToPage(curPage.pageOffsets);
-      eventBus.fire(ZEvent(curPage.pageOffsets));
-      book.index = curPage.pageOffsets;
-      return;
-    }
   }
 
   switchBgColor(i) async {
@@ -470,73 +295,64 @@ class ReadModel with ChangeNotifier {
     }
 
     //本地是否有分页的缓存
-    if (isPage) {
-      var k = '${book.Id}pages' + r.chapterName;
-      if (SpUtil.haveKey(k)) {
-        List<TextPage> list =
-            SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
-        r.pages = list;
-        SpUtil.remove(k);
-      } else {
-        r.pages = TextComposition.parseContent(r);
-        // ReceivePort receivePort = ReceivePort();
-        // //创建并生成与当前Isolate共享相同代码的Isolate
-        // var _isolate = await FlutterIsolate.spawn(
-        //     TextComposition.dataLoader, receivePort.sendPort);
-        // // 流的第一个元素
-        // SendPort sendPort = await receivePort.first;
-        // // 流的第一个元素被收到后监听会关闭，所以需要新打开一个ReceivePort以接收传入的消息
 
-        // ReceivePort response = ReceivePort();
-
-        // double w = Screen.width;
-        // double h = Screen.height - 62 - Screen.bottomSafeHeight;
-        // String fontFamily = SpUtil.getString("fontName", defValue: "Roboto");
-        // double fontSize = ReadSetting.getFontSize();
-        // double height = ReadSetting.getLineHeight();
-
-        // double dis = ReadSetting.getPageDis().toDouble();
-        // double paragraph = ReadSetting.getParagraph() *
-        //     ReadSetting.getFontSize() *
-        //     ReadSetting.getLineHeight();
-        // sendPort.send([
-        //   response.sendPort,
-        //   jsonEncode(r),
-        //   w,
-        //   h,
-        //   fontFamily,
-        //   fontSize,
-        //   height,
-        //   dis,
-        //   paragraph
-        // ]);
-
-        // await for (var msg in response) {
-        //   // 获取端口发送来的数据③
-        //   String jsonResult = msg[0];
-
-        //   _isolate?.kill();
-        //   List result = jsonDecode(jsonResult);
-        //   r.pages = result.map((e) => TextPage.fromJson(e)).toList();
-        //   break;
-        // }
-      }
+    var k = '${book.Id}pages' + r.chapterName;
+    if (SpUtil.haveKey(k)) {
+      List<TextPage> list =
+          SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
+      r.pages = list;
+      SpUtil.remove(k);
     } else {
-      String k = '${book.Id}height' + r.chapterName;
-      if (SpUtil.haveKey(k)) {
-        r.height = SpUtil.getDouble(k);
-        SpUtil.remove(k);
-      } else {
-        // r.textComposition = TextComposition.parseContent(r, electricQuantity,
-        //     justRender: true, parse: true);
-        //章节内容不满一页 按一页算
-        r.height = (r?.pages?.first?.height ?? 0) + ReadSetting.listPageBottom;
-        r.height = r.height >= Screen.height ? r.height : Screen.height;
-      }
+      r.pages = TextComposition.parseContent(r);
+      // ReceivePort receivePort = ReceivePort();
+      // //创建并生成与当前Isolate共享相同代码的Isolate
+      // var _isolate = await FlutterIsolate.spawn(
+      //     TextComposition.dataLoader, receivePort.sendPort);
+      // // 流的第一个元素
+      // SendPort sendPort = await receivePort.first;
+      // // 流的第一个元素被收到后监听会关闭，所以需要新打开一个ReceivePort以接收传入的消息
+
+      // ReceivePort response = ReceivePort();
+
+      // double w = Screen.width;
+      // double h = Screen.height - 62 - Screen.bottomSafeHeight;
+      // String fontFamily = SpUtil.getString("fontName", defValue: "Roboto");
+      // double fontSize = ReadSetting.getFontSize();
+      // double height = ReadSetting.getLineHeight();
+
+      // double dis = ReadSetting.getPageDis().toDouble();
+      // double paragraph = ReadSetting.getParagraph() *
+      //     ReadSetting.getFontSize() *
+      //     ReadSetting.getLineHeight();
+      // sendPort.send([
+      //   response.sendPort,
+      //   jsonEncode(r),
+      //   w,
+      //   h,
+      //   fontFamily,
+      //   fontSize,
+      //   height,
+      //   dis,
+      //   paragraph
+      // ]);
+
+      // await for (var msg in response) {
+      //   // 获取端口发送来的数据③
+      //   String jsonResult = msg[0];
+
+      //   _isolate?.kill();
+      //   List result = jsonDecode(jsonResult);
+      //   r.pages = result.map((e) => TextPage.fromJson(e)).toList();
+      //   break;
+      // }
     }
+
     return r;
   }
 
+  /*
+   * 页面配置修改
+   */
   updPage() async {
     widgets.clear();
     var keys = SpUtil.getKeys();
@@ -550,42 +366,23 @@ class ReadModel with ChangeNotifier {
     // pageController.jumpToPage(1);
   }
 
+  /*菜单控制 */
   toggleShowMenu() {
     showMenu = !showMenu;
-    // eventBus.fire(OpenBottom("open"));
     notifyListeners();
   }
 
+  /*状态保存 */
   saveData() async {
     if (sSave) {
-      SpUtil.putString(book.Id, "");
-      if (isPage) {
-        await DbHelper.instance
-            .updBookProcess(book?.cur ?? 0, book?.index ?? 0, 0.0, book.Id);
-        SpUtil.putObjectList('${book.Id}pages${prePage?.chapterName ?? ' '}',
-            prePage?.pages ?? []);
-        SpUtil.putObjectList('${book.Id}pages${curPage?.chapterName ?? ''}',
-            curPage?.pages ?? []);
-        SpUtil.putObjectList('${book.Id}pages${nextPage?.chapterName ?? ''}',
-            nextPage?.pages ?? []);
-      } else {
-        double p1 = ladderH[cursor + 1] - listController.offset;
-        p1 = (readPages[cursor - 1].height +
-                readPages[cursor].height +
-                readPages[cursor + 1].height) -
-            p1;
-        await DbHelper.instance
-            .updBookProcess(book?.cur ?? 0, book?.index ?? 0, p1, book.Id);
-        SpUtil.putDouble(
-            '${book.Id}height${readPages[cursor - 1]?.chapterName ?? ''}',
-            readPages[cursor - 1]?.height ?? 0.0);
-        SpUtil.putDouble(
-            '${book.Id}height${readPages[cursor]?.chapterName ?? ''}',
-            readPages[cursor]?.height ?? 0.0);
-        SpUtil.putDouble(
-            '${book.Id}height${readPages[cursor + 1]?.chapterName ?? ''}',
-            readPages[cursor + 1]?.height ?? 0.0);
-      }
+      eventBus.fire(UpdateBookProcess(book?.cur ?? 0, book?.index ?? 0));
+      SpUtil.putObjectList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+          prePage?.pages ?? []);
+      SpUtil.putObjectList(
+          '${book.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
+      SpUtil.putObjectList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+          nextPage?.pages ?? []);
+
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
         HttpUtil()
@@ -595,6 +392,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
+  /*页面点击事件 */
   void tapPage(BuildContext context, TapDownDetails details) {
     var wid = ScreenUtil.getScreenW(context);
     var hSpace = Screen.height / 4;
@@ -602,321 +400,242 @@ class ReadModel with ChangeNotifier {
     var curWid = details.globalPosition.dx;
     var curH = details.globalPosition.dy;
 
-    if (isPage && (curWid > 0 && curWid < space)) {
+    if ((curWid > 0 && curWid < space)) {
       if (leftClickNext) {
-        // pageController.nextPage(
-        //     duration: Duration(microseconds: 1), curve: Curves.ease);
         changeCoverPage(1);
         return;
       }
       changeCoverPage(-1);
-      // pageController.previousPage(
-      //     duration: Duration(microseconds: 1), curve: Curves.ease);
     } else if ((curWid > space) &&
         (curWid < 2 * space) &&
         (curH < hSpace * 3)) {
       toggleShowMenu();
-    } else if (isPage && (curWid > space * 2)) {
+    } else if ((curWid > space * 2)) {
       if (leftClickNext) {
         changeCoverPage(1);
-        // pageController.nextPage(
-        //     duration: Duration(microseconds: 1), curve: Curves.ease);
         return;
       }
       changeCoverPage(1);
-      // pageController.nextPage(
-      //     duration: Duration(microseconds: 1), curve: Curves.ease);
     }
   }
 
-  Widget firstPage() {
-    return Container(
-      width: Screen.width,
-      height: Screen.height,
-      padding: const EdgeInsets.only(top: 100),
-      child: Center(
-        child: Column(
-          children: [
-            CachedNetworkImage(
-              imageUrl: book.Img,
-              width: 150,
-              height: 160,
-            ),
-            SizedBox(
-              height: 10,
-            ),
-            Text(
-              book.Name,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-              ),
-              overflow: TextOverflow.clip,
-            ),
-            SizedBox(
-              height: 5,
-            ),
-            Text(
-              book.Author,
-              style: TextStyle(
-                fontWeight: FontWeight.w100,
-                fontSize: 10,
-              ),
-            ),
-            SizedBox(
-              height: 15,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                book?.Desc ?? '',
-                style: TextStyle(
-                  fontWeight: FontWeight.w100,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            // SizedBox(
-            //   height: Screen.height / 2,
-            // )
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> chapterContent(ReadPage r) {
-    Widget c = book.cur == 0
-        ? firstPage()
-        : Container(
-            width: Screen.width,
-            height: Screen.height,
-            decoration: BoxDecoration(
-                image: DecorationImage(
-                    fit: BoxFit.fill,
-                    image: SpUtil.getInt(Common.bgIdx) > 5
-                        ? FileImage(
-                            File(SpUtil.getString(ReadSetting.bgsKey)),
-                          )
-                        : AssetImage(SpUtil.getBool("dark")
-                            ? 'images/QR_bg_4.jpg'
-                            : "images/${ReadSetting.bgImg[SpUtil.getInt(Common.bgIdx)]}"))));
-    List<Widget> contents = [c];
-
-    if (r.chapterName == "-1" || r.chapterName == "1") {
-      contents.add(r.chapterName == "1" ? firstPage() : NoMorePage());
-    } else {
-      int sum = r.pageOffsets;
-      for (int i = 0; i < sum; i++) {
-        contents.add(isPage
-            ? getPageWidget(r, i)
-            : Padding(
-                padding: EdgeInsets.only(bottom: ReadSetting.listPageBottom),
-                child: getPageWidget(
-                  r,
-                ),
-              ));
-      }
-    }
-    contents.add((book.cur == (chapters.length - 1)) ? NoMorePage() : c);
-    return contents;
-  }
-
-  Widget getPage() {
+  ui.Picture getPage({bool firstInit = false}) {
     var key = book.cur.toString() + book.index.toString();
+
     if (widgets.containsKey(key)) {
       return widgets[key];
     }
-    var widget = getPageWidget(curPage, book.index);
-    Future.delayed(Duration(milliseconds: 800), () {
-      widgets.putIfAbsent(key, () => widget);
-      var pre = book.index - 1;
-      var preKey;
-      if (pre < 0) {
-        preKey =
-            (book.cur - 1).toString() + (prePage.pageOffsets - 1).toString();
-      } else {
-        preKey = book.cur.toString() + pre.toString();
-      }
-      if (!widgets.containsKey(preKey)) {
-        widgets.putIfAbsent(
-            preKey,
-            () => pre < 0
-                ? getPageWidget(prePage, prePage.pageOffsets - 1)
-                : getPageWidget(curPage, book.index - 1));
-      }
-
-      var next = book.index + 1;
-      var nextKey;
-      if (next >= curPage.pageOffsets) {
-        nextKey = (book.cur + 1).toString() + 0.toString();
-      } else {
-        nextKey = book.cur.toString() + next.toString();
-      }
-      if (!widgets.containsKey(nextKey)) {
-        widgets.putIfAbsent(
-            preKey,
-            () => next >= curPage.pageOffsets
-                ? getPageWidget(nextPage)
-                : getPageWidget(nextPage, book.index + 1));
-      }
-    });
+    var widget = cur();
+    widgets.putIfAbsent(key, () => widget);
+    if (firstInit) {
+      Future.delayed(Duration(milliseconds: 200), () => preLoadWidget());
+    }
     return widget;
   }
 
-  Widget getPageWidget(ReadPage r, [int pageIndex = 0]) {
-    // if (pageIndex != null && !changePage(pageIndex)) return Container();
-    // if (book.index == -2) {
-    //   return firstPage();
-    // }
-    // if (book.cur == chapters.length - 1 && pageIndex >= r.pageOffsets) {
-    //   return NoMorePage();
-    // }
-    return Container(
-      width: Screen.width,
-      height: Screen.height,
-      decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-                color: SpUtil.getBool("dark") ? Colors.black : Colors.grey,
-                blurRadius: 20.0)
-          ],
-          image: DecorationImage(
-              fit: BoxFit.fill,
-              image: SpUtil.getInt(Common.bgIdx) > 5
-                  ? FileImage(
-                      File(SpUtil.getString(ReadSetting.bgsKey)),
-                    )
-                  : AssetImage(SpUtil.getBool("dark")
-                      ? 'images/QR_bg_4.jpg'
-                      : "images/${ReadSetting.bgImg[SpUtil.getInt(Common.bgIdx)]}"))),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 2),
-          Container(
-            height: 30,
-            alignment: Alignment.bottomLeft,
-            padding: const EdgeInsets.only(left: 50),
-            child: Text(
-              r.chapterName,
-              style: TextStyle(
-                fontSize: 12 / Screen.textScaleFactor,
-                color: SpUtil.getBool("dark") ? darkFont : Colors.black54,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          CustomPaint(
-              isComplex: true,
-              painter: PagePainter(
-                  pageIndex,
-                  r.pages[pageIndex],
-                  TextStyle(
-                      color: SpUtil.getBool('dark') ? darkFont : Colors.black,
-                      locale: Locale('zh_CN'),
-                      fontFamily:
-                          SpUtil.getString("fontName", defValue: "Roboto"),
-                      fontSize: ReadSetting.getFontSize(),
-                      // letterSpacing: ReadSetting.getLatterSpace(),
-                      height: ReadSetting.getLineHeight()),
-                  false)),
-          Spacer(),
-          Container(
-            height: 30,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: <Widget>[
-                BatteryView(
-                  electricQuantity: electricQuantity,
-                ),
-                SizedBox(
-                  width: 4,
-                ),
-                Text(
-                  '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-                  style: TextStyle(
-                    fontSize: 12 / Screen.textScaleFactor,
-                    color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
-                  ),
-                ),
-                Spacer(),
-                Text(
-                  '第${pageIndex + 1}/${r.pages.length}页',
-                  style: TextStyle(
-                    fontSize: 12 / Screen.textScaleFactor,
-                    color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
+  void preLoadWidget() {
+    if (prePage == null) return;
+    var preIdx = book.index - 1;
+    var preKey;
+    if (preIdx < 0) {
+      preKey = (book.cur - 1).toString() + (prePage.pageOffsets - 1).toString();
+    } else {
+      preKey = book.cur.toString() + preIdx.toString();
+    }
+    if (!widgets.containsKey(preKey)) {
+      widgets.putIfAbsent(preKey, () => pre());
+    }
+
+    var nextIdx = book.index + 1;
+    var nextKey;
+    if (nextIdx >= curPage.pageOffsets) {
+      nextKey = (book.cur + 1).toString() + 0.toString();
+    } else {
+      nextKey = book.cur.toString() + nextIdx.toString();
+    }
+    if (!widgets.containsKey(nextKey)) {
+      widgets.putIfAbsent(preKey, () => next());
+    }
   }
 
-  Widget pageFoot(var model, var i, var r) {
-    return Container(
-      height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: <Widget>[
-          BatteryView(
-            electricQuantity: electricQuantity,
-          ),
-          SizedBox(
-            width: 4,
-          ),
-          Text(
-            '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
-            style: TextStyle(
-              fontSize: 12 / Screen.textScaleFactor,
-              color: model.dark ? darkFont : Colors.black54,
-            ),
-          ),
-          Spacer(),
-          Text(
-            '第${i + 1}/${r.pageOffsets}页',
-            style: TextStyle(
-              fontSize: 12 / Screen.textScaleFactor,
-              color: model.dark ? darkFont : Colors.black54,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
+  ui.Picture pre() {
+    var i = book.index - 1;
+    if (i < 0) {
+      return getPicture(prePage, prePage.pageOffsets - 1);
+    }
+    return getPicture(curPage, i);
   }
 
-  Widget pageMiddleContent(var content, var model, bool top) {
-    return Expanded(
-        child: Container(
-            margin: const EdgeInsets.only(left: 17, right: 13),
-            alignment: top ? Alignment.topLeft : Alignment.centerLeft,
-            child: RichText(
-              textAlign: TextAlign.justify,
-              textScaleFactor: Screen.textScaleFactor,
-              text: TextSpan(children: [
-                TextSpan(
-                  text: content,
-                  style: TextStyle(
-                      fontFamily:
-                          SpUtil.getString("fontName", defValue: "Roboto"),
-                      color: model.dark ? darkFont : Colors.black,
-                      locale: Locale('zh_CN'),
-                      decorationStyle: TextDecorationStyle.wavy,
-                      letterSpacing: ReadSetting.getLatterSpace(),
-                      fontSize: ReadSetting.getFontSize(),
-                      height: ReadSetting.getLineHeight()),
-                )
-              ]),
-            )));
+  ui.Picture cur() {
+    return getPicture(curPage, book.index);
+  }
+
+  ui.Picture next() {
+    var i = book.index + 1;
+    if (i >= curPage.pageOffsets) {
+      return getPicture(nextPage, 0);
+    }
+    return getPicture(curPage, i);
+  }
+
+  ui.Picture getPicture(ReadPage r, int pageIndex) {
+    return drawContent(r, pageIndex);
+  }
+
+  Future<ui.Image> getAssetImage(String asset, {int width, int height}) async {
+    ByteData data = await rootBundle.load(asset);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+        targetWidth: width, targetHeight: height);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return fi.image;
+  }
+
+  ui.Picture drawContent(ReadPage readPage, int i) {
+    ui.PictureRecorder pageRecorder = new ui.PictureRecorder();
+    Canvas pageCanvas = new Canvas(
+        pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
+    final bool isDark = SpUtil.getBool("dark", defValue: false);
+    var contentPadding = ReadSetting.getPageDis().toDouble();
+    Paint selfPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true
+      ..strokeCap = StrokeCap.butt
+      ..strokeWidth = 30.0;
+
+    // Path path = Path()
+    //   ..addRect(Rect.fromLTWH(0, 0, Screen.width, Screen.height));
+    // pageCanvas.drawShadow(path, Colors.red, 20, true);
+    pageCanvas.drawImage(
+        isDark ? bgImgs.last : bgImgs[SpUtil.getInt(Common.bgIdx)],
+        Offset(0, 0),
+        selfPaint);
+    //章节
+    textPainter.text = TextSpan(
+        text: "${readPage.chapterName}",
+        style: TextStyle(
+          fontSize: 12 / Screen.textScaleFactor,
+          color: isDark ? darkFont : Colors.black54,
+          fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+        ));
+    textPainter.layout();
+    //章节高30 画在中间
+    textPainter.paint(pageCanvas, Offset(contentPadding, 15));
+    //正文
+    TextStyle style = TextStyle(
+        color: SpUtil.getBool('dark') ? darkFont : Colors.black,
+        locale: Locale('zh_CN'),
+        fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+        fontSize: ReadSetting.getFontSize(),
+        // letterSpacing: ReadSetting.getLatterSpace(),
+        height: ReadSetting.getLineHeight());
+    final TextPage page = readPage.pages[i];
+    final lineCount = page.lines.length;
+    for (var i = 0; i < lineCount; i++) {
+      final line = page.lines[i];
+      if (line.letterSpacing != null &&
+          (line.letterSpacing < -0.1 || line.letterSpacing > 0.1)) {
+        textPainter.text = TextSpan(
+          text: line.text,
+          style: style.copyWith(letterSpacing: line?.letterSpacing),
+        );
+      } else {
+        textPainter.text = TextSpan(text: line.text, style: style);
+      }
+      final offset = Offset(line.dx, line.dy + 30);
+      textPainter.layout();
+      textPainter.paint(pageCanvas, offset);
+    }
+    //画电池
+    double batteryPaddingLeft = contentPadding - 5;
+    double mStrokeWidth = 1.0;
+    double mPaintStrokeWidth = 1.5;
+    Paint mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
+    var bottomH = Screen.height - 25;
+    var bottomTextH = bottomH - 2;
+    //电池头部位置
+    Size size = Size(22, 10);
+    double batteryHeadLeft = 0;
+    double batteryHeadTop = size.height / 4 + bottomH;
+    double batteryHeadRight = size.width / 15;
+    double batteryHeadBottom = batteryHeadTop + (size.height / 2);
+
+    //电池框位置
+    double batteryLeft = batteryHeadRight + mStrokeWidth;
+    double batteryTop = bottomH;
+    double batteryRight = size.width;
+    double batteryBottom = size.height + bottomH;
+
+    //电量位置
+    double electricQuantityTotalWidth =
+        size.width - batteryHeadRight - 5 * mStrokeWidth; //电池减去边框减去头部剩下的宽度
+    double electricQuantityLeft = batteryHeadRight +
+        2 * mStrokeWidth +
+        electricQuantityTotalWidth * (1 - electricQuantity);
+    double electricQuantityTop = mStrokeWidth * 2 + bottomH;
+    double electricQuantityRight = size.width - 2 * mStrokeWidth;
+    double electricQuantityBottom = size.height - 2 * mStrokeWidth + bottomH;
+
+    mPaint.style = PaintingStyle.fill;
+    mPaint.color = isDark ? Colors.white54 : Colors.black54;
+    // mPaint.color = Color(0x80ffffff);
+    //画电池头部
+    pageCanvas.drawRRect(
+        RRect.fromLTRBR(
+            batteryHeadLeft + batteryPaddingLeft,
+            batteryHeadTop,
+            batteryHeadRight + batteryPaddingLeft,
+            batteryHeadBottom,
+            Radius.circular(mStrokeWidth)),
+        mPaint);
+    mPaint.style = PaintingStyle.stroke;
+    //画电池框
+    pageCanvas.drawRRect(
+        RRect.fromLTRBR(
+            batteryLeft + batteryPaddingLeft,
+            batteryTop,
+            batteryRight + batteryPaddingLeft,
+            batteryBottom,
+            Radius.circular(mStrokeWidth)),
+        mPaint);
+    mPaint.style = PaintingStyle.fill;
+    mPaint.color = isDark ? Colors.white38 : Colors.black38;
+    //画电池电量
+    pageCanvas.drawRRect(
+        RRect.fromLTRBR(
+            electricQuantityLeft + batteryPaddingLeft + .5,
+            electricQuantityTop,
+            electricQuantityRight + batteryPaddingLeft,
+            electricQuantityBottom,
+            Radius.circular(mStrokeWidth)),
+        mPaint);
+    //时间
+    textPainter.text = TextSpan(
+      text: '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+      style: TextStyle(
+        fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+        fontSize: 12 / Screen.textScaleFactor,
+        color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(
+        pageCanvas, Offset(contentPadding + size.width + 1, bottomTextH));
+    //页码
+    textPainter.text = TextSpan(
+        text: "第${i + 1}/${readPage.pages.length}页",
+        style: TextStyle(
+          fontSize: 12 / Screen.textScaleFactor,
+          fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+          color: isDark ? darkFont : Colors.black54,
+        ));
+    textPainter.layout();
+    textPainter.paint(
+        pageCanvas, Offset(Screen.width - contentPadding - 35, bottomTextH));
+
+    return pageRecorder.endRecording();
   }
 
   clear() async {
-    allContent = null;
     chapters = [];
     loadOk = false;
     book = null;
@@ -1053,66 +772,6 @@ class ReadModel with ChangeNotifier {
     // }
   }
 
-  Future<void> switchFlipType(FlipType flipType) async {
-    switch (flipType) {
-      case FlipType.LIST_VIEW:
-        isPage = false;
-        readPages = [];
-        cursor = 1;
-        ladderH = [];
-        calcPercent();
-        SpUtil.putBool("isPage", false);
-        SpUtil.getKeys().forEach((v) => {
-              if (v.contains("height") || v.contains("pages"))
-                {SpUtil.remove(v)}
-            });
-        if (listController == null) {
-          await initPageContent(book.cur, false);
-          listController = ScrollController(
-              initialScrollOffset: ladderH[cursor - 1],
-              keepScrollOffset: false);
-          notifyListeners();
-        } else {
-          await initPageContent(book.cur, true);
-        }
-
-        break;
-      case FlipType.PAGE_VIEW_SMOOTH:
-        isPage = true;
-        SpUtil.putBool("isPage", true);
-        SpUtil.getKeys().forEach((v) => {
-              if (v.contains("height") || v.contains("pages"))
-                {SpUtil.remove(v)}
-            });
-        initPageContent(book.cur, true);
-        pageController = PageController(
-            keepPage: false, initialPage: curPage?.pageOffsets ?? 0);
-        notifyListeners();
-        break;
-      default:
-        break;
-    }
-  }
-
-  double getLadderHeight(int idx) {
-    int len = readPages.length;
-    if (idx < 0) {
-      return readPages[len + idx].height;
-    } else {
-      return readPages[idx].height;
-    }
-  }
-
-  void addReadPage(ReadPage r) {
-    int len = ladderH.length;
-    if (len == 0) {
-      ladderH.add(r?.height ?? Screen.height / 2);
-    } else {
-      ladderH.add(ladderH[len - 1] + r.height);
-    }
-    readPages.add(r);
-  }
-
   Color randomColor() {
     var rng = Random();
 
@@ -1125,23 +784,6 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  void onHorizontalDragStart(DragStartDetails details) {
-    _initialSwipeOffset = details.globalPosition;
-  }
-
-  void onHorizontalDragUpdate(DragUpdateDetails details) {
-    _finalSwipeOffset = details.globalPosition;
-  }
-
-  Future<void> onHorizontalDragEnd(DragEndDetails details) async {
-    print("xxxxxx");
-    if (_initialSwipeOffset != null) {
-      //*******
-      final offsetDifference = _initialSwipeOffset.dx - _finalSwipeOffset.dx;
-      changeCoverPage(offsetDifference);
-    }
-  }
-
   Future<void> changeCoverPage(var offsetDifference) async {
     int idx = book?.index ?? 0;
     // if (idx == -1) {
@@ -1149,6 +791,7 @@ class ReadModel with ChangeNotifier {
     // }
     int curLen = (curPage?.pageOffsets ?? 0);
     if (idx == curLen - 1 && offsetDifference > 0) {
+      electricQuantity = (await Battery().batteryLevel) / 100;
       int tempCur = book.cur + 1;
       if (tempCur >= chapters.length) {
         //到最后一页
@@ -1179,6 +822,7 @@ class ReadModel with ChangeNotifier {
       }
     }
     if (idx == 0 && offsetDifference < 0) {
+      electricQuantity = (await Battery().batteryLevel) / 100;
       int tempCur = book.cur - 1;
       if (tempCur < 0) {
         BotToast.showText(text: "第一页");
@@ -1199,5 +843,16 @@ class ReadModel with ChangeNotifier {
     }
     offsetDifference > 0 ? book.index += 1 : book.index -= 1;
     notifyListeners();
+  }
+
+  bool isCanGoNext() {
+    if (book.cur >= (chapters.length - 1) &&
+        book.index >= (curPage.pageOffsets - 1)) return false;
+    return true;
+  }
+
+  bool isCanGoPre() {
+    if (book.cur <= 0 && book.index <= 0) return false;
+    return true;
   }
 }

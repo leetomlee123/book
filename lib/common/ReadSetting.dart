@@ -9,6 +9,7 @@ class ReadSetting {
     "QR_bg_5.jpg",
     "QR_bg_7.png",
     "QR_bg_8.png",
+    "QR_bg_4.jpg",
   ];
   static String bgsKey = "BGSKEY";
   static String fontSizeKey = "FONT_SIZE";

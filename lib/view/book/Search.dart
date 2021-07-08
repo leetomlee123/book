@@ -4,16 +4,16 @@ import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
-import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/widgets/SearchAiItem.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:keframe/frame_separate_widget.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class Search extends StatefulWidget {
@@ -33,7 +33,18 @@ class _SearchState extends State<Search> {
   SearchModel searchModel;
   ColorModel value;
   Widget body;
+  GlobalKey textFieldKey;
   TextEditingController controller = TextEditingController();
+  OverlayEntry searchSuggest;
+  OverlayState overlayState;
+  double aiItemH = 40;
+  double height;
+
+  double width;
+
+  double xPosition;
+
+  double yPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -56,15 +67,25 @@ class _SearchState extends State<Search> {
   void dispose() {
     super.dispose();
     searchModel.clear();
+    controller?.dispose();
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    removeOverlay();
   }
 
   @override
   void initState() {
+    overlayState = Overlay.of(context);
+    textFieldKey = GlobalKey();
     super.initState();
     isBookSearch = this.widget.type == "book";
     if (this.widget.type == "book" && this.widget.name != "") {
       controller.text = this.widget.name;
     }
+
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
       initModel();
@@ -75,11 +96,13 @@ class _SearchState extends State<Search> {
     searchModel = Store.value<SearchModel>(context);
     searchModel.showResult = false;
     searchModel.context = context;
+    searchModel.textFieldKey = textFieldKey;
     searchModel.controller = controller;
     searchModel.isBookSearch = this.isBookSearch;
     searchModel.store_word =
         isBookSearch ? Common.book_search_history : Common.movie_search_history;
     searchModel.initHistory();
+    findOverLayPosition();
     if (isBookSearch) {
       await searchModel.initBookHot();
     } else {
@@ -90,62 +113,108 @@ class _SearchState extends State<Search> {
 
   Widget buildSearchWidget() {
     return Container(
-      // decoration: BoxDecoration(
-      //   color: Color(0xFFF2F2F2),
-      //   // borderRadius: BorderRadius.circular(25),
-      // ),
-      child: Row(
-        children: [
-          // SizedBox(
-          //   width: 40,
-          //   height: 40,
-          // ),
-          Expanded(
-              child: Container(
-            child: TextField(
-              controller: controller,
-              onSubmitted: (word) {
-                // searchModel.clear1();
-                searchModel.search(word);
-              },
-              style: TextStyle(
-                fontSize: 15,
-                // color: Color(0xFF333333),
-                height: 1.3,
-              ),
-              autofocus: false,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                hintStyle: TextStyle(
-                  fontSize: 15,
-                  // color: Color(0xFF999999),
-                ),
-                prefixIcon: Icon(
-                  Icons.search,
-                  // size: 22,
-                  // color: Color(0xFF999999),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () {
-                    controller.text = "";
-                    searchModel.reset();
-                  },
-                ),
-                hintText: "书籍/作者名" 
-              ),
-            ),
-            height: 40,
-          )),
+      child: TextField(
+        key: textFieldKey,
+        controller: controller,
+        onSubmitted: (word) {
+          removeOverlay();
+          searchModel.search(word);
+        },
+        onChanged: (value) async {
+          if (value.isNotEmpty) {
+            await searchModel.searchAi(value);
+            if (searchModel.bksAi.isNotEmpty) {
+              if (searchSuggest != null) removeOverlay();
 
-          // _suffix(),
-        ],
+              searchSuggest = _buildSearchSuggest();
+
+              overlayState.insert(searchSuggest);
+            } else {
+              removeOverlay();
+            }
+          } else {
+            if (searchSuggest != null) removeOverlay();
+          }
+          setState(() {});
+        },
+        style: TextStyle(
+          fontSize: 15,
+          height: 1.3,
+        ),
+        autofocus: false,
+        decoration: InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            hintStyle: TextStyle(
+              fontSize: 15,
+            ),
+            prefixIcon: Icon(
+              Icons.search,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(Icons.close),
+              onPressed: () {
+                controller.text = "";
+                searchModel.reset();
+                removeOverlay();
+              },
+            ),
+            hintText: "书籍/作者名"),
       ),
+      height: 40,
     );
   }
 
+  void removeOverlay() {
+    searchSuggest?.remove();
+    searchSuggest = null;
+  }
+
+  void findOverLayPosition() {
+    RenderBox renderBox = textFieldKey.currentContext.findRenderObject();
+    height = renderBox.size.height;
+    width = renderBox.size.width;
+
+    Offset offset = renderBox.localToGlobal(Offset.zero);
+    xPosition = offset.dx;
+
+    yPosition = offset.dy;
+  }
+
+  // 生成搜索建议
+  OverlayEntry _buildSearchSuggest() {
+    return OverlayEntry(builder: (context) {
+      return Positioned(
+        left: xPosition,
+        width: width,
+        top: yPosition + height + 10,
+        height: searchModel.bksAi.length * aiItemH,
+        child: SearchAiItem(
+            height: aiItemH,
+            function: (id) async {
+              searchModel.setHistory(controller.value.text);
+
+              String url = Common.detail + '/$id';
+              Response future =
+                  await HttpUtil(showLoading: true).http().get(url);
+              var d = future.data['data'];
+              BookInfo b = BookInfo.fromJson(d);
+              Routes.navigateTo(
+                context,
+                Routes.detail,
+                params: {
+                  'detail': jsonEncode(b),
+                },
+              );
+              removeOverlay();
+            }),
+      );
+    });
+  }
+
   Widget resultWidget() {
+    var picW = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
+    var picH = picW / .65;
     return SmartRefresher(
         enablePullDown: true,
         enablePullUp: true,
@@ -171,112 +240,80 @@ class _SearchState extends State<Search> {
         onRefresh: searchModel.onRefresh,
         onLoading: searchModel.onLoading,
         child: ListView.builder(
-          itemExtent: 130,
-          itemBuilder: (context, i) {
-            var auth = searchModel.bks[i].Author;
+          itemExtent: picH,
+          itemBuilder: (c, i) {
+            var item = searchModel.bks[i];
+            return FrameSeparateWidget(
+                index: i,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () async {
+                    String url = Common.detail + '/${searchModel.bks[i].Id}';
+                    Response future =
+                        await HttpUtil(showLoading: true).http().get(url);
+                    var d = future.data['data'];
+                    BookInfo b = BookInfo.fromJson(d);
+                    Routes.navigateTo(context, Routes.detail,
+                        params: {"detail": jsonEncode(b)});
+                  },
+                  child: Container(
+                    height: 130,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    child: Row(
+                      children: <Widget>[
+                        PicWidget(
+                          item.Img,
+                          width: picW,
+                          height: picH,
+                        ),
 
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              child: Row(
-                children: <Widget>[
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Container(
-                        padding:
-                            const EdgeInsets.only(left: 10.0, top: 10.0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: PicWidget(
-                            searchModel.bks[i]?.Img ?? "",
-                            height: 115,
-                            width: 90,
+                        //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  item.Name,
+                                  style: TextStyle(
+                                      fontSize: 18.0,
+                                      fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                ),
+                                Text(
+                                  item.Author,
+                                  style: TextStyle(
+                                    fontSize: 12.0,
+                                  ),
+                                  maxLines: 1,
+                                ),
+                                Text(
+                                  item.Desc ?? "尚无介绍.....",
+                                  style: TextStyle(
+                                    fontSize: 12.0,
+                                  ),
+                                  maxLines: 2,
+                                ),
+                                Text(
+                                  item.LastChapter,
+                                  style: TextStyle(fontSize: 12),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      )
-                    ],
+                      ],
+                    ),
                   ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    verticalDirection: VerticalDirection.down,
-                    // textDirection:,
-                    textBaseline: TextBaseline.alphabetic,
-
-                    children: <Widget>[
-                      Container(
-                        width: ScreenUtil.getScreenW(context) - 120,
-                        padding:
-                            const EdgeInsets.only(left: 10.0, top: 10.0),
-                        child: Text(
-                          searchModel.bks[i].Name,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 15),
-                        ),
-                      ),
-                      Container(
-                        padding:
-                            const EdgeInsets.only(left: 10.0, top: 10.0),
-                        child: new Text('$auth',
-                            style: TextStyle(
-                              fontSize: 14,
-                            )),
-                      ),
-                      Container(
-                        padding:
-                            const EdgeInsets.only(left: 10.0, top: 10.0),
-                        child: Text(searchModel.bks[i].Desc ?? "",
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            style: TextStyle(
-                              fontSize: 12,
-                            )),
-                        width: ScreenUtil.getScreenW(context) - 120,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              onTap: () async {
-                String url = Common.detail + '/${searchModel.bks[i].Id}';
-                Response future =
-                    await HttpUtil(showLoading: true).http().get(url);
-                var d = future.data['data'];
-                BookInfo b = BookInfo.fromJson(d);
-                Routes.navigateTo(context, Routes.detail,
-                    params: {"detail": jsonEncode(b)});
-              },
-            );
-
-//                var cate = searchModel.bks[i].CName??"";
+                ));
           },
           itemCount: searchModel.bks.length,
         ));
-  }
-
-  Widget img(GBook gbk) {
-    return GestureDetector(
-      child: Column(
-        children: <Widget>[
-          PicWidget(
-            gbk.cover,
-            width: (ScreenUtil.getScreenW(context) - 40) / 3,
-            height: ((ScreenUtil.getScreenW(context) - 40) / 3) * 1.2,
-          ),
-          Spacer(),
-          Text(
-            gbk.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          )
-        ],
-      ),
-      onTap: () async {
-        Routes.navigateTo(context, Routes.vDetail,
-            params: {"gbook": jsonEncode(gbk)});
-      },
-    );
   }
 
   Widget suggestionWidget(data) {
@@ -338,5 +375,10 @@ class _SearchState extends State<Search> {
         ),
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant Search oldWidget) {
+    super.didUpdateWidget(oldWidget);
   }
 }

@@ -5,43 +5,13 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'dart:io';
 
-import 'package:book/common/Http.dart';
-import 'package:book/common/Screen.dart';
-import 'package:book/entity/ParseContentConfig.dart';
-import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
-  String msg = '''
-     [
-  {
-    "domain": "biquwx",
-    "encode": "UTF-8",
-    "documentId": "content"
-  },
-  {
-    "domain": "iqb5",
-    "encode": "gbk",
-    "documentId": "contents"
-  },
-  {
-    "domain": "shizongzui",
-    "encode": "",
-    "documentId": "BookText"
-  }
-]
-     ''';
-  List a = [1, 2, 3, 4];
-  List b = [41, 51, 31, 44];
+var s='1.修复一些bug\n2.新增主题色选配';
 
-  int x = a.length;
-  int x1 = b.length;
-
-  a.replaceRange(x - 1, x, [b[x1-1]]);
-  a.forEach((element) {
-    print(element);
-  });
+var split = s.split("\\n");
+print(split.length);
 
   // List msg1 = await parseJson(msg);
 

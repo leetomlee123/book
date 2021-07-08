@@ -1,4 +1,3 @@
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/BooksWidget.dart';
@@ -11,11 +10,12 @@ class SortShelf extends StatefulWidget {
 }
 
 class _SortShelfState extends State<SortShelf> {
-  ColorModel _colorModel;
+  ShelfModel _shelfModel;
+
   @override
   void initState() {
-    _colorModel = Store.value<ColorModel>(context);
     super.initState();
+    _shelfModel = Store.value(context);
   }
 
   @override
@@ -24,20 +24,17 @@ class _SortShelfState extends State<SortShelf> {
         builder: (context, ShelfModel shelfModel, child) {
       return Scaffold(
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            title: Text("书架整理",
-                style: TextStyle(
-                  color: _colorModel.dark ? Colors.white : Colors.black,
-                )),
+            title: Text(
+              "书架整理",
+            ),
             elevation: 0,
             centerTitle: true,
-            automaticallyImplyLeading: false,
           ),
           body: BooksWidget("sort"),
           bottomNavigationBar: ButtonBar(
             alignment: MainAxisAlignment.spaceAround,
             children: [
-              FlatButton(
+              TextButton(
                 child: Container(
                   child: Text(shelfModel.pickAllFlag ? '全不选' : '全选'),
                   // width: (Screen.width - 10) / 2,
@@ -46,7 +43,7 @@ class _SortShelfState extends State<SortShelf> {
                   shelfModel.pickAll();
                 },
               ),
-              FlatButton(
+              TextButton(
                 child: Container(
                   child: Text(
                     '删除',
@@ -81,5 +78,11 @@ class _SortShelfState extends State<SortShelf> {
             ],
           ));
     });
+  }
+
+  @override
+  void dispose() {
+    _shelfModel.initPicks();
+    super.dispose();
   }
 }

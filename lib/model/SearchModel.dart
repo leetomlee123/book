@@ -1,11 +1,12 @@
 import 'dart:convert';
 
-import 'package:book/common/common.dart';
 import 'package:book/common/Http.dart';
+import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/entity/HotBook.dart';
 import 'package:book/entity/SearchItem.dart';
+import 'package:book/entity/book_ai.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -20,11 +21,13 @@ class SearchModel with ChangeNotifier {
   BuildContext context;
   bool showResult = false;
   List<SearchItem> bks = [];
+  List<BookAi> bksAi = [];
   List<GBook> mks = [];
   List<Widget> hot = [];
   List<Widget> showHot = [];
   int idx = 0;
   bool loading = false;
+  GlobalKey textFieldKey;
 
   // ignore: non_constant_identifier_names
   String store_word = "";
@@ -37,6 +40,7 @@ class SearchModel with ChangeNotifier {
   TextEditingController controller;
 
   List<Color> colors = Colors.accents;
+
   clear1() {
     searchHistory = [];
     page = 1;
@@ -61,6 +65,20 @@ class SearchModel with ChangeNotifier {
     temp = "";
   }
 
+  searchAi(var word) async {
+    var url = '${Common.searchAi}?key=$word';
+    Response res = await HttpUtil().http().get(url);
+    var d = res.data;
+    List data = d['data'];
+    if (data.isNotEmpty)
+      bksAi = data.map((e) => BookAi.fromJson(e)).toList();
+
+    else
+      bksAi.clear();
+    print(bksAi?.length);
+    notifyListeners();
+  }
+
   getSearchData() async {
     if (!loading) {
       return;
@@ -79,7 +97,6 @@ class SearchModel with ChangeNotifier {
       ctx = context;
     }
     if (isBookSearch) {
-//      var url = '${Common.search}/$word/$page';
       var url = '${Common.search}?key=$word&page=$page&size=$size';
       Response res = await HttpUtil(showLoading: bks.isEmpty).http().get(url);
       var d = res.data;
@@ -94,21 +111,7 @@ class SearchModel with ChangeNotifier {
         refreshController.loadComplete();
       }
       print(bks.length);
-    } else {
-//    /movies
-//       var url = '${Common.movie_search}/$word/search/$page/tv';
-//
-//       Response res = await HttpUtil(showLoading: true).http().get(url);
-//       List data = res.data;
-//       if (data?.isEmpty ?? true) {
-//         refreshController.loadNoData();
-//       } else {
-//         for (var d in data) {
-//           mks.add(GBook.fromJson(d));
-//         }
-//         refreshController.loadComplete();
-//       }
-    }
+    } else {}
   }
 
   void onRefresh() async {
@@ -158,70 +161,7 @@ class SearchModel with ChangeNotifier {
           notifyListeners();
         },
         child: Chip(label: Text(value)),
-        // child: ListTile(
-        //   leading: Icon(Icons.update),
-        //   title: Text(value),
-        //   trailing: IconButton(
-        //     icon: Icon(Icons.clear),
-        //     onPressed: () {
-        //       deleteHistoryItem(value);
-        //     },
-        //   ),
-        // ),
-//        child: Container(
-//          margin: EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-//          decoration: BoxDecoration(
-//              color: colors[Random().nextInt(colors.length)],
-//              borderRadius: BorderRadius.all(Radius.circular(5))),
-//          child: Container(
-//            margin: EdgeInsets.all(8),
-//            child: Text(value),
-//          ),
-//        ),
       ));
-//      wds.add(GestureDetector(
-//        onTap: () {
-//          word = value;
-//          controller.text = value;
-//          search(value);
-//          notifyListeners();
-//        },
-////        child: Card(
-////          shape: const RoundedRectangleBorder(
-////              borderRadius: BorderRadius.all(Radius.circular(14.0))),
-////          color: colors[Random().nextInt(colors.length)],
-////          child: ListTile(
-////            leading: Icon(Icons.history),
-////            title: Text(value),
-////            trailing: IconButton(
-////              icon: Icon(Icons.close),
-////              onPressed: () {
-////                searchHistory.remove(value);
-////                notifyListeners();
-////              },
-////            ),
-////          ),
-////        ),
-//        child: Container(
-//          decoration: BoxDecoration(
-//            border: Border.all(color: Colors.white, width: 1.0), //灰色的一层边框
-//            color: colors[Random().nextInt(colors.length)],
-//            borderRadius: BorderRadius.all(Radius.circular(25.0)),
-//          ),
-//          alignment: Alignment.center,
-//          width: 100,
-////          constraints: BoxConstraints(
-////            minWidth: 180,
-////          ),
-//          child: Center(
-//            child: Text(
-//              value,
-//              maxLines: 1,
-//              overflow: TextOverflow.ellipsis,
-//            ),
-//          ),
-//        ),
-//      ));
     }
 
     return wds;

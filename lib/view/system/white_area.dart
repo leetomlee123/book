@@ -13,7 +13,7 @@ class WhiteArea extends StatelessWidget {
         builder: (context, ColorModel model, child) {
       return Container(
         decoration: BoxDecoration(
-          color: Color(model.dark ? 0x4D000000 : 0xFBFFFFFF),
+          color: Color(model.dark ? 0x4D000000 : 0xABFFFFFF),
           borderRadius: BorderRadius.all(Radius.circular(10.0)),
         ),
         margin: EdgeInsets.symmetric(vertical: 50),

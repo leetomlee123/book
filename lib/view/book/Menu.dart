@@ -631,38 +631,39 @@ class _MenuState extends State<Menu> {
         ),
       ),
     );
-    wds.add(RawMaterialButton(
-      constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
-      onPressed: () async {
-        final PickedFile pickedFile =
-            await ImagePicker().getImage(source: ImageSource.gallery);
-        if (pickedFile != null) {
-          String path = pickedFile.path;
-
-          SpUtil.putString(ReadSetting.bgsKey, path);
-
-          var cv = Store.value<ColorModel>(context);
-          if (cv.dark) {
-            cv.switchModel();
-          }
-          await _readModel.colorModelSwitch();
-          _readModel.switchBgColor(6);
-        }
-      },
-      child: Container(
-        margin: EdgeInsets.only(top: 5.0, bottom: 5.0),
-        width: 45.0,
-        height: 45.0,
-        child: Center(child: Text('自')),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(25.0)),
-            border: Border.all(
-              width: 1.5,
-              color: Color(!_colorModel.dark ? 0x4D000000 : 0xFBFFFFFF),
-            )),
-      ),
-    ));
-    for (int i = 0; i < ReadSetting.bgImg.length; i++) {
+    // wds.add(
+    //     RawMaterialButton(
+    //   constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
+    //   onPressed: () async {
+    //     final PickedFile pickedFile =
+    //         await ImagePicker().getImage(source: ImageSource.gallery);
+    //     if (pickedFile != null) {
+    //       String path = pickedFile.path;
+    //
+    //       SpUtil.putString(ReadSetting.bgsKey, path);
+    //
+    //       var cv = Store.value<ColorModel>(context);
+    //       if (cv.dark) {
+    //         cv.switchModel();
+    //       }
+    //       await _readModel.colorModelSwitch();
+    //       _readModel.switchBgColor(6);
+    //     }
+    //   },
+    //   child: Container(
+    //     margin: EdgeInsets.only(top: 5.0, bottom: 5.0),
+    //     width: 45.0,
+    //     height: 45.0,
+    //     child: Center(child: Text('自')),
+    //     decoration: BoxDecoration(
+    //         borderRadius: BorderRadius.all(Radius.circular(25.0)),
+    //         border: Border.all(
+    //           width: 1.5,
+    //           color: Color(!_colorModel.dark ? 0x4D000000 : 0xFBFFFFFF),
+    //         )),
+    //   ),
+    // ));
+    for (int i = 0; i < ReadSetting.bgImg.length-1; i++) {
       var f = "images/${ReadSetting.bgImg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () async {

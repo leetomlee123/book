@@ -7,6 +7,7 @@ import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
+import 'package:book/view/book/PageContentRender.dart';
 import 'package:book/view/book/cover_read_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -85,10 +86,28 @@ class _ReadBookState extends State<ReadBook>
     readModel.clear();
   }
 
+  //拦截菜单和章节view
+  bool popWithMenuAndChapterView() {
+    if (readModel.showMenu || _scaffoldKey.currentState.isDrawerOpen) {
+      if(readModel.showMenu){
+        readModel.toggleShowMenu();
+      }
+      if(_scaffoldKey.currentState.isDrawerOpen){
+        _scaffoldKey.currentState.openEndDrawer();
+      }
+      return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
         onWillPop: () async {
+          var popWithMenuAndChapterView2 = popWithMenuAndChapterView();
+          if (!popWithMenuAndChapterView2) {
+            return false;
+          }
           if (!Store.value<ShelfModel>(context)
               .exitsInBookShelfById(readModel.book.Id)) {
             await confirmAddToShelf(context);
@@ -105,7 +124,8 @@ class _ReadBookState extends State<ReadBook>
               return Stack(
                 children: [
                   Visibility(
-                    child: RepaintBoundary(child: NovelRoteView()),
+                    // child: PageContentReader(),
+                    child: NovelRoteView(model),
                     visible: model.loadOk,
                     replacement: Container(),
                   ),
@@ -133,10 +153,10 @@ class _ReadBookState extends State<ReadBook>
                     },
                     child: Text('确定')),
                 TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       readModel.sSave = false;
 
-                      Store.value<ShelfModel>(context)
+                     await Store.value<ShelfModel>(context)
                           .delLocalCache([this.widget.book.Id]);
                       Navigator.pop(context);
                     },

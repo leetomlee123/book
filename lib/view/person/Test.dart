@@ -46,24 +46,7 @@ class _MyPageViewState extends State<MyPageView>
 
   @override
   Widget build(BuildContext context) {
-    return Store.connect<ReadModel>(builder: (context, ReadModel model, child) {
-      return Stack(
-        children: [
-          GestureDetector(
-            child: Con(Colors.blue, "top"),
-            onHorizontalDragStart: _onHorizontalDragStart,
-            onHorizontalDragUpdate: _onHorizontalDragUpdate,
-            onHorizontalDragEnd: _onHorizontalDragEnd,
-          ),
-          SlideTransition(
-            position: _animation.drive(
-                Tween(begin: Offset(-1.1, 0.0), end: Offset.zero)
-                    .chain(CurveTween(curve: Curves.linear))),
-            child: model.allContent[model.book.cur],
-          ),
-        ],
-      );
-    });
+    return Container();
   }
 }
 

@@ -268,9 +268,11 @@ class DbHelper {
 
   Future<Null> delBookAndCps(String bookId) async {
     var dbClient = await db1;
-    dbClient.rawDelete("delete from $_tableName1  where book_id=?", [bookId]);
+    await dbClient
+        .rawDelete("delete from $_tableName1  where book_id=?", [bookId]);
     var dbClient1 = await db;
-    dbClient1.rawDelete("delete from $_tableName where book_id=?", [bookId]);
+    await dbClient1
+        .rawDelete("delete from $_tableName where book_id=?", [bookId]);
   }
 
   Future<List<Book>> getBooks() async {
@@ -332,7 +334,7 @@ class DbHelper {
     var dbClient = await db1;
 
     await dbClient.rawUpdate(
-        'update  $_tableName1 set sortTime=${DateUtil.getNowDateMs()} where book_id=?',
+        'update  $_tableName1 set sortTime=${DateUtil.getNowDateMs()},newChapter=0 where book_id=?',
         [bookId]);
   }
 

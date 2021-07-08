@@ -1,12 +1,10 @@
-library text_composition;
-
 import 'dart:convert';
 import 'dart:isolate';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/entity/Book.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
@@ -191,25 +189,6 @@ class TextComposition {
   /// 调试模式 输出布局信息
   bool debug;
 
-  Future<ByteData> getImage(int pageIndex) async {
-    final recorder = ui.PictureRecorder();
-    final canvas = new Canvas(recorder,
-        Rect.fromPoints(Offset.zero, Offset(boxSize.width, boxSize.height)));
-    PagePainter(pageIndex, pages[pageIndex], style, debug)
-        .paint(canvas, boxSize);
-    final picture = recorder.endRecording();
-    final img =
-        await picture.toImage(boxSize.width.floor(), boxSize.height.floor());
-
-    final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
-    return pngBytes;
-  }
-
-  void paint(int pageIndex, Canvas canvas) {
-    PagePainter(pageIndex, pages[pageIndex], style, debug)
-        .paint(canvas, boxSize);
-  }
-
   static void dataLoader(SendPort sendPort) async {
     // 打开ReceivePort①以接收传入的消息
     ReceivePort port = ReceivePort();
@@ -322,6 +301,69 @@ class TextComposition {
 //       replyToPort.send([result]);
 //     }
 //   }
+class SelfForePainter extends CustomPainter {
+  ui.Image _imageFrame;
+
+  SelfForePainter(this._imageFrame) : super();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint selfPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true
+      ..strokeCap = StrokeCap.butt
+      ..strokeWidth = 30.0;
+    canvas.drawImage(_imageFrame, Offset(0, 0), selfPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+class MyPagePainter extends CustomPaint {
+  final ReadPage readPage;
+  final CustomPainter forePainter;
+  final TextStyle style;
+  final int pageIndex;
+  final bool debug;
+  TextPage page;
+
+  MyPagePainter(this.pageIndex, this.readPage, this.style, this.forePainter,
+      [this.debug = false])
+      : page = readPage.pages[pageIndex],
+        super(foregroundPainter: forePainter);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final lineCount = page.lines.length;
+    final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+
+    for (var i = 0; i < lineCount; i++) {
+      final line = page.lines[i];
+      if (line.letterSpacing != null &&
+          (line.letterSpacing < -0.1 || line.letterSpacing > 0.1)) {
+        tp.text = TextSpan(
+          text: line.text,
+          style: style.copyWith(letterSpacing: line?.letterSpacing),
+        );
+      } else {
+        tp.text = TextSpan(text: line.text, style: style);
+      }
+      final offset = Offset(line.dx, line.dy);
+      tp.layout();
+      tp.paint(canvas, offset);
+    }
+  }
+
+  @override
+  bool shouldRepaint(MyPagePainter old) {
+    return old.pageIndex != pageIndex;
+  }
+}
+
+
 
 class PagePainter extends CustomPainter {
   final TextPage page;
@@ -338,6 +380,7 @@ class PagePainter extends CustomPainter {
       print("****** [TextComposition paint start] [${DateTime.now()}] ******");
     final lineCount = page.lines.length;
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+
     for (var i = 0; i < lineCount; i++) {
       final line = page.lines[i];
       if (line.letterSpacing != null &&
@@ -353,7 +396,6 @@ class PagePainter extends CustomPainter {
       tp.layout();
       tp.paint(canvas, offset);
     }
-
   }
 
   @override

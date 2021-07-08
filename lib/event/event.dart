@@ -5,6 +5,12 @@ EventBus eventBus = new EventBus();
 
 class AddEvent {}
 
+class UpdateBookProcess {
+  final int cur;
+  final int index;
+  UpdateBookProcess(this.cur, this.index);
+}
+
 class RollEvent {
   String roll;
   RollEvent(this.roll);
@@ -21,6 +27,7 @@ class ZEvent {
 
   ZEvent(this.off);
 }
+
 class ScrollEvent {
   int off;
 
@@ -38,11 +45,13 @@ class OpenChapters {
 
   OpenChapters(this.name);
 }
+
 class OpenBottom {
   String name;
 
   OpenBottom(this.name);
 }
+
 class CleanEvent {
   int x;
   CleanEvent(this.x);

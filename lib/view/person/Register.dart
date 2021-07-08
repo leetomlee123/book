@@ -113,15 +113,10 @@ class _RegisterState extends State<Register> {
                   SizedBox(height: 8.0),
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 16.0),
-                    child: RaisedButton(
-                      color: Theme.of(context).primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
+                    child: TextButton(
                       onPressed: () {
                         register();
                       },
-                      padding: EdgeInsets.all(12),
                       child: Text('注册',style: TextStyle(color: Colors.white),),
                     ),
                   )

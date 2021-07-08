@@ -28,6 +28,7 @@ class Book {
   Map<String, dynamic> toJson() => _$BookToJson(this);
 
   Book.Id(this.Id);
+  Book.Image(this.Img);
 
 
 

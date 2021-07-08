@@ -1,7 +1,6 @@
 import 'package:book/common/Http.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -20,17 +19,19 @@ class _LoginState extends State<Login> {
   String username = '';
   bool isLogin = false;
   String pwd = "";
+
   githubLogin() async {
-    // String url =
-    //     "https://github.com/login/oauth/authorize?client_id=4cbf30755eb4d578fe0f&redirect_uri=${Common.gitHubLogin}";
-    // var github = GitHub(auth: findAuthenticationFromEnvironment());
-    // var auth = github.auth;
-    // print(auth);
-    // if (await canLaunch(url)) {
-    //   bool result = await launch(url);
-    //   print(result);
-    // } else {
-    //   print('不能访问');
+    BotToast.showText(text: "not support yet");
+  }
+
+  googleLogin() async {
+    BotToast.showText(text: "not support yet");
+    // try {
+    //   GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
+    //   BotToast.showText(text: googleSignInAccount.toString());
+
+    // } catch (error) {
+    //   print(error);
     // }
   }
 
@@ -48,10 +49,12 @@ class _LoginState extends State<Login> {
       SpUtil.putString('email', data['data']['email']);
       SpUtil.putString('username', username);
       SpUtil.putString("auth", data['data']['token']);
-      eventBus.fire(SyncShelfEvent(""));
 
+      // eventBus.fire(SyncShelfEvent(""));
+      var s = Store.value<ShelfModel>(context);
+      s.refreshShelf();
       //书架同步
-      var shelf2 = Store.value<ShelfModel>(context).shelf;
+      var shelf2 = s.shelf;
       if (shelf2.length > 0) {
         for (var value in shelf2) {
           if (SpUtil.haveKey("auth")) {
@@ -59,6 +62,8 @@ class _LoginState extends State<Login> {
           }
         }
       }
+      // Routes.navigateTo(context, Routes.root);
+      //
       Navigator.of(context).popUntil(ModalRoute.withName('/'));
     }
   }
@@ -150,12 +155,24 @@ class _LoginState extends State<Login> {
               SizedBox(
                 height: 20,
               ),
-              GestureDetector(
-                child: CircleAvatar(
-                  backgroundImage: AssetImage("images/github.png"),
-                  backgroundColor: Colors.white,
-                ),
-                onTap: () => githubLogin(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  GestureDetector(
+                    child: CircleAvatar(
+                      backgroundImage: AssetImage("images/google-logo.jpg"),
+                      backgroundColor: Colors.white,
+                    ),
+                    onTap: () => googleLogin(),
+                  ),
+                  GestureDetector(
+                    child: CircleAvatar(
+                      backgroundImage: AssetImage("images/github.png"),
+                      backgroundColor: Colors.white,
+                    ),
+                    onTap: () => githubLogin(),
+                  ),
+                ],
               ),
               Row(
                 key: UniqueKey(),

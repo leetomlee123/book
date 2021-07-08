@@ -3,19 +3,17 @@ import 'dart:io';
 import 'package:book/common/Http.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/ParseContentConfig.dart';
-import 'package:book/entity/Update.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/person/Me.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -24,14 +22,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
-import 'package:package_info/package_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
 // FirebaseAnalytics analytics = FirebaseAnalytics();
 // FirebaseAnalyticsObserver observer =
 //     FirebaseAnalyticsObserver(analytics: analytics);
-
+// FirebaseAuth auth = FirebaseAuth.instance;
+// GoogleSignIn googleSignIn = GoogleSignIn(
+//   scopes: <String>[
+//     'email',
+//     'https://www.googleapis.com/auth/contacts.readonly',
+//   ],
+// );
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GestureBinding.instance.resamplingEnabled = true;
@@ -66,9 +69,6 @@ class MyApp extends StatelessWidget {
         ],
         onGenerateRoute: Routes.router.generator,
         theme: model.theme,
-        // theme: FlexColorScheme.light(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
-        // darkTheme: FlexColorScheme.dark(scheme: FlexScheme.damask,fontFamily: SpUtil.getString("fontName"),).toTheme,
-        // themeMode: model.dark?ThemeMode.dark:ThemeMode.light,
       );
     });
   }
@@ -120,7 +120,6 @@ class _MainPageState extends State<MainPage> {
 
   // var _pages = [Video(), VoiceBook()];
   initEnv() async {
-    _checkUpdate();
     getConfigFromServer();
     // await Firebase.initializeApp();
   }
@@ -136,6 +135,10 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
+    var widgetsBinding = WidgetsBinding.instance;
+    widgetsBinding.addPostFrameCallback((callback) {
+      Store.value<ReadModel>(context);
+    });
     initEnv();
     super.initState();
     JPush jpush = new JPush();
@@ -206,22 +209,5 @@ class _MainPageState extends State<MainPage> {
     setState(() {
       if (_tabIndex != index) _tabIndex = index;
     });
-  }
-
-  Future<void> _checkUpdate() async {
-    Response response = await HttpUtil().http().get(Common.update);
-    var data = response.data['data'];
-    Update update = Update.fromJson(data);
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    SpUtil.putString("version", packageInfo.version);
-
-    String version = packageInfo.version;
-    if (update.version != version) {
-      BotToast.showWidget(toastBuilder: (context) {
-        return Center(
-          child: UpdateDialog(update),
-        );
-      });
-    }
   }
 }

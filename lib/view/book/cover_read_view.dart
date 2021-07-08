@@ -1,55 +1,29 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ReadModel.dart';
-import 'package:book/store/Store.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
 /// 导航翻页模式
 class NovelRoteView extends StatelessWidget {
-  ReadModel readModel;
+  final ReadModel readModel;
+
+  NovelRoteView(this.readModel);
 
   @override
   Widget build(BuildContext context) {
-    readModel = Store.value<ReadModel>(context);
-
     return GestureDetector(
         onTap: () {},
         onTapDown: (e) => readModel.tapPage(context, e),
-        // onHorizontalDragStart: (details) =>
-        //     readModel.onHorizontalDragStart(details),
-        // onHorizontalDragEnd: (details) =>
-        //     readModel.onHorizontalDragEnd(details),
-        // onHorizontalDragUpdate: (details) =>
-        //     readModel.onHorizontalDragUpdate(details),
-        // onPanDown: (DragDownDetails e) {
-        //   //打印手指按下的位置
-        //   print("手指按下：${e.globalPosition}");
-        //   dx = e.globalPosition.dx;
-        // },
-        // //手指滑动
-        // onPanUpdate: (DragUpdateDetails e) {
-        //   // print("update ${e.globalPosition}");
-        //   var z = e.globalPosition.dx - dx;
-        //   if (z > 0) {
-        //     print("pre");
-        //   } else {
-        //     print("next");
-        //     eventBus.fire(ScrollEvent(0));
-        //   }
-        // },
         onPanEnd: (DragEndDetails e) {
-          //打印滑动结束时在x、y轴上的速度
-          // print("end");
           var x = e.velocity.pixelsPerSecond.dx < 0 ? 1 : -1;
-          // print(x);
           readModel.changeCoverPage(x);
         },
-        child: Navigator(
-            // initialRoute: '/${searchItem.durChapterIndex}',
-            onGenerateRoute: (settings) {
+        child: Navigator(onGenerateRoute: (settings) {
           WidgetBuilder builder;
           bool isNext = true;
           switch (settings.name) {
@@ -75,7 +49,9 @@ class NovelRoteView extends StatelessWidget {
 
 class _CoverPage extends StatefulWidget {
   final NovelRoteView owner;
+
   const _CoverPage({Key key, this.owner}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => _CoverPageState();
 }
@@ -87,18 +63,21 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
   double x = 0;
   AnimationController _controller;
   Animation<double> _animation;
-
+  GlobalKey canvasKey = new GlobalKey();
 
   @override
   void initState() {
-
     eventBus.on<ZEvent>().listen((event) {
-      if (event.off == 200) {
-        _controller?.dispose();
-        _controller = null;
-        _animation = null;
-      } else {
-        lastPage = null;
+      if (mounted) {
+        setState(() {
+          if (event.off == 200) {
+            _controller?.dispose();
+            _controller = null;
+            _animation = null;
+          } else {
+            lastPage = null;
+          }
+        });
       }
     });
     if (_controller == null) {
@@ -114,6 +93,13 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
         curve: Curves.linear,
       );
     }
+    _controller?.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        //动画完成后预加载上下页面
+        print("here");
+        owner.readModel.preLoadWidget();
+      }
+    });
     super.initState();
     owner = widget.owner;
   }
@@ -121,6 +107,7 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
   @override
   void dispose() {
     _controller?.dispose();
+    _controller?.removeStatusListener((status) {});
     super.dispose();
   }
 
@@ -177,15 +164,19 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
       }
       return lastPage;
     }
-    lastPage = buildPage();
+    lastPage = buildPage(firstLoad: true);
     return lastPage;
   }
 
-  Widget buildPage() {
+  Widget buildPage({bool firstLoad = false}) {
     lastPageIndex = owner.readModel.book.index;
     lastChapterIndex = owner.readModel.book.cur;
-    return owner.readModel
-        .getPage();
+    return CustomPaint(
+      isComplex: true,
+      size: Size(Screen.width, Screen.height),
+      painter:
+          PageContentViewPainter(owner.readModel.getPage(firstInit: firstLoad)),
+    );
   }
 
   int get curChapterIndex => owner.readModel.book.cur;
@@ -199,5 +190,22 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
     Timer(Duration(milliseconds: 20), () {
       Navigator.pushReplacementNamed(context, isNext ? '/' : '/up');
     });
+  }
+}
+
+class PageContentViewPainter extends CustomPainter {
+  final ui.Picture picture;
+
+  PageContentViewPainter(this.picture);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+
+    canvas.drawPicture(picture);
+  }
+
+  @override
+  bool shouldRepaint(PageContentViewPainter oldDelegate) {
+    return this.picture != oldDelegate.picture;
   }
 }
