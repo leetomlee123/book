@@ -5,12 +5,12 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -18,7 +18,6 @@ import 'package:book/view/book/BookHeadBgColor.dart';
 import 'package:book/widgets/text_ellipsis.dart';
 import 'package:book/widgets/text_two.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 
 class BookDetail extends StatefulWidget {
@@ -63,88 +62,60 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   Widget _bookHead() {
-    return Column(
-      children: [
-        Row(children: <Widget>[
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                padding:
-                    const EdgeInsets.only(left: 15.0, top: 5.0, bottom: 10.0),
-                child: PicWidget(
-                  book.Img,
-                  height: 130,
-                  width: 95,
-                ),
-              )
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: ScreenUtil.getScreenW(context) - 120,
-                padding: const EdgeInsets.only(left: 20.0, top: 5.0),
-                child: Text(
-                  book.Name,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 15, color: Colors.white),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.only(left: 20.0, top: 2.0),
-                child: Text('作者: ${book.Author}',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.white)),
-              ),
-              Container(
-                padding: const EdgeInsets.only(left: 20.0, top: 2.0),
-                child: new Text('类型: ' + book.CName,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 12, color: Colors.white)),
-              ),
-              Container(
-                padding: const EdgeInsets.only(left: 20.0, top: 2.0),
-                child: Text('状态: ${this.widget._bookInfo.BookStatus}',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 12, color: Colors.white)),
-                width: 270,
-              ),
-              Container(
-                  padding:
-                      const EdgeInsets.only(left: 15.0, top: 2.0, bottom: 10.0),
-                  child: Row(
-                    children: <Widget>[
-                      RatingBar(
-                        itemSize: 30,
-                        initialRating: this.widget._bookInfo.Rate ?? 1,
-                        minRating: 1,
-                        direction: Axis.horizontal,
-                        allowHalfRating: true,
-                        itemCount: 5,
-                        itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                        itemBuilder: (context, _) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                        ),
-                        onRatingUpdate: (rating) {},
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      height: 140,
+      child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            PicWidget(
+              book.Img,
+              height: 140,
+              width: 95,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    Text(
+                      book.Name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 15, color: Colors.white),
+                    ),
+                    Text('作者: ${book.Author}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                    Text('类型: ' + book.CName,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                    Text('状态: ${this.widget._bookInfo.BookStatus}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                    RatingBar(
+                      itemSize: 30,
+                      initialRating: this.widget._bookInfo.Rate ?? 1,
+                      minRating: 1,
+                      direction: Axis.horizontal,
+                      allowHalfRating: true,
+                      itemCount: 5,
+                      itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                      itemBuilder: (context, _) => Icon(
+                        Icons.star,
+                        color: Colors.amber,
                       ),
-                      Text(
-                        '${this.widget._bookInfo.Rate ?? 0.0}分',
-                        style: TextStyle(color: Colors.white),
-                      )
-                    ],
-                  )),
-            ],
-          ),
-        ]),
-        SizedBox(
-          height: 20,
-        )
-      ],
+                      onRatingUpdate: (rating) {},
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ]),
     );
   }
 
@@ -221,7 +192,7 @@ class _BookDetailState extends State<BookDetail> {
             ),
           ),
           ListView.builder(
-            padding: EdgeInsets.all(0),
+            padding: EdgeInsets.symmetric(horizontal: 20),
             shrinkWrap: true,
 
             //解决无限高度问题
@@ -230,61 +201,44 @@ class _BookDetailState extends State<BookDetail> {
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 child: Container(
+                  height: 115,
+                  margin: const EdgeInsets.only(bottom: 10),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.only(left: 15.0, top: 10),
-                            child: PicWidget(
-                              this.widget._bookInfo.SameAuthorBooks[i].Img,
-                            ),
-                          )
-                        ],
+                      PicWidget(
+                        this.widget._bookInfo.SameAuthorBooks[i].Img,
                       ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        verticalDirection: VerticalDirection.down,
-                        // textDirection:,
-                        textBaseline: TextBaseline.alphabetic,
-
-                        children: <Widget>[
-                          Container(
-                              width: ScreenUtil.getScreenW(context) - 120,
-                              padding:
-                                  const EdgeInsets.only(left: 10.0, top: 10),
-                              child: Text(
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                              Text(
                                 this.widget._bookInfo.SameAuthorBooks[i].Name,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(fontSize: 18.0),
-                              )),
-                          Container(
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(
-                              this.widget._bookInfo.SameAuthorBooks[i].Author,
-                              style: TextStyle(fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            width: ScreenUtil.getScreenW(context) - 120,
-                            padding:
-                                const EdgeInsets.only(left: 10.0, top: 10.0),
-                            child: Text(
-                                this
-                                    .widget
-                                    ._bookInfo
-                                    .SameAuthorBooks[i]
-                                    .LastChapter,
+                              ),
+                              Text(
+                                this.widget._bookInfo.SameAuthorBooks[i].Author,
+                                style: TextStyle(fontSize: 12),
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    color: Colors.grey, fontSize: 11)),
+                              ),
+                              Text(
+                                  this
+                                      .widget
+                                      ._bookInfo
+                                      .SameAuthorBooks[i]
+                                      .LastChapter,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: Colors.grey, fontSize: 11)),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -325,7 +279,6 @@ class _BookDetailState extends State<BookDetail> {
                         '书架',
                         style: TextStyle(
                           color: Colors.white,
-                    
                         ),
                       ),
                     ),
@@ -338,7 +291,7 @@ class _BookDetailState extends State<BookDetail> {
                     width: 20,
                   )
                 ],
-                expandedHeight: 230.0,
+                expandedHeight: 200.0,
                 // backgroundColor: Colors.transparent,
                 flexibleSpace: FlexibleSpaceBar(
                   // title: const Text('Demo'),
@@ -346,7 +299,7 @@ class _BookDetailState extends State<BookDetail> {
                     children: [
                       BookHeadBgColor(book.Img),
                       Padding(
-                        padding: EdgeInsets.only(top: 100),
+                        padding: EdgeInsets.only(top: Screen.topSafeHeight+50),
                         child: _bookHead(),
                       )
                     ],

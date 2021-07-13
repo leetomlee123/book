@@ -65,7 +65,6 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print("item build");
     return SmartRefresher(
         enablePullDown: true,
         footer: CustomFooter(
@@ -119,7 +118,6 @@ class _BooksWidgetState extends State<BooksWidget> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () async {
-        print("read book index $i");
         this.widget.type == "sort"
             ? _shelfModel.changePick(i)
             : await readBook(i);

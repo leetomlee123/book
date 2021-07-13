@@ -50,7 +50,6 @@ class _BookShelfState extends State<BookShelf> {
 
   @override
   Widget build(BuildContext context) {
-    print("home build");
     return Store.connect<ShelfModel>(
         builder: (context, ShelfModel shelfModel, child) {
       return Scaffold(

@@ -187,8 +187,8 @@ class _SearchState extends State<Search> {
       return Positioned(
         left: xPosition,
         width: width,
-        top: yPosition + height + 10,
-        height: searchModel.bksAi.length * aiItemH,
+        top: yPosition + height + 5,
+        height: 500,
         child: SearchAiItem(
             height: aiItemH,
             function: (id) async {
@@ -342,15 +342,13 @@ class _SearchState extends State<Search> {
                 )
               ],
             ),
-//          ListView(
-//            shrinkWrap: true,
-//            children: data.getHistory(),
-//          ),
-            Wrap(
-              children: searchModel?.getHistory() ?? [],
-              spacing: 10, //主轴上子控件的间距
+            Offstage(
+              offstage: searchModel?.getHistory()?.isNotEmpty,
+              child: Wrap(
+                children: searchModel.getHistory(),
+                spacing: 10, //主轴上子控件的间距
+              ),
             ),
-
             Row(
               children: <Widget>[
                 Text(

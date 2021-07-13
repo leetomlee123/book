@@ -134,6 +134,7 @@ class _ChapterViewItem extends State<ChapterView> {
                 child: ListView.builder(
                   controller: _scrollController,
                   itemExtent: itemHeight,
+                  cacheExtent: 500,
                   itemBuilder: (context, index) {
                     var title = data.chapters[index].name;
                     var has = data.chapters[index].hasContent;

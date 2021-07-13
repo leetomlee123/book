@@ -160,7 +160,7 @@ class SearchModel with ChangeNotifier {
           search(value);
           notifyListeners();
         },
-        child: Chip(label: Text(value)),
+        child: Chip(label: Text(value),padding: EdgeInsets.all(2),),
       ));
     }
 

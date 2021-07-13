@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -304,47 +305,47 @@ class ReadModel with ChangeNotifier {
       SpUtil.remove(k);
     } else {
       r.pages = TextComposition.parseContent(r);
-      // ReceivePort receivePort = ReceivePort();
-      // //创建并生成与当前Isolate共享相同代码的Isolate
-      // var _isolate = await FlutterIsolate.spawn(
-      //     TextComposition.dataLoader, receivePort.sendPort);
-      // // 流的第一个元素
-      // SendPort sendPort = await receivePort.first;
-      // // 流的第一个元素被收到后监听会关闭，所以需要新打开一个ReceivePort以接收传入的消息
+    //   ReceivePort receivePort = ReceivePort();
+    //   //创建并生成与当前Isolate共享相同代码的Isolate
+    //   var _isolate = await FlutterIsolate.spawn(
+    //       TextComposition.dataLoader, receivePort.sendPort);
+    //   // 流的第一个元素
+    //   SendPort sendPort = await receivePort.first;
+    //   // 流的第一个元素被收到后监听会关闭，所以需要新打开一个ReceivePort以接收传入的消息
 
-      // ReceivePort response = ReceivePort();
+    //   ReceivePort response = ReceivePort();
 
-      // double w = Screen.width;
-      // double h = Screen.height - 62 - Screen.bottomSafeHeight;
-      // String fontFamily = SpUtil.getString("fontName", defValue: "Roboto");
-      // double fontSize = ReadSetting.getFontSize();
-      // double height = ReadSetting.getLineHeight();
+    //   double w = Screen.width;
+    //   double h = Screen.height - 62 - Screen.bottomSafeHeight;
+    //   String fontFamily = SpUtil.getString("fontName", defValue: "Roboto");
+    //   double fontSize = ReadSetting.getFontSize();
+    //   double height = ReadSetting.getLineHeight();
 
-      // double dis = ReadSetting.getPageDis().toDouble();
-      // double paragraph = ReadSetting.getParagraph() *
-      //     ReadSetting.getFontSize() *
-      //     ReadSetting.getLineHeight();
-      // sendPort.send([
-      //   response.sendPort,
-      //   jsonEncode(r),
-      //   w,
-      //   h,
-      //   fontFamily,
-      //   fontSize,
-      //   height,
-      //   dis,
-      //   paragraph
-      // ]);
+    //   double dis = ReadSetting.getPageDis().toDouble();
+    //   double paragraph = ReadSetting.getParagraph() *
+    //       ReadSetting.getFontSize() *
+    //       ReadSetting.getLineHeight();
+    //   sendPort.send([
+    //     response.sendPort,
+    //     jsonEncode(r),
+    //     w,
+    //     h,
+    //     fontFamily,
+    //     fontSize,
+    //     height,
+    //     dis,
+    //     paragraph
+    //   ]);
 
-      // await for (var msg in response) {
-      //   // 获取端口发送来的数据③
-      //   String jsonResult = msg[0];
+    //   await for (var msg in response) {
+    //     // 获取端口发送来的数据③
+    //     String jsonResult = msg[0];
 
-      //   _isolate?.kill();
-      //   List result = jsonDecode(jsonResult);
-      //   r.pages = result.map((e) => TextPage.fromJson(e)).toList();
-      //   break;
-      // }
+    //     _isolate?.kill();
+    //     List result = jsonDecode(jsonResult);
+    //     r.pages = result.map((e) => TextPage.fromJson(e)).toList();
+    //     break;
+    //   }
     }
 
     return r;
