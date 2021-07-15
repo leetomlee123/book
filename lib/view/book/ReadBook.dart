@@ -7,7 +7,6 @@ import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
-import 'package:book/view/book/PageContentRender.dart';
 import 'package:book/view/book/cover_read_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +59,7 @@ class _ReadBookState extends State<ReadBook>
     });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
-    readModel.getBookRecord();
+    await readModel.getBookRecord();
     FlutterStatusbarManager.setFullscreen(true);
   }
 
@@ -89,10 +88,10 @@ class _ReadBookState extends State<ReadBook>
   //拦截菜单和章节view
   bool popWithMenuAndChapterView() {
     if (readModel.showMenu || _scaffoldKey.currentState.isDrawerOpen) {
-      if(readModel.showMenu){
+      if (readModel.showMenu) {
         readModel.toggleShowMenu();
       }
-      if(_scaffoldKey.currentState.isDrawerOpen){
+      if (_scaffoldKey.currentState.isDrawerOpen) {
         _scaffoldKey.currentState.openEndDrawer();
       }
       return false;
@@ -156,7 +155,7 @@ class _ReadBookState extends State<ReadBook>
                     onPressed: () async {
                       readModel.sSave = false;
 
-                     await Store.value<ShelfModel>(context)
+                      await Store.value<ShelfModel>(context)
                           .delLocalCache([this.widget.book.Id]);
                       Navigator.pop(context);
                     },
