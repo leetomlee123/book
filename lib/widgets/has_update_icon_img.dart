@@ -16,7 +16,7 @@ class HasUpdateIconImg extends StatelessWidget {
   Widget build(BuildContext context) {
     return Store.connect<ShelfModel>(
         builder: (context, ShelfModel shelf, child) {
-      Book _book = shelf.shelf.elementAt(this.idx);
+      Book _book = shelf.shelf[this.idx];
       return Stack(
         children: <Widget>[
           PicWidget(_book.Img, height: this.height, width: this.width),

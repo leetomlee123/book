@@ -1,4 +1,3 @@
-import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -28,9 +27,9 @@ class _ReadBookState extends State<ReadBook>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   Widget body;
   ReadModel readModel;
+  ShelfModel shelfModel;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   ColorModel colorModel;
-  TextComposition textComposition;
 
   @override
   void initState() {
@@ -45,6 +44,7 @@ class _ReadBookState extends State<ReadBook>
 
   setUp() async {
     readModel = Store.value<ReadModel>(context);
+    shelfModel = Store.value<ShelfModel>(context);
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
       readModel.initPageContent(readModel.book.cur, true);
@@ -66,23 +66,22 @@ class _ReadBookState extends State<ReadBook>
   @override
   void dispose() async {
     super.dispose();
-    readModel?.pageController?.dispose();
-    readModel?.listController?.dispose();
+
+    saveState();
+    readModel.clear();
     WidgetsBinding.instance.removeObserver(this);
     FlutterStatusbarManager.setFullscreen(false);
   }
 
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
-    readModel.saveData();
+    saveState();
   }
 
-  @override
-  Future<void> deactivate() async {
-    super.deactivate();
-
-    await readModel.saveData();
-    readModel.clear();
+  saveState() async {
+    readModel.saveData();
+    shelfModel.updReadBookProcess(
+        UpdateBookProcess(readModel.book.cur, readModel.book.index));
   }
 
   //拦截菜单和章节view
@@ -163,28 +162,4 @@ class _ReadBookState extends State<ReadBook>
               ],
             ));
   }
-
-  void move(int off) {
-    var widgetsBinding = WidgetsBinding.instance;
-
-    widgetsBinding.addPostFrameCallback((callback) {
-      readModel.pageController.jumpToPage(off);
-    });
-  }
-// void move(bool isPage, double offset) {
-//   var widgetsBinding = WidgetsBinding.instance;
-//
-//   widgetsBinding.addPostFrameCallback((callback) {
-//     if (isPage) {
-//       readModel.pageController.jumpToPage(1);
-//     } else {
-//       if (offset == 0.0) {
-//         readModel.listController
-//             .jumpTo((readModel.ladderH[readModel.cursor - 1]));
-//       } else {
-//         readModel.listController.jumpTo(offset);
-//       }
-//     }
-//   });
-// }
 }

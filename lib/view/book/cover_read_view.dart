@@ -106,6 +106,7 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    print("here dispose");
     _controller?.dispose();
     _controller?.removeStatusListener((status) {});
     super.dispose();
@@ -200,7 +201,6 @@ class PageContentViewPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-
     canvas.drawPicture(picture);
   }
 

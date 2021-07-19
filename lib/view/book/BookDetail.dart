@@ -292,9 +292,7 @@ class _BookDetailState extends State<BookDetail> {
                   )
                 ],
                 expandedHeight: 200.0,
-                // backgroundColor: Colors.transparent,
                 flexibleSpace: FlexibleSpaceBar(
-                  // title: const Text('Demo'),
                   background: Stack(
                     children: [
                       BookHeadBgColor(book.Img),
@@ -340,7 +338,7 @@ class _BookDetailState extends State<BookDetail> {
               alignment: Alignment.bottomCenter,
               child: BottomNavigationBar(
                 type: BottomNavigationBarType.fixed,
-                unselectedItemColor: _colorModel.dark ? Colors.white : null,
+                // unselectedItemColor: _colorModel.dark ? Colors.white : null,
                 items: [
                   model.inShelf(this.widget._bookInfo.Id)
                       ? BottomNavigationBarItem(

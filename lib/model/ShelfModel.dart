@@ -22,7 +22,7 @@ class ShelfModel with ChangeNotifier {
     var b = shelf.first;
     b.cur = up.cur;
     b.index = up.index;
-    notifyListeners();
+    DbHelper.instance.updBookProcess(b.cur, b.index, 0, b.Id);
   }
 
   Future<void> setShelf() async {
@@ -34,7 +34,7 @@ class ShelfModel with ChangeNotifier {
   }
 
   BuildContext context;
-  bool cover = SpUtil.getBool("cover", defValue: true);
+  bool cover = SpUtil.getBool("cover", defValue: false);
   bool sortShelf = false;
   DbHelper _dbHelper = DbHelper.instance;
   List<bool> _picks = [];

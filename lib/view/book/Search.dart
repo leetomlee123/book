@@ -342,12 +342,9 @@ class _SearchState extends State<Search> {
                 )
               ],
             ),
-            Offstage(
-              offstage: searchModel?.getHistory()?.isNotEmpty,
-              child: Wrap(
-                children: searchModel.getHistory(),
-                spacing: 10, //主轴上子控件的间距
-              ),
+            Wrap(
+              children: searchModel?.getHistory() ?? [],
+              spacing: 10, //主轴上子控件的间距
             ),
             Row(
               children: <Widget>[

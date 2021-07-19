@@ -1,10 +1,8 @@
 import 'dart:convert';
 
-import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
@@ -41,16 +39,12 @@ class _BooksWidgetState extends State<BooksWidget> {
   @override
   void initState() {
     if (bookPicWidth == .0) {
+      bookPicWidth = Screen.width / 4;
       SpUtil.putDouble(Common.book_pic_width, Screen.width / 4);
     }
     isShelf = this.widget.type == '';
     _shelfModel = Store.value<ShelfModel>(context);
     _refreshController = RefreshController();
-    eventBus.on<UpdateBookProcess>().listen((event) {
-      _shelfModel.updReadBookProcess(event);
-      DbHelper.instance.updBookProcess(
-          event.cur, event.index, 0.0, _shelfModel.shelf.first.Id);
-    });
     super.initState();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
@@ -104,11 +98,11 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架封面模式
   Widget coverModel() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.all(10),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
-        spacing: 4, //主轴上子控件的间距
-        runSpacing: 15, //交叉轴上子控件之间的间距
+        spacing: 20, //主轴上子控件的间距
+        runSpacing: 30, //交叉轴上子控件之间的间距
         children: cover(), //要显示的子控件集合
       ),
     );

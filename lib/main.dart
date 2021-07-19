@@ -22,6 +22,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
+import 'package:package_info/package_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 GetIt locator = GetIt.instance;
@@ -136,7 +137,11 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     var widgetsBinding = WidgetsBinding.instance;
-    widgetsBinding.addPostFrameCallback((callback) {
+    widgetsBinding.addPostFrameCallback((callback) async {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+      String version = packageInfo.version;
+      SpUtil.putString("version", version);
       Store.value<ReadModel>(context);
     });
     initEnv();

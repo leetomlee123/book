@@ -20,7 +20,7 @@ dependencies:
   # firebase_auth: ^2.0.0
   # google_sign_in: ^5.0.4
   # google_sign_in_web: ^0.10.0
-  keframe: ^2.0.1
+  keframe: ^2.0.2
   flex_color_scheme: ^2.1.1
   # indexed_list_view: ^2.0.0
   # flutter_isolate: ^2.0.0
