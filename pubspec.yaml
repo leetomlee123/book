@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  sentry_flutter: ^5.1.0
   # firebase_auth: ^2.0.0
   # google_sign_in: ^5.0.4
   # google_sign_in_web: ^0.10.0

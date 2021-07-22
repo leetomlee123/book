@@ -24,6 +24,7 @@ import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
 import 'package:package_info/package_info.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 GetIt locator = GetIt.instance;
 // FirebaseAnalytics analytics = FirebaseAnalytics();
@@ -45,7 +46,13 @@ Future<void> main() async {
     final router = FluroRouter();
     Routes.configureRoutes(router);
     Routes.router = router;
-    runApp(Store.init(child: MyApp()));
+    await SentryFlutter.init(
+      (options) {
+        options.dsn =
+            'https://e578f20a996b4bd0988409c520c37f12@o924080.ingest.sentry.io/5872024';
+      },
+      appRunner: () => runApp(Store.init(child: MyApp())),
+    );
     await DirectoryUtil.getInstance();
     // await Firebase.initializeApp();
     if (Platform.isAndroid) {
@@ -85,14 +92,6 @@ class _MainPageState extends State<MainPage> {
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
 
-  /// 跳转应用市场升级
-  // _launchURL(url) async {
-  //   if (await canLaunch(url)) {
-  //     await launch(url);
-  //   } else {
-  //     throw 'Could not launch $url';
-  //   }
-  // }
 
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
@@ -127,11 +126,15 @@ class _MainPageState extends State<MainPage> {
 
   getConfigFromServer() async {
     Response res = await HttpUtil().http().get(Common.config);
-    List msg1 = await parseJson(res.data['data']);
+    var d = await parseJson(res.data['data']);
+
+    List rules = d['rules'];
+    Map fonts = d['fonts'];
 
     List<ParseContentConfig> configs =
-        msg1.map((e) => ParseContentConfig.fromJson(e)).toList();
+        rules.map((e) => ParseContentConfig.fromJson(e)).toList();
     SpUtil.putObjectList(Common.parse_html_config, configs);
+    SpUtil.putObject(Common.fonts, fonts);
   }
 
   @override

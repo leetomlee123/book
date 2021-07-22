@@ -23,8 +23,7 @@ class ReadBook extends StatefulWidget {
   }
 }
 
-class _ReadBookState extends State<ReadBook>
-    with WidgetsBindingObserver, TickerProviderStateMixin {
+class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   Widget body;
   ReadModel readModel;
   ShelfModel shelfModel;
@@ -35,11 +34,6 @@ class _ReadBookState extends State<ReadBook>
   void initState() {
     setUp();
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
   }
 
   setUp() async {
@@ -66,7 +60,6 @@ class _ReadBookState extends State<ReadBook>
   @override
   void dispose() async {
     super.dispose();
-
     saveState();
     readModel.clear();
     WidgetsBinding.instance.removeObserver(this);
@@ -119,20 +112,19 @@ class _ReadBookState extends State<ReadBook>
             ),
             body: Store.connect<ReadModel>(
                 builder: (context, ReadModel model, child) {
-              return Stack(
-                children: [
-                  Visibility(
+              return Visibility(
+                replacement: Container(),
+                visible: model.loadOk,
+                child: Stack(
+                  children: [
                     // child: PageContentReader(),
-                    child: NovelRoteView(model),
-                    visible: model.loadOk,
-                    replacement: Container(),
-                  ),
-                  Visibility(
-                    child: Menu(),
-                    visible: model.showMenu,
-                    replacement: Container(),
-                  ),
-                ],
+                    NovelRoteView(model),
+                    Offstage(
+                      child: Menu(),
+                      offstage: !model.showMenu,
+                    ),
+                  ],
+                ),
               );
             })));
   }

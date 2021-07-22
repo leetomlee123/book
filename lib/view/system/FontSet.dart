@@ -6,7 +6,6 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -131,7 +130,7 @@ class StateFontSet extends State<FontSet> {
                                                       readAsBytes.buffer)));
                                               await fontLoader.load();
                                               _colorModel.setFontFamily(e.key);
-                                               readModel.updPage();
+                                              readModel.updPage();
                                               //  Theme.of(context).textTheme.
                                             }
                                           }
@@ -171,9 +170,12 @@ class StateFontSet extends State<FontSet> {
 
   Future<List<FontInfo>> fetchData() async {
     List<FontInfo> fontInfos = [];
-    for (int i = 0; i < _colorModel.fonts.length; i++) {
-      String key = _colorModel.fonts.keys.elementAt(i);
-      String value = _colorModel.fonts.values.elementAt(i);
+    Map fonts = _colorModel.fonts();
+    var entries = fonts.entries;
+    int len = entries.length;
+    for (int i = 0; i < len; i++) {
+      String key = entries.elementAt(i).key;
+      String value = entries.elementAt(i).value;
       var fileInfo2 = await getFileInfo(key);
       fontInfos.add(FontInfo(key, value, fileInfo2));
     }

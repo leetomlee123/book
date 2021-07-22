@@ -3,7 +3,7 @@ import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
 
 class MyIcon extends StatelessWidget {
-  final Function onTap;
+  final VoidCallback onTap;
   final double size;
   final IconData icon;
   MyIcon(this.icon,this.onTap, {this.size = 25.0});

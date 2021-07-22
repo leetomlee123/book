@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:book/common/common.dart';
 import 'package:book/entity/ParseContentConfig.dart';
-import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;

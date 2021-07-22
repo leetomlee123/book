@@ -663,7 +663,8 @@ class _MenuState extends State<Menu> {
     //         )),
     //   ),
     // ));
-    for (int i = 0; i < ReadSetting.bgImg.length-1; i++) {
+    for (int i = 0; i < ReadSetting.bgImg.length - 1; i++) {
+      var path=ReadSetting.bgImg[i];
       var f = "images/${ReadSetting.bgImg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () async {
@@ -671,8 +672,8 @@ class _MenuState extends State<Menu> {
           if (cv.dark) {
             cv.switchModel();
           }
-          await _readModel.colorModelSwitch();
-          _readModel.switchBgColor(i);
+          // await _readModel.colorModelSwitch();
+          _readModel.switchBgColor(path);
         },
         constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
         child: Container(
@@ -683,7 +684,7 @@ class _MenuState extends State<Menu> {
               borderRadius: BorderRadius.all(Radius.circular(25.0)),
               border: Border.all(
                 width: 1.5,
-                color: _readModel.bgIdx == i
+                color: _readModel.bgPath == path
                     ? Theme.of(context).primaryColor
                     : Colors.white10,
               ),

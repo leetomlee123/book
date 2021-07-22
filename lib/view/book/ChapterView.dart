@@ -68,7 +68,7 @@ class _ChapterViewItem extends State<ChapterView> {
 
   @override
   Widget build(BuildContext context) {
-    ColorModel colorModel=Store.value<ColorModel>(context);
+    ColorModel colorModel = Store.value<ColorModel>(context);
     return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
       return Scaffold(
         appBar: PreferredSize(
@@ -115,7 +115,7 @@ class _ChapterViewItem extends State<ChapterView> {
                   Spacer(),
                   Icon(
                     Icons.arrow_forward_sharp,
-                    color: colorModel.dark?Colors.white24:Colors.black26,
+                    color: colorModel.dark ? Colors.white24 : Colors.black26,
                   )
                 ],
               ),
@@ -128,7 +128,9 @@ class _ChapterViewItem extends State<ChapterView> {
         ),
         body: Column(
           children: [
-            SizedBox(height: 10,),
+            SizedBox(
+              height: 10,
+            ),
             Expanded(
               child: Scrollbar(
                 child: ListView.builder(
@@ -139,7 +141,7 @@ class _ChapterViewItem extends State<ChapterView> {
                     var title = data.chapters[index].name;
                     var has = data.chapters[index].hasContent;
                     return FrameSeparateWidget(
-                                          child: ListTile(
+                      child: ListTile(
                         title: Text(
                           title,
                           style: TextStyle(fontSize: 13),
@@ -187,9 +189,7 @@ class _ChapterViewItem extends State<ChapterView> {
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);
     Routes.navigateTo(context, Routes.detail,
-        params: {"detail": jsonEncode(bookInfo)},replace: true);
-
-
+        params: {"detail": jsonEncode(bookInfo)}, replace: true);
   }
 
   topOrBottom() async {

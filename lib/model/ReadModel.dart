@@ -38,23 +38,7 @@ class ReadModel with ChangeNotifier {
   Map<String, ui.Picture> widgets = Map();
   Stack stackContent;
   Paint bgPaint = Paint();
-  List<ui.Image> bgImgs = [];
-
-  initBgs() async {
-    var length2 = ReadSetting.bgImg.length;
-    for (var i = 0; i < length2; i++) {
-      var element = ReadSetting.bgImg[i];
-      ui.Image assetImage = await getAssetImage("images/$element",
-          width: Screen.width.ceil(), height: Screen.height.ceil());
-      bgImgs.add(assetImage);
-    }
-  }
-
-  ReadModel() {
-    if (bgImgs.isEmpty) {
-      initBgs();
-    }
-  }
+  ui.Image bgUI;
 
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
@@ -70,12 +54,6 @@ class ReadModel with ChangeNotifier {
 
   var electricQuantity = 1.0;
 
-  // double allContentHeight = 0;
-  List<Color> skins = Colors.accents;
-
-  //readPages 中 curPage 实际位置
-  int cursor = 1;
-
   //本书记录
   // BookTag bookTag;
   ReadPage prePage;
@@ -83,8 +61,6 @@ class ReadModel with ChangeNotifier {
   ReadPage nextPage;
 
   double percent = 0;
-
-
 
   //背景色数据
   List<List> bgs = [
@@ -103,7 +79,8 @@ class ReadModel with ChangeNotifier {
   bool showMenu = false;
 
   //背景色索引
-  int bgIdx = SpUtil.getInt(Common.bgIdx, defValue: 0);
+  String bgPath =
+      SpUtil.getString(Common.bgIdx, defValue: ReadSetting.bgImg.first);
 
 //章节翻页标志
   bool loadOk = false;
@@ -131,11 +108,9 @@ class ReadModel with ChangeNotifier {
     showMenu = false;
     loadOk = false;
     sSave = true;
-    load = Load.Done;
-    cursor = 1;
-
-    // getEveyPoet();
-
+    widgets.clear();
+    notifyListeners();
+    if (bgUI == null) await changeBgUI();
     if (SpUtil.haveKey(book.Id)) {
       chapters = await DbHelper.instance.getChapters(book.Id);
 
@@ -146,23 +121,13 @@ class ReadModel with ChangeNotifier {
       }
 
       await initPageContent(book.cur, false);
-      // if (isPage) {
 
-      // if (isPage) {
       if (book.index == -1) {
-        //最后一页
         book.index = curPage.pageOffsets - 1;
       }
-      // pageController = PageController(initialPage: book.index);
-      // } else {
-      //   if (book.cur == chapters.length - 1) {
-      //     //最后一页
-      //     book.position = ladderH[cursor];
-      //   }
-      //   calcPercent();
-      //   listController = ScrollController(initialScrollOffset: book.position);
-      // }
       loadOk = true;
+
+      notifyListeners();
     } else {
       int cur = 0;
       String userName = SpUtil.getString("username");
@@ -173,7 +138,6 @@ class ReadModel with ChangeNotifier {
         if (data.isNotEmpty) {
           cur = int.parse(data);
         }
-        // BotToast.showText(text: "云端记录同步成功");
       }
       book.cur = cur;
       if (SpUtil.haveKey('${book.Id}chapters')) {
@@ -181,23 +145,13 @@ class ReadModel with ChangeNotifier {
       } else {
         await getChapters();
       }
-
       await initPageContent(book?.cur ?? 0, false);
-      // if (isPage) {
       book.index = 0;
-
       SpUtil.putString(book.Id, "");
-      // pageController = PageController(initialPage: idx);
-      // } else {
-      //   double z1 = book.cur == 0 ? 0 : (prePage?.height ?? 0);
-      //   calcPercent();
-      //   listController = ScrollController(initialScrollOffset: z1);
-      // }
       loadOk = true;
-    }
-    // listen();
 
-    notifyListeners();
+      notifyListeners();
+    }
   }
 
   Future initPageContent(int idx, bool jump) async {
@@ -227,13 +181,14 @@ class ReadModel with ChangeNotifier {
   }
 
   colorModelSwitch() async {
+    await changeBgUI();
     widgets.clear();
     eventBus.fire(ZEvent(1));
   }
 
   switchBgColor(i) async {
-    bgIdx = i;
-    SpUtil.putInt(Common.bgIdx, i);
+    bgPath = i;
+    SpUtil.putString(Common.bgIdx, i);
     await colorModelSwitch();
     notifyListeners();
   }
@@ -245,7 +200,6 @@ class ReadModel with ChangeNotifier {
 
     List data = response.data['data'];
     if (data == null) {
-      // print("load cps ok");
       return;
     }
 
@@ -378,7 +332,6 @@ class ReadModel with ChangeNotifier {
         '${book.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
     SpUtil.putObjectList(
         '${book.Id}pages${nextPage?.chapterName ?? ''}', nextPage?.pages ?? []);
-
     String userName = SpUtil.getString("username");
     if (userName.isNotEmpty) {
       HttpUtil()
@@ -438,6 +391,7 @@ class ReadModel with ChangeNotifier {
       preKey = book.cur.toString() + preIdx.toString();
     }
     if (!widgets.containsKey(preKey)) {
+      if (prePage == null) return;
       widgets.putIfAbsent(preKey, () => pre());
     }
 
@@ -449,11 +403,14 @@ class ReadModel with ChangeNotifier {
       nextKey = book.cur.toString() + nextIdx.toString();
     }
     if (!widgets.containsKey(nextKey)) {
+      if (nextPage == null) return;
       widgets.putIfAbsent(preKey, () => next());
     }
   }
 
   ui.Picture pre() {
+    if (prePage == null) return null;
+
     var i = book.index - 1;
     if (i < 0) {
       return getPicture(prePage, prePage.pageOffsets - 1);
@@ -486,6 +443,7 @@ class ReadModel with ChangeNotifier {
   }
 
   ui.Picture drawContent(ReadPage readPage, int i) {
+    // BotToast.showText(text: 'start drawContent');
     ui.PictureRecorder pageRecorder = new ui.PictureRecorder();
     Canvas pageCanvas = new Canvas(
         pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
@@ -496,14 +454,9 @@ class ReadModel with ChangeNotifier {
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.butt
       ..strokeWidth = 30.0;
-
-    // Path path = Path()
-    //   ..addRect(Rect.fromLTWH(0, 0, Screen.width, Screen.height));
-    // pageCanvas.drawShadow(path, Colors.red, 20, true);
-    pageCanvas.drawImage(
-        isDark ? bgImgs.last : bgImgs[SpUtil.getInt(Common.bgIdx)],
-        Offset(0, 0),
-        selfPaint);
+    pageCanvas.drawImage(bgUI, Offset(0, 0), selfPaint);
+    // BotToast.showText(text: 'end bgUI');
+    // BotToast.showText(text: readPage?.chapterContent);
     //章节
     textPainter.text = TextSpan(
         text: "${readPage.chapterName}",
@@ -515,6 +468,7 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     //章节高30 画在中间
     textPainter.paint(pageCanvas, Offset(contentPadding, 15));
+    // BotToast.showText(text: 'end chapterName');
     //正文
     TextStyle style = TextStyle(
         color: SpUtil.getBool('dark') ? darkFont : Colors.black,
@@ -523,6 +477,7 @@ class ReadModel with ChangeNotifier {
         fontSize: ReadSetting.getFontSize(),
         // letterSpacing: ReadSetting.getLatterSpace(),
         height: ReadSetting.getLineHeight());
+
     final TextPage page = readPage.pages[i];
     final lineCount = page.lines.length;
     for (var i = 0; i < lineCount; i++) {
@@ -540,6 +495,7 @@ class ReadModel with ChangeNotifier {
       textPainter.layout();
       textPainter.paint(pageCanvas, offset);
     }
+    // BotToast.showText(text: 'end content');
     //画电池
     double batteryPaddingLeft = contentPadding - 5;
     double mStrokeWidth = 1.0;
@@ -599,10 +555,11 @@ class ReadModel with ChangeNotifier {
         RRect.fromLTRBR(
             electricQuantityLeft + batteryPaddingLeft + .5,
             electricQuantityTop,
-            electricQuantityRight + batteryPaddingLeft,
+            electricQuantityRight + batteryPaddingLeft + .5,
             electricQuantityBottom,
             Radius.circular(mStrokeWidth)),
         mPaint);
+    // BotToast.showText(text: 'end bottom left');
     //时间
     textPainter.text = TextSpan(
       text: '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
@@ -626,7 +583,7 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     textPainter.paint(
         pageCanvas, Offset(Screen.width - contentPadding - 35, bottomTextH));
-
+    // BotToast.showText(text: 'end drawContent');
     return pageRecorder.endRecording();
   }
 
@@ -635,6 +592,9 @@ class ReadModel with ChangeNotifier {
     loadOk = false;
     book = null;
     widgets.clear();
+    curPage = null;
+    prePage = null;
+    nextPage = null;
   }
 
   Future<void> reloadChapters() async {
@@ -671,7 +631,8 @@ class ReadModel with ChangeNotifier {
 
       curPage = await loadChapter(book.cur);
       notifyListeners();
-      eventBus.fire(ZEvent(2));
+      widgets.clear();
+      eventBus.fire(ZEvent(1));
       // await fillAllContent();
     }
   }
@@ -767,12 +728,6 @@ class ReadModel with ChangeNotifier {
     // }
   }
 
-  Color randomColor() {
-    var rng = Random();
-
-    return skins[rng.nextInt(skins.length)];
-  }
-
   switchClickNextPage() {
     leftClickNext = !leftClickNext;
     SpUtil.putBool("leftClickNext", leftClickNext);
@@ -849,5 +804,15 @@ class ReadModel with ChangeNotifier {
   bool isCanGoPre() {
     if (book.cur <= 0 && book.index <= 0) return false;
     return true;
+  }
+
+  changeBgUI() async {
+    if (SpUtil.getBool("dark")) {
+      bgUI = await getAssetImage("images/${ReadSetting.bgImg.last}",
+          width: Screen.width.ceil(), height: Screen.height.ceil());
+    } else {
+      bgUI = await getAssetImage("images/$bgPath",
+          width: Screen.width.ceil(), height: Screen.height.ceil());
+    }
   }
 }

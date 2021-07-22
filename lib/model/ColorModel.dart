@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:book/common/common.dart';
-import 'package:book/event/event.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flustars/flustars.dart';
@@ -14,23 +13,26 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 class ColorModel with ChangeNotifier {
   BuildContext buildContext;
   bool dark = false;
+  Map _fonts = {};
+
+  Map fonts() {
+    if (_fonts.isEmpty) {
+      _fonts["Roboto"] = "默认字体";
+      SpUtil.getObj(Common.fonts, (v) {
+        v.entries.forEach((element) {
+          _fonts[element.key] = element.value;
+        });
+      });
+    }
+    return _fonts;
+  }
 
   List<Color> skins = FlexScheme.values
       .map((e) => FlexColorScheme.light(
             scheme: e,
           ).toTheme.primaryColor)
       .toList();
-  // List<FlexScheme> skins = FlexThemeModeSwitch(themeMode: themeMode, onThemeModeChanged: onThemeModeChanged, flexSchemeData: flexSchemeData)
   String savePath = "";
-  Map fonts = {
-    "Roboto": "默认字体",
-    "方正新楷体": "https://oss-asq-download.11222.cn/font/package/FZXKTK.TTF",
-    "方正稚艺": "http://oss-asq-download.11222.cn/font/package/FZZHYK.TTF",
-    "方正魏碑": "http://oss-asq-download.11222.cn/font/package/FZWBK.TTF",
-    "方正苏新诗柳楷": "https://oss-asq-download.11222.cn/font/package/FZSXSLKJW.TTF",
-    "方正宋刻本秀楷体": "https://oss-asq-download.11222.cn/font/package/FZSKBXKK.TTF",
-    "方正卡通": "http://oss-asq-download.11222.cn/font/package/FZKATK.TTF",
-  };
   int idx = SpUtil.getInt('skin', defValue: 5);
 
   ThemeData _theme;

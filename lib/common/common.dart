@@ -60,5 +60,6 @@ class Common {
   static String notice_info = "notice_info";
   static String reading_style = "READINGSTYLE";
   static String parse_html_config = "parse_html_config";
+  static String fonts = "fonts";
   static String book_pic_width = "book_pic_width";
 }
