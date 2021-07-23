@@ -30,7 +30,7 @@ class _BookShelfState extends State<BookShelf> {
 
   var key = UniqueKey();
   Future<void> _checkUpdate() async {
-    Response response = await HttpUtil().http().get(Common.update);
+    Response response = await HttpUtil.instance.dio.get(Common.update);
     var data = response.data['data'];
     Update update = Update.fromJson(data);
     PackageInfo packageInfo = await PackageInfo.fromPlatform();

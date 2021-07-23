@@ -1,6 +1,6 @@
 ///
 //  Generated code. Do not modify.
-//  source: chapter_proto.proto
+//  source: chapter.proto
 //
 // @dart = 2.12
 // ignore_for_file: annotate_overrides,camel_case_types,unnecessary_const,non_constant_identifier_names,library_prefixes,unused_import,unused_shown_name,return_of_invalid_type,unnecessary_this,prefer_final_fields
@@ -11,24 +11,24 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 class ChapterProto extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ChapterProto', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'models'), createEmptyInstance: create)
-    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ChapterName', protoName: 'ChapterName')
-    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ChapterId', protoName: 'ChapterId')
+    ..aOS(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ChapterId', protoName: 'ChapterId')
+    ..aOS(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'ChapterName', protoName: 'ChapterName')
     ..aOS(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'HasContent', protoName: 'HasContent')
     ..hasRequiredFields = false
   ;
 
   ChapterProto._() : super();
   factory ChapterProto({
-    $core.String? chapterName,
     $core.String? chapterId,
+    $core.String? chapterName,
     $core.String? hasContent,
   }) {
     final _result = create();
-    if (chapterName != null) {
-      _result.chapterName = chapterName;
-    }
     if (chapterId != null) {
       _result.chapterId = chapterId;
+    }
+    if (chapterName != null) {
+      _result.chapterName = chapterName;
     }
     if (hasContent != null) {
       _result.hasContent = hasContent;
@@ -57,22 +57,22 @@ class ChapterProto extends $pb.GeneratedMessage {
   static ChapterProto? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.String get chapterName => $_getSZ(0);
+  $core.String get chapterId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set chapterName($core.String v) { $_setString(0, v); }
+  set chapterId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
-  $core.bool hasChapterName() => $_has(0);
+  $core.bool hasChapterId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearChapterName() => clearField(1);
+  void clearChapterId() => clearField(1);
 
   @$pb.TagNumber(2)
-  $core.String get chapterId => $_getSZ(1);
+  $core.String get chapterName => $_getSZ(1);
   @$pb.TagNumber(2)
-  set chapterId($core.String v) { $_setString(1, v); }
+  set chapterName($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
-  $core.bool hasChapterId() => $_has(1);
+  $core.bool hasChapterName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearChapterId() => clearField(2);
+  void clearChapterName() => clearField(2);
 
   @$pb.TagNumber(3)
   $core.String get hasContent => $_getSZ(2);
@@ -84,44 +84,44 @@ class ChapterProto extends $pb.GeneratedMessage {
   void clearHasContent() => clearField(3);
 }
 
-class Chapters extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Chapters', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'models'), createEmptyInstance: create)
-    ..pc<ChapterProto>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'chapters', $pb.PbFieldType.PM, subBuilder: ChapterProto.create)
+class ChaptersProto extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'ChaptersProto', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'models'), createEmptyInstance: create)
+    ..pc<ChapterProto>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'chaptersProto', $pb.PbFieldType.PM, protoName: 'chaptersProto', subBuilder: ChapterProto.create)
     ..hasRequiredFields = false
   ;
 
-  Chapters._() : super();
-  factory Chapters({
-    $core.Iterable<ChapterProto>? chapters,
+  ChaptersProto._() : super();
+  factory ChaptersProto({
+    $core.Iterable<ChapterProto>? chaptersProto,
   }) {
     final _result = create();
-    if (chapters != null) {
-      _result.chapters.addAll(chapters);
+    if (chaptersProto != null) {
+      _result.chaptersProto.addAll(chaptersProto);
     }
     return _result;
   }
-  factory Chapters.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Chapters.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  factory ChaptersProto.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ChaptersProto.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  Chapters clone() => Chapters()..mergeFromMessage(this);
+  ChaptersProto clone() => ChaptersProto()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  Chapters copyWith(void Function(Chapters) updates) => super.copyWith((message) => updates(message as Chapters)) as Chapters; // ignore: deprecated_member_use
+  ChaptersProto copyWith(void Function(ChaptersProto) updates) => super.copyWith((message) => updates(message as ChaptersProto)) as ChaptersProto; // ignore: deprecated_member_use
   $pb.BuilderInfo get info_ => _i;
   @$core.pragma('dart2js:noInline')
-  static Chapters create() => Chapters._();
-  Chapters createEmptyInstance() => create();
-  static $pb.PbList<Chapters> createRepeated() => $pb.PbList<Chapters>();
+  static ChaptersProto create() => ChaptersProto._();
+  ChaptersProto createEmptyInstance() => create();
+  static $pb.PbList<ChaptersProto> createRepeated() => $pb.PbList<ChaptersProto>();
   @$core.pragma('dart2js:noInline')
-  static Chapters getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Chapters>(create);
-  static Chapters? _defaultInstance;
+  static ChaptersProto getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ChaptersProto>(create);
+  static ChaptersProto? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<ChapterProto> get chapters => $_getList(0);
+  $core.List<ChapterProto> get chaptersProto => $_getList(0);
 }
 

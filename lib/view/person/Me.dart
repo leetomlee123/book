@@ -181,8 +181,8 @@ class Me extends StatelessWidget {
             ImageIcon(AssetImage("images/skin.png")),
             '主题',
             () {
-              Navigator.of(context).push(MaterialPageRoute(
-                  builder: (BuildContext context) => Skin()));
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (BuildContext context) => Skin()));
             },
             c,
           ),
@@ -198,8 +198,7 @@ class Me extends StatelessWidget {
             ImageIcon(AssetImage("images/fe.png")),
             '意见反馈',
             () {
-              locator<TelAndSmsService>()
-                  .sendEmail('leetomlee123@gmail.com');
+              locator<TelAndSmsService>().sendEmail('leetomlee123@gmail.com');
             },
             c,
           ),
@@ -216,7 +215,7 @@ class Me extends StatelessWidget {
             '应用更新',
             () async {
               Response response =
-                  await HttpUtil().http().get(Common.update);
+                  await HttpUtil.instance.dio.get(Common.update);
               var data = response.data['data'];
               Update update = Update.fromJson(data);
               PackageInfo packageInfo = await PackageInfo.fromPlatform();

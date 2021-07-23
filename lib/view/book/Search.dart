@@ -195,8 +195,7 @@ class _SearchState extends State<Search> {
               searchModel.setHistory(controller.value.text);
 
               String url = Common.detail + '/$id';
-              Response future =
-                  await HttpUtil(showLoading: true).http().get(url);
+              Response future = await HttpUtil.instance.dio.get(url);
               var d = future.data['data'];
               BookInfo b = BookInfo.fromJson(d);
               Routes.navigateTo(
@@ -249,8 +248,7 @@ class _SearchState extends State<Search> {
                   behavior: HitTestBehavior.opaque,
                   onTap: () async {
                     String url = Common.detail + '/${searchModel.bks[i].Id}';
-                    Response future =
-                        await HttpUtil(showLoading: true).http().get(url);
+                    Response future = await HttpUtil.instance.dio.get(url);
                     var d = future.data['data'];
                     BookInfo b = BookInfo.fromJson(d);
                     Routes.navigateTo(context, Routes.detail,

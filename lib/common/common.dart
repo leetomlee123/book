@@ -25,7 +25,7 @@ class Common {
   static String search = domain + "/book/search";
   static String searchAi = domain + "/book/searchAi";
   static String bookInfo = domain + "/book/info/";
-  static String chaptersUrl = domain + "/book/chapters";
+  static String chaptersUrl = domain + "/book/proto/chapters";
   static String bookContentUrl = domain + '/book/chapter';
   static String bookContentUpload = domain + '/book/chapter/content';
   static String reload = domain + '/book/chapter';

@@ -24,7 +24,6 @@ import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
 import 'package:package_info/package_info.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 GetIt locator = GetIt.instance;
 // FirebaseAnalytics analytics = FirebaseAnalytics();
@@ -46,13 +45,8 @@ Future<void> main() async {
     final router = FluroRouter();
     Routes.configureRoutes(router);
     Routes.router = router;
-    await SentryFlutter.init(
-      (options) {
-        options.dsn =
-            'https://e578f20a996b4bd0988409c520c37f12@o924080.ingest.sentry.io/5872024';
-      },
-      appRunner: () => runApp(Store.init(child: MyApp())),
-    );
+    runApp(Store.init(child: MyApp()));
+
     await DirectoryUtil.getInstance();
     // await Firebase.initializeApp();
     if (Platform.isAndroid) {
@@ -92,7 +86,6 @@ class _MainPageState extends State<MainPage> {
   bool isMovie = false;
   static final GlobalKey<ScaffoldState> q = new GlobalKey();
 
-
   var _pageController = PageController();
   List<BottomNavigationBarItem> bottoms = [
     BottomNavigationBarItem(
@@ -125,7 +118,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   getConfigFromServer() async {
-    Response res = await HttpUtil().http().get(Common.config);
+    Response res = await HttpUtil.instance.dio.get(Common.config);
     var d = await parseJson(res.data['data']);
 
     List rules = d['rules'];

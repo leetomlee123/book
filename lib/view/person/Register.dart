@@ -117,7 +117,10 @@ class _RegisterState extends State<Register> {
                       onPressed: () {
                         register();
                       },
-                      child: Text('注册',style: TextStyle(color: Colors.white),),
+                      child: Text(
+                        '注册',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   )
                 ],
@@ -147,10 +150,10 @@ class _RegisterState extends State<Register> {
       var formData =
           FormData.fromMap({"name": name, "password": pwd, "email": email});
       try {
-        response = await HttpUtil(showLoading: true).http().post(
-              Common.register,
-              data: formData,
-            );
+        response = await HttpUtil.instance.dio.post(
+          Common.register,
+          data: formData,
+        );
         var data = response.data;
         if (data["code"] == 200) {
           BotToast.showText(text: data['msg']);

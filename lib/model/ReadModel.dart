@@ -14,10 +14,10 @@ import 'package:book/common/common.dart';
 import 'package:book/common/parse_html.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
-import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextPage.dart';
+import 'package:book/entity/chapter.pb.dart';
 import 'package:book/event/event.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -47,7 +47,7 @@ class ReadModel with ChangeNotifier {
   int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
 
   Book book;
-  List<Chapter> chapters = [];
+  List<ChapterProto> chapters = [];
 
   var currentPageValue = 0.0;
   String poet = "";
@@ -133,7 +133,7 @@ class ReadModel with ChangeNotifier {
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
         var url = Common.process + '/$userName/${book.Id}';
-        Response response = await HttpUtil().http().get(url);
+        Response response = await HttpUtil.instance.dio.get(url);
         String data = response.data['data'];
         if (data.isNotEmpty) {
           cur = int.parse(data);
@@ -143,13 +143,14 @@ class ReadModel with ChangeNotifier {
       if (SpUtil.haveKey('${book.Id}chapters')) {
         chapters = await DbHelper.instance.getChapters(book.Id);
       } else {
-        await getChapters();
+        //优化打开速度 只加载前15章
+        await getChapters(init: true);
+        getChapters();
       }
       await initPageContent(book?.cur ?? 0, false);
       book.index = 0;
       SpUtil.putString(book.Id, "");
       loadOk = true;
-
       notifyListeners();
     }
   }
@@ -193,17 +194,27 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future getChapters() async {
-    var url = Common.chaptersUrl + '/${book.Id}/${chapters?.length ?? 0}';
-    Response response =
-        await HttpUtil(showLoading: chapters.isEmpty).http().get(url);
-
-    List data = response.data['data'];
-    if (data == null) {
-      return;
+  Future<List<ChapterProto>> reqChapters(var bid, var skip, bool init) async {
+    var url;
+    if (init) {
+      url =
+          Common.chaptersUrl + '/$bid/0/${book.cur == 0 ? 15 : (book.cur + 1)}';
+    } else {
+      url = Common.chaptersUrl + '/$bid/$skip/10000';
     }
+    Response response = await HttpUtil.instance.dio.get(url);
 
-    List<Chapter> list = data.map((c) => Chapter.fromJson(c)).toList();
+    String data = response.data['data'];
+    if (data.isEmpty) return null;
+    var x = base64Decode(data);
+    ChaptersProto cps = ChaptersProto.fromBuffer(x);
+    return cps.chaptersProto.toList();
+  }
+
+  Future getChapters({bool init = false}) async {
+    List<ChapterProto> list =
+        await reqChapters(book.Id, chapters?.length ?? 0, init);
+    if (list == null) return;
     chapters.addAll(list);
     //书的最后一章
     if (book.CId == "-1") {
@@ -228,15 +239,15 @@ class ReadModel with ChangeNotifier {
       return r;
     }
 
-    r.chapterName = chapters[idx].name;
-    String id = chapters[idx].id;
+    r.chapterName = chapters[idx].chapterName;
+    String id = chapters[idx].chapterId;
     //本地内容是否存在
-    if (chapters[idx].hasContent != 2) {
+    if (chapters[idx].hasContent != "2") {
       r.chapterContent = await getChapterContent(id, idx: idx);
       if (r.chapterContent.isNotEmpty) {
         var temp = [ChapterNode(r.chapterContent, id)];
         DbHelper.instance.udpChapter(temp);
-        chapters[idx].hasContent = 2;
+        chapters[idx].hasContent = "2";
       }
     } else {
       r.chapterContent = await DbHelper.instance.getContent(id);
@@ -326,17 +337,18 @@ class ReadModel with ChangeNotifier {
 
   /*状态保存 */
   saveData() async {
-    SpUtil.putObjectList(
-        '${book.Id}pages${prePage?.chapterName ?? ' '}', prePage?.pages ?? []);
-    SpUtil.putObjectList(
-        '${book.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
-    SpUtil.putObjectList(
-        '${book.Id}pages${nextPage?.chapterName ?? ''}', nextPage?.pages ?? []);
-    String userName = SpUtil.getString("username");
-    if (userName.isNotEmpty) {
-      HttpUtil()
-          .http()
-          .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
+    if (sSave) {
+      SpUtil.putObjectList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+          prePage?.pages ?? []);
+      SpUtil.putObjectList(
+          '${book.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
+      SpUtil.putObjectList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+          nextPage?.pages ?? []);
+      String userName = SpUtil.getString("username");
+      if (userName.isNotEmpty) {
+        HttpUtil.instance.dio
+            .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
+      }
     }
   }
 
@@ -391,7 +403,7 @@ class ReadModel with ChangeNotifier {
       preKey = book.cur.toString() + preIdx.toString();
     }
     if (!widgets.containsKey(preKey)) {
-      if (prePage == null) return;
+      if (prePage?.pages == null) return;
       widgets.putIfAbsent(preKey, () => pre());
     }
 
@@ -403,7 +415,7 @@ class ReadModel with ChangeNotifier {
       nextKey = book.cur.toString() + nextIdx.toString();
     }
     if (!widgets.containsKey(nextKey)) {
-      if (nextPage == null) return;
+      if (nextPage?.pages == null) return;
       widgets.putIfAbsent(preKey, () => next());
     }
   }
@@ -601,15 +613,8 @@ class ReadModel with ChangeNotifier {
     chapters = [];
     DbHelper.instance.clearChapters(book.Id);
 
-    var url = Common.chaptersUrl + '/${book.Id}/0';
-    Response response = await HttpUtil().http().get(url);
-
-    List data = response.data['data'];
-    if (data == null) {
-      return;
-    }
-
-    chapters = data.map((c) => Chapter.fromJson(c)).toList();
+    chapters = await reqChapters(book.Id, 0, false);
+    if (chapters == null) return;
 
     DbHelper.instance.addChapters(chapters, book.Id);
     notifyListeners();
@@ -622,12 +627,12 @@ class ReadModel with ChangeNotifier {
         toastBuilder: (_) => LoadingDialog(),
         clickClose: true,
         backgroundColor: Colors.transparent);
-    var content = await getChapterContent(chapter.id, idx: book.cur);
+    var content = await getChapterContent(chapter.chapterId, idx: book.cur);
     BotToast.closeAllLoading();
     if (content.isNotEmpty) {
-      var temp = [ChapterNode(content, chapter.id)];
+      var temp = [ChapterNode(content, chapter.chapterId)];
       await DbHelper.instance.udpChapter(temp);
-      chapters[book.cur].hasContent = 2;
+      chapters[book.cur].hasContent = "2";
 
       curPage = await loadChapter(book.cur);
       notifyListeners();
@@ -644,14 +649,14 @@ class ReadModel with ChangeNotifier {
   }
 
   downloadAll(int start) async {
-    List<Chapter> temp = chapters;
+    List<ChapterProto> temp = chapters;
     if (temp?.isEmpty ?? 0 == 0) {
       await getChapters();
     }
     List<ChapterNode> cpNodes = [];
     for (var i = start; i < temp.length; i++) {
-      Chapter chapter = temp[i];
-      var id = chapter.id;
+      ChapterProto chapter = temp[i];
+      var id = chapter.chapterId;
       if (chapter.hasContent != 2) {
         // String content = await compute(requestDataWithCompute, id);
         String content = await getChapterContent(id);
@@ -673,13 +678,11 @@ class ReadModel with ChangeNotifier {
 
   Future<String> getChapterContent(String id, {int idx}) async {
     var url = Common.bookContentUrl + '/$id';
-    var responseBody = await HttpUtil().http().get(url);
+    var responseBody = await HttpUtil.instance.dio.get(url);
 
     var data = responseBody.data['data'];
     var link = data['link'];
-    if (chapters.isNotEmpty && idx != null) {
-      chapters[idx].link = link;
-    }
+
     var content = data['content'].toString();
     if (content.isNotEmpty &&
         !content.contains("DEMOONE") &&
@@ -689,7 +692,7 @@ class ReadModel with ChangeNotifier {
     try {
       content = await ParseHtml().content(link);
       var formData = FormData.fromMap({"id": id, "content": content});
-      HttpUtil().http().patch(Common.bookContentUpload, data: formData);
+      HttpUtil.instance.dio.patch(Common.bookContentUpload, data: formData);
     } catch (e) {
       content = "章节内容加载失败,请重试.......\n$link";
     }
@@ -723,7 +726,7 @@ class ReadModel with ChangeNotifier {
     // if (!isPage) {
     //   var url = "https://v2.jinrishici.com/one.json";
 
-    //   var future = await HttpUtil().http().get(url);
+    //   var future = await HttpUtil.instance.dio.get(url);
     //   poet = future.data['data']['content'];
     // }
   }

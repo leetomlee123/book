@@ -32,7 +32,7 @@ class AllTagBook extends StatelessWidget {
               onTap: () async {
                 String url = Common.two + '/${gbk.name}/${gbk.author}';
                 Response future =
-                    await HttpUtil(showLoading: true).http().get(url);
+                    await HttpUtil.instance.dio.get(url);
                 var d = future.data['data'];
                 if (d == null) {
                   Routes.navigateTo(context, Routes.search, params: {

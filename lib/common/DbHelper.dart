@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
+import 'package:book/entity/chapter.pb.dart';
 import 'package:flustars/flustars.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -390,14 +391,14 @@ class DbHelper {
   // }
 
   /// 添加章节
-  Future<Null> addChapters(List<Chapter> cps, String bookId) async {
+  Future<Null> addChapters(List<ChapterProto> cps, String bookId) async {
     var dbClient = await db;
     var batch = dbClient.batch();
     for (var i = 0; i < cps.length; i++) {
-      Chapter chapter = cps[i];
+      ChapterProto chapter = cps[i];
       batch.rawInsert(
           'insert into $_tableName (chapter_id,name,content,book_id,hasContent) values(?,?,?,?,?)',
-          [chapter.id, chapter.name, "", bookId, chapter.hasContent]);
+          [chapter.chapterId, chapter.chapterName, "", bookId, chapter.hasContent]);
     }
 
     await batch.commit(noResult: true);
@@ -410,14 +411,14 @@ class DbHelper {
     return list[0]['cnt'];
   }
 
-  Future<List<Chapter>> getChapters(String bookId) async {
+  Future<List<ChapterProto>> getChapters(String bookId) async {
     var dbClient = await db;
     var list = await dbClient.rawQuery(
         "select hasContent,chapter_id,name from $_tableName where book_id=?",
         [bookId]);
-    List<Chapter> cps = [];
+    List<ChapterProto> cps = [];
     for (var i in list) {
-      cps.add(Chapter(i['hasContent'], i['chapter_id'], i['name']));
+      cps.add(ChapterProto(chapterId: i['chapter_id'],chapterName: i['name'],hasContent: i['hasContent'].toString() ));
     }
     return cps;
   }

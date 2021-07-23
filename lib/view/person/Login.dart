@@ -38,8 +38,7 @@ class _LoginState extends State<Login> {
   login(BuildContext context) async {
     FocusScope.of(context).requestFocus(FocusNode());
     var formData = FormData.fromMap({"name": username, "password": pwd});
-    Response response = await HttpUtil(showLoading: true)
-        .http()
+    Response response = await HttpUtil.instance.dio
         .post(Common.login, data: formData);
     var data = response.data;
     if (data['code'] != 201) {
@@ -58,7 +57,7 @@ class _LoginState extends State<Login> {
       if (shelf2.length > 0) {
         for (var value in shelf2) {
           if (SpUtil.haveKey("auth")) {
-            HttpUtil().http().get(Common.bookAction + '/${value.Id}/add');
+            HttpUtil.instance.dio.get(Common.bookAction + '/${value.Id}/add');
           }
         }
       }

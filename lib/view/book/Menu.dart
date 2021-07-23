@@ -63,8 +63,7 @@ class _MenuState extends State<Menu> {
             icon: Icon(Icons.info),
             onPressed: () async {
               String url = Common.detail + '/${_readModel.book.Id}';
-              Response future =
-                  await HttpUtil(showLoading: true).http().get(url);
+              Response future = await HttpUtil.instance.dio.get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
               Routes.navigateTo(context, Routes.detail,
@@ -124,7 +123,7 @@ class _MenuState extends State<Menu> {
 
                     _readModel.initPageContent(_readModel.book.cur, true);
                   },
-                  label: '${_readModel.chapters[_readModel.book.cur].name} ',
+                  label: '${_readModel.chapters[_readModel.book.cur].chapterName} ',
                   semanticFormatterCallback: (newValue) {
                     return '${newValue.round()} dollars';
                   },
@@ -664,7 +663,7 @@ class _MenuState extends State<Menu> {
     //   ),
     // ));
     for (int i = 0; i < ReadSetting.bgImg.length - 1; i++) {
-      var path=ReadSetting.bgImg[i];
+      var path = ReadSetting.bgImg[i];
       var f = "images/${ReadSetting.bgImg[i]}";
       wds.add(RawMaterialButton(
         onPressed: () async {

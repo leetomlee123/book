@@ -73,7 +73,7 @@ class ShelfModel with ChangeNotifier {
   deleteCloudIds(List<String> ids) async {
     if (SpUtil.haveKey("auth")) {
       for (var id in ids) {
-        await HttpUtil().http().get(Common.bookAction + '/$id/del');
+        await HttpUtil.instance.dio.get(Common.bookAction + '/$id/del');
       }
     }
     BotToast.showText(text: "删除书籍成功");
@@ -125,7 +125,7 @@ class ShelfModel with ChangeNotifier {
   }
 
   refreshShelf() async {
-    Response response2 = await HttpUtil().http().get(Common.shelf);
+    Response response2 = await HttpUtil.instance.dio.get(Common.shelf);
     List decode = response2.data['data'];
     if (decode == null) {
       return;
@@ -212,14 +212,14 @@ class ShelfModel with ChangeNotifier {
       BotToast.showText(text: "已移除出书架");
     }
     if (SpUtil.haveKey("auth")) {
-      HttpUtil().http().get(Common.bookAction + '/${book.Id}/$action');
+     HttpUtil.instance.dio.get(Common.bookAction + '/${book.Id}/$action');
     }
     notifyListeners();
   }
 
   freshToken() async {
     if (SpUtil.haveKey("username")) {
-      Response res = await HttpUtil().http().get(Common.freshToken);
+      Response res = await HttpUtil.instance.dio.get(Common.freshToken);
       var data = res.data;
       if (data['code'] == 200) {
         SpUtil.putString("auth", data['data']['token']);

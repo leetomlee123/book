@@ -246,7 +246,7 @@ class _BookDetailState extends State<BookDetail> {
                 onTap: () async {
                   String url = Common.detail +
                       '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
-                  Response future = await HttpUtil().http().get(url);
+                  Response future = await HttpUtil.instance.dio.get(url);
                   var d = future.data['data'];
                   BookInfo bookInfo = BookInfo.fromJson(d);
                   Navigator.pushReplacement(context,

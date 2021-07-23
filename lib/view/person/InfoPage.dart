@@ -27,47 +27,51 @@ class InfoState extends State<InfoPage> {
   Widget build(BuildContext context) {
     return Store.connect<ColorModel>(
         builder: (context, ColorModel data, child) => Scaffold(
-          appBar: AppBar(
-             backgroundColor: Colors.transparent,
-            title: Text("公告",style: TextStyle(color: data.dark ? Colors.white : Colors.black),),
-            centerTitle: true,
-            elevation: 0,
-          ),
-          body: Padding(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Center(
-                  child: Text(ifs.length == 0 ? "公告" : ifs[0].Title),
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                title: Text(
+                  "公告",
+                  style:
+                      TextStyle(color: data.dark ? Colors.white : Colors.black),
                 ),
-                Container(
-                  child: Text(
-                    ifs.length == 0 ? "太平无事" : ifs[0].Content,
-                    textAlign: TextAlign.start,
-                  ),
-                ),
-                Row(
+                centerTitle: true,
+                elevation: 0,
+              ),
+              body: Padding(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Expanded(
-                      child: Container(),
+                    Center(
+                      child: Text(ifs.length == 0 ? "公告" : ifs[0].Title),
                     ),
-                    Text(
-                      ifs.length == 0
-                          ? DateUtil.getNowDateStr()
-                          : ifs[0].Date,
-                      textAlign: TextAlign.start,
+                    Container(
+                      child: Text(
+                        ifs.length == 0 ? "太平无事" : ifs[0].Content,
+                        textAlign: TextAlign.start,
+                      ),
+                    ),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Container(),
+                        ),
+                        Text(
+                          ifs.length == 0
+                              ? DateUtil.getNowDateStr()
+                              : ifs[0].Date,
+                          textAlign: TextAlign.start,
+                        )
+                      ],
                     )
                   ],
-                )
-              ],
-            ),
-            padding: EdgeInsets.all(15),
-          ),
-        ));
+                ),
+                padding: EdgeInsets.all(15),
+              ),
+            ));
   }
 
   Future<void> getInfo() async {
-    Response res = await HttpUtil().http().get(Common.info);
+    Response res = await HttpUtil.instance.dio.get(Common.info);
     List data = res.data['data'];
     if (data == null) {
       return;

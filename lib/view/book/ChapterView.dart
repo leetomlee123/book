@@ -138,7 +138,7 @@ class _ChapterViewItem extends State<ChapterView> {
                   itemExtent: itemHeight,
                   cacheExtent: 300,
                   itemBuilder: (context, index) {
-                    var title = data.chapters[index].name;
+                    var title = data.chapters[index].chapterName;
                     var has = data.chapters[index].hasContent;
                     return FrameSeparateWidget(
                       child: ListTile(
@@ -185,7 +185,7 @@ class _ChapterViewItem extends State<ChapterView> {
 
   Future goDetail(ReadModel data, context) async {
     String url = Common.detail + '/${data.book.Id}';
-    Response future = await HttpUtil(showLoading: true).http().get(url);
+    Response future = await HttpUtil.instance.dio.get(url);
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);
     Routes.navigateTo(context, Routes.detail,

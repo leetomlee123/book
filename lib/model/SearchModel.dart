@@ -67,12 +67,11 @@ class SearchModel with ChangeNotifier {
 
   searchAi(var word) async {
     var url = '${Common.searchAi}?key=$word';
-    Response res = await HttpUtil().http().get(url);
+    Response res = await HttpUtil.instance.dio.get(url);
     var d = res.data;
     List data = d['data'];
     if (data.isNotEmpty)
       bksAi = data.map((e) => BookAi.fromJson(e)).toList();
-
     else
       bksAi.clear();
     print(bksAi?.length);
@@ -98,7 +97,7 @@ class SearchModel with ChangeNotifier {
     }
     if (isBookSearch) {
       var url = '${Common.search}?key=$word&page=$page&size=$size';
-      Response res = await HttpUtil(showLoading: bks.isEmpty).http().get(url);
+      Response res = await HttpUtil.instance.dio.get(url);
       var d = res.data;
       List data = d['data'];
       // ignore: null_aware_in_condition
@@ -160,7 +159,10 @@ class SearchModel with ChangeNotifier {
           search(value);
           notifyListeners();
         },
-        child: Chip(label: Text(value),padding: EdgeInsets.all(2),),
+        child: Chip(
+          label: Text(value),
+          padding: EdgeInsets.all(2),
+        ),
       ));
     }
 
@@ -224,7 +226,7 @@ class SearchModel with ChangeNotifier {
 
   Future<void> initBookHot() async {
     hot = [];
-    Response res = await HttpUtil().http().get(Common.hot);
+    Response res = await HttpUtil.instance.dio.get(Common.hot);
     List data = res.data['data'];
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
     for (var i = 0; i < hbs.length; i++) {
@@ -234,7 +236,7 @@ class SearchModel with ChangeNotifier {
         ),
         onTap: () async {
           String url = Common.detail + '/${hbs[i].Id}';
-          Response future = await HttpUtil(showLoading: true).http().get(url);
+          Response future = await HttpUtil.instance.dio.get(url);
           var d = future.data['data'];
           BookInfo b = BookInfo.fromJson(d);
           Routes.navigateTo(
@@ -291,7 +293,7 @@ class SearchModel with ChangeNotifier {
 
   Future<void> initMovieHot() async {
     hot = [];
-    // Response res = await HttpUtil().http().get(Common.movie_hot);
+    // Response res = await HttpUtil.instance.dio.get(Common.movie_hot);
     // List data = res.data;
     // List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
     // for (var i = 0; i < hbs.length; i++) {

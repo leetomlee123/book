@@ -55,7 +55,7 @@ class UpdateDialogState extends State<UpdateDialog> {
   }
 
   Future<File> downloadFile() async {
-    Dio dio = HttpUtil().http();
+    Dio dio = HttpUtil.instance.dio;
     Directory storageDir = await getExternalStorageDirectory();
     String storagePath = storageDir.path;
     File file = new File('$storagePath/deerbook.apk');

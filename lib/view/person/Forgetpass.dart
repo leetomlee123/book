@@ -148,7 +148,7 @@ class _ForgetPassState extends State<ForgetPass> {
         repetpwd.isNotEmpty &&
         account.isNotEmpty &&
         email.isNotEmpty) {
-      Response response = await HttpUtil(showLoading: true).http().patch(
+      Response response = await HttpUtil.instance.dio.patch(
           Common.modifypassword,
           data: {"name": account, "password": newpwd, "email": email});
 
