@@ -145,8 +145,8 @@ class ReadModel with ChangeNotifier {
       } else {
         //优化打开速度 只加载前15章
         await getChapters(init: true);
-        getChapters();
       }
+      getChapters();
       await initPageContent(book?.cur ?? 0, false);
       book.index = 0;
       SpUtil.putString(book.Id, "");
@@ -203,12 +203,14 @@ class ReadModel with ChangeNotifier {
       url = Common.chaptersUrl + '/$bid/$skip/10000';
     }
     Response response = await HttpUtil.instance.dio.get(url);
-
-    String data = response.data['data'];
-    if (data.isEmpty) return null;
-    var x = base64Decode(data);
-    ChaptersProto cps = ChaptersProto.fromBuffer(x);
-    return cps.chaptersProto.toList();
+    try {
+      String data = response.data['data'];
+      if (data.isEmpty) return null;
+      var x = base64Decode(data);
+      ChaptersProto cps = ChaptersProto.fromBuffer(x);
+      return cps.chaptersProto.toList();
+    } catch (e) {}
+    return null;
   }
 
   Future getChapters({bool init = false}) async {

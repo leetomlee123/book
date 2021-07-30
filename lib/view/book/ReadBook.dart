@@ -119,6 +119,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                   children: [
                     // child: PageContentReader(),
                     NovelRoteView(model),
+                    // ScrollReadView(),
                     Offstage(
                       child: Menu(),
                       offstage: !model.showMenu,

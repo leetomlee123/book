@@ -1,17 +1,18 @@
+import 'dart:io';
+
 import 'package:book/common/Http.dart';
 import 'package:book/common/common.dart';
-import 'package:book/entity/Update.dart';
+import 'package:book/entity/AppInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:book/widgets/BooksWidget.dart';
 import 'package:book/widgets/MyIcon.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_xupdate/flutter_xupdate.dart';
 import 'package:package_info/package_info.dart';
 
 class BookShelf extends StatefulWidget {
@@ -28,23 +29,67 @@ class _BookShelfState extends State<BookShelf> {
     _checkUpdate();
   }
 
-  var key = UniqueKey();
+  ///初始化
+  Future<void> initXUpdate() async {
+    if (Platform.isAndroid) {
+      FlutterXUpdate.init(
+
+              ///是否输出日志
+              debug: true,
+
+              ///是否使用post请求
+              isPost: false,
+
+              ///post请求是否是上传json
+              isPostJson: false,
+
+              ///是否开启自动模式
+              isWifiOnly: false,
+
+              ///是否开启自动模式
+              isAutoMode: false,
+
+              ///需要设置的公共参数
+              supportSilentInstall: false,
+
+              ///在下载过程中，如果点击了取消的话，是否弹出切换下载方式的重试提示弹窗
+              enableRetry: false)
+          .then((value) {
+        //  updateMessage("初始化成功: $value");
+      }).catchError((error) {
+        print(error);
+      });
+      FlutterXUpdate.setErrorHandler(
+          onUpdateError: (Map<String, dynamic> message) async {
+        print(message);
+      });
+    }
+  }
+
   Future<void> _checkUpdate() async {
+    await initXUpdate();
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    String version = packageInfo.version;
+
     Response response = await HttpUtil.instance.dio.get(Common.update);
     var data = response.data['data'];
-    Update update = Update.fromJson(data);
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    AppInfo appInfo = AppInfo.fromJson(data);
 
-    String version = packageInfo.version;
-    if (int.parse(update.version.replaceAll(".", "")) >
+    if (int.parse(appInfo.version.replaceAll(".", "")) >
         int.parse(version.replaceAll(".", ""))) {
-      BotToast.showWidget(
-          toastBuilder: (context) {
-            return Center(
-              child: UpdateDialog(update),
-            );
-          },
-          key: key);
+      var up = UpdateEntity(
+          hasUpdate: true,
+          isForce: appInfo.forceUpdate == "2",
+          isIgnorable: false,
+          versionCode: 1,
+          versionName: appInfo.version,
+          updateContent: appInfo.msg,
+          downloadUrl: appInfo.link,
+          apkSize: int.parse(appInfo.apkSize),
+          apkMd5: appInfo.apkMD5);
+
+      FlutterXUpdate.updateByInfo(
+          updateEntity: up, supportBackgroundUpdate: true,widthRatio: .6);
     }
   }
 

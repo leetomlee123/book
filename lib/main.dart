@@ -138,7 +138,6 @@ class _MainPageState extends State<MainPage> {
 
       String version = packageInfo.version;
       SpUtil.putString("version", version);
-      Store.value<ReadModel>(context);
     });
     initEnv();
     super.initState();

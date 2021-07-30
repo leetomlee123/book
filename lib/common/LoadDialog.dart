@@ -12,39 +12,6 @@ class LoadingDialog extends Dialog {
         child: CircularProgressIndicator(
             ),
       );
-      return Material(
-        color: Colors.transparent,
-        child: Center(
-            child: Container(
-                width: 110,
-                height: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: model.dark
-                      ? Colors.white24.withOpacity(.5)
-                      : Colors.black38.withOpacity(.5),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      strokeWidth: 2.0,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          model.dark ? Colors.black : Colors.white),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    Text(
-                      "加载中....",
-                      style: TextStyle(
-                          fontSize: 15,
-                          color: model.dark ? Colors.black : Colors.white),
-                      textAlign: TextAlign.center,
-                    )
-                  ],
-                ))),
-      );
     });
   }
 }

@@ -125,45 +125,50 @@ class ShelfModel with ChangeNotifier {
   }
 
   refreshShelf() async {
-    Response response2 = await HttpUtil.instance.dio.get(Common.shelf);
-    List decode = response2.data['data'];
-    if (decode == null) {
-      return;
-    }
-    List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
-    if (shelf.isNotEmpty) {
-      var ids = shelf.map((f) => f.Id).toList();
-      bs.forEach((f) {
-        if (!ids.contains(f.Id)) {
-          _dbHelper.addBooks([f]);
-          f.sortTime = DateUtil.getNowDateMs();
-          shelf.add(f);
-        }
-      });
-      for (var i = 0; i < shelf.length; i++) {
-        for (var j = 0; j < bs.length; j++) {
-          if (shelf[i].Id == bs[j].Id) {
-            if (shelf[i].LastChapter != bs[j].LastChapter) {
-              shelf[i].UTime = bs[j].UTime;
-              shelf[i].LastChapter = bs[j].LastChapter;
-              shelf[i].NewChapterCount = 1;
-              shelf[i].Img = bs[j].Img;
-              _dbHelper.updBook(
-                  bs[j].LastChapter, 1, bs[j].UTime, bs[j].Img, shelf[i].Id);
+    try {
+      Response response2 = await HttpUtil.instance.dio.get(Common.shelf);
+      List decode = response2.data['data'];
+      if (decode == null) {
+        return;
+      }
+      List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
+      if (shelf.isNotEmpty) {
+        var ids = shelf.map((f) => f.Id).toList();
+        bs.forEach((f) {
+          if (!ids.contains(f.Id)) {
+            _dbHelper.addBooks([f]);
+            f.sortTime = DateUtil.getNowDateMs();
+            shelf.add(f);
+          }
+        });
+        for (var i = 0; i < shelf.length; i++) {
+          for (var j = 0; j < bs.length; j++) {
+            if (shelf[i].Id == bs[j].Id) {
+              if (shelf[i].LastChapter != bs[j].LastChapter) {
+                shelf[i].UTime = bs[j].UTime;
+                shelf[i].LastChapter = bs[j].LastChapter;
+                shelf[i].NewChapterCount = 1;
+                shelf[i].Img = bs[j].Img;
+                _dbHelper.updBook(
+                    bs[j].LastChapter, 1, bs[j].UTime, bs[j].Img, shelf[i].Id);
+              }
             }
           }
         }
+      } else {
+        bs.forEach((element) {
+          element.sortTime = DateUtil.getNowDateMs();
+          shelf.add(element);
+        });
+        _dbHelper.addBooks(bs);
       }
-    } else {
-      bs.forEach((element) {
-        element.sortTime = DateUtil.getNowDateMs();
-        shelf.add(element);
-      });
-      _dbHelper.addBooks(bs);
-    }
-    notifyListeners();
+      notifyListeners();
+    } catch (e) {}
   }
 
+/**
+ * 书架排序
+ */
   sort(int i) async {
     var book = shelf[i];
     book.NewChapterCount = 0;
@@ -174,6 +179,9 @@ class ShelfModel with ChangeNotifier {
     await _dbHelper.sortBook(book.Id);
   }
 
+/**
+ * 退出登录
+ */
   dropAccountOut() async {
     SpUtil.clear();
     await delLocalCache(shelf.map((f) => f.Id.toString()).toList());
@@ -189,7 +197,7 @@ class ShelfModel with ChangeNotifier {
   //删除本地记录
   Future<void> delLocalCache(List<String> ids) async {
     for (var i = 0; i < ids.length; i++) {
-      await _dbHelper.delBookAndCps(ids[i]);
+      _dbHelper.delBookAndCps(ids[i]);
     }
   }
 
@@ -199,22 +207,28 @@ class ShelfModel with ChangeNotifier {
     if (action == "add") {
       shelf.insert(0, book);
       _dbHelper.addBooks([book]);
+      notifyListeners();
+
       BotToast.showText(text: "已添加到书架");
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
         if (shelf[i].Id == book.Id) {
           shelf.removeAt(i);
+          notifyListeners();
         }
       }
-      _dbHelper.delBook(book.Id);
-
-      await delLocalCache([book.Id]);
+      delLocalCache([book.Id]);
+      SpUtil.remove(book.Id);
+      SpUtil.getKeys().forEach((element) {
+        if (element.startsWith(book.Id + "pages")) {
+          SpUtil.remove(element);
+        }
+      });
       BotToast.showText(text: "已移除出书架");
     }
     if (SpUtil.haveKey("auth")) {
-     HttpUtil.instance.dio.get(Common.bookAction + '/${book.Id}/$action');
+      HttpUtil.instance.dio.get(Common.bookAction + '/${book.Id}/$action');
     }
-    notifyListeners();
   }
 
   freshToken() async {
@@ -225,10 +239,5 @@ class ShelfModel with ChangeNotifier {
         SpUtil.putString("auth", data['data']['token']);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }

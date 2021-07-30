@@ -144,18 +144,16 @@ class _ChapterViewItem extends State<ChapterView> {
                       child: ListTile(
                         title: Text(
                           title,
-                          style: TextStyle(fontSize: 13),
                         ),
                         trailing: Text(
-                          has == 2 ? "已缓存" : "",
-                          style: TextStyle(fontSize: 8),
+                          has == "2" ? "已缓存" : "",
                         ),
                         selected: index == data.book.cur,
                         onTap: () async {
                           Navigator.of(context).pop();
                           //不是卷目录
                           data.book.cur = index;
-                          Future.delayed(Duration(milliseconds: 300), () {
+                          Future.delayed(Duration(milliseconds: 400), () {
                             data.initPageContent(index, true);
                           });
                         },

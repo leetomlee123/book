@@ -98,13 +98,12 @@ class _BookDetailState extends State<BookDetail> {
                         maxLines: 2,
                         style: TextStyle(fontSize: 12, color: Colors.white)),
                     RatingBar(
-                      itemSize: 30,
+                      itemSize: 25,
                       initialRating: this.widget._bookInfo.Rate ?? 1,
                       minRating: 1,
                       direction: Axis.horizontal,
                       allowHalfRating: true,
                       itemCount: 5,
-                      itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
                       itemBuilder: (context, _) => Icon(
                         Icons.star,
                         color: Colors.amber,

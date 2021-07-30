@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:book/common/Http.dart';
-import 'package:book/entity/Update.dart';
+import 'package:book/entity/AppInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +9,7 @@ import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
 
 class UpdateDialog extends StatefulWidget {
-  final Update update;
+  final AppInfo update;
 
   UpdateDialog(this.update);
 

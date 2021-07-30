@@ -33,7 +33,6 @@ class Routes {
     // 未发现对应route
 
     router.define(root, handler: rootHandler);
-    router.define(update, handler: updateHandler);
     router.define(search, handler: searchHandler);
     router.define(read, handler: readHandler);
     router.define(login, handler: loginHandler);
