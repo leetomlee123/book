@@ -96,7 +96,6 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
     _controller?.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         //动画完成后预加载上下页面
-        print("here");
         owner.readModel.preLoadWidget();
       }
     });
@@ -106,7 +105,6 @@ class _CoverPageState extends State<_CoverPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    print("here dispose");
     _controller?.dispose();
     _controller?.removeStatusListener((status) {});
     super.dispose();

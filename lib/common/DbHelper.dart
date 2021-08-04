@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:book/entity/Book.dart';
-import 'package:book/entity/Chapter.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/chapter.pb.dart';
 import 'package:flustars/flustars.dart';
@@ -122,8 +121,7 @@ class DbHelper {
   void _onCreate1(Database db, int version) async {
     if (!SpUtil.haveKey(_tableName1)) {
       await db.execute("CREATE TABLE IF NOT EXISTS $_tableName1("
-          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-          "book_id TEXT,"
+          "book_id TEXT PRIMARY KEY,"
           "name TEXT,"
           "cname TEXT,"
           "author TEXT,"
@@ -136,7 +134,6 @@ class DbHelper {
           "newChapter INTEGER,"
           "idx INTEGER,"
           "lastChapter TEXT)");
-      await db.execute("CREATE INDEX book_id_idx ON $_tableName1 (book_id);");
       SpUtil.putString(_tableName1, "");
     }
   }
@@ -354,7 +351,7 @@ class DbHelper {
         "intro": book.Desc,
         "utime": book.UTime,
         "cur": book.cur,
-        "sortTime": DateUtil.getNowDateMs(),
+        "sortTime": book.sortTime,
         "idx": book.index ?? 0,
         "position": book.position ?? 0,
         "newChapter": 0,
@@ -398,7 +395,13 @@ class DbHelper {
       ChapterProto chapter = cps[i];
       batch.rawInsert(
           'insert into $_tableName (chapter_id,name,content,book_id,hasContent) values(?,?,?,?,?)',
-          [chapter.chapterId, chapter.chapterName, "", bookId, chapter.hasContent]);
+          [
+            chapter.chapterId,
+            chapter.chapterName,
+            "",
+            bookId,
+            chapter.hasContent
+          ]);
     }
 
     await batch.commit(noResult: true);
@@ -418,7 +421,10 @@ class DbHelper {
         [bookId]);
     List<ChapterProto> cps = [];
     for (var i in list) {
-      cps.add(ChapterProto(chapterId: i['chapter_id'],chapterName: i['name'],hasContent: i['hasContent'].toString() ));
+      cps.add(ChapterProto(
+          chapterId: i['chapter_id'],
+          chapterName: i['name'],
+          hasContent: i['hasContent'].toString()));
     }
     return cps;
   }
@@ -432,16 +438,16 @@ class DbHelper {
 
   Future<String> getContent(String chapterId) async {
     var dbClient = await db;
-    var list = await dbClient.rawQuery(
+    List list = await dbClient.rawQuery(
         "select content from $_tableName where chapter_id=?", [chapterId]);
-    return list[0]['content'];
+    return list.first['content'];
   }
 
   Future<bool> getHasContent(String chapterId) async {
     var dbClient = await db;
-    var list = await dbClient.rawQuery(
+    List list = await dbClient.rawQuery(
         "select hasContent from $_tableName where chapter_id=?", [chapterId]);
-    return 2 == list[0]['hasContent'];
+    return "2" == list.first['hasContent'];
   }
 
   Future<Null> udpChapter(List<ChapterNode> cpnodes) async {
@@ -449,11 +455,12 @@ class DbHelper {
     var batch = dbClient.batch();
     cpnodes.forEach((cpnode) {
       batch.rawUpdate(
-          "update $_tableName set content=?,hasContent=2 where chapter_id=?",
-          [cpnode.content, cpnode.id]);
+          "update $_tableName set content=?,hasContent=? where chapter_id=?",
+          [cpnode.content, '2', cpnode.id]);
     });
 
-    await batch.commit(noResult: true);
+    await batch.commit();
+    // await batch.commit(noResult: true);
   }
 
   //  关闭

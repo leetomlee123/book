@@ -1,5 +1,6 @@
 import 'package:book/common/Screen.dart';
 import 'package:flustars/flustars.dart';
+import 'package:flutter/material.dart';
 
 class ReadSetting {
   static List<String> bgImg = [
@@ -23,6 +24,8 @@ class ReadSetting {
   static double listPageBottom = Screen.height / 2;
   static String temp_w = "temp_w";
   static String temp_h = "temp_h";
+  static Color textLowColor =
+      SpUtil.getBool("dark") ? Colors.white10 : Colors.grey.shade50;
 
   static String poet = '世人为荣利缠缚，动曰尘世苦海，不知云白山青，川行石立，花迎鸟笑，谷答樵讴，世亦不尘、海亦不苦、彼自尘苦其心尔';
   static String lawWarn =

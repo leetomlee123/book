@@ -15,9 +15,6 @@ class ShelfModel with ChangeNotifier {
     return shelf.map((f) => f.Id).toList().contains(id);
   }
 
-  ShelfModel() {
-    setShelf();
-  }
   updReadBookProcess(UpdateBookProcess up) {
     var b = shelf.first;
     b.cur = up.cur;
@@ -25,7 +22,7 @@ class ShelfModel with ChangeNotifier {
     DbHelper.instance.updBookProcess(b.cur, b.index, 0, b.Id);
   }
 
-  Future<void> setShelf() async {
+  Future<void> initShelf() async {
     if (_dbHelper == null) {
       _dbHelper = DbHelper();
     }
@@ -133,14 +130,16 @@ class ShelfModel with ChangeNotifier {
       }
       List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
       if (shelf.isNotEmpty) {
-        var ids = shelf.map((f) => f.Id).toList();
-        bs.forEach((f) {
-          if (!ids.contains(f.Id)) {
-            _dbHelper.addBooks([f]);
+        int len = bs.length;
+        for (var i = 0; i < len; i++) {
+          var f = bs[i];
+          if (!exitsInBookShelfById(f.Id)) {
             f.sortTime = DateUtil.getNowDateMs();
+            await _dbHelper.addBooks([f]);
             shelf.add(f);
           }
-        });
+        }
+
         for (var i = 0; i < shelf.length; i++) {
           for (var j = 0; j < bs.length; j++) {
             if (shelf[i].Id == bs[j].Id) {
@@ -160,7 +159,7 @@ class ShelfModel with ChangeNotifier {
           element.sortTime = DateUtil.getNowDateMs();
           shelf.add(element);
         });
-        _dbHelper.addBooks(bs);
+        await _dbHelper.addBooks(bs);
       }
       notifyListeners();
     } catch (e) {}
@@ -183,7 +182,11 @@ class ShelfModel with ChangeNotifier {
  * 退出登录
  */
   dropAccountOut() async {
-    SpUtil.clear();
+    SpUtil.getKeys().forEach((element) {
+      if (element.contains("pages")) {
+        SpUtil.remove(element);
+      }
+    });
     await delLocalCache(shelf.map((f) => f.Id.toString()).toList());
     shelf = [];
     notifyListeners();
@@ -197,6 +200,7 @@ class ShelfModel with ChangeNotifier {
   //删除本地记录
   Future<void> delLocalCache(List<String> ids) async {
     for (var i = 0; i < ids.length; i++) {
+      SpUtil.remove(ids[i]);
       _dbHelper.delBookAndCps(ids[i]);
     }
   }
@@ -206,7 +210,7 @@ class ShelfModel with ChangeNotifier {
         shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
       shelf.insert(0, book);
-      _dbHelper.addBooks([book]);
+      await _dbHelper.addBooks([book]);
       notifyListeners();
 
       BotToast.showText(text: "已添加到书架");

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:book/common/Http.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ColorModel.dart';
@@ -13,6 +14,7 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:keframe/frame_separate_widget.dart';
+import 'package:keframe/size_cache_widget.dart';
 
 class ChapterView extends StatefulWidget {
   @override
@@ -87,30 +89,32 @@ class _ChapterViewItem extends State<ChapterView> {
                     imageUrl: data.book.Img,
                     width: 85,
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Text(
-                        data.book.Name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                  Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text(
+                          data.book.Name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          overflow: TextOverflow.clip,
                         ),
-                        overflow: TextOverflow.clip,
-                      ),
-                      Text(
-                        data.book.Author,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w100,
-                          fontSize: 10,
+                        Text(
+                          data.book.Author,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w100,
+                            fontSize: 10,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '共${data.chapters.length}章',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
+                        Text(
+                          '共${data.chapters.length}章',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                   Spacer(),
                   Icon(
@@ -136,7 +140,6 @@ class _ChapterViewItem extends State<ChapterView> {
                 child: ListView.builder(
                   controller: _scrollController,
                   itemExtent: itemHeight,
-                  cacheExtent: 300,
                   itemBuilder: (context, index) {
                     var title = data.chapters[index].chapterName;
                     var has = data.chapters[index].hasContent;
@@ -144,6 +147,8 @@ class _ChapterViewItem extends State<ChapterView> {
                       child: ListTile(
                         title: Text(
                           title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         trailing: Text(
                           has == "2" ? "已缓存" : "",

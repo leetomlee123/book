@@ -62,15 +62,6 @@ class ReadModel with ChangeNotifier {
 
   double percent = 0;
 
-  //背景色数据
-  List<List> bgs = [
-    [250, 245, 235],
-    [245, 234, 204],
-    [230, 242, 230],
-    [228, 241, 245],
-    [245, 228, 228],
-  ];
-
   //缓存批量提交大小
   int batchNum = 100;
   bool refresh = true;
@@ -111,14 +102,10 @@ class ReadModel with ChangeNotifier {
     widgets.clear();
     notifyListeners();
     if (bgUI == null) await changeBgUI();
-    if (SpUtil.haveKey(book.Id)) {
-      chapters = await DbHelper.instance.getChapters(book.Id);
+    chapters = await DbHelper.instance.getChapters(book.Id);
 
-      if (chapters.isEmpty) {
-        await getChapters();
-      } else {
-        getChapters();
-      }
+    if (chapters?.isNotEmpty ?? false) {
+      getChapters();
 
       await initPageContent(book.cur, false);
 
@@ -140,16 +127,10 @@ class ReadModel with ChangeNotifier {
         }
       }
       book.cur = cur;
-      if (SpUtil.haveKey('${book.Id}chapters')) {
-        chapters = await DbHelper.instance.getChapters(book.Id);
-      } else {
-        //优化打开速度 只加载前15章
-        await getChapters(init: true);
-      }
+      await getChapters(init: true);
       getChapters();
       await initPageContent(book?.cur ?? 0, false);
       book.index = 0;
-      SpUtil.putString(book.Id, "");
       loadOk = true;
       notifyListeners();
     }
@@ -200,12 +181,13 @@ class ReadModel with ChangeNotifier {
       url =
           Common.chaptersUrl + '/$bid/0/${book.cur == 0 ? 15 : (book.cur + 1)}';
     } else {
-      url = Common.chaptersUrl + '/$bid/$skip/10000';
+      url = Common.chaptersUrl + '/$bid/$skip/1000000';
     }
     Response response = await HttpUtil.instance.dio.get(url);
     try {
       String data = response.data['data'];
       if (data.isEmpty) return null;
+
       var x = base64Decode(data);
       ChaptersProto cps = ChaptersProto.fromBuffer(x);
       return cps.chaptersProto.toList();
@@ -222,8 +204,9 @@ class ReadModel with ChangeNotifier {
     if (book.CId == "-1") {
       book.cur = chapters.length - 1;
     }
-    SpUtil.putString('${book.Id}chapters', "");
-    DbHelper.instance.addChapters(list, book.Id);
+    if (SpUtil.containsKey(book.Id)) {
+      DbHelper.instance.addChapters(list, book.Id);
+    }
     notifyListeners();
   }
 
@@ -240,27 +223,26 @@ class ReadModel with ChangeNotifier {
       r.chapterContent = "没有更多内容,等待作者更新";
       return r;
     }
+    var chapter = chapters[idx];
+    r.chapterName = chapter.chapterName;
+    String chapterId = chapter.chapterId;
 
-    r.chapterName = chapters[idx].chapterName;
-    String id = chapters[idx].chapterId;
     //本地内容是否存在
-    if (chapters[idx].hasContent != "2") {
-      r.chapterContent = await getChapterContent(id, idx: idx);
-      if (r.chapterContent.isNotEmpty) {
-        var temp = [ChapterNode(r.chapterContent, id)];
-        DbHelper.instance.udpChapter(temp);
-        chapters[idx].hasContent = "2";
-      }
-    } else {
-      r.chapterContent = await DbHelper.instance.getContent(id);
-    }
+    r.chapterContent = await DbHelper.instance.getContent(chapterId);
+
     if (r.chapterContent.isEmpty) {
-      r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
-      return r;
+      r.chapterContent = await getChapterContent(chapterId, idx: idx);
+      if (r.chapterContent.isNotEmpty) {
+        var temp = [ChapterNode(r.chapterContent, chapterId)];
+        await DbHelper.instance.udpChapter(temp);
+        chapters[idx].hasContent = "2";
+      } else {
+        r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
+        return r;
+      }
     }
 
     //本地是否有分页的缓存
-
     var k = '${book.Id}pages' + r.chapterName;
     if (SpUtil.haveKey(k)) {
       List<TextPage> list =
@@ -328,7 +310,6 @@ class ReadModel with ChangeNotifier {
     }
     await initPageContent(book.cur, true);
     eventBus.fire(ZEvent(2));
-    // pageController.jumpToPage(1);
   }
 
   /*菜单控制 */
@@ -340,6 +321,10 @@ class ReadModel with ChangeNotifier {
   /*状态保存 */
   saveData() async {
     if (sSave) {
+      if (!SpUtil.containsKey(book.Id)) {
+        SpUtil.putString(book.Id, "");
+        DbHelper.instance.addChapters(chapters, book.Id);
+      }
       SpUtil.putObjectList('${book.Id}pages${prePage?.chapterName ?? ' '}',
           prePage?.pages ?? []);
       SpUtil.putObjectList(
@@ -427,25 +412,21 @@ class ReadModel with ChangeNotifier {
 
     var i = book.index - 1;
     if (i < 0) {
-      return getPicture(prePage, prePage.pageOffsets - 1);
+      return drawContent(prePage, prePage.pageOffsets - 1);
     }
-    return getPicture(curPage, i);
+    return drawContent(curPage, i);
   }
 
   ui.Picture cur() {
-    return getPicture(curPage, book.index);
+    return drawContent(curPage, book.index);
   }
 
   ui.Picture next() {
     var i = book.index + 1;
     if (i >= curPage.pageOffsets) {
-      return getPicture(nextPage, 0);
+      return drawContent(nextPage, 0);
     }
-    return getPicture(curPage, i);
-  }
-
-  ui.Picture getPicture(ReadPage r, int pageIndex) {
-    return drawContent(r, pageIndex);
+    return drawContent(curPage, i);
   }
 
   Future<ui.Image> getAssetImage(String asset, {int width, int height}) async {
@@ -457,7 +438,6 @@ class ReadModel with ChangeNotifier {
   }
 
   ui.Picture drawContent(ReadPage readPage, int i) {
-    // BotToast.showText(text: 'start drawContent');
     ui.PictureRecorder pageRecorder = new ui.PictureRecorder();
     Canvas pageCanvas = new Canvas(
         pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
@@ -469,8 +449,6 @@ class ReadModel with ChangeNotifier {
       ..strokeCap = StrokeCap.butt
       ..strokeWidth = 30.0;
     pageCanvas.drawImage(bgUI, Offset(0, 0), selfPaint);
-    // BotToast.showText(text: 'end bgUI');
-    // BotToast.showText(text: readPage?.chapterContent);
     //章节
     textPainter.text = TextSpan(
         text: "${readPage.chapterName}",
@@ -482,7 +460,6 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     //章节高30 画在中间
     textPainter.paint(pageCanvas, Offset(contentPadding, 15));
-    // BotToast.showText(text: 'end chapterName');
     //正文
     TextStyle style = TextStyle(
         color: SpUtil.getBool('dark') ? darkFont : Colors.black,
@@ -509,7 +486,6 @@ class ReadModel with ChangeNotifier {
       textPainter.layout();
       textPainter.paint(pageCanvas, offset);
     }
-    // BotToast.showText(text: 'end content');
     //画电池
     double batteryPaddingLeft = contentPadding - 5;
     double mStrokeWidth = 1.0;
@@ -573,7 +549,6 @@ class ReadModel with ChangeNotifier {
             electricQuantityBottom,
             Radius.circular(mStrokeWidth)),
         mPaint);
-    // BotToast.showText(text: 'end bottom left');
     //时间
     textPainter.text = TextSpan(
       text: '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
@@ -597,7 +572,6 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     textPainter.paint(
         pageCanvas, Offset(Screen.width - contentPadding - 35, bottomTextH));
-    // BotToast.showText(text: 'end drawContent');
     return pageRecorder.endRecording();
   }
 
@@ -659,7 +633,7 @@ class ReadModel with ChangeNotifier {
     for (var i = start; i < temp.length; i++) {
       ChapterProto chapter = temp[i];
       var id = chapter.chapterId;
-      if (chapter.hasContent != 2) {
+      if (chapter.hasContent != "2") {
         // String content = await compute(requestDataWithCompute, id);
         String content = await getChapterContent(id);
         if (content.isNotEmpty) {

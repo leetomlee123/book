@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/entity/Book.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
@@ -235,7 +234,6 @@ class TextComposition {
 
   static List<TextPage> parseContent(ReadPage readPage,
       {shouldJustifyHeight = true, justRender = false}) {
-    // final width = ui.window.physicalSize.width / ui.window.devicePixelRatio;
     TextComposition textComposition = TextComposition(
       text: readPage.chapterContent,
       readPage: readPage,
@@ -249,7 +247,7 @@ class TextComposition {
           ReadSetting.getFontSize() *
           ReadSetting.getLineHeight(),
       justRender: justRender,
-      boxSize: Size(Screen.width, Screen.height - 72 - Screen.bottomSafeHeight),
+      boxSize: Size(Screen.width, Screen.height - 30 * 2),
       padding:
           EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
       shouldJustifyHeight: shouldJustifyHeight,
@@ -362,8 +360,6 @@ class MyPagePainter extends CustomPaint {
     return old.pageIndex != pageIndex;
   }
 }
-
-
 
 class PagePainter extends CustomPainter {
   final TextPage page;

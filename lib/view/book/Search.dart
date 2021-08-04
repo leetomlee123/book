@@ -29,7 +29,6 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
-  bool isBookSearch = false;
   SearchModel searchModel;
   ColorModel value;
   Widget body;
@@ -81,7 +80,6 @@ class _SearchState extends State<Search> {
     overlayState = Overlay.of(context);
     textFieldKey = GlobalKey();
     super.initState();
-    isBookSearch = this.widget.type == "book";
     if (this.widget.type == "book" && this.widget.name != "") {
       controller.text = this.widget.name;
     }
@@ -98,16 +96,10 @@ class _SearchState extends State<Search> {
     searchModel.context = context;
     searchModel.textFieldKey = textFieldKey;
     searchModel.controller = controller;
-    searchModel.isBookSearch = this.isBookSearch;
-    searchModel.store_word =
-        isBookSearch ? Common.book_search_history : Common.movie_search_history;
+    searchModel.store_word = Common.book_search_history;
     searchModel.initHistory();
     findOverLayPosition();
-    if (isBookSearch) {
-      await searchModel.initBookHot();
-    } else {
-      await searchModel.initMovieHot();
-    }
+    await searchModel.initBookHot();
     searchModel.getHot();
   }
 
@@ -347,12 +339,10 @@ class _SearchState extends State<Search> {
             Row(
               children: <Widget>[
                 Text(
-                  '热门${this.widget.type == "book" ? "书籍" : "美剧"}',
+                  '热门书籍',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                Expanded(
-                  child: Container(),
-                ),
+                Spacer(),
                 IconButton(
                   icon: Icon(Icons.refresh),
                   onPressed: () {

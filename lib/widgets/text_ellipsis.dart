@@ -1,5 +1,3 @@
-import 'package:book/model/ColorModel.dart';
-import 'package:book/store/Store.dart';
 import 'package:book/widgets/text_two.dart';
 import 'package:flutter/material.dart';
 
@@ -21,7 +19,7 @@ class _TextEllipsisState extends State<TextEllipsis> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
               Text(
@@ -29,18 +27,17 @@ class _TextEllipsisState extends State<TextEllipsis> {
                 style: TextStyle(fontSize: 15),
               ),
               Spacer(),
-              GestureDetector(
-                child: Text(
-                  "${ellipsis ? "展开" : "收起"}",
-             
-                ),
-                onTap: () {
+              TextButton(
+                onPressed: () {
                   if (mounted) {
                     setState(() {
                       ellipsis = !ellipsis;
                     });
                   }
                 },
+                child: Text(
+                  "${ellipsis ? "展开" : "收起"}",
+                ),
               ),
             ],
           ),

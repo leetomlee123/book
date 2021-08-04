@@ -85,6 +85,7 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   //刷新书架
   freshShelf() async {
+    
     if (SpUtil.haveKey('auth')) {
       try {
         await _shelfModel.refreshShelf();

@@ -5,7 +5,6 @@ import 'package:book/common/common.dart';
 import 'package:book/entity/ParseContentConfig.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -114,6 +113,7 @@ class _MainPageState extends State<MainPage> {
   // var _pages = [Video(), VoiceBook()];
   initEnv() async {
     getConfigFromServer();
+    await Store.value<ShelfModel>(context).initShelf();
     // await Firebase.initializeApp();
   }
 

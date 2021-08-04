@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import 'package:book/common/Http.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/entity/HotBook.dart';
 import 'package:book/entity/SearchItem.dart';
 import 'package:book/entity/book_ai.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/widgets/MyTextButton.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -229,48 +229,41 @@ class SearchModel with ChangeNotifier {
     Response res = await HttpUtil.instance.dio.get(Common.hot);
     List data = res.data['data'];
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
+    var h = Screen.width - 60;
     for (var i = 0; i < hbs.length; i++) {
-      hot.add(GestureDetector(
-        child: Chip(
-          label: Text(hbs[i].Name),
-        ),
-        onTap: () async {
-          String url = Common.detail + '/${hbs[i].Id}';
-          Response future = await HttpUtil.instance.dio.get(url);
-          var d = future.data['data'];
-          BookInfo b = BookInfo.fromJson(d);
-          Routes.navigateTo(
-            context,
-            Routes.detail,
-            params: {
-              'detail': jsonEncode(b),
+      hot.add(
+        TextButton(
+            style: ButtonStyle(
+                fixedSize: MaterialStateProperty.all(Size(h / 2, 40)),
+                backgroundColor: MaterialStateProperty.resolveWith(
+                  (states) {
+                    return SpUtil.getBool("dark")
+                        ? Colors.white10
+                        : Colors.grey.shade50;
+                  },
+                ),
+                alignment: Alignment.centerLeft),
+            clipBehavior: Clip.hardEdge,
+            onPressed: () async {
+              String url = Common.detail + '/${hbs[i].Id}';
+              Response future = await HttpUtil.instance.dio.get(url);
+              var d = future.data['data'];
+              BookInfo b = BookInfo.fromJson(d);
+              Routes.navigateTo(
+                context,
+                Routes.detail,
+                params: {
+                  'detail': jsonEncode(b),
+                },
+              );
             },
-          );
-        },
-      ));
+            child: Text(
+              "${(i + 1).toString() + '.' + hbs[i].Name}",
+              overflow: TextOverflow.ellipsis,
+            )),
+      );
     }
     notifyListeners();
-  }
-
-  List<Widget> showFire(int hot) {
-    var value = Store.value<ColorModel>(context);
-    List<Widget> wds = [];
-    int i = 1;
-    if (hot > 500) {
-      i = 3;
-    } else if (hot > 100 && hot < 500) {
-      i = 2;
-    }
-    for (int i1 = 0; i1 < i; i1++) {
-      wds.add(ImageIcon(
-        AssetImage(
-          "images/hot.png",
-        ),
-        size: 20.0,
-        // color: value.dark ? Colors.white : value.theme.primaryColor,
-      ));
-    }
-    return wds;
   }
 
   getHot() {
@@ -293,41 +286,6 @@ class SearchModel with ChangeNotifier {
 
   Future<void> initMovieHot() async {
     hot = [];
-    // Response res = await HttpUtil.instance.dio.get(Common.movie_hot);
-    // List data = res.data;
-    // List<GBook> hbs = data.map((f) => GBook.fromJson(f)).toList();
-    // for (var i = 0; i < hbs.length; i++) {
-    //   hot.add(GestureDetector(
-    //     child: Chip(
-    //       label: Text(hbs[i].name),
-    //     ),
-    //     onTap: () async {
-    //       Routes.navigateTo(context, Routes.vDetail,
-    //           params: {"gbook": jsonEncode(hbs[i])});
-    //     },
-    //   ));
-    // }
     notifyListeners();
-  }
-
-  Widget item(String name) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) {
-      return Container(
-        alignment: Alignment(0, 0),
-        height: 38,
-        width: (ScreenUtil.getScreenW(context) - 40) / 2,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.all(Radius.circular(20.0)),
-          border: Border.all(
-              width: 1,
-              color: data.dark ? Colors.white : Theme.of(context).primaryColor),
-        ),
-        child: Text(
-          name,
-          overflow: TextOverflow.ellipsis,
-        ),
-      );
-    });
   }
 }

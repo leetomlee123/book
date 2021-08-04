@@ -73,8 +73,10 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   saveState() async {
     readModel.saveData();
-    shelfModel.updReadBookProcess(
-        UpdateBookProcess(readModel.book.cur, readModel.book.index));
+    if (readModel.sSave) {
+      shelfModel.updReadBookProcess(
+          UpdateBookProcess(readModel.book.cur, readModel.book.index));
+    }
   }
 
   //拦截菜单和章节view
