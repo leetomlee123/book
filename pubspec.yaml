@@ -33,7 +33,6 @@ dependencies:
   # firebase_core: ^1.0.2
  
   palette_generator: ^0.3.0
-  install_plugin: ^2.0.1
   permission_handler: ^8.0.1
   battery: ^2.0.1
   fluro: ^2.0.3
@@ -55,7 +54,7 @@ dependencies:
   provider: ^5.0.0
   url_launcher: ^6.0.2
   get_it: ^6.0.0
-  sqflite: ^2.0.0+2
+  sqflite: ^2.0.0+3
   flutter:
     sdk: flutter
 

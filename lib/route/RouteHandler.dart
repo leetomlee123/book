@@ -14,7 +14,6 @@ import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/system/FontSet.dart';
-import 'package:book/view/system/UpdateDialog.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
