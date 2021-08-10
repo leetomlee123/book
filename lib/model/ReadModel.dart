@@ -228,7 +228,11 @@ class ReadModel with ChangeNotifier {
     String chapterId = chapter.chapterId;
 
     //本地内容是否存在
-    r.chapterContent = await DbHelper.instance.getContent(chapterId);
+    try {
+      r.chapterContent = await DbHelper.instance.getContent(chapterId);
+    } catch (e) {
+      r.chapterContent = "";
+    }
 
     if (r.chapterContent.isEmpty) {
       r.chapterContent = await getChapterContent(chapterId, idx: idx);

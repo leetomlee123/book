@@ -77,6 +77,7 @@ class _BookShelfState extends State<BookShelf> {
 
     if (int.parse(appInfo.version.replaceAll(".", "")) >
         int.parse(version.replaceAll(".", ""))) {
+      print(appInfo.apkMD5);
       var up = UpdateEntity(
           hasUpdate: true,
           isForce: appInfo.forceUpdate == "2",
@@ -89,7 +90,7 @@ class _BookShelfState extends State<BookShelf> {
           apkMd5: appInfo.apkMD5);
 
       FlutterXUpdate.updateByInfo(
-          updateEntity: up, supportBackgroundUpdate: true,widthRatio: .6);
+          updateEntity: up, supportBackgroundUpdate: true, widthRatio: .6);
     }
   }
 
