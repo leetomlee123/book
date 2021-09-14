@@ -495,7 +495,7 @@ class ReadModel with ChangeNotifier {
     double mStrokeWidth = 1.0;
     double mPaintStrokeWidth = 1.5;
     Paint mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
-    var bottomH = Screen.height - 25;
+    var bottomH = Screen.height - 25-Screen.bottomSafeHeight;
     var bottomTextH = bottomH - 2;
     //电池头部位置
     Size size = Size(22, 10);

@@ -9,7 +9,6 @@ import 'package:book/entity/HotBook.dart';
 import 'package:book/entity/SearchItem.dart';
 import 'package:book/entity/book_ai.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/widgets/MyTextButton.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
@@ -70,7 +69,7 @@ class SearchModel with ChangeNotifier {
     Response res = await HttpUtil.instance.dio.get(url);
     var d = res.data;
     List data = d['data'];
-    if (data.isNotEmpty)
+    if (data?.isNotEmpty ?? false)
       bksAi = data.map((e) => BookAi.fromJson(e)).toList();
     else
       bksAi.clear();
@@ -91,26 +90,19 @@ class SearchModel with ChangeNotifier {
     }
     //收起键盘
     FocusScope.of(context).requestFocus(FocusNode());
-    var ctx;
-    if (bks.length == 0) {
-      ctx = context;
-    }
-    if (isBookSearch) {
-      var url = '${Common.search}?key=$word&page=$page&size=$size';
-      Response res = await HttpUtil.instance.dio.get(url);
-      var d = res.data;
-      List data = d['data'];
-      // ignore: null_aware_in_condition
-      if (data?.isEmpty ?? true) {
-        refreshController.loadNoData();
-      } else {
-        for (var d in data) {
-          bks.add(SearchItem.fromJson(d));
-        }
-        refreshController.loadComplete();
+    var url = '${Common.search}?key=$word&page=$page&size=$size';
+    Response res = await HttpUtil.instance.dio.get(url);
+    var d = res.data;
+    List data = d['data'];
+    // ignore: null_aware_in_condition
+    if (data?.isEmpty ?? true) {
+      refreshController.loadNoData();
+    } else {
+      for (var d in data) {
+        bks.add(SearchItem.fromJson(d));
       }
-      print(bks.length);
-    } else {}
+      refreshController.loadComplete();
+    }
   }
 
   void onRefresh() async {

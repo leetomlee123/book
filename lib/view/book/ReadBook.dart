@@ -1,3 +1,4 @@
+import 'package:book/common/Screen.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -7,6 +8,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/cover_read_view.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';

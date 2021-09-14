@@ -247,7 +247,7 @@ class TextComposition {
           ReadSetting.getFontSize() *
           ReadSetting.getLineHeight(),
       justRender: justRender,
-      boxSize: Size(Screen.width, Screen.height - 30 * 2),
+      boxSize: Size(Screen.width, Screen.height - 30 * 2-Screen.bottomSafeHeight),
       padding:
           EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
       shouldJustifyHeight: shouldJustifyHeight,
