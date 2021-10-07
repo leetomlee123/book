@@ -2,7 +2,6 @@ import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/AppInfo.dart';
-import 'package:book/event/event.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -291,9 +290,8 @@ class Me extends StatelessWidget {
                           style: TextStyle(color: Colors.redAccent),
                         ),
                         50),
-                    onTap: () {
-                      model.dropAccountOut();
-                      eventBus.fire(new BooksEvent([]));
+                    onTap: () async {
+                      await model.dropAccountOut();
                     },
                   );
                 }),

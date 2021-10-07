@@ -1,6 +1,4 @@
 import 'package:book/common/Screen.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
 
 class MyPageView extends StatefulWidget {

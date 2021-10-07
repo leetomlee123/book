@@ -25,7 +25,6 @@ dependencies:
   flex_color_scheme: ^2.1.1
   # indexed_list_view: ^2.0.0
   # flutter_isolate: ^2.0.0
-  package_info: ^2.0.2
   image_picker: ^0.8.0+1
   jpush_flutter: ^2.1.4
   html: ^0.15.0
@@ -36,7 +35,6 @@ dependencies:
   permission_handler: ^8.0.1
   battery: ^2.0.1
   fluro: ^2.0.3
-  screen: ^0.0.5
   protobuf: ^2.0.0
   shared_preferences: ^2.0.6
   cached_network_image: ^3.0.0

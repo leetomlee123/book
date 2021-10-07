@@ -77,7 +77,6 @@ class _BookShelfState extends State<BookShelf> {
 
     if (int.parse(appInfo.version.replaceAll(".", "")) >
         int.parse(version.replaceAll(".", ""))) {
-      print(appInfo.apkMD5);
       var up = UpdateEntity(
           hasUpdate: true,
           isForce: appInfo.forceUpdate == "2",

@@ -38,6 +38,7 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   @override
   void initState() {
+    super.initState();
     if (bookPicWidth == .0) {
       bookPicWidth = Screen.width / 4;
       SpUtil.putDouble(Common.book_pic_width, Screen.width / 4);
@@ -45,7 +46,6 @@ class _BooksWidgetState extends State<BooksWidget> {
     isShelf = this.widget.type == '';
     _shelfModel = Store.value<ShelfModel>(context);
     _refreshController = RefreshController();
-    super.initState();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
       _shelfModel.context = context;
@@ -85,6 +85,9 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   //刷新书架
   freshShelf() async {
+    if (_shelfModel.shelf.isEmpty) {
+      await _shelfModel.initShelf();
+    }
     if (SpUtil.haveKey('auth')) {
       try {
         await _shelfModel.refreshShelf();

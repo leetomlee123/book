@@ -15,6 +15,7 @@ class ShelfModel with ChangeNotifier {
     return shelf.map((f) => f.Id).toList().contains(id);
   }
 
+
   updReadBookProcess(UpdateBookProcess up) {
     var b = shelf.first;
     b.cur = up.cur;
@@ -182,11 +183,14 @@ class ShelfModel with ChangeNotifier {
  * 退出登录
  */
   dropAccountOut() async {
-    SpUtil.getKeys().forEach((element) {
-      if (element.contains("pages")) {
-        SpUtil.remove(element);
+    var keys = SpUtil.getKeys();
+    for (var key in keys) {
+      if (key.contains("pages")) {
+        SpUtil.remove(key);
       }
-    });
+    }
+    SpUtil.remove("username");
+
     await delLocalCache(shelf.map((f) => f.Id.toString()).toList());
     shelf = [];
     notifyListeners();
@@ -200,8 +204,8 @@ class ShelfModel with ChangeNotifier {
   //删除本地记录
   Future<void> delLocalCache(List<String> ids) async {
     for (var i = 0; i < ids.length; i++) {
-      SpUtil.remove(ids[i]);
-      _dbHelper.delBookAndCps(ids[i]);
+      await SpUtil.remove(ids[i]);
+      await _dbHelper.delBookAndCps(ids[i]);
     }
   }
 

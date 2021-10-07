@@ -113,7 +113,7 @@ class _MainPageState extends State<MainPage> {
   // var _pages = [Video(), VoiceBook()];
   initEnv() async {
     getConfigFromServer();
-    await Store.value<ShelfModel>(context).initShelf();
+    // await Store.value<ShelfModel>(context).initShelf();
     // await Firebase.initializeApp();
   }
 

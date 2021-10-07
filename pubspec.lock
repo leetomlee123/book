@@ -14,7 +14,7 @@ packages:
       name: async
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "2.6.1"
+    version: "2.8.1"
   battery:
     dependency: "direct main"
     description:
@@ -63,7 +63,7 @@ packages:
       name: charcode
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "1.2.0"
+    version: "1.3.1"
   clock:
     dependency: transitive
     description:
@@ -214,7 +214,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: e9038c3af006eacb5938df2d13ce663aff3c4be0
+      resolved-ref: "51c6d66e7e006c3b69433188787f8e6dea1d6415"
       url: "https://github.com/Gentleflow/flutter_statusbar_manager.git"
     source: git
     version: "2.0.0"
@@ -332,7 +332,7 @@ packages:
       name: meta
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "1.3.0"
+    version: "1.7.0"
   nested:
     dependency: transitive
     description:
@@ -348,7 +348,7 @@ packages:
     source: hosted
     version: "1.0.0+1"
   package_info:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: package_info
       url: "https://pub.flutter-io.cn"
@@ -487,13 +487,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.27.1"
-  screen:
-    dependency: "direct main"
-    description:
-      name: screen
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.0.5"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -610,7 +603,7 @@ packages:
       name: test_api
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.2"
   typed_data:
     dependency: transitive
     description:

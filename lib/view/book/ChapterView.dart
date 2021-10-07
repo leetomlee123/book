@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:book/common/Http.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ColorModel.dart';
@@ -14,7 +13,6 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:keframe/frame_separate_widget.dart';
-import 'package:keframe/size_cache_widget.dart';
 
 class ChapterView extends StatefulWidget {
   @override
@@ -26,7 +24,7 @@ class ChapterView extends StatefulWidget {
 class _ChapterViewItem extends State<ChapterView> {
   ScrollController _scrollController;
 
-  double itemHeight = 40.0;
+  double itemHeight = 45.0;
 
   bool up = false;
   int curIndex = 0;
@@ -147,19 +145,21 @@ class _ChapterViewItem extends State<ChapterView> {
                       child: ListTile(
                         title: Text(
                           title,
-                          maxLines: 1,
+                          maxLines: 2,
+                          style: TextStyle(fontSize: 15),
                           overflow: TextOverflow.ellipsis,
                         ),
                         trailing: Text(
                           has == "2" ? "已缓存" : "",
+                          style: TextStyle(fontSize: 12,color: Colors.grey),
                         ),
                         selected: index == data.book.cur,
                         onTap: () async {
                           Navigator.of(context).pop();
                           //不是卷目录
                           data.book.cur = index;
-                          Future.delayed(Duration(milliseconds: 400), () {
-                            data.initPageContent(index, true);
+                          Future.delayed(Duration(milliseconds: 400), () async {
+                            await data.initPageContent(index, true);
                           });
                         },
                       ),
