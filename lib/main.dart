@@ -38,7 +38,8 @@ GetIt locator = GetIt.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GestureBinding.instance.resamplingEnabled = true;
-  if (await Permission.storage.request().isGranted) {
+  if ((Platform.isIOS || Platform.isAndroid) &&
+      await Permission.storage.request().isGranted) {
     await SpUtil.getInstance();
     locator.registerSingleton(TelAndSmsService());
     final router = FluroRouter();
