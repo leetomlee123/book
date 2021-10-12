@@ -62,4 +62,6 @@ class Common {
   static String parse_html_config = "parse_html_config";
   static String fonts = "fonts";
   static String book_pic_width = "book_pic_width";
+  static String top_safe_height = "top_safe_height";
+  static String shimmer_nums = "shimmer_nums";
 }

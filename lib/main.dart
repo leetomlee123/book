@@ -38,22 +38,24 @@ GetIt locator = GetIt.instance;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GestureBinding.instance.resamplingEnabled = true;
-  if ((Platform.isIOS || Platform.isAndroid) &&
-      await Permission.storage.request().isGranted) {
-    await SpUtil.getInstance();
-    locator.registerSingleton(TelAndSmsService());
-    final router = FluroRouter();
-    Routes.configureRoutes(router);
-    Routes.router = router;
-    runApp(Store.init(child: MyApp()));
-
-    await DirectoryUtil.getInstance();
-    // await Firebase.initializeApp();
-    if (Platform.isAndroid) {
-      SystemUiOverlayStyle systemUiOverlayStyle =
-          SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+  if (Platform.isIOS || Platform.isAndroid) {
+    if (!await Permission.storage.request().isGranted) {
+      return;
     }
+  }
+  await SpUtil.getInstance();
+  locator.registerSingleton(TelAndSmsService());
+  final router = FluroRouter();
+  Routes.configureRoutes(router);
+  Routes.router = router;
+  runApp(Store.init(child: MyApp()));
+
+  await DirectoryUtil.getInstance();
+  // await Firebase.initializeApp();
+  if (Platform.isAndroid) {
+    SystemUiOverlayStyle systemUiOverlayStyle =
+        SystemUiOverlayStyle(statusBarColor: Colors.transparent);
+    SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
   }
 }
 

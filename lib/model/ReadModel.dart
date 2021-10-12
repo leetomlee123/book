@@ -7,7 +7,6 @@ import 'dart:ui' as ui;
 import 'package:battery/battery.dart';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
-import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -20,6 +19,7 @@ import 'package:book/entity/TextPage.dart';
 import 'package:book/entity/chapter.pb.dart';
 import 'package:book/event/event.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:book/widgets/MyShimmer.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -138,9 +138,9 @@ class ReadModel with ChangeNotifier {
 
   Future initPageContent(int idx, bool jump) async {
     BotToast.showCustomLoading(
-        toastBuilder: (_) => LoadingDialog(),
+        toastBuilder: (_) => MyShimmer(),
         clickClose: true,
-        backgroundColor: Colors.transparent);
+        backgroundColor: Colors.white);
 
     try {
       // await Future.wait([
@@ -255,47 +255,6 @@ class ReadModel with ChangeNotifier {
       SpUtil.remove(k);
     } else {
       r.pages = TextComposition.parseContent(r);
-      //   ReceivePort receivePort = ReceivePort();
-      //   //创建并生成与当前Isolate共享相同代码的Isolate
-      //   var _isolate = await FlutterIsolate.spawn(
-      //       TextComposition.dataLoader, receivePort.sendPort);
-      //   // 流的第一个元素
-      //   SendPort sendPort = await receivePort.first;
-      //   // 流的第一个元素被收到后监听会关闭，所以需要新打开一个ReceivePort以接收传入的消息
-
-      //   ReceivePort response = ReceivePort();
-
-      //   double w = Screen.width;
-      //   double h = Screen.height - 62 - Screen.bottomSafeHeight;
-      //   String fontFamily = SpUtil.getString("fontName", defValue: "Roboto");
-      //   double fontSize = ReadSetting.getFontSize();
-      //   double height = ReadSetting.getLineHeight();
-
-      //   double dis = ReadSetting.getPageDis().toDouble();
-      //   double paragraph = ReadSetting.getParagraph() *
-      //       ReadSetting.getFontSize() *
-      //       ReadSetting.getLineHeight();
-      //   sendPort.send([
-      //     response.sendPort,
-      //     jsonEncode(r),
-      //     w,
-      //     h,
-      //     fontFamily,
-      //     fontSize,
-      //     height,
-      //     dis,
-      //     paragraph
-      //   ]);
-
-      //   await for (var msg in response) {
-      //     // 获取端口发送来的数据③
-      //     String jsonResult = msg[0];
-
-      //     _isolate?.kill();
-      //     List result = jsonDecode(jsonResult);
-      //     r.pages = result.map((e) => TextPage.fromJson(e)).toList();
-      //     break;
-      //   }
     }
 
     return r;
@@ -463,7 +422,8 @@ class ReadModel with ChangeNotifier {
         ));
     textPainter.layout();
     //章节高30 画在中间
-    textPainter.paint(pageCanvas, Offset(contentPadding, 15));
+    textPainter.paint(pageCanvas,
+        Offset(contentPadding, 15 + SpUtil.getDouble(Common.top_safe_height)));
     //正文
     TextStyle style = TextStyle(
         color: SpUtil.getBool('dark') ? darkFont : Colors.black,
@@ -486,7 +446,8 @@ class ReadModel with ChangeNotifier {
       } else {
         textPainter.text = TextSpan(text: line.text, style: style);
       }
-      final offset = Offset(line.dx, line.dy + 30);
+      final offset = Offset(
+          line.dx, line.dy + 30 + SpUtil.getDouble(Common.top_safe_height));
       textPainter.layout();
       textPainter.paint(pageCanvas, offset);
     }
@@ -495,7 +456,7 @@ class ReadModel with ChangeNotifier {
     double mStrokeWidth = 1.0;
     double mPaintStrokeWidth = 1.5;
     Paint mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
-    var bottomH = Screen.height - 25-Screen.bottomSafeHeight;
+    var bottomH = Screen.height - 25 - Screen.bottomSafeHeight;
     var bottomTextH = bottomH - 2;
     //电池头部位置
     Size size = Size(22, 10);
@@ -604,9 +565,10 @@ class ReadModel with ChangeNotifier {
     toggleShowMenu();
     var chapter = chapters[book.cur];
     BotToast.showCustomLoading(
-        toastBuilder: (_) => LoadingDialog(),
+        toastBuilder: (_) => MyShimmer(),
         clickClose: true,
-        backgroundColor: Colors.transparent);
+        backgroundColor: Colors.white);
+
     var content = await getChapterContent(chapter.chapterId, idx: book.cur);
     BotToast.closeAllLoading();
     if (content.isNotEmpty) {
@@ -736,9 +698,10 @@ class ReadModel with ChangeNotifier {
         prePage = curPage;
         if ((nextPage?.chapterName ?? "") == "-1") {
           BotToast.showCustomLoading(
-              toastBuilder: (_) => LoadingDialog(),
+              toastBuilder: (_) => MyShimmer(),
               clickClose: true,
-              backgroundColor: Colors.transparent);
+              backgroundColor: Colors.white);
+
           curPage = await loadChapter(book.cur);
 
           BotToast.closeAllLoading();

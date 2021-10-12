@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:book/common/Http.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/AppInfo.dart';
 import 'package:book/event/event.dart';
@@ -10,6 +11,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/widgets/BooksWidget.dart';
 import 'package:book/widgets/MyIcon.dart';
 import 'package:dio/dio.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_xupdate/flutter_xupdate.dart';
@@ -27,6 +29,12 @@ class _BookShelfState extends State<BookShelf> {
   void initState() {
     super.initState();
     _checkUpdate();
+    if (!SpUtil.containsKey(Common.top_safe_height)) {
+      SpUtil.putDouble(Common.top_safe_height, Screen.topSafeHeight);
+    }
+    if (!SpUtil.containsKey(Common.shimmer_nums)) {
+      SpUtil.putInt(Common.shimmer_nums, (Screen.height-Screen.topSafeHeight-Screen.bottomSafeHeight-60) ~/ 25);
+    }
   }
 
   ///初始化

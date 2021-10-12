@@ -29,7 +29,13 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 def keystorePropertiesFile = rootProject.file("key.properties")
 def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-
+// 获取日期时间
+static def getDateTime() {
+    def date = new Date()
+    // 不能用冒号
+    def formattedDate = date.format('yyyy_MM_dd_HH_mm_ss')
+    return formattedDate
+}
 android {
 
     compileSdkVersion 28
@@ -79,6 +85,20 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    
+
+    // 自定义APK安装包名
+    android.applicationVariants.all {
+        variant ->
+            variant.outputs.all {
+                output ->
+                    def outputFile = output.outputFile
+                    if (outputFile.name.contains("release")) {
+                        outputFileName = "deerbook-v${variant.versionName}_${variant.versionCode}_${getDateTime()}.apk"
+                    }
+            }
+    }
+
 }
 
 flutter {

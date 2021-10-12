@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/common.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
@@ -247,7 +248,7 @@ class TextComposition {
           ReadSetting.getFontSize() *
           ReadSetting.getLineHeight(),
       justRender: justRender,
-      boxSize: Size(Screen.width, Screen.height - 30 * 2-Screen.bottomSafeHeight),
+      boxSize: Size(Screen.width, Screen.height - (30+SpUtil.getDouble(Common.top_safe_height)) * 2-Screen.bottomSafeHeight),
       padding:
           EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
       shouldJustifyHeight: shouldJustifyHeight,
