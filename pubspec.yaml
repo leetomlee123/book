@@ -17,6 +17,7 @@ environment:
   sdk: ">=2.10.0 <3.0.0"
 
 dependencies:
+  flutter_swiper: ^1.1.6
   shimmer: ^2.0.0
   # firebase_auth: ^2.0.0
   # google_sign_in: ^5.0.4
@@ -34,7 +35,8 @@ dependencies:
  
   palette_generator: ^0.3.0
   permission_handler: ^8.0.1
-  battery: ^2.0.1
+
+  battery_plus: ^2.0.1
   fluro: ^2.0.3
   protobuf: ^2.0.0
   shared_preferences: ^2.0.6

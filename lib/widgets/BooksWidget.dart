@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -40,8 +41,8 @@ class _BooksWidgetState extends State<BooksWidget> {
   void initState() {
     super.initState();
     if (bookPicWidth == .0) {
-      bookPicWidth = Screen.width / 4;
-      SpUtil.putDouble(Common.book_pic_width, Screen.width / 4);
+      bookPicWidth =min(100, Screen.width / 4);
+      SpUtil.putDouble(Common.book_pic_width, bookPicWidth);
     }
     isShelf = this.widget.type == '';
     _shelfModel = Store.value<ShelfModel>(context);
@@ -211,12 +212,12 @@ class _BooksWidgetState extends State<BooksWidget> {
     return Dismissible(
       key: Key(item.Id.toString()),
       child: Container(
-        height: bookPicWidth / aspectRatio,
+        height: coverWidth / aspectRatio,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           children: <Widget>[
             HasUpdateIconImg(
-                bookPicWidth, bookPicWidth / aspectRatio, this.widget.type, i),
+                coverWidth, coverWidth / aspectRatio, this.widget.type, i),
             //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
             Expanded(
               child: Padding(

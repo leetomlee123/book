@@ -11,6 +11,7 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/person/Me.dart';
+import 'package:book/view/video/Video.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:fluro/fluro.dart';
@@ -23,6 +24,7 @@ import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
 import 'package:package_info/package_info.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 
 GetIt locator = GetIt.instance;
 // FirebaseAnalytics analytics = FirebaseAnalytics();
@@ -43,6 +45,7 @@ Future<void> main() async {
       return;
     }
   }
+
   await SpUtil.getInstance();
   locator.registerSingleton(TelAndSmsService());
   final router = FluroRouter();

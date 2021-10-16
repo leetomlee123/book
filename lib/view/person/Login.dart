@@ -71,13 +71,14 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
         resizeToAvoidBottomInset: false,
+        appBar: AppBar(title: Text("登录"),centerTitle: true,),
         body: SingleChildScrollView(
                   child: Container(
             child: Column(
               key: UniqueKey(),
               children: <Widget>[
                 SizedBox(
-                  height: Screen.topSafeHeight + 80,
+                  height: Screen.topSafeHeight + 10,
                 ),
                 CircleAvatar(
                   radius: 60,

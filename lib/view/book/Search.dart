@@ -50,10 +50,16 @@ class _SearchState extends State<Search> {
     value = Store.value<ColorModel>(context);
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         title: buildSearchWidget(),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
+        actions: [TextButton(
+       
+          onPressed: () {
+            Navigator.pop(context);
+          }, child: Text("返回"),
+        )],
       ),
       body:
           Store.connect<SearchModel>(builder: (context, SearchModel d, child) {

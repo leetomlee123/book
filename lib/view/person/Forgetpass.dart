@@ -1,8 +1,6 @@
-import 'package:book/common/common.dart';
 import 'package:book/common/Http.dart';
-import 'package:book/model/ColorModel.dart';
+import 'package:book/common/common.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -19,117 +17,93 @@ class _ForgetPassState extends State<ForgetPass> {
   String newpwd;
   String email;
   String repetpwd;
-  var _scaffoldkey = new GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('images/bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Stack(
-          children: [
-            Container(
-              color: Store.value<ColorModel>(context).dark
-                  ? Colors.black
-                  : Colors.transparent,
+      appBar: AppBar(
+        title: Text("忘记密码"),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: ListView(
+          shrinkWrap: true,
+          padding: EdgeInsets.only(left: 24.0, right: 24.0),
+          children: <Widget>[
+            TextFormField(
+              keyboardType: TextInputType.phone,
+              autofocus: false,
+              // style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: '账号',
+                // hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+//                border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(32.0)),
+              ),
+              onChanged: (String value) {
+                this.account = value;
+              },
             ),
-            Center(
-              child: ListView(
-                shrinkWrap: true,
-                padding: EdgeInsets.only(left: 24.0, right: 24.0),
-                children: <Widget>[
-                  TextFormField(
-                    keyboardType: TextInputType.phone,
-                    autofocus: false,
-                    // style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: '账号',
-                      // hintStyle: TextStyle(color: Colors.white),
-                      contentPadding:
-                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+            SizedBox(height: 8.0),
+            TextFormField(
+              autofocus: false,
+              // style: TextStyle(color: Colors.white),
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                hintText: '邮箱',
+                // hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
-                    ),
-                    onChanged: (String value) {
-                      this.account = value;
-                    },
-                  ),
-                  SizedBox(height: 8.0),
-                  TextFormField(
-                    autofocus: false,
-                    // style: TextStyle(color: Colors.white),
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: '邮箱',
-                      // hintStyle: TextStyle(color: Colors.white),
-                      contentPadding:
-                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              ),
+              onChanged: (String value) {
+                email = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            TextFormField(
+              autofocus: false,
+              obscureText: true,
+              // style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: '输入新密码',
+                // hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
-                    ),
-                    onChanged: (String value) {
-                      email = value;
-                    },
-                  ),
-                  SizedBox(height: 8.0),
-                  TextFormField(
-                    autofocus: false,
-                    obscureText: true,
-                    // style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: '输入新密码',
-                      // hintStyle: TextStyle(color: Colors.white),
-                      contentPadding:
-                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              ),
+              onChanged: (String value) {
+                newpwd = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            TextFormField(
+              obscureText: true,
+              autofocus: false,
+              // style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: '重复新密码',
+                // hintStyle: TextStyle(color: Colors.white),
+                contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
 //                border: OutlineInputBorder(
 //                    borderRadius: BorderRadius.circular(32.0)),
-                    ),
-                    onChanged: (String value) {
-                      newpwd = value;
-                    },
-                  ),
-                  SizedBox(height: 8.0),
-                  TextFormField(
-                    obscureText: true,
-                    autofocus: false,
-                    // style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: '重复新密码',
-                      // hintStyle: TextStyle(color: Colors.white),
-                      contentPadding:
-                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//                border: OutlineInputBorder(
-//                    borderRadius: BorderRadius.circular(32.0)),
-                    ),
-                    onChanged: (String value) {
-                      repetpwd = value;
-                    },
-                  ),
-                  SizedBox(height: 8.0),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16.0),
-                    child: RaisedButton(
-                      color: Theme.of(context).primaryColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      onPressed: () {
-                        register();
-                      },
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                        '修改密码',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  )
-                ],
+              ),
+              onChanged: (String value) {
+                repetpwd = value;
+              },
+            ),
+            SizedBox(height: 8.0),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: TextButton(
+      
+                onPressed: () {
+                  register();
+                },
+                child: Text(
+                  '修改密码',
+                ),
               ),
             )
           ],
@@ -161,8 +135,8 @@ class _ForgetPassState extends State<ForgetPass> {
         Routes.navigateTo(context, Routes.login);
       }
     } else {
-      _scaffoldkey.currentState
-          .showSnackBar(new SnackBar(content: Text('检查输入项不可为空')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('检查输入项不可为空')));
     }
   }
 }
