@@ -423,7 +423,7 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     //章节高30 画在中间
     textPainter.paint(pageCanvas,
-        Offset(contentPadding, 15 + SpUtil.getDouble(Common.top_safe_height)));
+        Offset(contentPadding, 15+SpUtil.getDouble(Common.top_safe_height)));
     //正文
     TextStyle style = TextStyle(
         color: SpUtil.getBool('dark') ? darkFont : Colors.black,
@@ -447,7 +447,7 @@ class ReadModel with ChangeNotifier {
         textPainter.text = TextSpan(text: line.text, style: style);
       }
       final offset = Offset(
-          line.dx, line.dy + 30 + SpUtil.getDouble(Common.top_safe_height));
+          line.dx, line.dy + 45 + SpUtil.getDouble(Common.top_safe_height));
       textPainter.layout();
       textPainter.paint(pageCanvas, offset);
     }

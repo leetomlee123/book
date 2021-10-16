@@ -119,7 +119,7 @@ class _RegisterState extends State<Register> {
                       },
                       child: Text(
                         '注册',
-                        style: TextStyle(color: Colors.white),
+                        // style: TextStyle(color: Colors.white),
                       ),
                     ),
                   )
