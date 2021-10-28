@@ -30,7 +30,6 @@
 //       size: AdSize.banner,
 //       targetingInfo: targetingInfo,
 //       listener: (MobileAdEvent event) {
-//         print("BannerAd event $event");
 //       },
 //     );
 //   }
@@ -40,7 +39,6 @@
 //       adUnitId: InterstitialAd.testAdUnitId,
 //       targetingInfo: targetingInfo,
 //       listener: (MobileAdEvent event) {
-//         print("InterstitialAd event $event");
 //       },
 //     );
 //   }
@@ -51,7 +49,6 @@
 //       factoryId: 'adFactoryExample',
 //       targetingInfo: targetingInfo,
 //       listener: (MobileAdEvent event) {
-//         print("$NativeAd event $event");
 //       },
 //     );
 //   }
@@ -158,7 +155,6 @@
 //     _bannerAd = createBannerAd()..load();
 //     RewardedVideoAd.instance.listener =
 //         (RewardedVideoAdEvent event, {String rewardType, int rewardAmount}) {
-//       print("RewardedVideoAd event $event");
 //       if (event == RewardedVideoAdEvent.rewarded) {
 //         setState(() {
 //           _coins += rewardAmount;

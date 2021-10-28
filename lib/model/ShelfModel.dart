@@ -15,7 +15,6 @@ class ShelfModel with ChangeNotifier {
     return shelf.map((f) => f.Id).toList().contains(id);
   }
 
-
   updReadBookProcess(UpdateBookProcess up) {
     var b = shelf.first;
     b.cur = up.cur;
@@ -166,9 +165,9 @@ class ShelfModel with ChangeNotifier {
     } catch (e) {}
   }
 
-/**
- * 书架排序
- */
+  /**
+   * 书架排序
+   */
   sort(int i) async {
     var book = shelf[i];
     book.NewChapterCount = 0;
@@ -179,9 +178,9 @@ class ShelfModel with ChangeNotifier {
     await _dbHelper.sortBook(book.Id);
   }
 
-/**
- * 退出登录
- */
+  /**
+   * 退出登录
+   */
   dropAccountOut() async {
     var keys = SpUtil.getKeys();
     for (var key in keys) {
@@ -190,8 +189,13 @@ class ShelfModel with ChangeNotifier {
       }
     }
     SpUtil.remove("username");
+    SpUtil.remove("auth");
 
-    await delLocalCache(shelf.map((f) => f.Id.toString()).toList());
+    for (var i = 0; i < shelf.length; i++) {
+      var bid = shelf[i].Id;
+      await SpUtil.remove(bid);
+      await _dbHelper.delBookAndCps(bid);
+    }
     shelf = [];
     notifyListeners();
   }
@@ -240,7 +244,7 @@ class ShelfModel with ChangeNotifier {
   }
 
   freshToken() async {
-    if (SpUtil.haveKey("username")) {
+    if (SpUtil.haveKey("auth")) {
       Response res = await HttpUtil.instance.dio.get(Common.freshToken);
       var data = res.data;
       if (data['code'] == 200) {

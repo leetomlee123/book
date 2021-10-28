@@ -6,10 +6,11 @@ import 'package:book/model/ShelfModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
-import 'package:book/view/book/cover_read_view.dart';
+import 'package:book/view/book/PageContentRender.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
+// import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
 class ReadBook extends StatefulWidget {
   final Book book;
@@ -54,6 +55,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
     await readModel.getBookRecord();
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual);
+
     FlutterStatusbarManager.setFullscreen(true);
     // SystemChrome.setEnabledSystemUIOverlays([]);
     // SystemChrome.setSystemUIOverlayStyle(SystemUiOverlay.top);
@@ -117,21 +120,23 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             ),
             body: Store.connect<ReadModel>(
                 builder: (context, ReadModel model, child) {
-              return Visibility(
-                replacement: Container(),
-                visible: model.loadOk,
-                child: Stack(
-                  children: [
-                    // child: PageContentReader(),
-                    NovelRoteView(model),
-                    // ScrollReadView(),
-                    Offstage(
-                      child: Menu(),
-                      offstage: !model.showMenu,
-                    ),
-                  ],
-                ),
-              );
+              return model.loadOk
+                  ? Stack(
+                      children: [
+                        GestureDetector(
+                          child: RepaintBoundary(child: PageContentReader()),
+                          onTapDown: (e) => readModel.tapPage(context, e),
+                        ),
+
+                        // NovelRoteView(model),
+
+                        Offstage(
+                          child: Menu(),
+                          offstage: !model.showMenu,
+                        ),
+                      ],
+                    )
+                  : Container();
             })));
   }
 

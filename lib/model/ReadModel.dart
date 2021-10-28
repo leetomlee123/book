@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
@@ -17,7 +15,6 @@ import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/entity/chapter.pb.dart';
-import 'package:book/event/event.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:book/widgets/MyShimmer.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -39,7 +36,7 @@ class ReadModel with ChangeNotifier {
   Stack stackContent;
   Paint bgPaint = Paint();
   ui.Image bgUI;
-
+  GlobalKey canvasKey;
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
@@ -152,12 +149,10 @@ class ReadModel with ChangeNotifier {
 
       if (jump) {
         book.index = 0;
-        eventBus.fire(ZEvent(1));
+        canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
       }
       notifyListeners();
-    } catch (e) {
-      print(e);
-    }
+    } catch (e) {}
 
     BotToast.closeAllLoading();
   }
@@ -165,7 +160,8 @@ class ReadModel with ChangeNotifier {
   colorModelSwitch() async {
     await changeBgUI();
     widgets.clear();
-    eventBus.fire(ZEvent(1));
+
+    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
   }
 
   switchBgColor(i) async {
@@ -272,7 +268,7 @@ class ReadModel with ChangeNotifier {
       }
     }
     await initPageContent(book.cur, true);
-    eventBus.fire(ZEvent(2));
+    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
   }
 
   /*菜单控制 */
@@ -372,24 +368,45 @@ class ReadModel with ChangeNotifier {
 
   ui.Picture pre() {
     if (prePage == null) return null;
-
     var i = book.index - 1;
-    if (i < 0) {
-      return drawContent(prePage, prePage.pageOffsets - 1);
+    var key = book.cur.toString() + i.toString();
+
+    if (widgets.containsKey(key)) {
+      return widgets[key];
+    } else {
+      return widgets.putIfAbsent(
+          key,
+          () => i < 0
+              ? drawContent(prePage, prePage.pageOffsets - 1)
+              : drawContent(curPage, i));
     }
-    return drawContent(curPage, i);
   }
 
   ui.Picture cur() {
-    return drawContent(curPage, book.index);
+    var key = book.cur.toString() + book.index.toString();
+
+    if (widgets.containsKey(key)) {
+      return widgets[key];
+    } else {
+      Future.delayed(Duration(milliseconds: 200), () => preLoadWidget());
+      return widgets.putIfAbsent(key, () => drawContent(curPage, book.index));
+    }
   }
 
   ui.Picture next() {
     var i = book.index + 1;
-    if (i >= curPage.pageOffsets) {
-      return drawContent(nextPage, 0);
+
+    var key = book.cur.toString() + i.toString();
+
+    if (widgets.containsKey(key)) {
+      return widgets[key];
+    } else {
+      return widgets.putIfAbsent(
+          key,
+          () => i >= curPage.pageOffsets
+              ? drawContent(nextPage, 0)
+              : drawContent(curPage, i));
     }
-    return drawContent(curPage, i);
   }
 
   Future<ui.Image> getAssetImage(String asset, {int width, int height}) async {
@@ -402,16 +419,18 @@ class ReadModel with ChangeNotifier {
 
   ui.Picture drawContent(ReadPage readPage, int i) {
     ui.PictureRecorder pageRecorder = new ui.PictureRecorder();
-    Canvas pageCanvas = new Canvas(
-        pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
+
     final bool isDark = SpUtil.getBool("dark", defValue: false);
     var contentPadding = ReadSetting.getPageDis().toDouble();
+    Canvas pageCanvas = new Canvas(
+        pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
     Paint selfPaint = Paint()
       ..style = PaintingStyle.fill
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.butt
       ..strokeWidth = 30.0;
     pageCanvas.drawImage(bgUI, Offset(0, 0), selfPaint);
+
     //章节
     textPainter.text = TextSpan(
         text: "${readPage.chapterName}",
@@ -423,7 +442,7 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     //章节高30 画在中间
     textPainter.paint(pageCanvas,
-        Offset(contentPadding, 15+SpUtil.getDouble(Common.top_safe_height)));
+        Offset(contentPadding, 15 + SpUtil.getDouble(Common.top_safe_height)));
     //正文
     TextStyle style = TextStyle(
         color: SpUtil.getBool('dark') ? darkFont : Colors.black,
@@ -537,6 +556,7 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     textPainter.paint(
         pageCanvas, Offset(Screen.width - contentPadding - 35, bottomTextH));
+
     return pageRecorder.endRecording();
   }
 
@@ -579,7 +599,7 @@ class ReadModel with ChangeNotifier {
       curPage = await loadChapter(book.cur);
       notifyListeners();
       widgets.clear();
-      eventBus.fire(ZEvent(1));
+      canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
       // await fillAllContent();
     }
   }
@@ -641,52 +661,26 @@ class ReadModel with ChangeNotifier {
     return content;
   }
 
-  static Future<String> requestDataWithCompute(String id) async {
-    String content = "";
-    try {
-      var url = Common.bookContentUrl + '/$id';
-      var client = new HttpClient();
-// print('download $url');
-      var request = await client.getUrl(Uri.parse(url));
-      var response = await request.close();
-// print('download $url ok');
-      var responseBody = await response.transform(utf8.decoder).join();
-      var dataList = await parseJson(responseBody);
-      content = dataList['data']['content'];
-    } catch (E) {
-      print(e);
-    }
-    return content;
-  }
-
-  @override
-  Future<void> dispose() async {
-    super.dispose();
-  }
-
-  getEveyPoet() async {
-    // if (!isPage) {
-    //   var url = "https://v2.jinrishici.com/one.json";
-
-    //   var future = await HttpUtil.instance.dio.get(url);
-    //   poet = future.data['data']['content'];
-    // }
-  }
-
   switchClickNextPage() {
     leftClickNext = !leftClickNext;
     SpUtil.putBool("leftClickNext", leftClickNext);
     notifyListeners();
   }
 
-  Future<void> changeCoverPage(var offsetDifference) async {
+  void changeCoverPage(var offsetDifference) {
     int idx = book?.index ?? 0;
     // if (idx == -1) {
     //   return;
     // }
     int curLen = (curPage?.pageOffsets ?? 0);
     if (idx == curLen - 1 && offsetDifference > 0) {
-      electricQuantity = (await Battery().batteryLevel) / 100;
+      Future.delayed(
+          Duration(milliseconds: 500),
+          () => {
+                Battery()
+                    .batteryLevel
+                    .then((value) => electricQuantity = value / 100)
+              });
       int tempCur = book.cur + 1;
       if (tempCur >= chapters.length) {
         //到最后一页
@@ -702,14 +696,14 @@ class ReadModel with ChangeNotifier {
               clickClose: true,
               backgroundColor: Colors.white);
 
-          curPage = await loadChapter(book.cur);
+          loadChapter(book.cur).then((value) => curPage = value);
 
           BotToast.closeAllLoading();
         } else {
           curPage = nextPage;
         }
         book.index = 0;
-        notifyListeners();
+        // notifyListeners();
         Future.delayed(Duration(milliseconds: 500), () {
           loadChapter(book.cur + 1).then((value) => nextPage = value);
         });
@@ -718,7 +712,13 @@ class ReadModel with ChangeNotifier {
       }
     }
     if (idx == 0 && offsetDifference < 0) {
-      electricQuantity = (await Battery().batteryLevel) / 100;
+      Future.delayed(
+          Duration(milliseconds: 500),
+          () => {
+                Battery()
+                    .batteryLevel
+                    .then((value) => electricQuantity = value / 100)
+              });
       int tempCur = book.cur - 1;
       if (tempCur < 0) {
         BotToast.showText(text: "第一页");
@@ -738,7 +738,7 @@ class ReadModel with ChangeNotifier {
       return;
     }
     offsetDifference > 0 ? book.index += 1 : book.index -= 1;
-    notifyListeners();
+    // notifyListeners();
   }
 
   bool isCanGoNext() {

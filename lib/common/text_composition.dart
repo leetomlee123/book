@@ -373,8 +373,7 @@ class PagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (debug)
-      print("****** [TextComposition paint start] [${DateTime.now()}] ******");
+  
     final lineCount = page.lines.length;
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 

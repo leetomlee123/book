@@ -41,7 +41,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   void initState() {
     super.initState();
     if (bookPicWidth == .0) {
-      bookPicWidth =min(100, Screen.width / 4);
+      bookPicWidth = Screen.width / 4;
       SpUtil.putDouble(Common.book_pic_width, bookPicWidth);
     }
     isShelf = this.widget.type == '';
@@ -53,7 +53,7 @@ class _BooksWidgetState extends State<BooksWidget> {
       if (isShelf) {
         _shelfModel.freshToken();
       }
-      if (SpUtil.haveKey('auth') && isShelf)
+      if (isShelf)
         _refreshController.requestRefresh();
     });
   }
@@ -212,12 +212,12 @@ class _BooksWidgetState extends State<BooksWidget> {
     return Dismissible(
       key: Key(item.Id.toString()),
       child: Container(
-        height: coverWidth / aspectRatio,
+        height: bookPicWidth / aspectRatio,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           children: <Widget>[
             HasUpdateIconImg(
-                coverWidth, coverWidth / aspectRatio, this.widget.type, i),
+                bookPicWidth, bookPicWidth / aspectRatio, this.widget.type, i),
             //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
             Expanded(
               child: Padding(

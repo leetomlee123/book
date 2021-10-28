@@ -11,7 +11,6 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/person/Me.dart';
-import 'package:book/view/video/Video.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:fluro/fluro.dart';
@@ -19,12 +18,12 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:jpush_flutter/jpush_flutter.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 
 GetIt locator = GetIt.instance;
 // FirebaseAnalytics analytics = FirebaseAnalytics();
@@ -45,6 +44,9 @@ Future<void> main() async {
       return;
     }
   }
+// current: #1 1440x3120 @ 60Hz
+// new: #2 1440x3120 @ 90Hz
+//   await FlutterDisplayMode.supported.for
 
   await SpUtil.getInstance();
   locator.registerSingleton(TelAndSmsService());
@@ -109,6 +111,8 @@ class _MainPageState extends State<MainPage> {
     // ),
   ];
 
+
+
   /*
    * 存储的四个页面，和Fragment一样
    */
@@ -138,6 +142,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void initState() {
+
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) async {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();

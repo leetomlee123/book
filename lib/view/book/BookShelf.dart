@@ -15,7 +15,7 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_xupdate/flutter_xupdate.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class BookShelf extends StatefulWidget {
   @override
@@ -65,11 +65,9 @@ class _BookShelfState extends State<BookShelf> {
           .then((value) {
         //  updateMessage("初始化成功: $value");
       }).catchError((error) {
-        print(error);
       });
       FlutterXUpdate.setErrorHandler(
           onUpdateError: (Map<String, dynamic> message) async {
-        print(message);
       });
     }
   }

@@ -199,6 +199,7 @@ class PageContentViewPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    
     canvas.drawPicture(picture);
   }
 

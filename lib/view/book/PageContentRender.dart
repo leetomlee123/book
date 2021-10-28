@@ -22,10 +22,12 @@ class _PageContentReaderState extends State<PageContentReader>
   GlobalKey canvasKey = new GlobalKey();
   ReadModel viewModel;
   ReaderPageManager pageManager;
+  DragDownDetails dragDownDetails;
 
   @override
   void initState() {
     viewModel = Store.value<ReadModel>(context);
+    viewModel.canvasKey = canvasKey;
     switch (viewModel.currentAnimationMode) {
       case ReaderPageManager.TYPE_ANIMATION_SIMULATION_TURN:
       case ReaderPageManager.TYPE_ANIMATION_COVER_TURN:
@@ -49,123 +51,74 @@ class _PageContentReaderState extends State<PageContentReader>
 
       mPainter = NovelPagePainter(pageManager: pageManager);
     }
+
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Store.connect<ReadModel>(
-        builder: (context, ReadModel viewModel, child) {
-      return GestureDetector(
-        onTapDown: (details) {
-          print("down");
-          if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
-              currentTouchEvent.touchPos != details.localPosition) {
-            currentTouchEvent =
-                TouchEvent(TouchEvent.ACTION_DOWN, details.localPosition);
-            mPainter.setCurrentTouchEvent(currentTouchEvent);
-            canvasKey.currentContext.findRenderObject().markNeedsPaint();
-          }
-        },
-        onTapUp: (details) {
-          print("just click");
-        },
-        // onTapDown: (details) {
-        //   print("just cleck");
-        //   viewModel.tapPage(context, details);
-        // },
-        onPanUpdate: (details) {
-          print("update");
-          if (currentTouchEvent.action != TouchEvent.ACTION_MOVE ||
-              currentTouchEvent.touchPos != details.localPosition) {
-            currentTouchEvent =
-                TouchEvent(TouchEvent.ACTION_MOVE, details.localPosition);
-            mPainter.setCurrentTouchEvent(currentTouchEvent);
-            canvasKey.currentContext.findRenderObject().markNeedsPaint();
-          }
-        },
-        onPanEnd: (details) {
-          print("end");
-          if (currentTouchEvent.action != TouchEvent.ACTION_UP ||
-              currentTouchEvent.touchPos != Offset(0, 0)) {
-            currentTouchEvent =
-                TouchEvent<DragEndDetails>(TouchEvent.ACTION_UP, Offset(0, 0));
-            currentTouchEvent.touchDetail = details;
+    return RawGestureDetector(
+      gestures: <Type, GestureRecognizerFactory>{
+        NovelPagePanGestureRecognizer:
+            GestureRecognizerFactoryWithHandlers<NovelPagePanGestureRecognizer>(
+          () => NovelPagePanGestureRecognizer(false),
+          (NovelPagePanGestureRecognizer instance) {
+            instance.setMenuOpen(false);
 
-            mPainter.setCurrentTouchEvent(currentTouchEvent);
-            canvasKey.currentContext.findRenderObject().markNeedsPaint();
-          }
-        },
-        child: CustomPaint(
-          key: canvasKey,
-          isComplex: true,
-          size: Size(Screen.width, Screen.height),
-          painter: mPainter,
+            instance
+              ..onDown = (detail) {
+                if (true) {
+                  if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
+                      currentTouchEvent.touchPos != detail.localPosition) {
+                    currentTouchEvent = TouchEvent(
+                        TouchEvent.ACTION_DOWN, detail.localPosition);
+                    mPainter.setCurrentTouchEvent(currentTouchEvent);
+                    canvasKey.currentContext
+                        .findRenderObject()
+                        .markNeedsPaint();
+                  }
+                }
+              };
+            instance
+              ..onUpdate = (detail) {
+                if (!viewModel.showMenu) {
+                  if (currentTouchEvent.action != TouchEvent.ACTION_MOVE ||
+                      currentTouchEvent.touchPos != detail.localPosition) {
+                    currentTouchEvent = TouchEvent(
+                        TouchEvent.ACTION_MOVE, detail.localPosition);
+                    mPainter.setCurrentTouchEvent(currentTouchEvent);
+                    canvasKey.currentContext
+                        .findRenderObject()
+                        .markNeedsPaint();
+                  }
+                }
+              };
+            instance
+              ..onEnd = (detail) {
+                if (!viewModel.showMenu) {
+                  if (currentTouchEvent.action != TouchEvent.ACTION_UP ||
+                      currentTouchEvent.touchPos != Offset(0, 0)) {
+                    currentTouchEvent = TouchEvent<DragEndDetails>(
+                        TouchEvent.ACTION_UP, Offset(0, 0));
+                    currentTouchEvent.touchDetail = detail;
+
+                    mPainter.setCurrentTouchEvent(currentTouchEvent);
+                    canvasKey.currentContext
+                        .findRenderObject()
+                        .markNeedsPaint();
+                  }
+                }
+              };
+          },
         ),
-      );
-
-      return RawGestureDetector(
-        gestures: <Type, GestureRecognizerFactory>{
-          NovelPagePanGestureRecognizer: GestureRecognizerFactoryWithHandlers<
-              NovelPagePanGestureRecognizer>(
-            () => NovelPagePanGestureRecognizer(false),
-            (NovelPagePanGestureRecognizer instance) {
-              instance.setMenuOpen(false);
-              instance
-                ..onDown = (detail) {
-                  if (true) {
-                    if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
-                        currentTouchEvent.touchPos != detail.localPosition) {
-                      currentTouchEvent = TouchEvent(
-                          TouchEvent.ACTION_DOWN, detail.localPosition);
-                      mPainter.setCurrentTouchEvent(currentTouchEvent);
-                      canvasKey.currentContext
-                          .findRenderObject()
-                          .markNeedsPaint();
-                    }
-                  }
-                };
-              instance
-                ..onUpdate = (detail) {
-                  if (!viewModel.showMenu) {
-                    if (currentTouchEvent.action != TouchEvent.ACTION_MOVE ||
-                        currentTouchEvent.touchPos != detail.localPosition) {
-                      currentTouchEvent = TouchEvent(
-                          TouchEvent.ACTION_MOVE, detail.localPosition);
-                      mPainter.setCurrentTouchEvent(currentTouchEvent);
-                      canvasKey.currentContext
-                          .findRenderObject()
-                          .markNeedsPaint();
-                    }
-                  }
-                };
-              instance
-                ..onEnd = (detail) {
-                  if (!viewModel.showMenu) {
-                    if (currentTouchEvent.action != TouchEvent.ACTION_UP ||
-                        currentTouchEvent.touchPos != Offset(0, 0)) {
-                      currentTouchEvent = TouchEvent<DragEndDetails>(
-                          TouchEvent.ACTION_UP, Offset(0, 0));
-                      currentTouchEvent.touchDetail = detail;
-
-                      mPainter.setCurrentTouchEvent(currentTouchEvent);
-                      canvasKey.currentContext
-                          .findRenderObject()
-                          .markNeedsPaint();
-                    }
-                  }
-                };
-            },
-          ),
-        },
-        child: CustomPaint(
-          key: canvasKey,
-          isComplex: true,
-          size: Size(Screen.width, Screen.height),
-          painter: mPainter,
-        ),
-      );
-    });
+      },
+      child: CustomPaint(
+        key: canvasKey,
+        isComplex: true,
+        size: Size(Screen.width, Screen.height),
+        painter: mPainter,
+      ),
+    );
   }
 
   @override

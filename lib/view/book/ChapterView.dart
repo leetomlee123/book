@@ -24,7 +24,7 @@ class ChapterView extends StatefulWidget {
 class _ChapterViewItem extends State<ChapterView> {
   ScrollController _scrollController;
 
-  double itemHeight = 45.0;
+  double itemHeight = 50.0;
 
   bool up = false;
   int curIndex = 0;
@@ -79,13 +79,14 @@ class _ChapterViewItem extends State<ChapterView> {
                   left: 10,
                   top: ScreenUtil.getStatusBarH(context) + 10,
                   right: 20),
-              height: 120,
+              height: 140,
               width: ScreenUtil.getScreenW(context),
               child: Row(
                 children: [
                   CachedNetworkImage(
                     imageUrl: data.book.Img,
                     width: 85,
+                  
                   ),
                   Padding(
                     padding: const EdgeInsets.all(10.0),

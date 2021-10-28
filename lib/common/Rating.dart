@@ -74,9 +74,7 @@ class _RatingState extends State<Rating> {
         final sizeStar5 = star5.size;
 
         if (details.globalPosition.dx < positionStar1.dx) {
-          print(details.globalPosition.dx.toString() +
-              " " +
-              positionStar1.dx.toString());
+     
           _updateRating(0);
         } else if (details.globalPosition.dx > positionStar1.dx &&
             details.globalPosition.dx < (positionStar1.dx + sizeStar1.width)) {

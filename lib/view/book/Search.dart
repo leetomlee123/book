@@ -54,12 +54,12 @@ class _SearchState extends State<Search> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        actions: [TextButton(
+        // actions: [TextButton(
        
-          onPressed: () {
-            Navigator.pop(context);
-          }, child: Text("返回"),
-        )],
+        //   onPressed: () {
+        //     Navigator.pop(context);
+        //   }, child: Text("返回"),
+        // )],
       ),
       body:
           Store.connect<SearchModel>(builder: (context, SearchModel d, child) {

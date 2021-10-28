@@ -15,7 +15,6 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 class Menu extends StatefulWidget {
   @override
@@ -123,7 +122,8 @@ class _MenuState extends State<Menu> {
 
                     _readModel.initPageContent(_readModel.book.cur, true);
                   },
-                  label: '${_readModel.chapters[_readModel.book.cur].chapterName} ',
+                  label:
+                      '${_readModel.chapters[_readModel.book.cur].chapterName} ',
                   semanticFormatterCallback: (newValue) {
                     return '${newValue.round()} dollars';
                   },
@@ -366,7 +366,7 @@ class _MenuState extends State<Menu> {
                         _readModel.updPage();
                       },
                       min: 0,
-                      max: 30,
+                      max: 50,
                     ),
                   ),
                 ),

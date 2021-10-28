@@ -28,7 +28,6 @@ class ReaderPageManager {
 
   void setCurrentTouchEvent(TouchEvent event) {
     var touchPos = event.touchPos;
-    print('$touchPos' +'${event.action}');
 
     /// 如果正在执行动画，判断是否需要中止动画
     if (currentState == STATE.STATE_ANIMATING) {

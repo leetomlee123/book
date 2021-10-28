@@ -73,7 +73,6 @@ class SearchModel with ChangeNotifier {
       bksAi = data.map((e) => BookAi.fromJson(e)).toList();
     else
       bksAi.clear();
-    print(bksAi?.length);
     notifyListeners();
   }
 
@@ -118,7 +117,6 @@ class SearchModel with ChangeNotifier {
 
   void onLoading() async {
     page += 1;
-    print(page);
     loading = true;
     await getSearchData();
     loading = false;
@@ -222,18 +220,18 @@ class SearchModel with ChangeNotifier {
     List data = res.data['data'];
     List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
     var h = Screen.width - 60;
-    for (var i = 0; i < hbs.length; i++) {
+    for (int i = 0; i < hbs.length; i++) {
       hot.add(
         TextButton(
             style: ButtonStyle(
                 fixedSize: MaterialStateProperty.all(Size(h / 2, 40)),
-                backgroundColor: MaterialStateProperty.resolveWith(
-                  (states) {
-                    return SpUtil.getBool("dark")
-                        ? Colors.white10
-                        : Colors.grey.shade50;
-                  },
-                ),
+                // backgroundColor: MaterialStateProperty.resolveWith(
+                //   (states) {
+                //     return SpUtil.getBool("dark")
+                //         ? Colors.white10
+                //         : Colors.grey.shade50;
+                //   },
+                // ),
                 alignment: Alignment.centerLeft),
             clipBehavior: Clip.hardEdge,
             onPressed: () async {

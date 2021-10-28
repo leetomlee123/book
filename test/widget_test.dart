@@ -13,10 +13,8 @@ void main() async {
   File file = new File("E:\\a\\book\\test\\proto3");
   ChaptersProto cps = ChaptersProto.fromBuffer(file.readAsBytesSync());
   cps.chaptersProto.forEach((element) {
-    print(element);
   });
   // Chapters chapters = new Chapters.fromBuffer(file.readAsBytesSync());
   // chapters.chapters.forEach((element) {
-  //   print(element);
   // });
 }

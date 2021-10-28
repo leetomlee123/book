@@ -118,7 +118,6 @@
 //                 _latestLight = 0;
 //               }
 //               var d = intLight / len;
-//               print('设置亮度为:$d');
 //               Light.Screen.setBrightness(d);
 //             });
 //           } else if (dx > (wSpace * 4)) {
@@ -137,7 +136,6 @@
 //                 _latestVolume = 0;
 //               }
 //               var d = intVolume / len;
-//               print('设置音量为:$d');
 //               controller.setVolume(d);
 //             });
 //           }
@@ -154,7 +152,6 @@
 //                 _latestVolume = 0;
 //               }
 //               var d = intVolume / len;
-//               print('设置音量为:$d');
 //               controller.setVolume(d);
 //             } else {
 //               if (intLight > len) {
@@ -165,7 +162,6 @@
 //                 _latestLight = 0;
 //               }
 //               var d = intLight / len;
-//               print('设置音量为:$d');
 //               Light.Screen.setBrightness(d);
 //             }
 //           });

@@ -4,6 +4,7 @@ import 'package:book/common/common.dart';
 import 'package:book/entity/AppInfo.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -18,7 +19,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_xupdate/flutter_xupdate.dart';
 import 'package:flutter_xupdate/update_entity.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Me extends StatelessWidget {
@@ -122,18 +123,19 @@ class Me extends StatelessWidget {
               },
               c,
             ),
-            Store.connect<ColorModel>(
-              builder: (context, ColorModel data, child) => getItem(
-                ImageIcon(data.dark
-                    ? AssetImage("images/sun.png")
-                    : AssetImage("images/moon.png")),
-                data.dark ? '日间模式' : '夜间模式',
-                () {
-                  data.switchModel();
-                },
-                c,
-              ),
-            ),
+            // Store.connect<ColorModel>(
+            //   builder: (context, ColorModel data, child) => getItem(
+            //     ImageIcon(data.dark
+            //         ? AssetImage("images/sun.png")
+            //         : AssetImage("images/moon.png")),
+            //     data.dark ? '日间模式' : '夜间模式',
+            //     () async {
+            //       await data.switchModel();
+            //       // Store.value<ReadModel>(context).updPage();
+            //     },
+            //     c,
+            //   ),
+            // ),
             getItem(
               ImageIcon(AssetImage("images/re.png")),
               '免责声明',
@@ -173,7 +175,6 @@ class Me extends StatelessWidget {
             //     if (await canLaunch(url)) {
             //       await launch(url);
             //     } else {
-            //       print('不能访问');
             //     }
             //   },
             //   c,

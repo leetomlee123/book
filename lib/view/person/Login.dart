@@ -31,15 +31,14 @@ class _LoginState extends State<Login> {
     //   BotToast.showText(text: googleSignInAccount.toString());
 
     // } catch (error) {
-    //   print(error);
     // }
   }
 
   login(BuildContext context) async {
     FocusScope.of(context).requestFocus(FocusNode());
     var formData = FormData.fromMap({"name": username, "password": pwd});
-    Response response = await HttpUtil.instance.dio
-        .post(Common.login, data: formData);
+    Response response =
+        await HttpUtil.instance.dio.post(Common.login, data: formData);
     var data = response.data;
     if (data['code'] != 201) {
       BotToast.showText(text: data['msg']);
@@ -71,18 +70,21 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
         resizeToAvoidBottomInset: false,
-        appBar: AppBar(title: Text("登录"),centerTitle: true,),
+        appBar: AppBar(
+          title: Text("登录"),
+          centerTitle: true,
+        ),
         body: SingleChildScrollView(
-                  child: Container(
+          child: Container(
             child: Column(
               key: UniqueKey(),
               children: <Widget>[
                 SizedBox(
-                  height: Screen.topSafeHeight + 10,
+                  height: Screen.topSafeHeight + 5,
                 ),
                 CircleAvatar(
                   radius: 60,
-                  backgroundImage: AssetImage("images/login.jpg"),
+                  backgroundImage: const AssetImage("images/login.jpg"),
                   backgroundColor: Colors.white,
                 ),
                 SizedBox(
@@ -90,17 +92,15 @@ class _LoginState extends State<Login> {
                 ),
                 Center(child: Text('即刻追书')),
                 SizedBox(
-                  height: 40,
+                  height: 10,
                 ),
                 TextFormField(
                   autofocus: false,
-                  // style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    // hintStyle: TextStyle(color: Colors.white),
-                    hintText: '账号',
-                    contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
-                  ),
+                      hintText: '账号',
+                      contentPadding:
+                          EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+                      prefixIcon: Icon(Icons.person)),
                   onChanged: (String value) {
                     this.username = value;
                   },
@@ -111,12 +111,10 @@ class _LoginState extends State<Login> {
                 TextFormField(
                   autofocus: false,
                   obscureText: true,
-                  // style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    // hintStyle: TextStyle(color: Colors.white),
+                    prefixIcon: Icon(Icons.lock),
                     hintText: '密码',
                     contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-//        border: OutlineInputBorder(borderRadius: BorderRadius.circular(32.0)),
                   ),
                   onChanged: (String value) {
                     this.pwd = value;
@@ -132,7 +130,8 @@ class _LoginState extends State<Login> {
                     alignment: FractionalOffset.center,
                     decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor,
-                      borderRadius: BorderRadius.all(const Radius.circular(22.0)),
+                      borderRadius:
+                          BorderRadius.all(const Radius.circular(22.0)),
                     ),
                     child: Text(
                       "登 陆",
@@ -161,14 +160,15 @@ class _LoginState extends State<Login> {
                   children: [
                     GestureDetector(
                       child: CircleAvatar(
-                        backgroundImage: AssetImage("images/google-logo.jpg"),
+                        backgroundImage:
+                            const AssetImage("images/google-logo.jpg"),
                         backgroundColor: Colors.white,
                       ),
                       onTap: () => googleLogin(),
                     ),
                     GestureDetector(
                       child: CircleAvatar(
-                        backgroundImage: AssetImage("images/github.png"),
+                        backgroundImage: const AssetImage("images/github.png"),
                         backgroundColor: Colors.white,
                       ),
                       onTap: () => githubLogin(),

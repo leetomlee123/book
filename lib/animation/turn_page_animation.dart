@@ -1,6 +1,8 @@
 import 'dart:ui';
+
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/animation/BaseAnimationPage.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:flutter/material.dart';
 
@@ -56,6 +58,7 @@ class CoverPageAnimation extends BaseAnimationPage {
     if (currentAnimation == null) {
       buildCurrentAnimation(controller, canvasKey);
     }
+
     /// 很神奇的一点，这个监听器有时会自己变成null……偶发性的，试了好多次也没找到如何触发的……但它就是存在变成null的情况
     /// 所以要检测一下，变成null了就给它弄回去
     if (statusListener == null) {
@@ -65,12 +68,13 @@ class CoverPageAnimation extends BaseAnimationPage {
             break;
           case AnimationStatus.completed:
             if (animationType == ANIMATION_TYPE.TYPE_CONFIRM) {
+              canvasKey.currentContext.findRenderObject().markNeedsPaint();
+
               if (isTurnNext) {
                 readerViewModel.changeCoverPage(1);
               } else {
                 readerViewModel.changeCoverPage(-1);
               }
-              canvasKey.currentContext.findRenderObject().markNeedsPaint();
             }
             break;
           case AnimationStatus.forward:
@@ -81,7 +85,10 @@ class CoverPageAnimation extends BaseAnimationPage {
       currentAnimation.addStatusListener(statusListener);
     }
 
-    if(statusListener!=null&&!(controller as AnimationControllerWithListenerNumber).statusListeners.contains(statusListener)){
+    if (statusListener != null &&
+        !(controller as AnimationControllerWithListenerNumber)
+            .statusListeners
+            .contains(statusListener)) {
       currentAnimation.addStatusListener(statusListener);
     }
 
@@ -90,15 +97,15 @@ class CoverPageAnimation extends BaseAnimationPage {
         : Offset(0, mTouch.dy);
     currentAnimationTween.end = (coverDirection == ORIENTATION_HORIZONTAL)
         ? Offset(
-        isTurnNext
-            ? mStartPoint.dx - currentSize.width
-            : currentSize.width + mStartPoint.dx,
-        0)
+            isTurnNext
+                ? mStartPoint.dx - currentSize.width
+                : currentSize.width + mStartPoint.dx,
+            0)
         : Offset(
-        0,
-        isTurnNext
-            ? mStartPoint.dy - currentSize.height
-            : mStartPoint.dy + currentSize.height);
+            0,
+            isTurnNext
+                ? mStartPoint.dy - currentSize.height
+                : mStartPoint.dy + currentSize.height);
 
     animationType = ANIMATION_TYPE.TYPE_CONFIRM;
 
@@ -190,7 +197,7 @@ class CoverPageAnimation extends BaseAnimationPage {
     if (coverDirection == ORIENTATION_HORIZONTAL) {
       shadowGradient = new LinearGradient(
         colors: [
-          Color(0xAA000000),
+          Color(0xAAA00000),
           Colors.transparent,
         ],
       );
@@ -216,8 +223,6 @@ class CoverPageAnimation extends BaseAnimationPage {
 
         canvas.drawRect(rect, shadowPaint);
       }
-
-
     } else {
       shadowGradient = new LinearGradient(
         begin: Alignment.topRight,
@@ -262,15 +267,15 @@ class CoverPageAnimation extends BaseAnimationPage {
   @override
   bool isCancelArea() {
     return coverDirection == ORIENTATION_HORIZONTAL
-        ? (mTouch.dx - mStartPoint.dx).abs() < (currentSize.width / 4)
-        : (mTouch.dy - mStartPoint.dy).abs() < (currentSize.height / 4);
+        ? (mTouch.dx - mStartPoint.dx).abs() < (currentSize.width / 15)
+        : (mTouch.dy - mStartPoint.dy).abs() < (currentSize.height / 15);
   }
 
   @override
   bool isConfirmArea() {
     return coverDirection == ORIENTATION_HORIZONTAL
-        ? (mTouch.dx - mStartPoint.dx).abs() > (currentSize.width / 4)
-        : (mTouch.dy - mStartPoint.dy).abs() > (currentSize.height / 4);
+        ? (mTouch.dx - mStartPoint.dx).abs() > (currentSize.width / 15)
+        : (mTouch.dy - mStartPoint.dy).abs() > (currentSize.height / 15);
   }
 
   void buildCurrentAnimation(
