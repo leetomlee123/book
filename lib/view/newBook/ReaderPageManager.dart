@@ -8,7 +8,6 @@ import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 
-
 class ReaderPageManager {
   static const TYPE_ANIMATION_SIMULATION_TURN = 1;
   static const TYPE_ANIMATION_COVER_TURN = 2;
@@ -116,7 +115,7 @@ class ReaderPageManager {
 
   void startCancelAnimation() {
     Animation<Offset> animation =
-    currentAnimationPage.getCancelAnimation(animationController, canvasKey);
+        currentAnimationPage.getCancelAnimation(animationController, canvasKey);
 
     if (animation == null) {
       return;
@@ -243,8 +242,7 @@ class TouchEvent<T> {
 
   int action;
   T touchDetail;
-  Offset touchPos =
-  Offset(Screen.width, Screen.height);
+  Offset touchPos = Offset(Screen.width, Screen.height);
 
   TouchEvent(this.action, this.touchPos);
 

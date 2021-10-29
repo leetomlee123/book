@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/animation/BaseAnimationPage.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:flutter/material.dart';
 
@@ -36,12 +35,15 @@ class CoverPageAnimation extends BaseAnimationPage {
       buildCurrentAnimation(controller, canvasKey);
     }
 
-    currentAnimationTween.begin = (coverDirection == ORIENTATION_HORIZONTAL)
-        ? Offset(mTouch.dx, 0)
-        : Offset(0, mTouch.dy);
-    currentAnimationTween.end = (coverDirection == ORIENTATION_HORIZONTAL)
-        ? Offset(mStartPoint.dx, 0)
-        : Offset(0, mStartPoint.dy);
+    // currentAnimationTween.begin = (coverDirection == ORIENTATION_HORIZONTAL)
+    //     ? Offset(mTouch.dx, 0)
+    //     : Offset(0, mTouch.dy);
+    currentAnimationTween.begin = Offset(mTouch.dx, 0);
+
+    // currentAnimationTween.end = (coverDirection == ORIENTATION_HORIZONTAL)
+    //     ? Offset(mStartPoint.dx, 0)
+    //     : Offset(0, mStartPoint.dy);
+    currentAnimationTween.end = Offset(mStartPoint.dx, 0);
 
     animationType = ANIMATION_TYPE.TYPE_CANCEL;
 
@@ -91,22 +93,12 @@ class CoverPageAnimation extends BaseAnimationPage {
             .contains(statusListener)) {
       currentAnimation.addStatusListener(statusListener);
     }
-
-    currentAnimationTween.begin = (coverDirection == ORIENTATION_HORIZONTAL)
-        ? Offset(mTouch.dx, 0)
-        : Offset(0, mTouch.dy);
-    currentAnimationTween.end = (coverDirection == ORIENTATION_HORIZONTAL)
-        ? Offset(
-            isTurnNext
-                ? mStartPoint.dx - currentSize.width
-                : currentSize.width + mStartPoint.dx,
-            0)
-        : Offset(
-            0,
-            isTurnNext
-                ? mStartPoint.dy - currentSize.height
-                : mStartPoint.dy + currentSize.height);
-
+    currentAnimationTween.begin = Offset(mTouch.dx, 0);
+    currentAnimationTween.end = Offset(
+        isTurnNext
+            ? mStartPoint.dx - currentSize.width
+            : currentSize.width + mStartPoint.dx,
+        0);
     animationType = ANIMATION_TYPE.TYPE_CONFIRM;
 
     return currentAnimation;
@@ -138,11 +130,7 @@ class CoverPageAnimation extends BaseAnimationPage {
       case TouchEvent.ACTION_MOVE:
       case TouchEvent.ACTION_UP:
       case TouchEvent.ACTION_CANCEL:
-        if (coverDirection == ORIENTATION_VERTICAL) {
-          isTurnNext = mTouch.dy - mStartPoint.dy < 0;
-        } else {
-          isTurnNext = mTouch.dx - mStartPoint.dx < 0;
-        }
+        isTurnNext = mTouch.dx - mStartPoint.dx < 0;
 
         if ((!isTurnNext && isCanGoPre()) || (isTurnNext && isCanGoNext())) {
           isStartAnimation = true;
@@ -169,23 +157,15 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   void drawTopPage(Canvas canvas) {
     canvas.save();
-    if (coverDirection == ORIENTATION_HORIZONTAL) {
-      if (isTurnNext) {
-        canvas.translate(mTouch.dx - mStartPoint.dx, 0);
-        canvas.drawPicture(readerViewModel.cur());
-      } else {
-        canvas.translate((mTouch.dx - mStartPoint.dx) - currentSize.width, 0);
-        canvas.drawPicture(readerViewModel.pre());
-      }
+
+    if (isTurnNext) {
+      canvas.translate(mTouch.dx - mStartPoint.dx, 0);
+      canvas.drawPicture(readerViewModel.cur());
     } else {
-      if (isTurnNext) {
-        canvas.translate(0, mTouch.dy - mStartPoint.dy);
-        canvas.drawPicture(readerViewModel.cur());
-      } else {
-        canvas.translate(0, (mTouch.dy - mStartPoint.dy) - currentSize.height);
-        canvas.drawPicture(readerViewModel.pre());
-      }
+      canvas.translate((mTouch.dx - mStartPoint.dx) - currentSize.width, 0);
+      canvas.drawPicture(readerViewModel.pre());
     }
+
     canvas.restore();
   }
 
@@ -266,16 +246,12 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   @override
   bool isCancelArea() {
-    return coverDirection == ORIENTATION_HORIZONTAL
-        ? (mTouch.dx - mStartPoint.dx).abs() < (currentSize.width / 15)
-        : (mTouch.dy - mStartPoint.dy).abs() < (currentSize.height / 15);
+    return (mTouch.dx - mStartPoint.dx).abs() < (currentSize.width / 15);
   }
 
   @override
   bool isConfirmArea() {
-    return coverDirection == ORIENTATION_HORIZONTAL
-        ? (mTouch.dx - mStartPoint.dx).abs() > (currentSize.width / 15)
-        : (mTouch.dy - mStartPoint.dy).abs() > (currentSize.height / 15);
+    return (mTouch.dx - mStartPoint.dx).abs() > (currentSize.width / 15);
   }
 
   void buildCurrentAnimation(

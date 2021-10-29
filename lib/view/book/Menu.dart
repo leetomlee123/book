@@ -28,7 +28,7 @@ class _MenuState extends State<Menu> {
   ReadModel _readModel;
   ColorModel _colorModel;
 
-  double settingH = 420;
+  double settingH = 300;
 
   @override
   void initState() {
@@ -386,23 +386,23 @@ class _MenuState extends State<Menu> {
             children: bgThemes(),
             scrollDirection: Axis.horizontal,
           )),
-          Expanded(
-            child: flipType(),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.only(left: 15),
-            value: _readModel.leftClickNext,
-            onChanged: (value) {
-              _readModel.switchClickNextPage();
-            },
-            title: Text(
-              '单手模式',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: _colorModel.dark ? Colors.white : Colors.black),
-            ),
-            selected: _readModel.leftClickNext,
-          ),
+          // Expanded(
+          //   child: flipType(),
+          // ),
+          // SwitchListTile(
+          //   contentPadding: EdgeInsets.only(left: 15),
+          //   value: _readModel.leftClickNext,
+          //   onChanged: (value) {
+          //     _readModel.switchClickNextPage();
+          //   },
+          //   title: Text(
+          //     '单手模式',
+          //     style: TextStyle(
+          //         fontSize: 13,
+          //         color: _colorModel.dark ? Colors.white : Colors.black),
+          //   ),
+          //   selected: _readModel.leftClickNext,
+          // ),
         ],
       ),
       padding: EdgeInsets.symmetric(horizontal: 15),

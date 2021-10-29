@@ -39,6 +39,7 @@ class ReadModel with ChangeNotifier {
   GlobalKey canvasKey;
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+  AnimationController animationController;
 
   /// 翻页动画类型
   int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
@@ -306,23 +307,29 @@ class ReadModel with ChangeNotifier {
     var curWid = details.globalPosition.dx;
     var curH = details.globalPosition.dy;
 
-    if ((curWid > 0 && curWid < space)) {
-      if (leftClickNext) {
-        changeCoverPage(1);
-        return;
-      }
-      changeCoverPage(-1);
-    } else if ((curWid > space) &&
-        (curWid < 2 * space) &&
-        (curH < hSpace * 3)) {
+    if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
       toggleShowMenu();
-    } else if ((curWid > space * 2)) {
-      if (leftClickNext) {
-        changeCoverPage(1);
-        return;
-      }
-      changeCoverPage(1);
     }
+    return;
+    // if ((curWid > 0 && curWid < space)) {
+    //   if (leftClickNext) {
+    //     // changeCoverPage(1);
+    //     // eventBus.fire(PageControllerGo(1, details.localPosition));
+    //     return;
+    //   }
+    //   // eventBus.fire(PageControllerGo(-1, details.localPosition));
+    // } else if ((curWid > space) &&
+    //     (curWid < 2 * space) &&
+    //     (curH < hSpace * 3)) {
+    //   toggleShowMenu();
+    // } else if ((curWid > space * 2)) {
+    //   if (leftClickNext) {
+    //     // eventBus.fire(PageControllerGo(1, details.localPosition));
+
+    //     return;
+    //   }
+    //   // eventBus.fire(PageControllerGo(1, details.localPosition));
+    // }
   }
 
   ui.Picture getPage({bool firstInit = false}) {
@@ -703,6 +710,7 @@ class ReadModel with ChangeNotifier {
           curPage = nextPage;
         }
         book.index = 0;
+        nextPage = null;
         // notifyListeners();
         Future.delayed(Duration(milliseconds: 500), () {
           loadChapter(book.cur + 1).then((value) => nextPage = value);
@@ -731,6 +739,7 @@ class ReadModel with ChangeNotifier {
 
       book.index = curPage.pageOffsets - 1;
       notifyListeners();
+      prePage = null;
       Future.delayed(Duration(milliseconds: 500), () {
         loadChapter(book.cur - 1).then((value) => prePage = value);
       });
@@ -743,12 +752,18 @@ class ReadModel with ChangeNotifier {
 
   bool isCanGoNext() {
     if (book.cur >= (chapters.length - 1) &&
-        book.index >= (curPage.pageOffsets - 1)) return false;
+        book.index >= (curPage.pageOffsets - 1)) {
+      BotToast.showText(text: "已经是最后一页");
+      return false;
+    }
     return true;
   }
 
   bool isCanGoPre() {
-    if (book.cur <= 0 && book.index <= 0) return false;
+    if (book.cur <= 0 && book.index <= 0) {
+      BotToast.showText(text: "已经是第一页");
+      return false;
+    }
     return true;
   }
 
