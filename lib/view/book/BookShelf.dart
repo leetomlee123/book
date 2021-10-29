@@ -105,7 +105,7 @@ class _BookShelfState extends State<BookShelf> {
         builder: (context, ShelfModel shelfModel, child) {
       return Scaffold(
           appBar: AppBar(
-            leading: MyIcon(Icons.menu, () {
+            leading: MyIcon(Icons.person, () {
               eventBus.fire(OpenEvent("p"));
             }),
             elevation: 0,
