@@ -144,6 +144,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     await showDialog(
         context: context,
         builder: (context) => AlertDialog(
+              title: Text("提示"),
               content: Text('是否加入本书'),
               actions: <Widget>[
                 TextButton(

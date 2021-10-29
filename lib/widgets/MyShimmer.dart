@@ -24,7 +24,7 @@ class _State extends State<MyShimmer> {
     return SizedBox(
       child: Shimmer.fromColors(
         baseColor: Colors.grey.shade400,
-        highlightColor: Colors.white,
+        highlightColor:  Colors.white,
         child: Column(
           children: items,
           mainAxisAlignment: MainAxisAlignment.center,

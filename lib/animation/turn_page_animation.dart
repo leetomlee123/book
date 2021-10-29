@@ -131,6 +131,7 @@ class CoverPageAnimation extends BaseAnimationPage {
       case TouchEvent.ACTION_UP:
       case TouchEvent.ACTION_CANCEL:
         isTurnNext = mTouch.dx - mStartPoint.dx < 0;
+        // print("isTurnNext $isTurnNext mTouch.dx  ${mTouch.dx}  mStartPoint.dx ${mStartPoint.dx}");
 
         if ((!isTurnNext && isCanGoPre()) || (isTurnNext && isCanGoNext())) {
           isStartAnimation = true;

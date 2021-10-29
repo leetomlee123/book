@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -7,7 +6,6 @@ import 'package:book/entity/Book.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/widgets/ConfirmDialog.dart';
 import 'package:book/widgets/has_update_icon_img.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
@@ -29,11 +27,9 @@ class _BooksWidgetState extends State<BooksWidget> {
   RefreshController _refreshController;
   ShelfModel _shelfModel;
   bool isShelf;
-  final double coverWidth = 76.0;
 
   final double aspectRatio = 0.65;
   double bookPicWidth = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
-  final double coverHeight = 122.58;
   int spacingLen = 20;
   int axisLen = 4;
 
@@ -53,8 +49,7 @@ class _BooksWidgetState extends State<BooksWidget> {
       if (isShelf) {
         _shelfModel.freshToken();
       }
-      if (isShelf)
-        _refreshController.requestRefresh();
+      if (isShelf) _refreshController.requestRefresh();
     });
   }
 
@@ -72,7 +67,8 @@ class _BooksWidgetState extends State<BooksWidget> {
             } else if (mode == LoadStatus.canLoading) {
               body = Text("松手,加载更多!");
             } else {
-              body = Text("到底了!");
+              body = Text(DateUtil.formatDate(DateTime.now(),
+                  format: DateFormats.zh_h_m_s));
             }
             return Center(
               child: body,
@@ -140,11 +136,12 @@ class _BooksWidgetState extends State<BooksWidget> {
     for (int i = 0; i < books.length; i++) {
       book = books[i];
       wds.add(Container(
-        width: coverWidth,
+        width: bookPicWidth,
         child: bookAction(
             Column(
               children: [
-                HasUpdateIconImg(coverWidth, coverHeight, this.widget.type, i),
+                HasUpdateIconImg(bookPicWidth, bookPicWidth / aspectRatio,
+                    this.widget.type, i),
                 SizedBox(
                   height: 5,
                 ),
@@ -162,8 +159,8 @@ class _BooksWidgetState extends State<BooksWidget> {
     }
     int len = 0;
 
-    len = (Screen.width - 20) ~/ coverWidth;
-    if (((Screen.width - 20) % coverWidth) < (len - 1) * 5) {
+    len = (Screen.width - 20) ~/ bookPicWidth;
+    if (((Screen.width - 20) % bookPicWidth) < (len - 1) * 5) {
       len -= 1;
     }
     SpUtil.putInt("lenx", len);
@@ -173,7 +170,7 @@ class _BooksWidgetState extends State<BooksWidget> {
     if (z != 0) {
       for (var i = 0; i < z; i++) {
         wds.add(Container(
-          width: coverWidth,
+          width: bookPicWidth,
         ));
       }
     }
@@ -281,23 +278,22 @@ class _BooksWidgetState extends State<BooksWidget> {
         ),
       ),
       confirmDismiss: (direction) async {
-        var _confirmContent;
-
         var _alertDialog;
 
         if (direction == DismissDirection.endToStart) {
           // 从右向左  也就是删除
-          _confirmContent = '确认删除     ${item.Name}';
-          _alertDialog = ConfirmDialog(
-            _confirmContent,
-            () {
-              // 展示 SnackBar
-              Navigator.of(context).pop(true);
-            },
-            () {
-              Navigator.of(context).pop(false);
-            },
-          );
+
+          _alertDialog = AlertDialog(
+              title: Text("确认删除"),
+              content: Text(item.Name),
+              actions: <Widget>[
+                TextButton(
+                    child: Text("取消"),
+                    onPressed: () => Navigator.of(context).pop(false)),
+                TextButton(
+                    child: Text("确定"),
+                    onPressed: () => Navigator.of(context).pop(true)),
+              ]);
         } else {
           return false;
         }

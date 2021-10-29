@@ -29,20 +29,29 @@ class _SortShelfState extends State<SortShelf> {
             ),
             elevation: 0,
             centerTitle: true,
+            leadingWidth: 80,
+            leading: TextButton(
+              child: Text(
+                shelfModel.pickAllFlag ? '全不选' : '全选',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () {
+                shelfModel.pickAll();
+              },
+            ),
+            actions: [
+              TextButton(
+                child: Text('完成', style: TextStyle(color: Colors.white)),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              )
+            ],
           ),
           body: BooksWidget("sort"),
           bottomNavigationBar: ButtonBar(
             alignment: MainAxisAlignment.spaceAround,
             children: [
-              TextButton(
-                child: Container(
-                  child: Text(shelfModel.pickAllFlag ? '全不选' : '全选'),
-                  // width: (Screen.width - 10) / 2,
-                ),
-                onPressed: () {
-                  shelfModel.pickAll();
-                },
-              ),
               TextButton(
                 child: Container(
                   child: Text(

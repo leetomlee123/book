@@ -89,9 +89,10 @@ class _ChapterViewItem extends State<ChapterView> {
                   
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(10.0),
+                    padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 5),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           data.book.Name,
@@ -118,7 +119,7 @@ class _ChapterViewItem extends State<ChapterView> {
                   Spacer(),
                   Icon(
                     Icons.arrow_forward_sharp,
-                    color: colorModel.dark ? Colors.white24 : Colors.black26,
+                    // color: colorModel.dark ? Colors.white24 : Colors.black26,
                   )
                 ],
               ),
@@ -152,7 +153,7 @@ class _ChapterViewItem extends State<ChapterView> {
                         ),
                         trailing: Text(
                           has == "2" ? "已缓存" : "",
-                          style: TextStyle(fontSize: 12,color: Colors.grey),
+                          style: TextStyle(fontSize: 10,color: Colors.grey),
                         ),
                         selected: index == data.book.cur,
                         onTap: () async {

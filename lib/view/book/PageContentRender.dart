@@ -1,6 +1,5 @@
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/newBook/NovelPagePainter.dart';
@@ -49,26 +48,11 @@ class _PageContentReaderState extends State<PageContentReader>
       pageManager.setCurrentCanvasContainerContext(canvasKey);
       pageManager.setAnimationController(animationController);
       pageManager.setContentViewModel(viewModel);
-      viewModel.animationController = animationController;
       mPainter = NovelPagePainter(pageManager: pageManager);
     }
-
+    viewModel.mPainter = mPainter;
     super.initState();
   }
-
-  // _PageContentReaderState() {
-  //   // eventBus.on<PageControllerGo>().listen((v) {
-  //   //   int f = v.go;
-  //   //   Offset detail = v.localDetail;
-  //   //   print("get f $f detail $detail");
-  //   //   currentTouchEvent = TouchEvent(TouchEvent.ACTION_CANCEL, detail);
-  //   //   mPainter.pageManager.currentAnimationPage.mTouch =
-  //   //       Offset(detail.dx + (Screen.width / 15) + 1, 0);
-  //   //   mPainter.setCurrentTouchEvent(currentTouchEvent);
-  //   //   canvasKey.currentContext.findRenderObject().markNeedsPaint();
-  //   // }
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {

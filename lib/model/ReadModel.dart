@@ -15,6 +15,7 @@ import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/entity/chapter.pb.dart';
+import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:book/widgets/MyShimmer.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -31,6 +32,7 @@ enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
   Color darkFont = Color(0x9FFFFFFF);
+  NovelPagePainter mPainter;
   TextComposition textComposition;
   Map<String, ui.Picture> widgets = Map();
   Stack stackContent;
@@ -39,7 +41,6 @@ class ReadModel with ChangeNotifier {
   GlobalKey canvasKey;
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
-  AnimationController animationController;
 
   /// 翻页动画类型
   int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
@@ -306,30 +307,61 @@ class ReadModel with ChangeNotifier {
     var space = wid / 3;
     var curWid = details.globalPosition.dx;
     var curH = details.globalPosition.dy;
+    var location = details.localPosition;
 
-    if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
-      toggleShowMenu();
-    }
-    return;
-    // if ((curWid > 0 && curWid < space)) {
-    //   if (leftClickNext) {
-    //     // changeCoverPage(1);
-    //     // eventBus.fire(PageControllerGo(1, details.localPosition));
-    //     return;
-    //   }
-    //   // eventBus.fire(PageControllerGo(-1, details.localPosition));
-    // } else if ((curWid > space) &&
-    //     (curWid < 2 * space) &&
-    //     (curH < hSpace * 3)) {
+    // if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
     //   toggleShowMenu();
-    // } else if ((curWid > space * 2)) {
-    //   if (leftClickNext) {
-    //     // eventBus.fire(PageControllerGo(1, details.localPosition));
-
-    //     return;
-    //   }
-    //   // eventBus.fire(PageControllerGo(1, details.localPosition));
     // }
+    // return;
+    if ((curWid > 0 && curWid < space)) {
+      if (leftClickNext) {
+        // changeCoverPage(1);
+        // eventBus.fire(PageControllerGo(1, details.localPosition));
+        clickPage(1, location);
+        return;
+      }
+      clickPage(-1, location);
+    } else if ((curWid > space) &&
+        (curWid < 2 * space) &&
+        (curH < hSpace * 3)) {
+      toggleShowMenu();
+    } else if ((curWid > space * 2)) {
+      if (leftClickNext) {
+        clickPage(1, location);
+
+        return;
+      }
+      clickPage(1, location);
+    }
+  }
+
+  void clickPage(int f, Offset detail) {
+    // print("get f $f detail $detail");
+
+    // var offset = f > 0
+    //     ? (detail.dx + (Screen.width / 15) + 1)
+    //     : ((Screen.width / 15) - detail.dx - 1);
+    // print("detail ${detail.dx}      offser $offset");
+    // mPainter.pageManager.currentAnimationPage.mTouch = detail;
+    TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_DOWN, detail);
+
+    mPainter.setCurrentTouchEvent(currentTouchEvent);
+
+    // canvasKey.currentContext.findRenderObject().markNeedsPaint();
+    var offset = Offset(
+        f > 0
+            ? (detail.dx - Screen.width / 15 - 5)
+            : (detail.dx + Screen.width / 15 + 5),
+        0);
+    // print("offset $offset");
+    currentTouchEvent = TouchEvent(TouchEvent.ACTION_MOVE, offset);
+
+    mPainter.setCurrentTouchEvent(currentTouchEvent);
+
+    currentTouchEvent = TouchEvent(TouchEvent.ACTION_CANCEL, offset);
+
+    mPainter.setCurrentTouchEvent(currentTouchEvent);
+    canvasKey.currentContext.findRenderObject().markNeedsPaint();
   }
 
   ui.Picture getPage({bool firstInit = false}) {
