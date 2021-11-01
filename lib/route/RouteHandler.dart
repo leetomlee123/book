@@ -3,9 +3,9 @@ import 'dart:convert' as convert;
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
-import 'package:book/main.dart';
 import 'package:book/view/book/AllTagBook.dart';
 import 'package:book/view/book/BookDetail.dart';
+import 'package:book/view/book/BookShelf.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/ReadBook.dart';
 import 'package:book/view/book/Search.dart';
@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 // 根目录
 var rootHandler =
     Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  return MainPage();
+  return BookShelf();
 });
 // 根目录
 

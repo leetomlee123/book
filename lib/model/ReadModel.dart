@@ -198,10 +198,6 @@ class ReadModel with ChangeNotifier {
         await reqChapters(book.Id, chapters?.length ?? 0, init);
     if (list == null) return;
     chapters.addAll(list);
-    //书的最后一章
-    if (book.CId == "-1") {
-      book.cur = chapters.length - 1;
-    }
     if (SpUtil.containsKey(book.Id)) {
       DbHelper.instance.addChapters(list, book.Id);
     }
@@ -219,7 +215,7 @@ class ReadModel with ChangeNotifier {
       r.chapterName = "-1";
       // r.height = Screen.height;
       r.chapterContent = "没有更多内容,等待作者更新";
-      return r;
+      return null;
     }
     var chapter = chapters[idx];
     r.chapterName = chapter.chapterName;
@@ -309,14 +305,8 @@ class ReadModel with ChangeNotifier {
     var curH = details.globalPosition.dy;
     var location = details.localPosition;
 
-    // if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
-    //   toggleShowMenu();
-    // }
-    // return;
     if ((curWid > 0 && curWid < space)) {
       if (leftClickNext) {
-        // changeCoverPage(1);
-        // eventBus.fire(PageControllerGo(1, details.localPosition));
         clickPage(1, location);
         return;
       }
@@ -328,7 +318,6 @@ class ReadModel with ChangeNotifier {
     } else if ((curWid > space * 2)) {
       if (leftClickNext) {
         clickPage(1, location);
-
         return;
       }
       clickPage(1, location);
@@ -336,24 +325,15 @@ class ReadModel with ChangeNotifier {
   }
 
   void clickPage(int f, Offset detail) {
-    // print("get f $f detail $detail");
-
-    // var offset = f > 0
-    //     ? (detail.dx + (Screen.width / 15) + 1)
-    //     : ((Screen.width / 15) - detail.dx - 1);
-    // print("detail ${detail.dx}      offser $offset");
-    // mPainter.pageManager.currentAnimationPage.mTouch = detail;
     TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_DOWN, detail);
 
     mPainter.setCurrentTouchEvent(currentTouchEvent);
 
-    // canvasKey.currentContext.findRenderObject().markNeedsPaint();
     var offset = Offset(
         f > 0
             ? (detail.dx - Screen.width / 15 - 5)
             : (detail.dx + Screen.width / 15 + 5),
         0);
-    // print("offset $offset");
     currentTouchEvent = TouchEvent(TouchEvent.ACTION_MOVE, offset);
 
     mPainter.setCurrentTouchEvent(currentTouchEvent);
@@ -440,6 +420,9 @@ class ReadModel with ChangeNotifier {
     if (widgets.containsKey(key)) {
       return widgets[key];
     } else {
+      if (nextPage == null) {
+        loadChapter(book.cur + 1).then((value) => {nextPage = value});
+      }
       return widgets.putIfAbsent(
           key,
           () => i >= curPage.pageOffsets
@@ -627,8 +610,22 @@ class ReadModel with ChangeNotifier {
         toastBuilder: (_) => MyShimmer(),
         clickClose: true,
         backgroundColor: Colors.white);
+    var id = chapters[book.cur].chapterId;
+    var url = Common.bookContentUrl + '/$id';
+    var responseBody = await HttpUtil.instance.dio.get(url);
 
-    var content = await getChapterContent(chapter.chapterId, idx: book.cur);
+    var data = responseBody.data['data'];
+    var link = data['link'];
+
+    var content = "";
+    try {
+      content = await ParseHtml().content(link);
+      var formData = FormData.fromMap({"id": id, "content": content});
+      HttpUtil.instance.dio.patch(Common.bookContentUpload, data: formData);
+    } catch (e) {
+      content = "章节内容加载失败,请重试.......\n$link";
+    }
+
     BotToast.closeAllLoading();
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.chapterId)];
@@ -639,7 +636,6 @@ class ReadModel with ChangeNotifier {
       notifyListeners();
       widgets.clear();
       canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
-      // await fillAllContent();
     }
   }
 
@@ -785,7 +781,8 @@ class ReadModel with ChangeNotifier {
   bool isCanGoNext() {
     if (book.cur >= (chapters.length - 1) &&
         book.index >= (curPage.pageOffsets - 1)) {
-      BotToast.showText(text: "已经是最后一页");
+      if (book.index == (curPage.pageOffsets - 1))
+        BotToast.showText(text: "已经是最后一页");
       return false;
     }
     return true;

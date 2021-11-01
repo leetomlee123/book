@@ -4,7 +4,6 @@ import 'package:book/common/common.dart';
 import 'package:book/entity/AppInfo.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -31,274 +30,234 @@ class Me extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _appBar(BuildContext context) {
-    if (SpUtil.haveKey("username")) {
-      return PreferredSize(
-          preferredSize: Size.fromHeight(150),
-          child: Store.connect<ColorModel>(
-              builder: (context, ColorModel model, child) {
-            return UserAccountsDrawerHeader(
-              margin: EdgeInsets.all(0),
-              accountEmail: Text(
-                SpUtil.getString('email') ?? "",
-                style:
-                    TextStyle(color: model.dark ? Colors.white : Colors.black),
-              ),
-              accountName: Text(
-                SpUtil.getString('username') ?? "",
-                style:
-                    TextStyle(color: model.dark ? Colors.white : Colors.black),
-              ),
-              currentAccountPicture: CircleAvatar(
-                backgroundImage: AssetImage("images/fu.png"),
-              ),
-              otherAccountsPictures: [
-                // CircleAvatar(
-                //   backgroundImage: AssetImage("images/vip.png"),
-                // )
-              ],
-              decoration: BoxDecoration(
-                  image: DecorationImage(
-                      image: AssetImage(
-                        "images/a0${model.dark ? 'r' : 's'}.png",
-                      ),
-                      fit: BoxFit.cover)),
-            );
-          }));
-    } else {
-      return PreferredSize(
-        preferredSize: Size.fromHeight(100),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: EdgeInsets.only(top: kToolbarHeight, bottom: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  height: 60,
-                  width: 60,
-                  child: CircleAvatar(
-                    backgroundImage: AssetImage("images/fu.png"),
-                  ),
-                ),
-                SizedBox(
-                  width: 10,
-                ),
-                Text(
-                  "登陆/注册",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ],
-            ),
+  Widget _headImg() {
+    return Container(
+      width: 60,
+      height: 60,
+      child: CircleAvatar(
+        backgroundImage: AssetImage("images/fu.png"),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    bool login = SpUtil.haveKey("auth");
+
+    return Visibility(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _headImg(),
+          Text(
+            SpUtil.getString('username') ?? "",
+            style: TextStyle(fontSize: 20),
           ),
-          onTap: () {
-            if (SpUtil.haveKey("username")) {
-              return;
-            } else {
-              Routes.navigateTo(context, Routes.login);
-            }
-          },
+          SizedBox(
+            height: 5,
+          ),
+          Text(
+            SpUtil.getString('email') ?? "",
+          ),
+        ],
+      ),
+      visible: login,
+      replacement: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            _headImg(),
+            SizedBox(
+              width: 10,
+            ),
+            Text(
+              "登陆/注册",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
         ),
-      );
-    }
+        onTap: () {
+          if (login) {
+            return;
+          } else {
+            Routes.navigateTo(context, Routes.login);
+          }
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     Color c =
         Color(!Store.value<ColorModel>(context).dark ? 0x4D000000 : 0xFBFFFFFF);
-    return Scaffold(
-      appBar: _appBar(context),
-      body: SingleChildScrollView(
-        child: Column(
-          children: <Widget>[
-            getItem(
-              ImageIcon(AssetImage("images/info.png")),
-              '公告',
-              () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (BuildContext context) => InfoPage()));
-              },
-              c,
-            ),
-            // Store.connect<ColorModel>(
-            //   builder: (context, ColorModel data, child) => getItem(
-            //     ImageIcon(data.dark
-            //         ? AssetImage("images/sun.png")
-            //         : AssetImage("images/moon.png")),
-            //     data.dark ? '日间模式' : '夜间模式',
-            //     () async {
-            //       await data.switchModel();
-            //       // Store.value<ReadModel>(context).updPage();
-            //     },
-            //     c,
-            //   ),
-            // ),
-            getItem(
-              ImageIcon(AssetImage("images/re.png")),
-              '免责声明',
-              () {
-                showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                          title: Text(
-                            '免责声明',
-                          ),
-                          content: SingleChildScrollView(
-                            child: Text(
-                              ReadSetting.lawWarn,
-                            ),
-                          ),
-                          actions: <Widget>[
-                            TextButton(
-                              child: Text(
-                                "确定",
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        ));
-              },
-              c,
-            ),
-            // getItem(
-            //   ImageIcon(AssetImage("images/co.png")),
-            //   '应用反馈',
-            //   ({int number = 953457248, bool isGroup = true}) async {
-            //     String url = isGroup
-            //         ? 'mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${number ?? 0}&card_type=group&source=qrcode'
-            //         : 'mqqwpa://im/chat?chat_type=wpa&uin=${number ?? 0}&version=1&src_type=web&web_src=oicqzone.com';
-            //     if (await canLaunch(url)) {
-            //       await launch(url);
-            //     } else {
-            //     }
-            //   },
-            //   c,
-            // ),
-            getItem(
-              ImageIcon(AssetImage("images/skin.png")),
-              '主题',
-              () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (BuildContext context) => Skin()));
-              },
-              c,
-            ),
-            // getItem(
-            //   ImageIcon(AssetImage("images/cache_manager.png")),
-            //   '缓存管理',
-            //   () {
-            //     Navigator.of(context).push(MaterialPageRoute(
-            //         builder: (BuildContext context) => CacheManager()));
-            //   },
-            // ),
-            getItem(
-              ImageIcon(AssetImage("images/fe.png")),
-              '意见反馈',
-              () {
-                locator<TelAndSmsService>().sendEmail('leetomlee123@gmail.com');
-              },
-              c,
-            ),
-            getItem(
-              ImageIcon(AssetImage("images/github.png")),
-              '开源地址',
-              () {
-                launch('https://github.com/leetomlee123/book');
-              },
-              c,
-            ),
-            getItem(
-              ImageIcon(AssetImage("images/upgrade.png")),
-              '应用更新',
-              () async {
-                PackageInfo packageInfo = await PackageInfo.fromPlatform();
-                String version = packageInfo.version;
-
-                Response response =
-                    await HttpUtil.instance.dio.get(Common.update);
-                var data = response.data['data'];
-                AppInfo appInfo = AppInfo.fromJson(data);
-                if (int.parse(appInfo.version.replaceAll(".", "")) >
-                    int.parse(version.replaceAll(".", ""))) {
-                  Navigator.pop(context);
-                  Future.delayed(Duration(milliseconds: 400), () {
-                    var up = UpdateEntity(
-                        hasUpdate: true,
-                        isForce: appInfo.forceUpdate == "2",
-                        isIgnorable: false,
-                        versionCode: 1,
-                        versionName: appInfo.version,
-                        updateContent: appInfo.msg,
-                        downloadUrl: appInfo.link,
-                        apkSize: int.parse(appInfo.apkSize),
-                        apkMd5: appInfo.apkMD5);
-
-                    FlutterXUpdate.updateByInfo(
-                      updateEntity: up,
-                      supportBackgroundUpdate: true,
-                    );
-                  });
-                } else {
-                  BotToast.showText(text: "暂无更新");
-                }
-              },
-              c,
-            ),
-            getItem(
-              ImageIcon(AssetImage("images/ab.png")),
-              '关于',
-              () {
-                showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                          title: Text(('清阅揽胜 V${SpUtil.getString(
-                            "version",
-                          )}')),
-                          content: Text(
-                            ReadSetting.poet,
-                            style: TextStyle(fontSize: 15, height: 2.1),
-                          ),
-                          actions: <Widget>[
-                            TextButton(
-                              child: new Text(
-                                "确定",
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                            ),
-                          ],
-                        ));
-              },
-              c,
-            ),
-
-            Offstage(
-              offstage: !SpUtil.haveKey("username"),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Store.connect<ShelfModel>(
-                      builder: (context, ShelfModel model, child) {
-                    return GestureDetector(
-                      child: WhiteArea(
-                          Text(
-                            "退出登录",
-                            style: TextStyle(color: Colors.redAccent),
-                          ),
-                          45),
-                      onTap: () async {
-                        await model.dropAccountOut();
-                      },
-                    );
-                  }),
+    // bool dark = SpUtil.getBool("dark");
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 10, vertical: kToolbarHeight),
+      child: ConstrainedBox(
+        constraints: BoxConstraints.expand(),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: _buildHeader(context),
                 ),
+                Divider(),
+                getItem(
+                  ImageIcon(AssetImage("images/info.png")),
+                  '公告',
+                  () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => InfoPage()));
+                  },
+                  c,
+                ),
+                getItem(
+                  ImageIcon(AssetImage("images/re.png")),
+                  '免责声明',
+                  () {
+                    showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                              title: Text(
+                                '免责声明',
+                              ),
+                              content: SingleChildScrollView(
+                                child: Text(
+                                  ReadSetting.lawWarn,
+                                ),
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: Text(
+                                    "确定",
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            ));
+                  },
+                  c,
+                ),
+                getItem(
+                  ImageIcon(AssetImage("images/skin.png")),
+                  '主题',
+                  () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => Skin()));
+                  },
+                  c,
+                ),
+                getItem(
+                  ImageIcon(AssetImage("images/fe.png")),
+                  '意见反馈',
+                  () {
+                    locator<TelAndSmsService>()
+                        .sendEmail('leetomlee123@gmail.com');
+                  },
+                  c,
+                ),
+                getItem(
+                  ImageIcon(AssetImage("images/github.png")),
+                  '开源地址',
+                  () {
+                    launch('https://github.com/leetomlee123/book');
+                  },
+                  c,
+                ),
+                getItem(
+                  ImageIcon(AssetImage("images/upgrade.png")),
+                  '应用更新',
+                  () async {
+                    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+                    String version = packageInfo.version;
+
+                    Response response =
+                        await HttpUtil.instance.dio.get(Common.update);
+                    var data = response.data['data'];
+                    AppInfo appInfo = AppInfo.fromJson(data);
+                    if (int.parse(appInfo.version.replaceAll(".", "")) >
+                        int.parse(version.replaceAll(".", ""))) {
+                      Navigator.pop(context);
+                      Future.delayed(Duration(milliseconds: 400), () {
+                        var up = UpdateEntity(
+                            hasUpdate: true,
+                            isForce: appInfo.forceUpdate == "2",
+                            isIgnorable: false,
+                            versionCode: 1,
+                            versionName: appInfo.version,
+                            updateContent: appInfo.msg,
+                            downloadUrl: appInfo.link,
+                            apkSize: int.parse(appInfo.apkSize),
+                            apkMd5: appInfo.apkMD5);
+
+                        FlutterXUpdate.updateByInfo(
+                          updateEntity: up,
+                          supportBackgroundUpdate: true,
+                        );
+                      });
+                    } else {
+                      BotToast.showText(text: "暂无更新");
+                    }
+                  },
+                  c,
+                ),
+                getItem(
+                  ImageIcon(AssetImage("images/ab.png")),
+                  '关于',
+                  () {
+                    showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                              title: Text(('清阅揽胜 V${SpUtil.getString(
+                                "version",
+                              )}')),
+                              content: Text(
+                                ReadSetting.poet,
+                                style: TextStyle(fontSize: 15, height: 2.1),
+                              ),
+                              actions: <Widget>[
+                                TextButton(
+                                  child: new Text(
+                                    "确定",
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            ));
+                  },
+                  c,
+                ),
+              ],
+            ),
+            Positioned(
+              bottom: 1,
+              left: 10,
+              right: 10,
+              child: Offstage(
+                offstage: !SpUtil.haveKey("username"),
+                child: Store.connect<ShelfModel>(
+                    builder: (context, ShelfModel model, child) {
+                  return GestureDetector(
+                    child: WhiteArea(
+                        Text(
+                          "退出登录",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                        45),
+                    onTap: () async {
+                      await model.dropAccountOut();
+                    },
+                  );
+                }),
               ),
             ),
           ],

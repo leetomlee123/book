@@ -28,7 +28,8 @@ class _BooksWidgetState extends State<BooksWidget> {
   ShelfModel _shelfModel;
   bool isShelf;
 
-  final double aspectRatio = 0.65;
+  final double aspectRatioList = 0.7;
+  final double aspectRatioCover = 0.75;
   double bookPicWidth = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
   int spacingLen = 20;
   int axisLen = 4;
@@ -140,8 +141,13 @@ class _BooksWidgetState extends State<BooksWidget> {
         child: bookAction(
             Column(
               children: [
-                HasUpdateIconImg(bookPicWidth, bookPicWidth / aspectRatio,
-                    this.widget.type, i),
+                Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusDirectional.circular(5)),
+                  clipBehavior: Clip.antiAlias,
+                  child: HasUpdateIconImg(bookPicWidth,
+                      bookPicWidth / aspectRatioCover, this.widget.type, i),
+                ),
                 SizedBox(
                   height: 5,
                 ),
@@ -209,12 +215,12 @@ class _BooksWidgetState extends State<BooksWidget> {
     return Dismissible(
       key: Key(item.Id.toString()),
       child: Container(
-        height: bookPicWidth / aspectRatio,
+        height: bookPicWidth / aspectRatioList,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           children: <Widget>[
-            HasUpdateIconImg(
-                bookPicWidth, bookPicWidth / aspectRatio, this.widget.type, i),
+            HasUpdateIconImg(bookPicWidth, bookPicWidth / aspectRatioList,
+                this.widget.type, i),
             //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
             Expanded(
               child: Padding(

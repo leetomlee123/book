@@ -248,7 +248,11 @@ class TextComposition {
           ReadSetting.getFontSize() *
           ReadSetting.getLineHeight(),
       justRender: justRender,
-      boxSize: Size(Screen.width, Screen.height - (30+SpUtil.getDouble(Common.top_safe_height)) * 2-Screen.bottomSafeHeight),
+      boxSize: Size(
+          Screen.width,
+          Screen.height -
+              (30 + SpUtil.getDouble(Common.top_safe_height)) * 2 -
+              Screen.bottomSafeHeight),
       padding:
           EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
       shouldJustifyHeight: shouldJustifyHeight,
@@ -373,7 +377,6 @@ class PagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-  
     final lineCount = page.lines.length;
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 

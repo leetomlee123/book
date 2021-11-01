@@ -25,49 +25,46 @@ class InfoState extends State<InfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Scaffold(
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                title: Text(
-                  "公告",
-                  style:
-                      TextStyle(color: data.dark ? Colors.white : Colors.black),
+      return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              "公告",
+            ),
+            centerTitle: true,
+            elevation: 0,
+          ),
+          body: Padding(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Center(
+                  child: Text(ifs.length == 0 ? "公告" : ifs[0].Title),
                 ),
-                centerTitle: true,
-                elevation: 0,
-              ),
-              body: Padding(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Container(
+                  child: Text(
+                    ifs.length == 0 ? "太平无事" : ifs[0].Content,
+                    textAlign: TextAlign.start,
+                  ),
+                ),
+                Row(
                   children: <Widget>[
-                    Center(
-                      child: Text(ifs.length == 0 ? "公告" : ifs[0].Title),
+                    Expanded(
+                      child: Container(),
                     ),
-                    Container(
-                      child: Text(
-                        ifs.length == 0 ? "太平无事" : ifs[0].Content,
-                        textAlign: TextAlign.start,
-                      ),
-                    ),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Container(),
-                        ),
-                        Text(
-                          ifs.length == 0
-                              ? DateUtil.getNowDateStr()
-                              : ifs[0].Date,
-                          textAlign: TextAlign.start,
-                        )
-                      ],
+                    Text(
+                      ifs.length == 0
+                          ? DateUtil.getNowDateStr()
+                          : ifs[0].Date,
+                      textAlign: TextAlign.start,
                     )
                   ],
-                ),
-                padding: EdgeInsets.all(15),
-              ),
-            ));
+                )
+              ],
+            ),
+            padding: EdgeInsets.all(15),
+          ),
+        );
+  
   }
 
   Future<void> getInfo() async {
@@ -82,3 +79,5 @@ class InfoState extends State<InfoPage> {
     }
   }
 }
+
+

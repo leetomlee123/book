@@ -26,7 +26,6 @@ class ColorModel with ChangeNotifier {
     }
     return _fonts;
   }
-
   List<Color> skins = FlexScheme.values
       .map((e) => FlexColorScheme.light(
             scheme: e,

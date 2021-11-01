@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:book/common/LoadDialog.dart';
+import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/widgets/download_progress.dart';
+import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -22,11 +24,14 @@ class StateFontSet extends State<FontSet> {
   List<Widget> wds = [];
   bool downloading = false;
   double v = 0.0;
+  List<FontInfo> fs = [];
+
+  var key;
 
   @override
   void initState() {
     _colorModel = Store.value<ColorModel>(context);
-
+    fetchData();
     super.initState();
   }
 
@@ -57,109 +62,99 @@ class StateFontSet extends State<FontSet> {
               height: 20,
             ),
             Expanded(
-                child: FutureBuilder(
-              future: fetchData(),
-              builder: (BuildContext context,
-                  AsyncSnapshot<List<FontInfo>> snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  if (snapshot.hasData) {
-                    return Container(
-                      alignment: Alignment.center,
-                      child: ListView(
-                        children: snapshot.data
-                            .map((e) => Container(
-                                  padding: EdgeInsets.only(bottom: 20),
-                                  child: Row(
-                                    children: <Widget>[
-                                      Text(e.key == "Roboto" ? e.value : e.key),
-                                      Expanded(
-                                        child: Container(),
-                                      ),
-                                      GestureDetector(
-                                        child: Container(
-                                          child: _colorModel.font == e.key
-                                              ? Icon(Icons.check)
-                                              : Text((e.fileInfo != null ||
-                                                      e.key == "Roboto")
-                                                  ? "使用"
-                                                  : "下载"),
-                                        ),
-                                        onTap: () async {
-                                          if (e.fileInfo == null &&
-                                              e.key != "Roboto") {
-                                            showGeneralDialog(
-                                              context: context,
-                                              barrierLabel: "",
-                                              barrierDismissible: true,
-                                              barrierColor: Colors.transparent,
-                                              transitionDuration:
-                                                  Duration(milliseconds: 300),
-                                              pageBuilder:
-                                                  (BuildContext context,
-                                                      Animation animation,
-                                                      Animation
-                                                          secondaryAnimation) {
-                                                return LoadingDialog();
-                                              },
-                                            );
-
-                                            await CustomCacheManager
-                                                .instanceFont
-                                                .downloadFile(e.value,
-                                                    key: e.key);
-
-                                            Navigator.pop(context);
-                                          } else {
-                                            if (e.key == "Roboto") {
-                                              _colorModel
-                                                  .setFontFamily("Roboto");
-                                              readModel.updPage();
-                                            } else {
-                                              File file =
-                                                  await CustomCacheManager
-                                                      .instanceFont
-                                                      .getSingleFile(e.value,
-                                                          key: e.key);
-                                              var fontLoader =
-                                                  FontLoader(e.key);
-                                              Uint8List readAsBytes =
-                                                  file.readAsBytesSync();
-
-                                              fontLoader.addFont(Future.value(
-                                                  ByteData.view(
-                                                      readAsBytes.buffer)));
-                                              await fontLoader.load();
-                                              _colorModel.setFontFamily(e.key);
-                                              readModel.updPage();
-                                              //  Theme.of(context).textTheme.
-                                            }
-                                          }
-                                          if (mounted) {
-                                            setState(() {});
-                                          }
-                                        },
-                                      ),
-                                      SizedBox(
-                                        width: 10,
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                      ),
-                    );
-                  } else {
-                    return Container(
-                      alignment: Alignment.center,
-                      child: Text('error'),
-                    );
-                  }
-                } else {
+                child: Container(
+              alignment: Alignment.center,
+              child: ListView.builder(
+                itemCount: fs.length,
+                itemExtent: 70,
+                itemBuilder: (context, index) {
+                  var e = fs[index];
                   return Container(
-                      alignment: Alignment.center,
-                      child: CircularProgressIndicator());
-                }
-              },
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: <Widget>[
+                        Text(e.key == "Roboto" ? e.value : e.key),
+                        Spacer(),
+                        GestureDetector(
+                          child: Container(
+                            child: _colorModel.font == e.key
+                                ? Icon(Icons.check)
+                                : (downloading == true && e.key == key)
+                                    ? DownloadProgressUI(e.value)
+                                    : Text((e.fileInfo != null ||
+                                            e.key == "Roboto")
+                                        ? "使用"
+                                        : "下载"),
+                          ),
+                          onTap: () async {
+                            if (e.fileInfo == null && e.key != "Roboto") {
+                              var fileStream = CustomCacheManager.instanceFont
+                                  .getFileStream(e.value,
+                                      key: e.key, withProgress: true);
+                              if (mounted) {
+                                setState(() {
+                                  key = e.key;
+                                  downloading = true;
+                                });
+                              }
+                              fileStream.listen((event) {
+                                try {
+                                  var event2 = event as DownloadProgress;
+                                  v = NumUtil.getNumByValueDouble(
+                                      event2.progress, 2);
+                                  // print(v);
+                                  eventBus.fire(DownLoadNotify(e.value, v));
+                                  if (v == 1.0) {
+                                    if (mounted) {
+                                      setState(() {
+                                        downloading = false;
+                                        v = .0;
+                                      });
+                                    }
+                                  }
+                                } catch (e) {
+                                  try {
+                                    var file = event as FileInfo;
+                                    if (mounted) {
+                                      setState(() {
+                                        fs[index].fileInfo = file;
+                                      });
+                                    }
+                                  } catch (e) {}
+                                }
+                              });
+                            } else {
+                              if (e.key == "Roboto") {
+                                _colorModel.setFontFamily("Roboto");
+                                readModel.updPage();
+                              } else {
+                                File file = await CustomCacheManager
+                                    .instanceFont
+                                    .getSingleFile(e.value, key: e.key);
+                                var fontLoader = FontLoader(e.key);
+                                Uint8List readAsBytes = file.readAsBytesSync();
+
+                                fontLoader.addFont(Future.value(
+                                    ByteData.view(readAsBytes.buffer)));
+                                await fontLoader.load();
+                                _colorModel.setFontFamily(e.key);
+                                readModel.updPage();
+                                //  Theme.of(context).textTheme.
+                              }
+                            }
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          },
+                        ),
+                        SizedBox(
+                          width: 10,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ))
           ],
         ),
@@ -168,8 +163,7 @@ class StateFontSet extends State<FontSet> {
     );
   }
 
-  Future<List<FontInfo>> fetchData() async {
-    List<FontInfo> fontInfos = [];
+  Future fetchData() async {
     Map fonts = _colorModel.fonts();
     var entries = fonts.entries;
     int len = entries.length;
@@ -177,9 +171,11 @@ class StateFontSet extends State<FontSet> {
       String key = entries.elementAt(i).key;
       String value = entries.elementAt(i).value;
       var fileInfo2 = await getFileInfo(key);
-      fontInfos.add(FontInfo(key, value, fileInfo2));
+      fs.add(FontInfo(key, value, fileInfo2));
     }
-    return fontInfos;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<FileInfo> getFileInfo(String key) async {

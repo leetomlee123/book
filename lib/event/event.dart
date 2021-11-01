@@ -18,9 +18,10 @@ class UpdateBookProcess {
   UpdateBookProcess(this.cur, this.index);
 }
 
-class RollEvent {
-  String roll;
-  RollEvent(this.roll);
+class DownLoadNotify {
+  String url;
+  double v;
+  DownLoadNotify(this.url,this.v);
 }
 
 class OpenEvent {
