@@ -28,7 +28,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   ShelfModel _shelfModel;
   bool isShelf;
 
-  final double aspectRatioList = 0.7;
+  final double aspectRatioList = 0.65;
   final double aspectRatioCover = 0.75;
   double bookPicWidth = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
   int spacingLen = 20;

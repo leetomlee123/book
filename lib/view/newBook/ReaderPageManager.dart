@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:book/animation/BaseAnimationPage.dart';
+import 'package:book/animation/SimulationTurePageAnimation.dart';
 import 'package:book/animation/turn_page_animation.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/model/ReadModel.dart';
@@ -78,7 +79,7 @@ class ReaderPageManager {
     currentAnimationType = animationType;
     switch (animationType) {
       case TYPE_ANIMATION_SIMULATION_TURN:
-        // currentAnimationPage = SimulationTurnPageAnimation();
+        currentAnimationPage = SimulationTurnPageAnimation();
         break;
       case TYPE_ANIMATION_COVER_TURN:
         currentAnimationPage = CoverPageAnimation();

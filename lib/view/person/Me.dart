@@ -3,7 +3,6 @@ import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/AppInfo.dart';
 import 'package:book/main.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -89,9 +88,9 @@ class Me extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color c =
-        Color(!Store.value<ColorModel>(context).dark ? 0x4D000000 : 0xFBFFFFFF);
-    // bool dark = SpUtil.getBool("dark");
+    bool dark = SpUtil.getBool("dark");
+    Color c = Color(dark ? 0x4D000000 : 0xFBFFFFFF);
+
     return Padding(
       padding:
           const EdgeInsets.symmetric(horizontal: 10, vertical: kToolbarHeight),

@@ -28,7 +28,7 @@ class _MenuState extends State<Menu> {
   ReadModel _readModel;
   ColorModel _colorModel;
 
-  double settingH = 420;
+  double settingH = 380;
 
   @override
   void initState() {
@@ -386,9 +386,9 @@ class _MenuState extends State<Menu> {
             children: bgThemes(),
             scrollDirection: Axis.horizontal,
           )),
-          Expanded(
-            child: flipType(),
-          ),
+          // Expanded(
+          //   child: flipType(),
+          // ),
           SwitchListTile(
             contentPadding: EdgeInsets.only(left: 15),
             value: _readModel.leftClickNext,

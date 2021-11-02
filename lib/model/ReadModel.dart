@@ -36,6 +36,7 @@ class ReadModel with ChangeNotifier {
   TextComposition textComposition;
   Map<String, ui.Picture> widgets = Map();
   Stack stackContent;
+  bool delay = true;
   Paint bgPaint = Paint();
   ui.Image bgUI;
   GlobalKey canvasKey;
@@ -304,23 +305,31 @@ class ReadModel with ChangeNotifier {
     var curWid = details.globalPosition.dx;
     var curH = details.globalPosition.dy;
     var location = details.localPosition;
-
-    if ((curWid > 0 && curWid < space)) {
-      if (leftClickNext) {
-        clickPage(1, location);
-        return;
-      }
-      clickPage(-1, location);
-    } else if ((curWid > space) &&
-        (curWid < 2 * space) &&
-        (curH < hSpace * 3)) {
+    print(delay);
+    if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
       toggleShowMenu();
     } else if ((curWid > space * 2)) {
-      if (leftClickNext) {
-        clickPage(1, location);
-        return;
-      }
-      clickPage(1, location);
+      delay = true;
+      Future.delayed(Duration(milliseconds: 50), () {
+        if (delay) {
+          if (leftClickNext) {
+            clickPage(1, location);
+            return;
+          }
+          clickPage(1, location);
+        }
+      });
+    } else if ((curWid > 0 && curWid < space)) {
+      delay = true;
+      Future.delayed(Duration(milliseconds: 50), () {
+        if (delay) {
+          if (leftClickNext) {
+            clickPage(1, location);
+            return;
+          }
+          clickPage(-1, location);
+        }
+      });
     }
   }
 
@@ -578,7 +587,6 @@ class ReadModel with ChangeNotifier {
     textPainter.layout();
     textPainter.paint(
         pageCanvas, Offset(Screen.width - contentPadding - 35, bottomTextH));
-
     return pageRecorder.endRecording();
   }
 
