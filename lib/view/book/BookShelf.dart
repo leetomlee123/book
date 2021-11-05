@@ -115,7 +115,7 @@ class _BookShelfState extends State<BookShelf> {
           ),
           appBar: AppBar(
             leading: IconButton(
-              icon: Icon(Icons.menu_sharp),
+              icon: Icon(Icons.person),
               onPressed: ()=>key.currentState.openDrawer(),
               iconSize: 25,
             ),

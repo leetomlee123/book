@@ -31,7 +31,7 @@ enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
-  Color darkFont = Color(0x9FFFFFFF);
+  Color darkFont = Color(0x5FFFFFFF);
   NovelPagePainter mPainter;
   TextComposition textComposition;
   Map<String, ui.Picture> widgets = Map();
@@ -532,7 +532,7 @@ class ReadModel with ChangeNotifier {
     double electricQuantityBottom = size.height - 2 * mStrokeWidth + bottomH;
 
     mPaint.style = PaintingStyle.fill;
-    mPaint.color = isDark ? Colors.white54 : Colors.black54;
+    mPaint.color = isDark ? darkFont : Colors.black54;
     // mPaint.color = Color(0x80ffffff);
     //画电池头部
     pageCanvas.drawRRect(
@@ -554,7 +554,7 @@ class ReadModel with ChangeNotifier {
             Radius.circular(mStrokeWidth)),
         mPaint);
     mPaint.style = PaintingStyle.fill;
-    mPaint.color = isDark ? Colors.white38 : Colors.black38;
+    mPaint.color = isDark ? darkFont : Colors.black38;
     //画电池电量
     pageCanvas.drawRRect(
         RRect.fromLTRBR(

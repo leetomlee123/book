@@ -66,7 +66,6 @@ class _PageContentReaderState extends State<PageContentReader>
 
             instance
               ..onDown = (detail) {
-                  print("down");
 
                   if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
                       currentTouchEvent.touchPos != detail.localPosition) {
@@ -96,7 +95,6 @@ class _PageContentReaderState extends State<PageContentReader>
             instance
               ..onEnd = (detail) {
                 if (!viewModel.showMenu) {
-                  print("end");
                   if (currentTouchEvent.action != TouchEvent.ACTION_UP ||
                       currentTouchEvent.touchPos != Offset(0, 0)) {
                     currentTouchEvent = TouchEvent<DragEndDetails>(

@@ -28,7 +28,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   ShelfModel _shelfModel;
   bool isShelf;
 
-  final double aspectRatioList = 0.65;
+  final double aspectRatioList = 0.69;
   final double aspectRatioCover = 0.75;
   double bookPicWidth = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
   int spacingLen = 20;
@@ -78,7 +78,10 @@ class _BooksWidgetState extends State<BooksWidget> {
         ),
         controller: _refreshController,
         onRefresh: freshShelf,
-        child: _shelfModel.cover ? coverModel() : listModel());
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: _shelfModel.cover ? coverModel() : listModel(),
+        ));
   }
 
   //刷新书架
