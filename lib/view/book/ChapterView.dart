@@ -7,8 +7,8 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -83,10 +83,8 @@ class _ChapterViewItem extends State<ChapterView> {
               width: ScreenUtil.getScreenW(context),
               child: Row(
                 children: [
-                  CachedNetworkImage(
-                    imageUrl: data.book.Img,
+                  ExtendedImage.network(data.book.Img,
                     width: 85,
-                  
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 5),

@@ -787,21 +787,22 @@ class ReadModel with ChangeNotifier {
   }
 
   bool isCanGoNext() {
-    if (book.cur >= (chapters.length - 1) &&
-        book.index >= (curPage.pageOffsets - 1)) {
-      if (book.index == (curPage.pageOffsets - 1))
-        BotToast.showText(text: "已经是最后一页");
-      return false;
+    print(book.index);
+    if (book.cur >= (chapters.length - 1)) {
+      if (book.index >= (curPage.pageOffsets - 1)) {
+        return false;
+      }
     }
-    return true;
+
+    return next() != null;
+    ;
   }
 
   bool isCanGoPre() {
     if (book.cur <= 0 && book.index <= 0) {
-      BotToast.showText(text: "已经是第一页");
       return false;
     }
-    return true;
+    return pre() != null;
   }
 
   changeBgUI() async {

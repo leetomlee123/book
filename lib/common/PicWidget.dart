@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -10,7 +10,10 @@ class PicWidget extends StatelessWidget {
   bool roll;
 
   PicWidget(this.url,
-      {this.height = 115, this.width = 97, this.fit=BoxFit.cover, this.roll = false});
+      {this.height = 115,
+      this.width = 97,
+      this.fit = BoxFit.cover,
+      this.roll = false});
 
   @override
   Widget build(BuildContext context) {
@@ -21,50 +24,29 @@ class PicWidget extends StatelessWidget {
       //   BoxShadow(color: Colors.grey[300], offset: Offset(1, -1), blurRadius: 3),
       //   BoxShadow(color: Colors.grey[300], offset: Offset(-1, 1), blurRadius: 3)
       // ]),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        placeholder: (context,imageProvider)=>Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-              borderRadius:
-              roll ? BorderRadius.circular(35) : BorderRadius.circular(0),
-              image: DecorationImage(
-                image: AssetImage(
-                  "images/nocover.jpg",
-                ),
-                fit:fit,
-              )),
-        ),
-        imageBuilder: (context, imageProvider) => ClipRRect(
-//        borderRadius: BorderRadius.circular(5),
-          child: Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              borderRadius:
-                  roll ? BorderRadius.circular(35) : BorderRadius.circular(0),
-              image: DecorationImage(
-                image: imageProvider,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-        ),
-        errorWidget: (context, url, error) => Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-              borderRadius:
-                  roll ? BorderRadius.circular(35) : BorderRadius.circular(0),
-              image: DecorationImage(
-                image: AssetImage(
-                  "images/nocover.jpg",
-                ),
-                fit: fit,
-              )),
-        ),
-      ),
+      child: ExtendedImage.network(url,
+          fit: this.fit,
+          loadStateChanged: (ExtendedImageState state) {
+        switch (state.extendedImageLoadState) {
+          case LoadState.loading:
+            return null;
+            break;
+          case LoadState.completed:
+            return ExtendedRawImage(
+              image: state.extendedImageInfo?.image,
+              width: this.width,
+              height: this.height,
+              fit: BoxFit.cover,
+            );
+            break;
+          case LoadState.failed:
+            return Image.asset(
+              "images/nocover.jpg",
+              fit: BoxFit.fill,
+            );
+            break;
+        }
+      }),
     );
   }
 }

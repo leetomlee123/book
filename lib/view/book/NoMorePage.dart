@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:book/common/Http.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/entity/EveryPoet.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 
 class NoMorePage extends StatefulWidget {
@@ -30,7 +30,7 @@ class _NoMorePageState extends State<NoMorePage> {
             decoration: BoxDecoration(
                 image: DecorationImage(
                     image:
-                        CachedNetworkImageProvider('${_everyPoet?.share ?? ''}'),
+                    ExtendedNetworkImageProvider('${_everyPoet?.share ?? ''}'),
                     fit: BoxFit.fitWidth)),
           ),
           offstage: _everyPoet == null),

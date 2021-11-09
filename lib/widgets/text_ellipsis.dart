@@ -1,5 +1,5 @@
-import 'package:book/widgets/text_two.dart';
 import 'package:flutter/material.dart';
+import 'package:readmore/readmore.dart';
 
 class TextEllipsis extends StatefulWidget {
   final String msg;
@@ -19,34 +19,28 @@ class _TextEllipsisState extends State<TextEllipsis> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
               Text(
                 '简介',
-                style: TextStyle(fontSize: 15),
+                style: TextStyle(fontWeight: FontWeight.bold,fontSize: 20),
+
               ),
-              Spacer(),
-              TextButton(
-                onPressed: () {
-                  if (mounted) {
-                    setState(() {
-                      ellipsis = !ellipsis;
-                    });
-                  }
-                },
-                child: Text(
-                  "${ellipsis ? "展开" : "收起"}",
-                ),
-              ),
+              Spacer()
             ],
           ),
         ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 15, vertical: 2),
-          child: TextTwo(
+          child: ReadMoreText(
             this.widget.msg,
-            maxLines: ellipsis ? 3 : 20,
+            trimLines: 3,
+            style: TextStyle(color: Colors.black),
+            colorClickableText: Colors.blue,
+            trimMode: TrimMode.Line,
+            trimCollapsedText: 'more',
+            trimExpandedText: 'less',
           ),
         )
       ],

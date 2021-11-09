@@ -146,7 +146,7 @@ class _BooksWidgetState extends State<BooksWidget> {
               children: [
                 Card(
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadiusDirectional.circular(5)),
+                      borderRadius: BorderRadiusDirectional.circular(3)),
                   clipBehavior: Clip.antiAlias,
                   child: HasUpdateIconImg(bookPicWidth,
                       bookPicWidth / aspectRatioCover, this.widget.type, i),
@@ -159,6 +159,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                     book.Name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 )
               ],

@@ -28,6 +28,7 @@ class HasUpdateIconImg extends StatelessWidget {
             child: Container(
               height: this.height,
               width: this.width,
+              // color: Colors.red,
               child: Align(
                 alignment: Alignment.topRight,
                 child: Image.asset(

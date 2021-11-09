@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/animation/BaseAnimationPage.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 
 /// 覆盖动画 ///
@@ -53,10 +54,16 @@ class CoverPageAnimation extends BaseAnimationPage {
   @override
   Animation<Offset> getConfirmAnimation(
       AnimationController controller, GlobalKey canvasKey) {
-    if ((!isTurnNext && !isCanGoPre()) || (isTurnNext && !isCanGoNext())) {
+    if (!isTurnNext && !isCanGoPre()) {
+      BotToast.showText(text: "已经是第一页");
+
       return null;
     }
+    if (isTurnNext && !isCanGoNext()) {
+      BotToast.showText(text: "已经是最后一页");
 
+      return null;
+    }
     if (currentAnimation == null) {
       buildCurrentAnimation(controller, canvasKey);
     }
@@ -132,7 +139,6 @@ class CoverPageAnimation extends BaseAnimationPage {
       case TouchEvent.ACTION_CANCEL:
         isTurnNext = mTouch.dx - mStartPoint.dx < 0;
         // print("isTurnNext $isTurnNext mTouch.dx  ${mTouch.dx}  mStartPoint.dx ${mStartPoint.dx}");
-
         if ((!isTurnNext && isCanGoPre()) || (isTurnNext && isCanGoNext())) {
           isStartAnimation = true;
         }
