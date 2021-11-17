@@ -1,7 +1,6 @@
 import 'package:book/event/event.dart';
 import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
-import 'package:percent_indicator/circular_percent_indicator.dart';
 
 class DownloadProgressUI extends StatefulWidget {
   var url;
@@ -31,12 +30,7 @@ class _DownloadProgressState extends State<DownloadProgressUI> {
 
   @override
   Widget build(BuildContext context) {
-    return CircularPercentIndicator(
-      radius: 45.0,
-      lineWidth: 3.0,
-      percent: v,
-      center: Text("${NumUtil.multiply(v , 100)}%"),
-      progressColor: Colors.green,
-    );
+    return Center(
+        child: Text("${NumUtil.multiply(v, 100)}%"));
   }
 }

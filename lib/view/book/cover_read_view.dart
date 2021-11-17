@@ -18,7 +18,7 @@ class NovelRoteView extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
         onTap: () {},
-        onTapDown: (e) => readModel.tapPage(context, e),
+        // onTapDown: (e) => readModel.tapPage(context, e),
         onPanEnd: (DragEndDetails e) {
           var x = e.velocity.pixelsPerSecond.dx < 0 ? 1 : -1;
           readModel.changeCoverPage(x);

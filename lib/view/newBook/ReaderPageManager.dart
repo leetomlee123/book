@@ -198,7 +198,7 @@ class ReaderPageManager {
   }
 
   void setAnimationController(AnimationController animationController) {
-    animationController.duration = const Duration(milliseconds: 300);
+    animationController.duration = const Duration(milliseconds: 200);
     this.animationController = animationController;
 
     if (TYPE_ANIMATION_SLIDE_TURN == currentAnimationType) {

@@ -28,7 +28,7 @@ class _MenuState extends State<Menu> {
   ReadModel _readModel;
   ColorModel _colorModel;
 
-  double settingH = 380;
+  double settingH = 340;
 
   @override
   void initState() {
@@ -105,7 +105,6 @@ class _MenuState extends State<Menu> {
                   }
                   _readModel.book.cur -= 1;
                   await _readModel.initPageContent(_readModel.book.cur, true);
-                  BotToast.showText(text: _readModel.curPage.chapterName);
                 },
                 child: Text('上一章')),
             Expanded(
@@ -139,7 +138,6 @@ class _MenuState extends State<Menu> {
                   _readModel.book.cur += 1;
 
                   await _readModel.initPageContent(_readModel.book.cur, true);
-                  BotToast.showText(text: _readModel.curPage.chapterName);
                 },
                 child: Text('下一章')),
           ],
@@ -227,19 +225,16 @@ class _MenuState extends State<Menu> {
 
   Widget moreSetting() {
     return Container(
+      
       decoration: BoxDecoration(
         // color: _colorModel.dark ? Colors.black : Colors.white,
         borderRadius: BorderRadius.all(Radius.circular(10.0)),
       ),
       height: settingH,
+      
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          TextButton(
-              onPressed: () {
-                Routes.navigateTo(context, Routes.fontSet);
-              },
-              child: Text('字体')),
           MenuConfig(
             () {
               ReadSetting.calcFontSize(-1);
@@ -389,23 +384,48 @@ class _MenuState extends State<Menu> {
           // Expanded(
           //   child: flipType(),
           // ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.only(left: 15),
-            value: _readModel.leftClickNext,
-            onChanged: (value) {
-              _readModel.switchClickNextPage();
-            },
-            title: Text(
-              '单手模式',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: _colorModel.dark ? Colors.white : Colors.black),
-            ),
-            selected: _readModel.leftClickNext,
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18.0),
+                      ),
+                      side: BorderSide(
+                        width: 2,
+                        color: _colorModel.dark ? Colors.white : Theme.of(context).primaryColor,
+                      ),
+                    ),
+                    onPressed: () {
+                      Routes.navigateTo(context, Routes.fontSet);
+                    },
+                    child: Text('字体')),
+              ),
+              Expanded(child: Container(), flex: 2),
+              Expanded(
+                flex: 3,
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.only(left: 15),
+                  value: _readModel.leftClickNext,
+                  onChanged: (value) {
+                    _readModel.switchClickNextPage();
+                  },
+                  title: Text(
+                    '单手模式',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: _colorModel.dark ? Colors.white : Colors.black),
+                  ),
+                  selected: _readModel.leftClickNext,
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(horizontal: 15),
+      padding: EdgeInsets.all(15),
     );
   }
 
@@ -548,10 +568,8 @@ class _MenuState extends State<Menu> {
             child: Container(
               child: Column(
                 children: <Widget>[
-                  ImageIcon(
-                    _colorModel.dark
-                        ? AssetImage("images/sun.png")
-                        : AssetImage("images/moon.png"),
+                  Icon(
+                    _colorModel.dark ? Icons.light_mode : Icons.dark_mode,
                     // color: Colors.white,
                   ),
                   SizedBox(height: 5),
@@ -630,38 +648,6 @@ class _MenuState extends State<Menu> {
         ),
       ),
     );
-    // wds.add(
-    //     RawMaterialButton(
-    //   constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
-    //   onPressed: () async {
-    //     final PickedFile pickedFile =
-    //         await ImagePicker().getImage(source: ImageSource.gallery);
-    //     if (pickedFile != null) {
-    //       String path = pickedFile.path;
-    //
-    //       SpUtil.putString(ReadSetting.bgsKey, path);
-    //
-    //       var cv = Store.value<ColorModel>(context);
-    //       if (cv.dark) {
-    //         cv.switchModel();
-    //       }
-    //       await _readModel.colorModelSwitch();
-    //       _readModel.switchBgColor(6);
-    //     }
-    //   },
-    //   child: Container(
-    //     margin: EdgeInsets.only(top: 5.0, bottom: 5.0),
-    //     width: 45.0,
-    //     height: 45.0,
-    //     child: Center(child: Text('自')),
-    //     decoration: BoxDecoration(
-    //         borderRadius: BorderRadius.all(Radius.circular(25.0)),
-    //         border: Border.all(
-    //           width: 1.5,
-    //           color: Color(!_colorModel.dark ? 0x4D000000 : 0xFBFFFFFF),
-    //         )),
-    //   ),
-    // ));
     for (int i = 0; i < ReadSetting.bgImg.length - 1; i++) {
       var path = ReadSetting.bgImg[i];
       var f = "images/${ReadSetting.bgImg[i]}";
@@ -671,7 +657,6 @@ class _MenuState extends State<Menu> {
           if (cv.dark) {
             cv.switchModel();
           }
-          // await _readModel.colorModelSwitch();
           _readModel.switchBgColor(path);
         },
         constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),

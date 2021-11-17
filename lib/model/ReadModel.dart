@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
+import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -17,7 +18,6 @@ import 'package:book/entity/TextPage.dart';
 import 'package:book/entity/chapter.pb.dart';
 import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
-import 'package:book/widgets/MyShimmer.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 import 'package:flustars/flustars.dart';
@@ -31,12 +31,11 @@ enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
-  Color darkFont = Color(0x5FFFFFFF);
+  Color darkFont = Color(0x7FFFFFFF);
   NovelPagePainter mPainter;
   TextComposition textComposition;
   Map<String, ui.Picture> widgets = Map();
   Stack stackContent;
-  bool delay = true;
   Paint bgPaint = Paint();
   ui.Image bgUI;
   GlobalKey canvasKey;
@@ -51,6 +50,8 @@ class ReadModel with ChangeNotifier {
 
   var currentPageValue = 0.0;
   String poet = "";
+
+  bool isDark() => SpUtil.getBool("dark");
 
   var electricQuantity = 1.0;
 
@@ -99,7 +100,6 @@ class ReadModel with ChangeNotifier {
     showMenu = false;
     loadOk = false;
     sSave = true;
-    widgets.clear();
     notifyListeners();
     if (bgUI == null) await changeBgUI();
     chapters = await DbHelper.instance.getChapters(book.Id);
@@ -138,9 +138,9 @@ class ReadModel with ChangeNotifier {
 
   Future initPageContent(int idx, bool jump) async {
     BotToast.showCustomLoading(
-        toastBuilder: (_) => MyShimmer(),
+        toastBuilder: (_) => LoadingDialog(),
         clickClose: true,
-        backgroundColor: Colors.white);
+        backgroundColor: isDark() ? Colors.black : Colors.white);
 
     try {
       // await Future.wait([
@@ -298,38 +298,27 @@ class ReadModel with ChangeNotifier {
   }
 
   /*页面点击事件 */
-  void tapPage(BuildContext context, TapDownDetails details) {
+  void tapPage(BuildContext context, TapUpDetails details) {
     var wid = ScreenUtil.getScreenW(context);
     var hSpace = Screen.height / 4;
     var space = wid / 3;
     var curWid = details.globalPosition.dx;
     var curH = details.globalPosition.dy;
     var location = details.localPosition;
-    print(delay);
     if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
       toggleShowMenu();
     } else if ((curWid > space * 2)) {
-      delay = true;
-      Future.delayed(Duration(milliseconds: 50), () {
-        if (delay) {
-          if (leftClickNext) {
-            clickPage(1, location);
-            return;
-          }
-          clickPage(1, location);
-        }
-      });
+      if (leftClickNext) {
+        clickPage(1, location);
+        return;
+      }
+      clickPage(1, location);
     } else if ((curWid > 0 && curWid < space)) {
-      delay = true;
-      Future.delayed(Duration(milliseconds: 50), () {
-        if (delay) {
-          if (leftClickNext) {
-            clickPage(1, location);
-            return;
-          }
-          clickPage(-1, location);
-        }
-      });
+      if (leftClickNext) {
+        clickPage(1, location);
+        return;
+      }
+      clickPage(-1, location);
     }
   }
 
@@ -354,7 +343,7 @@ class ReadModel with ChangeNotifier {
   }
 
   ui.Picture getPage({bool firstInit = false}) {
-    var key = book.cur.toString() + book.index.toString();
+    var key = book.Id.toString() + book.cur.toString() + book.index.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -372,9 +361,11 @@ class ReadModel with ChangeNotifier {
     var preIdx = book.index - 1;
     var preKey;
     if (preIdx < 0) {
-      preKey = (book.cur - 1).toString() + (prePage.pageOffsets - 1).toString();
+      preKey = book.Id.toString() +
+          (book.cur - 1).toString() +
+          (prePage.pageOffsets - 1).toString();
     } else {
-      preKey = book.cur.toString() + preIdx.toString();
+      preKey = book.Id.toString() + book.cur.toString() + preIdx.toString();
     }
     if (!widgets.containsKey(preKey)) {
       if (prePage?.pages == null) return;
@@ -384,9 +375,9 @@ class ReadModel with ChangeNotifier {
     var nextIdx = book.index + 1;
     var nextKey;
     if (nextIdx >= curPage.pageOffsets) {
-      nextKey = (book.cur + 1).toString() + 0.toString();
+      nextKey = book.Id.toString() + (book.cur + 1).toString() + 0.toString();
     } else {
-      nextKey = book.cur.toString() + nextIdx.toString();
+      nextKey = book.Id.toString() + book.cur.toString() + nextIdx.toString();
     }
     if (!widgets.containsKey(nextKey)) {
       if (nextPage?.pages == null) return;
@@ -397,7 +388,7 @@ class ReadModel with ChangeNotifier {
   ui.Picture pre() {
     if (prePage == null) return null;
     var i = book.index - 1;
-    var key = book.cur.toString() + i.toString();
+    var key = book.Id.toString() + book.cur.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -411,7 +402,7 @@ class ReadModel with ChangeNotifier {
   }
 
   ui.Picture cur() {
-    var key = book.cur.toString() + book.index.toString();
+    var key = book.Id.toString() + book.cur.toString() + book.index.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -424,7 +415,7 @@ class ReadModel with ChangeNotifier {
   ui.Picture next() {
     var i = book.index + 1;
 
-    var key = book.cur.toString() + i.toString();
+    var key = book.Id.toString() + book.cur.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -586,7 +577,7 @@ class ReadModel with ChangeNotifier {
         ));
     textPainter.layout();
     textPainter.paint(
-        pageCanvas, Offset(Screen.width - contentPadding - 35, bottomTextH));
+        pageCanvas, Offset(Screen.width - contentPadding - 40, bottomTextH));
     return pageRecorder.endRecording();
   }
 
@@ -594,7 +585,6 @@ class ReadModel with ChangeNotifier {
     chapters = [];
     loadOk = false;
     book = null;
-    widgets.clear();
     curPage = null;
     prePage = null;
     nextPage = null;
@@ -615,7 +605,7 @@ class ReadModel with ChangeNotifier {
     toggleShowMenu();
     var chapter = chapters[book.cur];
     BotToast.showCustomLoading(
-        toastBuilder: (_) => MyShimmer(),
+        toastBuilder: (_) => LoadingDialog(),
         clickClose: true,
         backgroundColor: Colors.white);
     var id = chapters[book.cur].chapterId;
@@ -642,7 +632,6 @@ class ReadModel with ChangeNotifier {
 
       curPage = await loadChapter(book.cur);
       notifyListeners();
-      widgets.clear();
       canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
     }
   }
@@ -735,7 +724,7 @@ class ReadModel with ChangeNotifier {
         prePage = curPage;
         if ((nextPage?.chapterName ?? "") == "-1") {
           BotToast.showCustomLoading(
-              toastBuilder: (_) => MyShimmer(),
+              toastBuilder: (_) => LoadingDialog(),
               clickClose: true,
               backgroundColor: Colors.white);
 

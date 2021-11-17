@@ -11,6 +11,7 @@ import 'package:flustars/flustars.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
 class FontSet extends StatefulWidget {
   @override
@@ -25,11 +26,12 @@ class StateFontSet extends State<FontSet> {
   bool downloading = false;
   double v = 0.0;
   List<FontInfo> fs = [];
-
   var key;
 
   @override
   void initState() {
+    FlutterStatusbarManager.setFullscreen(false);
+
     _colorModel = Store.value<ColorModel>(context);
     fetchData();
     super.initState();
@@ -45,7 +47,6 @@ class StateFontSet extends State<FontSet> {
           style: TextStyle(),
         ),
         elevation: 0,
-        centerTitle: true,
       ),
       body: Container(
         child: Column(
@@ -66,11 +67,11 @@ class StateFontSet extends State<FontSet> {
               alignment: Alignment.center,
               child: ListView.builder(
                 itemCount: fs.length,
-                itemExtent: 70,
+                itemExtent: 40,
                 itemBuilder: (context, index) {
                   var e = fs[index];
                   return Container(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: 10),
                     child: Row(
                       children: <Widget>[
                         Text(e.key == "Roboto" ? e.value : e.key),
@@ -179,7 +180,15 @@ class StateFontSet extends State<FontSet> {
   }
 
   Future<FileInfo> getFileInfo(String key) async {
+    // CustomCacheManager.instanceFont.emptyCache();
     return await CustomCacheManager.instanceFont.getFileFromCache(key);
+  }
+
+  @override
+  void dispose() {
+    FlutterStatusbarManager.setFullscreen(true);
+
+    super.dispose();
   }
 }
 

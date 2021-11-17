@@ -4,7 +4,6 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/RatingBar.dart';
-import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
@@ -33,7 +32,6 @@ class BookDetail extends StatefulWidget {
 
 class _BookDetailState extends State<BookDetail> {
   Book book;
-  ColorModel _colorModel;
   int maxLines = 3;
   bool ellipsis = true;
 
@@ -58,7 +56,6 @@ class _BookDetailState extends State<BookDetail> {
         this.widget._bookInfo.LastChapter,
         this.widget._bookInfo.LastTime);
     super.initState();
-    _colorModel = Store.value<ColorModel>(context);
   }
 
   Widget _bookHead() {
@@ -69,14 +66,14 @@ class _BookDetailState extends State<BookDetail> {
           Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         PicWidget(
           book.Img,
-          height: 140,
+          height: 130,
           width: 95,
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               Text(
                 book.Name,
@@ -95,7 +92,7 @@ class _BookDetailState extends State<BookDetail> {
                   maxLines: 2,
                   style: TextStyle(fontSize: 12, color: Colors.white)),
               RatingBar(
-                itemSize: 25,
+                itemSize: 15,
                 initialRating: this.widget._bookInfo.Rate ?? 1,
                 minRating: 1,
                 direction: Axis.horizontal,
@@ -163,7 +160,7 @@ class _BookDetailState extends State<BookDetail> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '作者还写过:',
+              '作者还写过',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             ),
             ListView.builder(
@@ -244,6 +241,58 @@ class _BookDetailState extends State<BookDetail> {
     );
   }
 
+  Widget _buildBottom() {
+    return Store.connect<ShelfModel>(
+        builder: (context, ShelfModel model, child) {
+      return Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          decoration: BoxDecoration( color: SpUtil.getBool("dark") ? Colors.black : Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(1.0)),
+          ),
+          padding: EdgeInsets.only(bottom: Screen.bottomSafeHeight),
+
+          child: ButtonBar(
+            alignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextButton(
+                  onPressed: () {
+                    SpUtil.putString(book.Id, "");
+                    model.modifyShelf(book);
+                  },
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    transitionBuilder:
+                        (Widget child, Animation<double> animation) {
+                      //执行缩放动画
+                      return ScaleTransition(child: child, scale: animation);
+                    },
+                    child: Text(model.inShelf(this.widget._bookInfo.Id)
+                        ? "移出书架"
+                        : "加入书架"),
+                    key:
+                        ValueKey<bool>(model.inShelf(this.widget._bookInfo.Id)),
+                  )),
+              TextButton(
+                  onPressed: () async {
+                    Book b = await DbHelper.instance.getBook(book.Id);
+
+                    Routes.navigateTo(
+                      context,
+                      Routes.read,
+                      params: {
+                        'read': jsonEncode(b == null ? book : b),
+                      },
+                    );
+                  },
+                  child: Text(SpUtil.haveKey(book.Id) ? "继续阅读" : "立即阅读")),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -297,78 +346,7 @@ class _BookDetailState extends State<BookDetail> {
               ])),
             ],
           ),
-          Store.connect<ShelfModel>(
-              builder: (context, ShelfModel model, child) {
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                // unselectedItemColor: _colorModel.dark ? Colors.white : null,
-                items: [
-                  model.inShelf(this.widget._bookInfo.Id)
-                      ? BottomNavigationBarItem(
-                          icon: Icon(
-                            Icons.clear,
-                          ),
-                          label: '移除书架',
-                        )
-                      : BottomNavigationBarItem(
-                          icon: Icon(
-                            Icons.playlist_add,
-                          ),
-                          label: '加入书架',
-                        ),
-
-                  BottomNavigationBarItem(
-                    icon: ImageIcon(
-                      AssetImage("images/read.png"),
-                    ),
-                    label: '立即阅读',
-                  ),
-                  // BottomNavigationBarItem(
-                  //   icon: Icon(
-                  //     Icons.cloud_download,
-                  //   ),
-                  //   label: '全本缓存',
-                  // ),
-                ],
-                onTap: (int i) async {
-                  switch (i) {
-                    case 0:
-                      {
-                        SpUtil.putString(book.Id, "");
-                        Store.value<ShelfModel>(context).modifyShelf(book);
-                      }
-                      break;
-                    case 1:
-                      {
-                        Book b = await DbHelper.instance.getBook(book.Id);
-
-                        Routes.navigateTo(
-                          context,
-                          Routes.read,
-                          params: {
-                            'read': jsonEncode(b == null ? book : b),
-                          },
-                        );
-                      }
-                      break;
-                    // case 2:
-                    //   {
-                    //     BotToast.showText(text: "开始下载...");
-                    //
-                    //     var value = Store.value<ReadModel>(context);
-                    //     value.book = _bookInfo as Book;
-                    //     value.book.UTime = _bookInfo.LastTime;
-                    //     value.bookTag = BookTag(0, 0, _bookInfo.Name, 0.0);
-                    //     value.downloadAll();
-                    //   }
-                    //   break;
-                  }
-                },
-              ),
-            );
-          }),
+          _buildBottom()
         ],
       ),
     );

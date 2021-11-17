@@ -12,6 +12,8 @@ class ReadSetting {
     "QR_bg_8.png",
     "QR_bg_4.jpg",
   ];
+
+  static bool isDark() => SpUtil.getBool("dark");
   static String bgsKey = "BGSKEY";
   static String fontSizeKey = "FONT_SIZE";
   static String latterHeight = "LINE_HEIGHT";

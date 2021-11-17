@@ -166,7 +166,6 @@ class TextComposition {
         }
         lines.add(TextLine(text, dx, dy, spacing ?? 0));
         dy += tp.height;
-
         if (p.length == textCount) {
           newParagraph();
           break;

@@ -38,7 +38,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   void initState() {
     super.initState();
     if (bookPicWidth == .0) {
-      bookPicWidth = Screen.width / 4;
+      bookPicWidth = Screen.width / 4.3;
       SpUtil.putDouble(Common.book_pic_width, bookPicWidth);
     }
     isShelf = this.widget.type == '';
@@ -102,7 +102,7 @@ class _BooksWidgetState extends State<BooksWidget> {
   //书架封面模式
   Widget coverModel() {
     return Padding(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(15),
       child: Wrap(
         alignment: WrapAlignment.spaceEvenly,
         spacing: 20, //主轴上子控件的间距

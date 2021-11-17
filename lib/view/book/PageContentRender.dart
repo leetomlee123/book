@@ -66,21 +66,17 @@ class _PageContentReaderState extends State<PageContentReader>
 
             instance
               ..onDown = (detail) {
-
-                  if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
-                      currentTouchEvent.touchPos != detail.localPosition) {
-                    currentTouchEvent = TouchEvent(
-                        TouchEvent.ACTION_DOWN, detail.localPosition);
-                    mPainter.setCurrentTouchEvent(currentTouchEvent);
-                    canvasKey.currentContext
-                        .findRenderObject()
-                        .markNeedsPaint();
-                  }
+                if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
+                    currentTouchEvent.touchPos != detail.localPosition) {
+                  currentTouchEvent =
+                      TouchEvent(TouchEvent.ACTION_DOWN, detail.localPosition);
+                  mPainter.setCurrentTouchEvent(currentTouchEvent);
+                  canvasKey.currentContext.findRenderObject().markNeedsPaint();
+                }
               };
             instance
               ..onUpdate = (detail) {
                 if (!viewModel.showMenu) {
-                viewModel.delay=false;
                   if (currentTouchEvent.action != TouchEvent.ACTION_MOVE ||
                       currentTouchEvent.touchPos != detail.localPosition) {
                     currentTouchEvent = TouchEvent(
@@ -108,8 +104,6 @@ class _PageContentReaderState extends State<PageContentReader>
                   }
                 }
               };
-
-
           },
         ),
       },

@@ -55,4 +55,8 @@ class AppInit {
     SpUtil.putObjectList(Common.parse_html_config, configs);
     SpUtil.putObject(Common.fonts, fonts);
   }
+
+  static bool loginState() {
+    return SpUtil.haveKey("token");
+  }
 }

@@ -125,7 +125,7 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                       children: [
                         GestureDetector(
                           child: RepaintBoundary(child: PageContentReader()),
-                          onTapDown: (e) => readModel.tapPage(context, e),
+                          onTapUp: (e) => readModel.tapPage(context, e),
                         ),
 
                         // NovelRoteView(model),

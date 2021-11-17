@@ -115,7 +115,7 @@ class CoverPageAnimation extends BaseAnimationPage {
   void onDraw(Canvas canvas) {
     if (isStartAnimation && (mTouch.dx != 0 || mTouch.dy != 0)) {
       drawBottomPage(canvas);
-      // drawCurrentShadow(canvas);
+      drawCurrentShadow(canvas);
       drawTopPage(canvas);
     } else {
       drawStatic(canvas);
@@ -181,66 +181,66 @@ class CoverPageAnimation extends BaseAnimationPage {
 
     Gradient shadowGradient;
 
-    if (coverDirection == ORIENTATION_HORIZONTAL) {
-      shadowGradient = new LinearGradient(
-        colors: [
-          Color(0xAAA00000),
-          Colors.transparent,
-        ],
-      );
-      if (isTurnNext) {
-        Rect rect = Rect.fromLTRB(
-            currentSize.width + mTouch.dx - mStartPoint.dx,
-            0,
-            currentSize.width + mTouch.dx - mStartPoint.dx + 20,
-            currentSize.height);
-        var shadowPaint = Paint()
-          ..isAntiAlias = false
-          ..style = PaintingStyle.fill //填充
-          ..shader = shadowGradient.createShader(rect);
+    // if (coverDirection == ORIENTATION_HORIZONTAL) {
+    shadowGradient = new LinearGradient(
+      colors: [
+        Colors.black54,
+        Colors.transparent,
+      ],
+    );
+    if (isTurnNext) {
+      Rect rect = Rect.fromLTRB(
+          currentSize.width + mTouch.dx - mStartPoint.dx,
+          0,
+          currentSize.width + mTouch.dx - mStartPoint.dx + 15,
+          currentSize.height);
+      var shadowPaint = Paint()
+        ..isAntiAlias = false
+        ..style = PaintingStyle.fill //填充
+        ..shader = shadowGradient.createShader(rect);
 
-        canvas.drawRect(rect, shadowPaint);
-      } else {
-        Rect rect = Rect.fromLTRB((mTouch.dx - mStartPoint.dx), 0,
-            (mTouch.dx - mStartPoint.dx) + 20, currentSize.height);
-        var shadowPaint = Paint()
-          ..isAntiAlias = false
-          ..style = PaintingStyle.fill //填充
-          ..shader = shadowGradient.createShader(rect);
-
-        canvas.drawRect(rect, shadowPaint);
-      }
+      canvas.drawRect(rect, shadowPaint);
     } else {
-      shadowGradient = new LinearGradient(
-        begin: Alignment.topRight,
-        colors: [
-          Color(0xAA000000),
-          Colors.transparent,
-        ],
-      );
-      if (isTurnNext) {
-        Rect rect = Rect.fromLTRB(
-            0,
-            currentSize.height - (mStartPoint.dy - mTouch.dy),
-            currentSize.width,
-            currentSize.height - (mStartPoint.dy - mTouch.dy) + 20);
-        var shadowPaint = Paint()
-          ..isAntiAlias = false
-          ..style = PaintingStyle.fill //填充
-          ..shader = shadowGradient.createShader(rect);
+      Rect rect = Rect.fromLTRB((mTouch.dx - mStartPoint.dx), 0,
+          (mTouch.dx - mStartPoint.dx) + 15, currentSize.height);
+      var shadowPaint = Paint()
+        ..isAntiAlias = false
+        ..style = PaintingStyle.fill //填充
+        ..shader = shadowGradient.createShader(rect);
 
-        canvas.drawRect(rect, shadowPaint);
-      } else {
-        Rect rect = Rect.fromLTRB(0, -(mStartPoint.dy - mTouch.dy),
-            currentSize.width, -(mStartPoint.dy - mTouch.dy) + 20);
-        var shadowPaint = Paint()
-          ..isAntiAlias = false
-          ..style = PaintingStyle.fill //填充
-          ..shader = shadowGradient.createShader(rect);
-
-        canvas.drawRect(rect, shadowPaint);
-      }
+      canvas.drawRect(rect, shadowPaint);
     }
+    // } else {
+    //   shadowGradient = new LinearGradient(
+    //     begin: Alignment.topRight,
+    //     colors: [
+    //       Color(0xAA000000),
+    //       Colors.transparent,
+    //     ],
+    //   );
+    //   if (isTurnNext) {
+    //     Rect rect = Rect.fromLTRB(
+    //         0,
+    //         currentSize.height - (mStartPoint.dy - mTouch.dy),
+    //         currentSize.width,
+    //         currentSize.height - (mStartPoint.dy - mTouch.dy) + 20);
+    //     var shadowPaint = Paint()
+    //       ..isAntiAlias = false
+    //       ..style = PaintingStyle.fill //填充
+    //       ..shader = shadowGradient.createShader(rect);
+    //
+    //     canvas.drawRect(rect, shadowPaint);
+    //   } else {
+    //     Rect rect = Rect.fromLTRB(0, -(mStartPoint.dy - mTouch.dy),
+    //         currentSize.width, -(mStartPoint.dy - mTouch.dy) + 20);
+    //     var shadowPaint = Paint()
+    //       ..isAntiAlias = false
+    //       ..style = PaintingStyle.fill //填充
+    //       ..shader = shadowGradient.createShader(rect);
+    //
+    //     canvas.drawRect(rect, shadowPaint);
+    //   }
+    // }
 
     canvas.restore();
   }
