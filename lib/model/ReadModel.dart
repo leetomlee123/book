@@ -701,9 +701,7 @@ class ReadModel with ChangeNotifier {
 
   void changeCoverPage(var offsetDifference) {
     int idx = book?.index ?? 0;
-    // if (idx == -1) {
-    //   return;
-    // }
+ 
     int curLen = (curPage?.pageOffsets ?? 0);
     if (idx == curLen - 1 && offsetDifference > 0) {
       Future.delayed(
@@ -784,7 +782,7 @@ class ReadModel with ChangeNotifier {
     }
 
     return next() != null;
-    ;
+    
   }
 
   bool isCanGoPre() {

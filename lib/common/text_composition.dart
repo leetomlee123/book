@@ -160,10 +160,15 @@ class TextComposition {
         double spacing;
         final text = p.substring(0, textCount);
         if (tp.width > _width2) {
-          tp.text = TextSpan(text: text, style: style);
-          tp.layout();
-          spacing = (_width - tp.width) / textCount;
+          // tp.text = TextSpan(text: text, style: style);
+          // tp.layout();
+          spacing = (_width - tp.width) / (textCount + 1);
         }
+        // if (tp.width > _width2) {
+        //   tp.text = TextSpan(text: text, style: style);
+        //   tp.layout();
+        //   spacing = (_width - tp.width) / textCount;
+        // }
         lines.add(TextLine(text, dx, dy, spacing ?? 0));
         dy += tp.height;
         if (p.length == textCount) {
@@ -183,6 +188,10 @@ class TextComposition {
     if (this.pages.length == 0) {
       this.pages.add(TextPage([], 0));
     }
+    print("_height $_height _height2 $_height2");
+    this.pages.forEach((element) {
+      print(element.height);
+    });
   }
 
   /// 调试模式 输出布局信息

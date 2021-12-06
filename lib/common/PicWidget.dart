@@ -24,12 +24,16 @@ class PicWidget extends StatelessWidget {
       //   BoxShadow(color: Colors.grey[300], offset: Offset(1, -1), blurRadius: 3),
       //   BoxShadow(color: Colors.grey[300], offset: Offset(-1, 1), blurRadius: 3)
       // ]),
-      child: ExtendedImage.network(url,
-          fit: this.fit,
+      child: ExtendedImage.network(url, fit: this.fit,
           loadStateChanged: (ExtendedImageState state) {
         switch (state.extendedImageLoadState) {
           case LoadState.loading:
-            return null;
+            return Image.asset(
+              "images/nocover.jpg",
+              width: this.width,
+              height: this.height,
+              fit: BoxFit.cover,
+            );
             break;
           case LoadState.completed:
             return ExtendedRawImage(
@@ -42,7 +46,9 @@ class PicWidget extends StatelessWidget {
           case LoadState.failed:
             return Image.asset(
               "images/nocover.jpg",
-              fit: BoxFit.fill,
+              width: this.width,
+              height: this.height,
+              fit: BoxFit.cover,
             );
             break;
         }
