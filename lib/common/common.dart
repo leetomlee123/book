@@ -1,10 +1,10 @@
 class Common {
 //
 //   static String domain = "http://192.168.0.109:8011/v1";
-  static String domain = "http://134.175.83.19:8011/v1";
+  static String domain = "http://121.37.139.13:8011/v1";
 
 //  static String domain = "https://newbook.leetomlee.xyz/v1";
-  static String video_domain = "http://134.175.83.19:8012";
+  static String video_domain = "http://121.37.139.13:8012";
 
   static String login = domain + "/login";
   static String gitHubLogin = domain + "/oauth/redirect";
