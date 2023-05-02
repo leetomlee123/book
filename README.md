@@ -11,7 +11,7 @@ dart,provider,eventbus,dio等
 ## 待解决问题
 [关注点](https://github.com/flutter/flutter/issues/30604)  
 ## 高质量机场推介
-[链接](https://bafangcn.vip/#/register?code=pwZ1cCfn)
+[注册](https://bafangcn.vip/#/register?code=pwZ1cCfn)
 ## 项目截图   
 
  
