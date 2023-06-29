@@ -10,8 +10,8 @@ dart,provider,eventbus,dio等
 服务器是阿里云1Core2G弱鸡服务器,请各位大神手下留情不要攻击或者爬取数据,供大家学习使用
 ## 待解决问题
 [关注点](https://github.com/flutter/flutter/issues/30604)  
-## 高质量机场推介
-[注册](https://bafangcn.vip/#/register?code=pwZ1cCfn)
+## 微信订阅号
+带狗巡山
 ## 项目截图   
 
  
