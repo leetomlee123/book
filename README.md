@@ -11,7 +11,7 @@ dart,provider,eventbus,dio等
 ## 待解决问题
 [关注点](https://github.com/flutter/flutter/issues/30604)  
 ## 微信订阅号
-带狗巡山
+带狗巡山 打赏一毛钱
 ## 项目截图   
 
  
