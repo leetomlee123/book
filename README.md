@@ -1,8 +1,7 @@
 
 # 基地
-[听书楼](https://t.me/tsl_voice)
-# 优质破解软件
-[apk_fun](https://t.me/apk_fun)
+
+![c97b66731796c6df734fc0e290b856e](https://github.com/leetomlee123/book/assets/19498940/1c2c50e1-4977-4d87-9470-7f241ed1a35d)
 
 
 # 小书屋
@@ -13,8 +12,7 @@ dart,provider,eventbus,dio等
 服务器是阿里云1Core2G弱鸡服务器,请各位大神手下留情不要攻击或者爬取数据,供大家学习使用
 ## 待解决问题
 [关注点](https://github.com/flutter/flutter/issues/30604)  
-## 微信订阅号
-带狗巡山 打赏一毛钱
+
 ## 项目截图   
 
  
