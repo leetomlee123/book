@@ -23,6 +23,10 @@ dart,provider,eventbus,dio等
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | <img src="https://cdn.jsdelivr.net/gh/leetomlee123/hugoblogtalks@master/20210528/微信图片_20210528094929.53rt8w0s78s0.jpg" alt="书架"  /> | <img src="https://cdn.jsdelivr.net/gh/leetomlee123/hugoblogtalks@master/20210528/微信图片_20210528094921.2skc99dvu120.jpg" alt="书架"  /> | <img src="https://cdn.jsdelivr.net/gh/leetomlee123/hugoblogtalks@master/20210528/微信图片_20210528094945.303pgmllpyy0.jpg" alt="书架"  /> |                                                           |
 
+## :star: Star 历史
+
+[![Star History Chart]][Star History Chart Link]
+
 ## 致谢
 
 > IntelliJ IDEA 的每个方面都旨在最大化开发者生产力。结合智能编码辅助与符合人体工程学的设计，让开发不仅高效，更成为一种享受。
