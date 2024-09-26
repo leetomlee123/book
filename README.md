@@ -1,9 +1,6 @@
-# 翻墙代理分享频道
-[知鱼](https://t.me/just_do_chat)
+# 免费代理分享
+[知鱼](https://blog.colors.nyc.mn)
 
-# 基地
-
-![c97b66731796c6df734fc0e290b856e](https://github.com/leetomlee123/book/assets/19498940/1c2c50e1-4977-4d87-9470-7f241ed1a35d)
 
 # 听书楼 
 [项目地址](https://github.com/leetomlee123/flutter_voice)
