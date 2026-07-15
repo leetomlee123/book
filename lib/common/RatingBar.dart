@@ -12,9 +12,9 @@ class RatingWidget {
   final Widget empty;
 
   RatingWidget({
-    @required this.full,
-    @required this.half,
-    @required this.empty,
+    required this.full,
+    required this.half,
+    required this.empty,
   });
 }
 
@@ -23,14 +23,14 @@ class _HalfRatingWidget extends StatelessWidget {
   final double size;
   final bool enableMask;
   final bool rtlMode;
-  final Color unratedColor;
+  final Color? unratedColor;
 
   _HalfRatingWidget({
-    @required this.size,
-    @required this.child,
-    @required this.enableMask,
-    @required this.rtlMode,
-    @required this.unratedColor,
+    required this.size,
+    required this.child,
+    required this.enableMask,
+    required this.rtlMode,
+    required this.unratedColor,
   });
 
   @override
@@ -74,7 +74,7 @@ class _HalfClipper extends CustomClipper<Rect> {
   final bool rtlMode;
 
   _HalfClipper({
-    @required this.rtlMode,
+    required this.rtlMode,
   });
 
   @override
@@ -100,13 +100,13 @@ class _NoRatingWidget extends StatelessWidget {
   final double size;
   final Widget child;
   final bool enableMask;
-  final Color unratedColor;
+  final Color? unratedColor;
 
   _NoRatingWidget({
-    @required this.size,
-    @required this.child,
-    @required this.enableMask,
-    @required this.unratedColor,
+    required this.size,
+    required this.child,
+    required this.enableMask,
+    required this.unratedColor,
   });
 
   @override
@@ -118,7 +118,7 @@ class _NoRatingWidget extends StatelessWidget {
         fit: BoxFit.contain,
         child: enableMask
             ? _ColorFilter(
-          color: unratedColor,
+          color: unratedColor ?? Colors.grey.shade200,
           child: child,
         )
             : child,
@@ -132,8 +132,8 @@ class _ColorFilter extends StatelessWidget {
   final Color color;
 
   _ColorFilter({
-    @required this.child,
-    @required this.color,
+    required this.child,
+    required this.color,
   });
 
   @override
@@ -155,7 +155,7 @@ class _ColorFilter extends StatelessWidget {
 }
 
 class _IndicatorClipper extends CustomClipper<Rect> {
-  final double ratingFraction;
+  final double? ratingFraction;
   final bool rtlMode;
 
   _IndicatorClipper({
@@ -166,7 +166,7 @@ class _IndicatorClipper extends CustomClipper<Rect> {
   @override
   Rect getClip(Size size) => rtlMode
       ? Rect.fromLTRB(
-    size.width - size.width * ratingFraction,
+    size.width - size.width * (ratingFraction ?? 0),
     0.0,
     size.width,
     size.height,
@@ -174,7 +174,7 @@ class _IndicatorClipper extends CustomClipper<Rect> {
       : Rect.fromLTRB(
     0.0,
     0.0,
-    size.width * ratingFraction,
+    size.width * (ratingFraction ?? 0),
     size.height,
   );
 
@@ -207,19 +207,19 @@ class RatingBarIndicator extends StatefulWidget {
   final ScrollPhysics physics;
 
   /// {@macro flutterRatingBar.textDirection}
-  final TextDirection textDirection;
+  final TextDirection? textDirection;
 
   /// {@macro flutterRatingBar.itemBuilder}
-  final IndexedWidgetBuilder itemBuilder;
+  final IndexedWidgetBuilder? itemBuilder;
 
   /// {@macro flutterRatingBar.direction}
   final Axis direction;
 
   /// {@macro flutterRatingBar.unratedColor}
-  final Color unratedColor;
+  final Color? unratedColor;
 
   RatingBarIndicator({
-    @required this.itemBuilder,
+    required this.itemBuilder,
     this.rating = 0.0,
     this.itemCount = 5,
     this.itemSize = 40.0,
@@ -300,10 +300,10 @@ class _RatingBarIndicatorState extends State<RatingBarIndicator> {
           FittedBox(
             fit: BoxFit.contain,
             child: index + 1 < _ratingNumber
-                ? widget.itemBuilder(context, index)
+                ? widget.itemBuilder!(context, index)
                 : _ColorFilter(
-              color: widget.unratedColor ?? Colors.grey[200],
-              child: widget.itemBuilder(context, index),
+              color: widget.unratedColor ?? Colors.grey.shade200,
+              child: widget.itemBuilder!(context, index),
             ),
           ),
 //          if (index + 1 == _ratingNumber)
@@ -315,7 +315,7 @@ class _RatingBarIndicatorState extends State<RatingBarIndicator> {
                   ratingFraction: _ratingFraction,
                   rtlMode: _isRTL,
                 ),
-                child: widget.itemBuilder(context, index),
+                child: widget.itemBuilder!(context, index),
               ),
             )
                 : FittedBox(
@@ -324,7 +324,7 @@ class _RatingBarIndicatorState extends State<RatingBarIndicator> {
                 clipper: _IndicatorClipper(
                   ratingFraction: _ratingFraction,
                 ),
-                child: widget.itemBuilder(context, index),
+                child: widget.itemBuilder!(context, index),
               ),
             ),
         ],
@@ -381,15 +381,15 @@ class RatingBar extends StatefulWidget {
   /// {@template flutterRatingBar.textDirection}
   /// The text flows from right to left if [textDirection] = TextDirection.rtl
   /// {@endtemplate}
-  final TextDirection textDirection;
+  final TextDirection? textDirection;
 
   /// {@template flutterRatingBar.itemBuilder}
   /// Widget for each rating bar item.
   /// {@endtemplate}
-  final IndexedWidgetBuilder itemBuilder;
+  final IndexedWidgetBuilder? itemBuilder;
 
   /// Customizes the Rating Bar item with [RatingWidget].
-  final RatingWidget ratingWidget;
+  final RatingWidget? ratingWidget;
 
   /// if set to true, Rating Bar item will glow when being touched.
   ///
@@ -404,7 +404,7 @@ class RatingBar extends StatefulWidget {
   /// Defines color for glow.
   ///
   /// Default = theme's accent color
-  final Color glowColor;
+  final Color? glowColor;
 
   /// {@template flutterRatingBar.direction}
   /// Direction of rating bar.
@@ -418,7 +418,7 @@ class RatingBar extends StatefulWidget {
   ///
   /// Default = Colors.grey[200]
   /// {@endtemplate}
-  final Color unratedColor;
+  final Color? unratedColor;
 
   /// Sets minimum rating
   ///
@@ -428,12 +428,12 @@ class RatingBar extends StatefulWidget {
   /// Sets maximum rating
   ///
   /// Default = [itemCount]
-  final double maxRating;
+  final double? maxRating;
 
   RatingBar({
     this.itemCount = 5,
     this.initialRating = 0.0,
-    @required this.onRatingUpdate,
+    required this.onRatingUpdate,
     this.itemSize = 40.0,
     this.allowHalfRating = false,
     this.itemBuilder,
@@ -465,7 +465,7 @@ class _RatingBarState extends State<RatingBar> {
 
   //double _ratingHistory = 0.0;
   double iconRating = 0.0;
-  double _minRating, _maxrating;
+  double _minRating = 0, _maxrating = 0;
   bool _isRTL = false;
   ValueNotifier<bool> _glow = ValueNotifier(false);
 
@@ -517,9 +517,9 @@ class _RatingBarState extends State<RatingBar> {
     if (index >= _rating) {
       ratingWidget = _NoRatingWidget(
         size: widget.itemSize,
-        child: widget.ratingWidget?.empty ?? widget.itemBuilder(context, index),
+        child: widget.ratingWidget?.empty ?? widget.itemBuilder!(context, index),
         enableMask: widget.ratingWidget == null,
-        unratedColor: widget.unratedColor ?? Colors.grey[200],
+        unratedColor: widget.unratedColor ?? Colors.grey.shade200,
       );
     } else if (index >= _rating - (widget.allowHalfRating ? 0.5 : 1.0) &&
         index < _rating &&
@@ -527,10 +527,10 @@ class _RatingBarState extends State<RatingBar> {
       if (widget.ratingWidget?.half == null) {
         ratingWidget = _HalfRatingWidget(
           size: widget.itemSize,
-          child: widget.itemBuilder(context, index),
+          child: widget.itemBuilder!(context, index),
           enableMask: widget.ratingWidget == null,
           rtlMode: _isRTL,
-          unratedColor: widget.unratedColor ?? Colors.grey[200],
+          unratedColor: widget.unratedColor ?? Colors.grey.shade200,
         );
       } else {
         ratingWidget = SizedBox(
@@ -543,9 +543,9 @@ class _RatingBarState extends State<RatingBar> {
               transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
               alignment: Alignment.center,
               transformHitTests: false,
-              child: widget.ratingWidget.half,
+              child: widget.ratingWidget!.half,
             )
-                : widget.ratingWidget.half,
+                : widget.ratingWidget!.half,
           ),
         );
       }
@@ -557,7 +557,7 @@ class _RatingBarState extends State<RatingBar> {
         child: FittedBox(
           fit: BoxFit.contain,
           child:
-          widget.ratingWidget?.full ?? widget.itemBuilder(context, index),
+          widget.ratingWidget?.full ?? widget.itemBuilder!(context, index),
         ),
       );
       iconRating += 1.0;
@@ -567,12 +567,10 @@ class _RatingBarState extends State<RatingBar> {
       ignoring: widget.ignoreGestures,
       child: GestureDetector(
         onTap: () {
-          if (widget.onRatingUpdate != null) {
-            widget.onRatingUpdate(index + 1.0);
-            setState(() {
-              _rating = index + 1.0;
-            });
-          }
+          widget.onRatingUpdate(index + 1.0);
+          setState(() {
+            _rating = index + 1.0;
+          });
         },
         onHorizontalDragStart: _isHorizontal ? (_) => _glow.value = true : null,
         onHorizontalDragEnd: _isHorizontal
@@ -600,10 +598,10 @@ class _RatingBarState extends State<RatingBar> {
           padding: widget.itemPadding,
           child: ValueListenableBuilder(
             valueListenable: _glow,
-            builder: (context, glow, _) {
+            builder: (context, bool glow, _) {
               if (glow && widget.glow) {
                 Color glowColor =
-                    widget.glowColor ?? Theme.of(context).accentColor;
+                    widget.glowColor ?? Theme.of(context).colorScheme.secondary;
                 return DecoratedBox(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -636,7 +634,7 @@ class _RatingBarState extends State<RatingBar> {
 
   void _dragOperation(DragUpdateDetails dragDetails, Axis direction) {
     if (!widget.tapOnlyMode) {
-      RenderBox box = context.findRenderObject();
+      RenderBox box = context.findRenderObject() as RenderBox;
       var _pos = box.globalToLocal(dragDetails.globalPosition);
       double i;
       if (direction == Axis.horizontal) {
@@ -654,16 +652,14 @@ class _RatingBarState extends State<RatingBar> {
       if (_isRTL && widget.direction == Axis.horizontal) {
         currentRating = widget.itemCount - currentRating;
       }
-      if (widget.onRatingUpdate != null) {
-        if (currentRating < _minRating) {
-          _rating = _minRating;
-        } else if (currentRating > _maxrating) {
-          _rating = _maxrating;
-        } else {
-          _rating = currentRating;
-        }
-        setState(() {});
+      if (currentRating < _minRating) {
+        _rating = _minRating;
+      } else if (currentRating > _maxrating) {
+        _rating = _maxrating;
+      } else {
+        _rating = currentRating;
       }
+      setState(() {});
     }
   }
 }

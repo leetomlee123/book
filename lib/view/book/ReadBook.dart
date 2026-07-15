@@ -9,8 +9,7 @@ import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/PageContentRender.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
-// import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
+import 'package:flutter/services.dart';
 
 class ReadBook extends StatefulWidget {
   final Book book;
@@ -25,11 +24,11 @@ class ReadBook extends StatefulWidget {
 }
 
 class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
-  Widget body;
-  ReadModel readModel;
-  ShelfModel shelfModel;
+  Widget? body;
+  late ReadModel readModel;
+  late ShelfModel shelfModel;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  ColorModel colorModel;
+  ColorModel? colorModel;
 
   @override
   void initState() {
@@ -42,57 +41,49 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     shelfModel = Store.value<ShelfModel>(context);
     eventBus.on<ReadRefresh>().listen((event) {
       readModel.reSetPages();
-      readModel.initPageContent(readModel.book.cur, true);
+      readModel.initPageContent(readModel.book!.cur, true);
     });
 
     WidgetsBinding.instance.addObserver(this);
-    // eventBus.on<ZEvent>().listen((event) {
-    //   move(event.off);
-    // });
     eventBus.on<OpenChapters>().listen((event) {
-      _scaffoldKey?.currentState?.openDrawer();
+      _scaffoldKey.currentState?.openDrawer();
     });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
     await readModel.getBookRecord();
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual);
-
-    FlutterStatusbarManager.setFullscreen(true);
-    // SystemChrome.setEnabledSystemUIOverlays([]);
-    // SystemChrome.setSystemUIOverlayStyle(SystemUiOverlay.top);
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
-  void dispose() async {
+  void dispose() {
     super.dispose();
     saveState();
     readModel.clear();
     WidgetsBinding.instance.removeObserver(this);
-    FlutterStatusbarManager.setFullscreen(false);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   @override
-  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     saveState();
   }
 
   saveState() async {
     readModel.saveData();
-    if (readModel.sSave) {
+    if (readModel.sSave == true) {
       shelfModel.updReadBookProcess(
-          UpdateBookProcess(readModel.book.cur, readModel.book.index));
+          UpdateBookProcess(readModel.book!.cur, readModel.book!.index));
     }
   }
 
   //拦截菜单和章节view
   bool popWithMenuAndChapterView() {
-    if (readModel.showMenu || _scaffoldKey.currentState.isDrawerOpen) {
+    if (readModel.showMenu || (_scaffoldKey.currentState?.isDrawerOpen ?? false)) {
       if (readModel.showMenu) {
         readModel.toggleShowMenu();
       }
-      if (_scaffoldKey.currentState.isDrawerOpen) {
-        _scaffoldKey.currentState.openEndDrawer();
+      if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+        _scaffoldKey.currentState?.openEndDrawer();
       }
       return false;
     }
@@ -101,17 +92,21 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-        onWillPop: () async {
+    return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, dynamic result) async {
+          if (didPop) return;
           var popWithMenuAndChapterView2 = popWithMenuAndChapterView();
           if (!popWithMenuAndChapterView2) {
-            return false;
+            return;
           }
           if (!Store.value<ShelfModel>(context)
-              .exitsInBookShelfById(readModel.book.Id)) {
+              .exitsInBookShelfById(readModel.book!.Id)) {
             await confirmAddToShelf(context);
           }
-          return true;
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
         },
         child: Scaffold(
             key: _scaffoldKey,
@@ -127,9 +122,6 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
                           child: RepaintBoundary(child: PageContentReader()),
                           onTapUp: (e) => readModel.tapPage(context, e),
                         ),
-
-                        // NovelRoteView(model),
-
                         Offstage(
                           child: Menu(),
                           offstage: !model.showMenu,

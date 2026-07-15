@@ -7,11 +7,14 @@ part of 'ParseContentConfig.dart';
 // **************************************************************************
 
 ParseContentConfig _$ParseContentConfigFromJson(Map<String, dynamic> json) {
-  return ParseContentConfig(json['domain'] as String, json['encode'] as String,
-      json['documentId'] as String);
+  return ParseContentConfig(
+      json['domain'] as String? ?? '',
+      json['encode'] as String? ?? '',
+      json['documentId'] as String? ?? '');
 }
 
-Map<String, dynamic> _$ParseContentConfigToJson(ParseContentConfig instance) => <String, dynamic>{
+Map<String, dynamic> _$ParseContentConfigToJson(ParseContentConfig instance) =>
+    <String, dynamic>{
       'domain': instance.domain,
       'encode': instance.encode,
       'documentId': instance.documentId

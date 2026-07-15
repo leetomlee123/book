@@ -7,8 +7,11 @@ part of 'BookVotec.dart';
 // **************************************************************************
 
 BookVotec _$BookVotecFromJson(Map<String, dynamic> json) {
-  return BookVotec(json['BookId'] as int, (json['Score'] as num)?.toDouble(),
-      json['TotalScore'] as int, json['VoterCount'] as int);
+  return BookVotec(
+      json['BookId'] as int? ?? 0,
+      (json['Score'] as num?)?.toDouble() ?? 0,
+      json['TotalScore'] as int? ?? 0,
+      json['VoterCount'] as int? ?? 0);
 }
 
 Map<String, dynamic> _$BookVotecToJson(BookVotec instance) => <String, dynamic>{

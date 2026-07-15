@@ -8,11 +8,11 @@ part of 'TextPage.dart';
 
 TextPage _$TextPageFromJson(Map<String, dynamic> json) {
   return TextPage(
-      (json['lines'] as List)
-          ?.map((e) =>
-              e == null ? null : TextLine.fromJson(e as Map<String, dynamic>))
-          ?.toList(),
-      json['height'] as double);
+      (json['lines'] as List<dynamic>?)
+              ?.map((e) => TextLine.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          <TextLine>[],
+      (json['height'] as num?)?.toDouble() ?? 0);
 }
 
 Map<String, dynamic> _$TextPageToJson(TextPage instance) => <String, dynamic>{

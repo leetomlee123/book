@@ -2,14 +2,14 @@ import 'package:book/entity/Book.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/gestures.dart';
 
-EventBus eventBus = new EventBus();
+EventBus eventBus = EventBus();
 
 class AddEvent {}
 
 class PageControllerGo {
   final int go;
   final Offset localDetail;
-  PageControllerGo(this.go,this.localDetail);
+  PageControllerGo(this.go, this.localDetail);
 }
 
 class UpdateBookProcess {
@@ -21,7 +21,7 @@ class UpdateBookProcess {
 class DownLoadNotify {
   String url;
   double v;
-  DownLoadNotify(this.url,this.v);
+  DownLoadNotify(this.url, this.v);
 }
 
 class OpenEvent {

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
@@ -13,7 +13,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/system/MenuConfig.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class Menu extends StatefulWidget {
@@ -25,8 +25,8 @@ enum Type { SLIDE, MORE_SETTING, DOWNLOAD }
 
 class _MenuState extends State<Menu> {
   Type type = Type.SLIDE;
-  ReadModel _readModel;
-  ColorModel _colorModel;
+  late ReadModel _readModel;
+  late ColorModel _colorModel;
 
   double settingH = 340;
 
@@ -47,7 +47,7 @@ class _MenuState extends State<Menu> {
       child: Row(
         children: [
           Text(
-            '${_readModel?.book?.Name ?? ""}',
+            '${_readModel.book?.Name ?? ""}',
             style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
           ),
           // Spacer(),
@@ -61,7 +61,7 @@ class _MenuState extends State<Menu> {
           IconButton(
             icon: Icon(Icons.info),
             onPressed: () async {
-              String url = Common.detail + '/${_readModel.book.Id}';
+              String url = Common.detail + '/${_readModel.book!.Id}';
               Response future = await HttpUtil.instance.dio.get(url);
               var d = future.data['data'];
               BookInfo bookInfo = BookInfo.fromJson(d);
@@ -99,12 +99,12 @@ class _MenuState extends State<Menu> {
           children: <Widget>[
             TextButton(
                 onPressed: () async {
-                  if ((_readModel.book.cur - 1) < 0) {
+                  if ((_readModel.book!.cur - 1) < 0) {
                     BotToast.showText(text: '已经是第一章');
                     return;
                   }
-                  _readModel.book.cur -= 1;
-                  await _readModel.initPageContent(_readModel.book.cur, true);
+                  _readModel.book!.cur -= 1;
+                  await _readModel.initPageContent(_readModel.book!.cur, true);
                 },
                 child: Text('上一章')),
             Expanded(
@@ -112,17 +112,17 @@ class _MenuState extends State<Menu> {
                 child: Slider(
                   // activeColor: Colors.white,
                   // inactiveColor: Colors.white70,
-                  value: _readModel.book.cur.toDouble(),
+                  value: _readModel.book!.cur.toDouble(),
                   max: (_readModel.chapters.length - 1).toDouble(),
                   min: 0.0,
                   onChanged: (newValue) {
                     int temp = newValue.round();
-                    _readModel.book.cur = temp;
+                    _readModel.book!.cur = temp;
 
-                    _readModel.initPageContent(_readModel.book.cur, true);
+                    _readModel.initPageContent(_readModel.book!.cur, true);
                   },
                   label:
-                      '${_readModel.chapters[_readModel.book.cur].chapterName} ',
+                      '${_readModel.chapters[_readModel.book!.cur].chapterName} ',
                   semanticFormatterCallback: (newValue) {
                     return '${newValue.round()} dollars';
                   },
@@ -131,13 +131,13 @@ class _MenuState extends State<Menu> {
             ),
             TextButton(
                 onPressed: () async {
-                  if ((_readModel.book.cur + 1) >= _readModel.chapters.length) {
+                  if ((_readModel.book!.cur + 1) >= _readModel.chapters.length) {
                     BotToast.showText(text: "已经是最后一章");
                     return;
                   }
-                  _readModel.book.cur += 1;
+                  _readModel.book!.cur += 1;
 
-                  await _readModel.initPageContent(_readModel.book.cur, true);
+                  await _readModel.initPageContent(_readModel.book!.cur, true);
                 },
                 child: Text('下一章')),
           ],
@@ -167,7 +167,7 @@ class _MenuState extends State<Menu> {
                     onTap: () {
                       BotToast.showText(text: '从当前章节开始下载...');
 
-                      _readModel.downloadAll(_readModel.book.cur);
+                      _readModel.downloadAll(_readModel.book!.cur);
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -444,7 +444,7 @@ class _MenuState extends State<Menu> {
         ),
         TextButton(
             style: ButtonStyle(
-              side: MaterialStateProperty.all(BorderSide(
+              side: WidgetStateProperty.all(BorderSide(
                   color: !SpUtil.getBool(Common.turnPageAnima)
                       ? _colorModel.dark
                           ? Colors.white
@@ -466,7 +466,7 @@ class _MenuState extends State<Menu> {
         ),
         TextButton(
             style: ButtonStyle(
-              side: MaterialStateProperty.all(BorderSide(
+              side: WidgetStateProperty.all(BorderSide(
                   color: SpUtil.getBool(Common.turnPageAnima)
                       ? _colorModel.dark
                           ? Colors.white
@@ -491,10 +491,8 @@ class _MenuState extends State<Menu> {
     switch (type) {
       case Type.MORE_SETTING:
         return moreSetting();
-        break;
       case Type.DOWNLOAD:
         return downloadWidget();
-        break;
       default:
         return chapterSlide();
     }

@@ -1,0 +1,9 @@
+# Workspace (single crate for now)
+[workspace]
+members = ["book_pager"]
+resolver = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

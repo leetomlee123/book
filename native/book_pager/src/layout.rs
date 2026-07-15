@@ -1,0 +1,327 @@
+//! Core pagination algorithm — port of `lib/common/text_composition.dart`.
+//!
+//! Layout rules (matching the Dart implementation):
+//! - Split content by `\n` into paragraphs
+//! - Soft-wrap each paragraph to `column_width` using font metrics
+//! - Full-justify letter-spacing when a line is near full width
+//! - Paginate when next line would exceed content height
+//! - Optionally redistribute vertical space (bottom justify) per page
+
+use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LayoutInput {
+    /// Full chapter text (paragraphs separated by `\n`)
+    pub text: String,
+    pub font_size: f32,
+    /// Multiplier of font size for line height (matches Flutter TextStyle.height)
+    pub line_height: f32,
+    /// Extra gap after a paragraph ends (already scaled by caller if needed)
+    pub paragraph: f32,
+    pub box_width: f32,
+    pub box_height: f32,
+    pub padding_horizontal: f32,
+    pub padding_vertical: f32,
+    pub should_justify_height: bool,
+    /// Optional absolute path to a TTF/OTF font file. Empty = system default.
+    pub font_path: String,
+    /// CSS-like family name hint (used when loading from system / font_path)
+    pub font_family: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextLineOut {
+    pub text: String,
+    pub dx: f32,
+    pub dy: f32,
+    pub letter_spacing: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextPageOut {
+    pub lines: Vec<TextLineOut>,
+    pub height: f32,
+}
+
+/// Measure how many UTF-8 bytes of `text` fit in `max_width` at the given style.
+fn measure_fit(
+    font_system: &mut FontSystem,
+    text: &str,
+    max_width: f32,
+    font_size: f32,
+    line_height: f32,
+    family: Family<'_>,
+) -> (usize, f32, f32) {
+    // Returns (byte_count, measured_width, line_height_px)
+    let metrics = Metrics::new(font_size, font_size * line_height);
+    let mut buffer = Buffer::new(font_system, metrics);
+    buffer.set_size(font_system, Some(max_width), None);
+    buffer.set_wrap(font_system, Wrap::WordOrGlyph);
+    let attrs = Attrs::new().family(family);
+    buffer.set_text(font_system, text, attrs, Shaping::Advanced);
+    buffer.shape_until_scroll(font_system, false);
+
+    // First layout line only — we re-feed remaining text each iteration
+    let layout_lines: Vec<_> = buffer.layout_runs().collect();
+    if layout_lines.is_empty() {
+        return (0, 0.0, font_size * line_height);
+    }
+    let run = &layout_lines[0];
+    let line_h = if run.line_height > 0.0 {
+        run.line_height
+    } else {
+        font_size * line_height
+    };
+
+    // If everything fits on one layout line, consume all
+    if layout_lines.len() == 1 && run.glyphs.is_empty() && text.is_empty() {
+        return (0, 0.0, line_h);
+    }
+
+    // cosmic-text wraps for us when size is set; the first layout run is the first visual line.
+    // Byte range: use glyph end indices when available.
+    let mut end_byte = 0usize;
+    let mut width = 0.0f32;
+    for glyph in run.glyphs.iter() {
+        end_byte = glyph.end;
+        width = glyph.x + glyph.w;
+    }
+    if end_byte == 0 && !text.is_empty() {
+        // Fallback: take one char so we never infinite-loop
+        end_byte = text.chars().next().map(|c| c.len_utf8()).unwrap_or(1);
+        width = font_size; // rough
+    }
+    // Clamp to text length
+    if end_byte > text.len() {
+        end_byte = text.len();
+    }
+    // Ensure we end on a char boundary
+    while end_byte > 0 && !text.is_char_boundary(end_byte) {
+        end_byte -= 1;
+    }
+    (end_byte, width, line_h)
+}
+
+/// Measure width of an exact string (no wrap).
+fn measure_width(
+    font_system: &mut FontSystem,
+    text: &str,
+    font_size: f32,
+    line_height: f32,
+    family: Family<'_>,
+) -> f32 {
+    let metrics = Metrics::new(font_size, font_size * line_height);
+    let mut buffer = Buffer::new(font_system, metrics);
+    buffer.set_size(font_system, None, None);
+    buffer.set_wrap(font_system, Wrap::None);
+    let attrs = Attrs::new().family(family);
+    buffer.set_text(font_system, text, attrs, Shaping::Advanced);
+    buffer.shape_until_scroll(font_system, false);
+    let mut width = 0.0f32;
+    for run in buffer.layout_runs() {
+        for glyph in run.glyphs.iter() {
+            width = width.max(glyph.x + glyph.w);
+        }
+    }
+    width
+}
+
+pub fn paginate(input: &LayoutInput) -> Vec<TextPageOut> {
+    let mut font_system = FontSystem::new();
+
+    // Load optional custom font
+    if !input.font_path.is_empty() {
+        if let Err(e) = font_system.db_mut().load_font_file(&input.font_path) {
+            eprintln!("book_pager: failed to load font {}: {e}", input.font_path);
+        }
+    }
+
+    let family_owned = input.font_family.clone();
+    let family = if family_owned.is_empty() || family_owned == "Roboto" {
+        Family::SansSerif
+    } else {
+        Family::Name(family_owned.as_str())
+    };
+
+    let column_width = (input.box_width - input.padding_horizontal * 2.0).max(1.0);
+    let size = input.font_size.max(1.0);
+    let _dx = input.padding_horizontal;
+    let _dy = input.padding_vertical;
+    let _width = column_width;
+    let _width2 = (_width - size).max(1.0);
+    let _height = (input.box_height - input.padding_vertical * 2.0).max(1.0);
+    let _height2 = (_height - size * input.line_height).max(1.0);
+
+    let paragraphs: Vec<&str> = if input.text.is_empty() {
+        Vec::new()
+    } else {
+        input.text.split('\n').collect()
+    };
+
+    let mut pages: Vec<TextPageOut> = Vec::new();
+    let mut lines: Vec<TextLineOut> = Vec::new();
+    let mut dx = _dx;
+    let mut dy = _dy;
+    let mut start_line: usize = 0;
+
+    let new_page = |lines: &mut Vec<TextLineOut>,
+                    pages: &mut Vec<TextPageOut>,
+                    dy: &mut f32,
+                    dx: &mut f32,
+                    start_line: &mut usize,
+                    should_justify: bool,
+                    last_page: bool| {
+        if should_justify && input.should_justify_height {
+            let len = lines.len() - *start_line;
+            if len > 1 {
+                let justify = (_height - *dy) / (len as f32 - 1.0);
+                for i in 0..len {
+                    lines[*start_line + i].dy += justify * i as f32;
+                }
+            }
+        }
+        if last_page || true {
+            // single column only (matches current app usage)
+            let page_h = *dy;
+            pages.push(TextPageOut {
+                lines: std::mem::take(lines),
+                height: page_h,
+            });
+            *dx = _dx;
+        }
+        *dy = _dy;
+        *start_line = lines.len();
+    };
+
+    let new_paragraph = |lines: &mut Vec<TextLineOut>,
+                         pages: &mut Vec<TextPageOut>,
+                         dy: &mut f32,
+                         dx: &mut f32,
+                         start_line: &mut usize| {
+        if *dy > _height2 {
+            new_page(lines, pages, dy, dx, start_line, true, false);
+        } else {
+            *dy += input.paragraph;
+        }
+    };
+
+    for para in paragraphs {
+        let mut remaining = para.to_string();
+        loop {
+            if remaining.is_empty() {
+                new_paragraph(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line);
+                break;
+            }
+            let (count, _w, line_h) = measure_fit(
+                &mut font_system,
+                &remaining,
+                column_width,
+                size,
+                input.line_height,
+                family,
+            );
+            let count = if count == 0 {
+                remaining.chars().next().map(|c| c.len_utf8()).unwrap_or(1)
+            } else {
+                count.min(remaining.len())
+            };
+            // char boundary
+            let mut end = count;
+            while end > 0 && !remaining.is_char_boundary(end) {
+                end -= 1;
+            }
+            if end == 0 {
+                end = remaining.chars().next().map(|c| c.len_utf8()).unwrap_or(1);
+            }
+            let text = remaining[..end].to_string();
+            let measured = measure_width(
+                &mut font_system,
+                &text,
+                size,
+                input.line_height,
+                family,
+            );
+            let mut spacing = 0.0f32;
+            // full-justify when nearly full (matches Dart: tp.width > _width2)
+            if measured > _width2 && end > 0 {
+                // letterSpacing applied between glyphs; Dart uses (width - tp.width) / (textCount + 1)
+                // textCount was UTF-16-ish offset in Flutter; we use char count.
+                let text_count = text.chars().count().max(1) as f32;
+                spacing = (_width - measured) / (text_count + 1.0);
+            }
+            lines.push(TextLineOut {
+                text,
+                dx,
+                dy,
+                letter_spacing: spacing,
+            });
+            dy += line_h;
+            if end >= remaining.len() {
+                remaining.clear();
+                new_paragraph(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line);
+                break;
+            } else {
+                remaining = remaining[end..].to_string();
+                if dy > _height2 {
+                    new_page(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line, true, false);
+                }
+            }
+        }
+    }
+
+    if !lines.is_empty() {
+        new_page(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line, false, true);
+    }
+    if pages.is_empty() {
+        pages.push(TextPageOut {
+            lines: vec![],
+            height: 0.0,
+        });
+    }
+    pages
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_text_one_page() {
+        let pages = paginate(&LayoutInput {
+            text: String::new(),
+            font_size: 26.0,
+            line_height: 1.8,
+            paragraph: 10.0,
+            box_width: 360.0,
+            box_height: 640.0,
+            padding_horizontal: 20.0,
+            padding_vertical: 0.0,
+            should_justify_height: true,
+            font_path: String::new(),
+            font_family: "Roboto".into(),
+        });
+        assert_eq!(pages.len(), 1);
+        assert!(pages[0].lines.is_empty());
+    }
+
+    #[test]
+    fn simple_chinese_paginates() {
+        let text = "这是一段用于测试分页的中文内容。".repeat(80);
+        let pages = paginate(&LayoutInput {
+            text,
+            font_size: 26.0,
+            line_height: 1.8,
+            paragraph: 20.0,
+            box_width: 360.0,
+            box_height: 640.0,
+            padding_horizontal: 20.0,
+            padding_vertical: 0.0,
+            should_justify_height: true,
+            font_path: String::new(),
+            font_family: "Roboto".into(),
+        });
+        assert!(pages.len() >= 1);
+        assert!(!pages[0].lines.is_empty());
+    }
+}

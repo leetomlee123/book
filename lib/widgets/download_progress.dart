@@ -1,11 +1,11 @@
 import 'package:book/event/event.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class DownloadProgressUI extends StatefulWidget {
-  var url;
+  final dynamic url;
 
-  DownloadProgressUI(this.url, {Key key}) : super(key: key);
+  DownloadProgressUI(this.url, {Key? key}) : super(key: key);
 
   @override
   _DownloadProgressState createState() => _DownloadProgressState();
@@ -18,7 +18,7 @@ class _DownloadProgressState extends State<DownloadProgressUI> {
   void initState() {
     super.initState();
     eventBus.on<DownLoadNotify>().listen((event) {
-      if (this.widget.url == event.url) {
+      if (widget.url == event.url) {
         if (mounted) {
           setState(() {
             v = event.v;
@@ -30,7 +30,6 @@ class _DownloadProgressState extends State<DownloadProgressUI> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-        child: Text("${NumUtil.multiply(v, 100)}%"));
+    return Center(child: Text("${NumUtil.multiply(v, 100)}%"));
   }
 }

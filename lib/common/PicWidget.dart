@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 class PicWidget extends StatelessWidget {
-  String url;
-  double height;
-  double width;
-  BoxFit fit;
-  bool roll;
+  final String url;
+  final double height;
+  final double width;
+  final BoxFit fit;
+  final bool roll;
 
   PicWidget(this.url,
       {this.height = 115,
@@ -34,7 +34,6 @@ class PicWidget extends StatelessWidget {
               height: this.height,
               fit: BoxFit.cover,
             );
-            break;
           case LoadState.completed:
             return ExtendedRawImage(
               image: state.extendedImageInfo?.image,
@@ -42,7 +41,6 @@ class PicWidget extends StatelessWidget {
               height: this.height,
               fit: BoxFit.cover,
             );
-            break;
           case LoadState.failed:
             return Image.asset(
               "images/nocover.jpg",
@@ -50,7 +48,6 @@ class PicWidget extends StatelessWidget {
               height: this.height,
               fit: BoxFit.cover,
             );
-            break;
         }
       }),
     );

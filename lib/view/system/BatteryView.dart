@@ -1,4 +1,4 @@
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -8,7 +8,10 @@ class BatteryView extends StatelessWidget {
   final double height;
 
   BatteryView(
-      {Key key, this.electricQuantity, this.width = 22, this.height = 10})
+      {Key? key,
+      required this.electricQuantity,
+      this.width = 22,
+      this.height = 10})
       : super(key: key);
 
   @override
@@ -23,13 +26,12 @@ class BatteryView extends StatelessWidget {
 
 class BatteryViewPainter extends CustomPainter {
   double electricQuantity;
-  Paint mPaint;
+  late Paint mPaint;
   double mStrokeWidth = 1.0;
   double mPaintStrokeWidth = 1.5;
   final bool isDark = SpUtil.getBool("dark", defValue: false);
 
-  BatteryViewPainter(electricQuantity) {
-    this.electricQuantity = electricQuantity;
+  BatteryViewPainter(this.electricQuantity) {
     mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
   }
 
@@ -60,7 +62,6 @@ class BatteryViewPainter extends CustomPainter {
 
     mPaint.style = PaintingStyle.fill;
     mPaint.color = isDark ? Colors.white54 : Colors.black54;
-    // mPaint.color = Color(0x80ffffff);
     //画电池头部
     canvas.drawRRect(
         RRect.fromLTRBR(batteryHeadLeft, batteryHeadTop, batteryHeadRight,
@@ -86,7 +87,7 @@ class BatteryViewPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(BatteryViewPainter other) {
+  bool shouldRepaint(BatteryViewPainter oldDelegate) {
     return true;
   }
 }

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:book/common/common.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class ColorModel with ChangeNotifier {
-  BuildContext buildContext;
+  BuildContext? buildContext;
   bool dark = false;
   Map _fonts = {};
 
@@ -26,6 +26,7 @@ class ColorModel with ChangeNotifier {
     }
     return _fonts;
   }
+
   List<Color> skins = FlexScheme.values
       .map((e) => FlexColorScheme.light(
             scheme: e,
@@ -34,7 +35,7 @@ class ColorModel with ChangeNotifier {
   String savePath = "";
   int idx = SpUtil.getInt('skin', defValue: 5);
 
-  ThemeData _theme;
+  ThemeData? _theme;
   String font = SpUtil.getString("fontName", defValue: "Roboto");
 
   ThemeData get theme {
@@ -54,7 +55,7 @@ class ColorModel with ChangeNotifier {
             scheme: scheme,
             fontFamily: font,
           ).toTheme;
-    return _theme;
+    return _theme!;
   }
 
   getSkins() {
@@ -102,8 +103,9 @@ class ColorModel with ChangeNotifier {
   }
 
   Future<void> readFont(String fontName) async {
-    FileInfo file =
+    FileInfo? file =
         await CustomCacheManager.instanceFont.getFileFromCache(fontName);
+    if (file == null) return;
     var fontLoader = FontLoader(fontName);
     Uint8List readAsBytes = file.file.readAsBytesSync();
 

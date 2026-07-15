@@ -1,6 +1,6 @@
-import 'package:book/model/ColorModel.dart';
+﻿import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class LoadingDialog extends Dialog {

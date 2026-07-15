@@ -8,24 +8,24 @@ part of 'BookInfo.dart';
 
 BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
   return BookInfo(
-      json['Count'] as int,
-      json['Author'] as String,
-      json['BookStatus'] as String,
-      json['CId'] as String,
-      json['CName'] as String,
-      json['Id'] as String,
-      json['Name'] as String,
-      json['Img'] as String,
-      (json['Rate'] as num)?.toDouble(),
-      json['Desc'] as String,
-      json['LastChapterId'] as String,
-      json['LastChapter'] as String,
-      json['FirstChapterId'] as String,
-      json['LastTime'] as String,
-      (json['SameAuthorBooks'] as List)
-          ?.map((e) =>
-              e == null ? null : Book.fromJson(e as Map<String, dynamic>))
-          ?.toList());
+      json['Count'] as int? ?? 0,
+      json['Author'] as String? ?? '',
+      json['BookStatus'] as String? ?? '',
+      json['CId'] as String? ?? '',
+      json['CName'] as String? ?? '',
+      json['Id'] as String? ?? '',
+      json['Name'] as String? ?? '',
+      json['Img'] as String? ?? '',
+      (json['Rate'] as num?)?.toDouble() ?? 0,
+      json['Desc'] as String? ?? '',
+      json['LastChapterId'] as String? ?? '',
+      json['LastChapter'] as String? ?? '',
+      json['FirstChapterId'] as String? ?? '',
+      json['LastTime'] as String? ?? '',
+      (json['SameAuthorBooks'] as List<dynamic>?)
+              ?.map((e) => Book.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          <Book>[]);
 }
 
 Map<String, dynamic> _$BookInfoToJson(BookInfo instance) => <String, dynamic>{

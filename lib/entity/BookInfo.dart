@@ -11,7 +11,7 @@ class BookInfo {
   String CId;
   String CName;
   String Id;
-  String Name = "";
+  String Name;
   String Img;
   double Rate;
   int Count;
@@ -27,10 +27,50 @@ class BookInfo {
 
   Map<String, dynamic> toJson() => _$BookInfoToJson(this);
 
-  BookInfo.id(this.Id, this.Name, this.Img);
+  BookInfo.id(this.Id, this.Name, this.Img)
+      : Author = '',
+        BookStatus = '',
+        CId = '',
+        CName = '',
+        Rate = 0,
+        Count = 0,
+        Desc = '',
+        LastChapterId = '',
+        LastChapter = '',
+        FirstChapterId = '',
+        LastTime = '',
+        SameAuthorBooks = const [];
 
-  BookInfo.name(this.CId, this.Name);
-  BookInfo.x(this.Id);
+  BookInfo.name(this.CId, this.Name)
+      : Author = '',
+        BookStatus = '',
+        CName = '',
+        Id = '',
+        Img = '',
+        Rate = 0,
+        Count = 0,
+        Desc = '',
+        LastChapterId = '',
+        LastChapter = '',
+        FirstChapterId = '',
+        LastTime = '',
+        SameAuthorBooks = const [];
+
+  BookInfo.x(this.Id)
+      : Author = '',
+        BookStatus = '',
+        CId = '',
+        CName = '',
+        Name = '',
+        Img = '',
+        Rate = 0,
+        Count = 0,
+        Desc = '',
+        LastChapterId = '',
+        LastChapter = '',
+        FirstChapterId = '',
+        LastTime = '',
+        SameAuthorBooks = const [];
 
   BookInfo(
       this.Count,

@@ -1,11 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookTag.dart';
 import 'package:book/entity/Chapter.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/store/Store.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class CacheManager extends StatefulWidget {
@@ -19,19 +19,16 @@ class _CacheManager extends State<CacheManager> {
   @override
   Widget build(BuildContext context) {
     return Store.connect<ColorModel>(
-        builder: (context, ColorModel data, child) => Theme(
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text("缓存管理"),
-                  centerTitle: true,
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                ),
-                body: ListView(
-                  children: managers(Theme.of(context).primaryColor),
-                ),
+        builder: (context, ColorModel data, child) => Scaffold(
+              appBar: AppBar(
+                title: Text("缓存管理"),
+                centerTitle: true,
+                elevation: 0,
+                automaticallyImplyLeading: false,
               ),
-              // data: data.theme,
+              body: ListView(
+                children: managers(Theme.of(context).primaryColor),
+              ),
             ));
   }
 

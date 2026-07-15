@@ -8,18 +8,15 @@ part of 'TextLine.dart';
 
 TextLine _$TextLineFromJson(Map<String, dynamic> json) {
   return TextLine(
-      json['text'] as String,
-      json['dx'] ,
-      json['dy'] ,
-      json['letterSpacing'] as double);
-
+      json['text'] as String? ?? '',
+      (json['dx'] as num?)?.toDouble() ?? 0,
+      (json['dy'] as num?)?.toDouble() ?? 0,
+      (json['letterSpacing'] as num?)?.toDouble() ?? 0);
 }
 
-Map<String, dynamic> _$TextLineToJson(TextLine instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$TextLineToJson(TextLine instance) => <String, dynamic>{
       'text': instance.text,
       'dx': instance.dx,
       'dy': instance.dy,
       'letterSpacing': instance.letterSpacing,
-
     };

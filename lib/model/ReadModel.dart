@@ -20,7 +20,7 @@ import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -32,20 +32,20 @@ enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
   Color darkFont = Color(0x7FFFFFFF);
-  NovelPagePainter mPainter;
-  TextComposition textComposition;
-  Map<String, ui.Picture> widgets = Map();
-  Stack stackContent;
+  NovelPagePainter? mPainter;
+  TextComposition? textComposition;
+  Map<String, ui.Picture> widgets = {};
+  Stack? stackContent;
   Paint bgPaint = Paint();
-  ui.Image bgUI;
-  GlobalKey canvasKey;
+  ui.Image? bgUI;
+  GlobalKey? canvasKey;
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
   /// 翻页动画类型
   int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
 
-  Book book;
+  Book? book;
   List<ChapterProto> chapters = [];
 
   var currentPageValue = 0.0;
@@ -57,9 +57,9 @@ class ReadModel with ChangeNotifier {
 
   //本书记录
   // BookTag bookTag;
-  ReadPage prePage;
-  ReadPage curPage;
-  ReadPage nextPage;
+  ReadPage? prePage;
+  ReadPage? curPage;
+  ReadPage? nextPage;
 
   double percent = 0;
 
@@ -91,8 +91,8 @@ class ReadModel with ChangeNotifier {
   //页面上下文
 
 //是否修改font
-  bool sSave;
-  Load load;
+  bool? sSave;
+  Load? load;
 
   //获取本书记录
   getBookRecord() async {
@@ -102,15 +102,17 @@ class ReadModel with ChangeNotifier {
     sSave = true;
     notifyListeners();
     if (bgUI == null) await changeBgUI();
-    chapters = await DbHelper.instance.getChapters(book.Id);
+    final b = book;
+    if (b == null) return;
+    chapters = await DbHelper.instance.getChapters(b.Id);
 
-    if (chapters?.isNotEmpty ?? false) {
+    if (chapters.isNotEmpty) {
       getChapters();
 
-      await initPageContent(book.cur, false);
+      await initPageContent(b.cur, false);
 
-      if (book.index == -1) {
-        book.index = curPage.pageOffsets - 1;
+      if (b.index == -1) {
+        b.index = (curPage?.pageOffsets ?? 1) - 1;
       }
       loadOk = true;
 
@@ -119,18 +121,18 @@ class ReadModel with ChangeNotifier {
       int cur = 0;
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
-        var url = Common.process + '/$userName/${book.Id}';
+        var url = Common.process + '/$userName/${b.Id}';
         Response response = await HttpUtil.instance.dio.get(url);
         String data = response.data['data'];
         if (data.isNotEmpty) {
           cur = int.parse(data);
         }
       }
-      book.cur = cur;
+      b.cur = cur;
       await getChapters(init: true);
       getChapters();
-      await initPageContent(book?.cur ?? 0, false);
-      book.index = 0;
+      await initPageContent(b.cur, false);
+      b.index = 0;
       loadOk = true;
       notifyListeners();
     }
@@ -151,8 +153,11 @@ class ReadModel with ChangeNotifier {
       loadChapter(idx - 1).then((value) => {prePage = value});
 
       if (jump) {
-        book.index = 0;
-        canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+        book?.index = 0;
+        final ro = canvasKey?.currentContext?.findRenderObject();
+        if (ro != null) {
+          ro.markNeedsPaint();
+        }
       }
       notifyListeners();
     } catch (e) {}
@@ -164,7 +169,10 @@ class ReadModel with ChangeNotifier {
     await changeBgUI();
     widgets.clear();
 
-    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+    final ro = canvasKey?.currentContext?.findRenderObject();
+    if (ro != null) {
+      ro.markNeedsPaint();
+    }
   }
 
   switchBgColor(i) async {
@@ -174,11 +182,12 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ChapterProto>> reqChapters(var bid, var skip, bool init) async {
+  Future<List<ChapterProto>?> reqChapters(var bid, var skip, bool init) async {
     var url;
+    final b = book;
     if (init) {
       url =
-          Common.chaptersUrl + '/$bid/0/${book.cur == 0 ? 15 : (book.cur + 1)}';
+          Common.chaptersUrl + '/$bid/0/${(b?.cur ?? 0) == 0 ? 15 : ((b?.cur ?? 0) + 1)}';
     } else {
       url = Common.chaptersUrl + '/$bid/$skip/1000000';
     }
@@ -195,18 +204,20 @@ class ReadModel with ChangeNotifier {
   }
 
   Future getChapters({bool init = false}) async {
-    List<ChapterProto> list =
-        await reqChapters(book.Id, chapters?.length ?? 0, init);
+    final b = book;
+    if (b == null) return;
+    List<ChapterProto>? list =
+        await reqChapters(b.Id, chapters.length, init);
     if (list == null) return;
     chapters.addAll(list);
-    if (SpUtil.containsKey(book.Id)) {
-      DbHelper.instance.addChapters(list, book.Id);
+    if (SpUtil.containsKey(b.Id)) {
+      DbHelper.instance.addChapters(list, b.Id);
     }
     notifyListeners();
   }
 
-  Future<ReadPage> loadChapter(int idx) async {
-    ReadPage r = new ReadPage.kong();
+  Future<ReadPage?> loadChapter(int idx) async {
+    ReadPage r = ReadPage.kong();
     if (idx < 0) {
       r.chapterName = "1";
       // r.height = Screen.height;
@@ -242,14 +253,17 @@ class ReadModel with ChangeNotifier {
     }
 
     //本地是否有分页的缓存
-    var k = '${book.Id}pages' + r.chapterName;
+    final b = book;
+    var k = '${b?.Id ?? ''}pages' + r.chapterName;
     if (SpUtil.haveKey(k)) {
+      final objs = SpUtil.getObjectList(k);
       List<TextPage> list =
-          SpUtil.getObjectList(k).map((e) => TextPage.fromJson(e)).toList();
+          (objs ?? []).map((e) => TextPage.fromJson(e)).toList();
       r.pages = list;
       SpUtil.remove(k);
     } else {
-      r.pages = TextComposition.parseContent(r);
+      // Rust pagination runs in a background isolate; Dart fallback yields once.
+      r.pages = await TextComposition.parseContentAsync(r);
     }
 
     return r;
@@ -266,8 +280,11 @@ class ReadModel with ChangeNotifier {
         SpUtil.remove(key);
       }
     }
-    await initPageContent(book.cur, true);
-    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+    await initPageContent(book?.cur ?? 0, true);
+    final ro = canvasKey?.currentContext?.findRenderObject();
+    if (ro != null) {
+      ro.markNeedsPaint();
+    }
   }
 
   /*菜单控制 */
@@ -278,28 +295,30 @@ class ReadModel with ChangeNotifier {
 
   /*状态保存 */
   saveData() async {
-    if (sSave) {
-      if (!SpUtil.containsKey(book.Id)) {
-        SpUtil.putString(book.Id, "");
-        DbHelper.instance.addChapters(chapters, book.Id);
+    if (sSave == true) {
+      final b = book;
+      if (b == null) return;
+      if (!SpUtil.containsKey(b.Id)) {
+        SpUtil.putString(b.Id, "");
+        DbHelper.instance.addChapters(chapters, b.Id);
       }
-      SpUtil.putObjectList('${book.Id}pages${prePage?.chapterName ?? ' '}',
+      SpUtil.putObjectList('${b.Id}pages${prePage?.chapterName ?? ' '}',
           prePage?.pages ?? []);
       SpUtil.putObjectList(
-          '${book.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
-      SpUtil.putObjectList('${book.Id}pages${nextPage?.chapterName ?? ''}',
+          '${b.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
+      SpUtil.putObjectList('${b.Id}pages${nextPage?.chapterName ?? ''}',
           nextPage?.pages ?? []);
       String userName = SpUtil.getString("username");
       if (userName.isNotEmpty) {
         HttpUtil.instance.dio
-            .patch(Common.process + '/$userName/${book.Id}/${book?.cur ?? 0}');
+            .patch(Common.process + '/$userName/${b.Id}/${b.cur}');
       }
     }
   }
 
   /*页面点击事件 */
   void tapPage(BuildContext context, TapUpDetails details) {
-    var wid = ScreenUtil.getScreenW(context);
+    var wid = MediaQuery.of(context).size.width;
     var hSpace = Screen.height / 4;
     var space = wid / 3;
     var curWid = details.globalPosition.dx;
@@ -325,7 +344,7 @@ class ReadModel with ChangeNotifier {
   void clickPage(int f, Offset detail) {
     TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_DOWN, detail);
 
-    mPainter.setCurrentTouchEvent(currentTouchEvent);
+    mPainter?.setCurrentTouchEvent(currentTouchEvent);
 
     var offset = Offset(
         f > 0
@@ -334,22 +353,29 @@ class ReadModel with ChangeNotifier {
         0);
     currentTouchEvent = TouchEvent(TouchEvent.ACTION_MOVE, offset);
 
-    mPainter.setCurrentTouchEvent(currentTouchEvent);
+    mPainter?.setCurrentTouchEvent(currentTouchEvent);
 
     currentTouchEvent = TouchEvent(TouchEvent.ACTION_CANCEL, offset);
 
-    mPainter.setCurrentTouchEvent(currentTouchEvent);
-    canvasKey.currentContext.findRenderObject().markNeedsPaint();
+    mPainter?.setCurrentTouchEvent(currentTouchEvent);
+    final ro = canvasKey?.currentContext?.findRenderObject();
+    if (ro != null) {
+      ro.markNeedsPaint();
+    }
   }
 
-  ui.Picture getPage({bool firstInit = false}) {
-    var key = book.Id.toString() + book.cur.toString() + book.index.toString();
+  ui.Picture? getPage({bool firstInit = false}) {
+    final b = book;
+    if (b == null) return null;
+    var key = b.Id.toString() + b.cur.toString() + b.index.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
     }
     var widget = cur();
-    widgets.putIfAbsent(key, () => widget);
+    if (widget != null) {
+      widgets.putIfAbsent(key, () => widget);
+    }
     if (firstInit) {
       Future.delayed(Duration(milliseconds: 200), () => preLoadWidget());
     }
@@ -357,81 +383,92 @@ class ReadModel with ChangeNotifier {
   }
 
   void preLoadWidget() {
-    if (prePage == null) return;
-    var preIdx = book.index - 1;
-    var preKey;
+    final b = book;
+    if (prePage == null || b == null) return;
+    var preIdx = b.index - 1;
+    late String preKey;
     if (preIdx < 0) {
-      preKey = book.Id.toString() +
-          (book.cur - 1).toString() +
-          (prePage.pageOffsets - 1).toString();
+      preKey = b.Id.toString() +
+          (b.cur - 1).toString() +
+          (prePage!.pageOffsets - 1).toString();
     } else {
-      preKey = book.Id.toString() + book.cur.toString() + preIdx.toString();
+      preKey = b.Id.toString() + b.cur.toString() + preIdx.toString();
     }
     if (!widgets.containsKey(preKey)) {
       if (prePage?.pages == null) return;
-      widgets.putIfAbsent(preKey, () => pre());
+      final p = pre();
+      if (p != null) {
+        widgets.putIfAbsent(preKey, () => p);
+      }
     }
 
-    var nextIdx = book.index + 1;
-    var nextKey;
-    if (nextIdx >= curPage.pageOffsets) {
-      nextKey = book.Id.toString() + (book.cur + 1).toString() + 0.toString();
+    var nextIdx = b.index + 1;
+    late String nextKey;
+    if (nextIdx >= (curPage?.pageOffsets ?? 0)) {
+      nextKey = b.Id.toString() + (b.cur + 1).toString() + 0.toString();
     } else {
-      nextKey = book.Id.toString() + book.cur.toString() + nextIdx.toString();
+      nextKey = b.Id.toString() + b.cur.toString() + nextIdx.toString();
     }
     if (!widgets.containsKey(nextKey)) {
       if (nextPage?.pages == null) return;
-      widgets.putIfAbsent(preKey, () => next());
+      final n = next();
+      if (n != null) {
+        widgets.putIfAbsent(preKey, () => n);
+      }
     }
   }
 
-  ui.Picture pre() {
-    if (prePage == null) return null;
-    var i = book.index - 1;
-    var key = book.Id.toString() + book.cur.toString() + i.toString();
+  ui.Picture? pre() {
+    final b = book;
+    if (prePage == null || b == null) return null;
+    var i = b.index - 1;
+    var key = b.Id.toString() + b.cur.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
     } else {
-      return widgets.putIfAbsent(
-          key,
-          () => i < 0
-              ? drawContent(prePage, prePage.pageOffsets - 1)
-              : drawContent(curPage, i));
+      final pic = i < 0
+          ? drawContent(prePage!, prePage!.pageOffsets - 1)
+          : drawContent(curPage!, i);
+      return widgets.putIfAbsent(key, () => pic);
     }
   }
 
-  ui.Picture cur() {
-    var key = book.Id.toString() + book.cur.toString() + book.index.toString();
+  ui.Picture? cur() {
+    final b = book;
+    if (b == null || curPage == null) return null;
+    var key = b.Id.toString() + b.cur.toString() + b.index.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
     } else {
       Future.delayed(Duration(milliseconds: 200), () => preLoadWidget());
-      return widgets.putIfAbsent(key, () => drawContent(curPage, book.index));
+      final pic = drawContent(curPage!, b.index);
+      return widgets.putIfAbsent(key, () => pic);
     }
   }
 
-  ui.Picture next() {
-    var i = book.index + 1;
+  ui.Picture? next() {
+    final b = book;
+    if (b == null || curPage == null) return null;
+    var i = b.index + 1;
 
-    var key = book.Id.toString() + book.cur.toString() + i.toString();
+    var key = b.Id.toString() + b.cur.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
     } else {
       if (nextPage == null) {
-        loadChapter(book.cur + 1).then((value) => {nextPage = value});
+        loadChapter(b.cur + 1).then((value) => {nextPage = value});
       }
-      return widgets.putIfAbsent(
-          key,
-          () => i >= curPage.pageOffsets
-              ? drawContent(nextPage, 0)
-              : drawContent(curPage, i));
+      final pic = i >= curPage!.pageOffsets
+          ? drawContent(nextPage!, 0)
+          : drawContent(curPage!, i);
+      return widgets.putIfAbsent(key, () => pic);
     }
   }
 
-  Future<ui.Image> getAssetImage(String asset, {int width, int height}) async {
+  Future<ui.Image> getAssetImage(String asset, {int? width, int? height}) async {
     ByteData data = await rootBundle.load(asset);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
         targetWidth: width, targetHeight: height);
@@ -440,18 +477,21 @@ class ReadModel with ChangeNotifier {
   }
 
   ui.Picture drawContent(ReadPage readPage, int i) {
-    ui.PictureRecorder pageRecorder = new ui.PictureRecorder();
+    ui.PictureRecorder pageRecorder = ui.PictureRecorder();
 
     final bool isDark = SpUtil.getBool("dark", defValue: false);
     var contentPadding = ReadSetting.getPageDis().toDouble();
-    Canvas pageCanvas = new Canvas(
+    Canvas pageCanvas = Canvas(
         pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
     Paint selfPaint = Paint()
       ..style = PaintingStyle.fill
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.butt
       ..strokeWidth = 30.0;
-    pageCanvas.drawImage(bgUI, Offset(0, 0), selfPaint);
+    final bg = bgUI;
+    if (bg != null) {
+      pageCanvas.drawImage(bg, Offset(0, 0), selfPaint);
+    }
 
     //章节
     textPainter.text = TextSpan(
@@ -478,11 +518,11 @@ class ReadModel with ChangeNotifier {
     final lineCount = page.lines.length;
     for (var i = 0; i < lineCount; i++) {
       final line = page.lines[i];
-      if (line.letterSpacing != null &&
-          (line.letterSpacing < -0.1 || line.letterSpacing > 0.1)) {
+      final ls = line.letterSpacing;
+      if (ls != null && (ls < -0.1 || ls > 0.1)) {
         textPainter.text = TextSpan(
           text: line.text,
-          style: style.copyWith(letterSpacing: line?.letterSpacing),
+          style: style.copyWith(letterSpacing: ls),
         );
       } else {
         textPainter.text = TextSpan(text: line.text, style: style);
@@ -591,24 +631,28 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> reloadChapters() async {
+    final b = book;
+    if (b == null) return;
     chapters = [];
-    DbHelper.instance.clearChapters(book.Id);
+    DbHelper.instance.clearChapters(b.Id);
 
-    chapters = await reqChapters(book.Id, 0, false);
-    if (chapters == null) return;
+    chapters = await reqChapters(b.Id, 0, false) ?? [];
+    if (chapters.isEmpty) return;
 
-    DbHelper.instance.addChapters(chapters, book.Id);
+    DbHelper.instance.addChapters(chapters, b.Id);
     notifyListeners();
   }
 
   Future<void> reloadCurrentPage() async {
+    final b = book;
+    if (b == null) return;
     toggleShowMenu();
-    var chapter = chapters[book.cur];
+    var chapter = chapters[b.cur];
     BotToast.showCustomLoading(
         toastBuilder: (_) => LoadingDialog(),
         clickClose: true,
         backgroundColor: Colors.white);
-    var id = chapters[book.cur].chapterId;
+    var id = chapters[b.cur].chapterId;
     var url = Common.bookContentUrl + '/$id';
     var responseBody = await HttpUtil.instance.dio.get(url);
 
@@ -628,11 +672,14 @@ class ReadModel with ChangeNotifier {
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.chapterId)];
       await DbHelper.instance.udpChapter(temp);
-      chapters[book.cur].hasContent = "2";
+      chapters[b.cur].hasContent = "2";
 
-      curPage = await loadChapter(book.cur);
+      curPage = await loadChapter(b.cur);
       notifyListeners();
-      canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+      final ro = canvasKey?.currentContext?.findRenderObject();
+      if (ro != null) {
+        ro.markNeedsPaint();
+      }
     }
   }
 
@@ -644,8 +691,9 @@ class ReadModel with ChangeNotifier {
 
   downloadAll(int start) async {
     List<ChapterProto> temp = chapters;
-    if (temp?.isEmpty ?? 0 == 0) {
+    if (temp.isEmpty) {
       await getChapters();
+      temp = chapters;
     }
     List<ChapterNode> cpNodes = [];
     for (var i = start; i < temp.length; i++) {
@@ -670,7 +718,7 @@ class ReadModel with ChangeNotifier {
     BotToast.showText(text: "${book?.Name ?? ""}下载完成");
   }
 
-  Future<String> getChapterContent(String id, {int idx}) async {
+  Future<String> getChapterContent(String id, {int? idx}) async {
     var url = Common.bookContentUrl + '/$id';
     var responseBody = await HttpUtil.instance.dio.get(url);
 
@@ -700,8 +748,10 @@ class ReadModel with ChangeNotifier {
   }
 
   void changeCoverPage(var offsetDifference) {
-    int idx = book?.index ?? 0;
- 
+    final b = book;
+    if (b == null) return;
+    int idx = b.index;
+
     int curLen = (curPage?.pageOffsets ?? 0);
     if (idx == curLen - 1 && offsetDifference > 0) {
       Future.delayed(
@@ -711,14 +761,14 @@ class ReadModel with ChangeNotifier {
                     .batteryLevel
                     .then((value) => electricQuantity = value / 100)
               });
-      int tempCur = book.cur + 1;
+      int tempCur = b.cur + 1;
       if (tempCur >= chapters.length) {
         //到最后一页
         // book.index = -1;
         BotToast.showText(text: "最后一页");
         return;
       } else {
-        book.cur += 1;
+        b.cur += 1;
         prePage = curPage;
         if ((nextPage?.chapterName ?? "") == "-1") {
           BotToast.showCustomLoading(
@@ -726,17 +776,17 @@ class ReadModel with ChangeNotifier {
               clickClose: true,
               backgroundColor: Colors.white);
 
-          loadChapter(book.cur).then((value) => curPage = value);
+          loadChapter(b.cur).then((value) => curPage = value);
 
           BotToast.closeAllLoading();
         } else {
           curPage = nextPage;
         }
-        book.index = 0;
+        b.index = 0;
         nextPage = null;
         // notifyListeners();
         Future.delayed(Duration(milliseconds: 500), () {
-          loadChapter(book.cur + 1).then((value) => nextPage = value);
+          loadChapter(b.cur + 1).then((value) => nextPage = value);
         });
 
         return;
@@ -750,7 +800,7 @@ class ReadModel with ChangeNotifier {
                     .batteryLevel
                     .then((value) => electricQuantity = value / 100)
               });
-      int tempCur = book.cur - 1;
+      int tempCur = b.cur - 1;
       if (tempCur < 0) {
         BotToast.showText(text: "第一页");
 
@@ -758,35 +808,38 @@ class ReadModel with ChangeNotifier {
       }
       nextPage = curPage;
       curPage = prePage;
-      book.cur -= 1;
+      b.cur -= 1;
 
-      book.index = curPage.pageOffsets - 1;
+      b.index = (curPage?.pageOffsets ?? 1) - 1;
       notifyListeners();
       prePage = null;
       Future.delayed(Duration(milliseconds: 500), () {
-        loadChapter(book.cur - 1).then((value) => prePage = value);
+        loadChapter(b.cur - 1).then((value) => prePage = value);
       });
 
       return;
     }
-    offsetDifference > 0 ? book.index += 1 : book.index -= 1;
+    offsetDifference > 0 ? b.index += 1 : b.index -= 1;
     // notifyListeners();
   }
 
   bool isCanGoNext() {
-    print(book.index);
-    if (book.cur >= (chapters.length - 1)) {
-      if (book.index >= (curPage.pageOffsets - 1)) {
+    final b = book;
+    if (b == null) return false;
+    print(b.index);
+    if (b.cur >= (chapters.length - 1)) {
+      if (b.index >= ((curPage?.pageOffsets ?? 1) - 1)) {
         return false;
       }
     }
 
     return next() != null;
-    
   }
 
   bool isCanGoPre() {
-    if (book.cur <= 0 && book.index <= 0) {
+    final b = book;
+    if (b == null) return false;
+    if (b.cur <= 0 && b.index <= 0) {
       return false;
     }
     return pre() != null;

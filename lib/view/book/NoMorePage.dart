@@ -13,7 +13,7 @@ class NoMorePage extends StatefulWidget {
 }
 
 class _NoMorePageState extends State<NoMorePage> {
-  EveryPoet _everyPoet;
+  EveryPoet? _everyPoet;
   @override
   void initState() {
     super.initState();
@@ -44,7 +44,7 @@ class _NoMorePageState extends State<NoMorePage> {
       return;
     }
     var url = "http://open.iciba.com/dsapi";
-    var client = new HttpClient();
+    var client = HttpClient();
 
     var request = await client.getUrl(Uri.parse(url));
     var response = await request.close();

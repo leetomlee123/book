@@ -14,17 +14,15 @@ class ReaderPageManager {
   static const TYPE_ANIMATION_COVER_TURN = 2;
   static const TYPE_ANIMATION_SLIDE_TURN = 3;
 
-  BaseAnimationPage currentAnimationPage;
-  TouchEvent currentTouchData;
+  late BaseAnimationPage currentAnimationPage;
+  TouchEvent currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
   int currentAnimationType = 0;
 
-  STATE currentState;
+  STATE currentState = STATE.STATE_IDE;
 
-  GlobalKey canvasKey;
+  late GlobalKey canvasKey;
 
-  AnimationController animationController;
-
-//  Animation<Offset> animation;
+  late AnimationController animationController;
 
   void setCurrentTouchEvent(TouchEvent event) {
     /// 如果正在执行动画，判断是否需要中止动画
@@ -51,7 +49,7 @@ class ReaderPageManager {
           }
           break;
         case TYPE_ANIMATION_SLIDE_TURN:
-          startFlingAnimation(event.touchDetail);
+          startFlingAnimation(event.touchDetail as DragEndDetails);
           break;
         default:
           break;
@@ -101,7 +99,7 @@ class ReaderPageManager {
   }
 
   void startConfirmAnimation() {
-    Animation<Offset> animation = currentAnimationPage.getConfirmAnimation(
+    Animation<Offset>? animation = currentAnimationPage.getConfirmAnimation(
         animationController, canvasKey);
 
     if (animation == null) {
@@ -113,7 +111,7 @@ class ReaderPageManager {
   }
 
   void startCancelAnimation() {
-    Animation<Offset> animation =
+    Animation<Offset>? animation =
         currentAnimationPage.getCancelAnimation(animationController, canvasKey);
 
     if (animation == null) {
@@ -156,12 +154,11 @@ class ReaderPageManager {
 
     if (animationController.isCompleted) {
       animationController.reset();
-      print(animationController.toString());
     }
   }
 
   void startFlingAnimation(DragEndDetails details) {
-    Simulation simulation = currentAnimationPage.getFlingAnimationSimulation(
+    Simulation? simulation = currentAnimationPage.getFlingAnimationSimulation(
         animationController, details);
 
     if (simulation == null) {
@@ -176,7 +173,7 @@ class ReaderPageManager {
   }
 
   void interruptCancelAnimation() {
-    if (animationController != null && !animationController.isCompleted) {
+    if (!animationController.isCompleted) {
       animationController.stop();
       currentState = STATE.STATE_IDE;
       currentAnimationPage
@@ -190,7 +187,7 @@ class ReaderPageManager {
     if (STATE.STATE_ANIMATING == currentState) {
       return true;
     }
-    if (TouchEvent.ACTION_DOWN == currentTouchData?.action) {
+    if (TouchEvent.ACTION_DOWN == currentTouchData.action) {
       return true;
     }
     NovelPagePainter oldPainter = (oldDelegate as NovelPagePainter);
@@ -241,7 +238,7 @@ class TouchEvent<T> {
   static const int ACTION_CANCEL = 3;
 
   int action;
-  T touchDetail;
+  T? touchDetail;
   Offset touchPos = Offset(Screen.width, Screen.height);
 
   TouchEvent(this.action, this.touchPos);

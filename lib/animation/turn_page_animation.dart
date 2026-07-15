@@ -18,15 +18,15 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   Offset mStartPoint = Offset(0, 0);
 
-  Tween<Offset> currentAnimationTween;
-  Animation<Offset> currentAnimation;
+  Tween<Offset>? currentAnimationTween;
+  Animation<Offset>? currentAnimation;
 
-  ANIMATION_TYPE animationType;
+  ANIMATION_TYPE? animationType;
 
-  AnimationStatusListener statusListener;
+  AnimationStatusListener? statusListener;
 
   @override
-  Animation<Offset> getCancelAnimation(
+  Animation<Offset>? getCancelAnimation(
       AnimationController controller, GlobalKey canvasKey) {
     if ((!isTurnNext && !isCanGoPre()) || (isTurnNext && !isCanGoNext())) {
       return null;
@@ -39,12 +39,12 @@ class CoverPageAnimation extends BaseAnimationPage {
     // currentAnimationTween.begin = (coverDirection == ORIENTATION_HORIZONTAL)
     //     ? Offset(mTouch.dx, 0)
     //     : Offset(0, mTouch.dy);
-    currentAnimationTween.begin = Offset(mTouch.dx, 0);
+    currentAnimationTween!.begin = Offset(mTouch.dx, 0);
 
     // currentAnimationTween.end = (coverDirection == ORIENTATION_HORIZONTAL)
     //     ? Offset(mStartPoint.dx, 0)
     //     : Offset(0, mStartPoint.dy);
-    currentAnimationTween.end = Offset(mStartPoint.dx, 0);
+    currentAnimationTween!.end = Offset(mStartPoint.dx, 0);
 
     animationType = ANIMATION_TYPE.TYPE_CANCEL;
 
@@ -52,7 +52,7 @@ class CoverPageAnimation extends BaseAnimationPage {
   }
 
   @override
-  Animation<Offset> getConfirmAnimation(
+  Animation<Offset>? getConfirmAnimation(
       AnimationController controller, GlobalKey canvasKey) {
     if (!isTurnNext && !isCanGoPre()) {
       BotToast.showText(text: "已经是第一页");
@@ -77,7 +77,7 @@ class CoverPageAnimation extends BaseAnimationPage {
             break;
           case AnimationStatus.completed:
             if (animationType == ANIMATION_TYPE.TYPE_CONFIRM) {
-              canvasKey.currentContext.findRenderObject().markNeedsPaint();
+              canvasKey.currentContext?.findRenderObject()?.markNeedsPaint();
 
               if (isTurnNext) {
                 readerViewModel.changeCoverPage(1);
@@ -91,17 +91,17 @@ class CoverPageAnimation extends BaseAnimationPage {
             break;
         }
       };
-      currentAnimation.addStatusListener(statusListener);
+      currentAnimation!.addStatusListener(statusListener!);
     }
 
     if (statusListener != null &&
         !(controller as AnimationControllerWithListenerNumber)
             .statusListeners
             .contains(statusListener)) {
-      currentAnimation.addStatusListener(statusListener);
+      currentAnimation!.addStatusListener(statusListener!);
     }
-    currentAnimationTween.begin = Offset(mTouch.dx, 0);
-    currentAnimationTween.end = Offset(
+    currentAnimationTween!.begin = Offset(mTouch.dx, 0);
+    currentAnimationTween!.end = Offset(
         isTurnNext
             ? mStartPoint.dx - currentSize.width
             : currentSize.width + mStartPoint.dx,
@@ -126,9 +126,7 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   @override
   void onTouchEvent(TouchEvent event) {
-    if (event.touchPos != null) {
-      mTouch = event.touchPos;
-    }
+    mTouch = event.touchPos;
 
     switch (event.action) {
       case TouchEvent.ACTION_DOWN:
@@ -149,16 +147,15 @@ class CoverPageAnimation extends BaseAnimationPage {
   }
 
   void drawStatic(Canvas canvas) {
-    canvas.drawPicture(readerViewModel.cur());
+    final pic = readerViewModel.cur();
+    if (pic != null) canvas.drawPicture(pic);
   }
 
   void drawBottomPage(Canvas canvas) {
     canvas.save();
-    if (isTurnNext) {
-      canvas.drawPicture(readerViewModel.next());
-    } else {
-      canvas.drawPicture(readerViewModel.cur());
-    }
+    final pic =
+        isTurnNext ? readerViewModel.next() : readerViewModel.cur();
+    if (pic != null) canvas.drawPicture(pic);
     canvas.restore();
   }
 
@@ -167,10 +164,12 @@ class CoverPageAnimation extends BaseAnimationPage {
 
     if (isTurnNext) {
       canvas.translate(mTouch.dx - mStartPoint.dx, 0);
-      canvas.drawPicture(readerViewModel.cur());
+      final pic = readerViewModel.cur();
+      if (pic != null) canvas.drawPicture(pic);
     } else {
       canvas.translate((mTouch.dx - mStartPoint.dx) - currentSize.width, 0);
-      canvas.drawPicture(readerViewModel.pre());
+      final pic = readerViewModel.pre();
+      if (pic != null) canvas.drawPicture(pic);
     }
 
     canvas.restore();
@@ -182,7 +181,7 @@ class CoverPageAnimation extends BaseAnimationPage {
     Gradient shadowGradient;
 
     // if (coverDirection == ORIENTATION_HORIZONTAL) {
-    shadowGradient = new LinearGradient(
+    shadowGradient = LinearGradient(
       colors: [
         Colors.black54,
         Colors.transparent,
@@ -246,7 +245,7 @@ class CoverPageAnimation extends BaseAnimationPage {
   }
 
   @override
-  Simulation getFlingAnimationSimulation(
+  Simulation? getFlingAnimationSimulation(
       AnimationController controller, DragEndDetails details) {
     return null;
   }
@@ -265,6 +264,6 @@ class CoverPageAnimation extends BaseAnimationPage {
       AnimationController controller, GlobalKey canvasKey) {
     currentAnimationTween = Tween(begin: Offset.zero, end: Offset.zero);
 
-    currentAnimation = currentAnimationTween.animate(controller);
+    currentAnimation = currentAnimationTween!.animate(controller);
   }
 }

@@ -8,23 +8,23 @@ part of 'Book.dart';
 
 Book _$BookFromJson(Map<String, dynamic> json) {
   return Book(
-      json['cur'] as int,
-      json['sortTime'] as int,
-      json['index'] as int,
-      json['position'] as double,
-      json['ChapterId'] as String,
-      json['ChapterName'] as String,
-      json['NewChapterCount'] as int,
-      json['Id'] as String,
-      json['CId'] as String,
-      json['Name'] as String,
-      json['CName'] as String,
-      json['Author'] as String,
-      json['Img'] as String,
-      json['Desc'] as String,
-      json['LastChapterId'] as String,
-      json['LastChapter'] as String,
-      json['UTime'] as String);
+      json['cur'] as int? ?? 0,
+      json['sortTime'] as int? ?? 0,
+      json['index'] as int? ?? 0,
+      (json['position'] as num?)?.toDouble() ?? 0,
+      json['ChapterId'] as String? ?? '',
+      json['ChapterName'] as String? ?? '',
+      json['NewChapterCount'] as int? ?? 0,
+      json['Id'] as String? ?? '',
+      json['CId'] as String? ?? '',
+      json['Name'] as String? ?? '',
+      json['CName'] as String? ?? '',
+      json['Author'] as String? ?? '',
+      json['Img'] as String? ?? '',
+      json['Desc'] as String? ?? '',
+      json['LastChapterId'] as String? ?? '',
+      json['LastChapter'] as String? ?? '',
+      json['UTime'] as String? ?? '');
 }
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{

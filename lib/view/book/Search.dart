@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
@@ -10,10 +10,9 @@ import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/SearchAiItem.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:keframe/frame_separate_widget.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class Search extends StatefulWidget {
@@ -29,21 +28,21 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
-  SearchModel searchModel;
-  ColorModel value;
-  Widget body;
-  GlobalKey textFieldKey;
+  late SearchModel searchModel;
+  ColorModel? value;
+  Widget? body;
+  late GlobalKey textFieldKey;
   TextEditingController controller = TextEditingController();
-  OverlayEntry searchSuggest;
-  OverlayState overlayState;
+  OverlayEntry? searchSuggest;
+  OverlayState? overlayState;
   double aiItemH = 40;
-  double height;
+  double? height;
 
-  double width;
+  double? width;
 
-  double xPosition;
+  double? xPosition;
 
-  double yPosition;
+  double? yPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +71,7 @@ class _SearchState extends State<Search> {
   void dispose() {
     super.dispose();
     searchModel.clear();
-    controller?.dispose();
+    controller.dispose();
   }
 
   @override
@@ -126,7 +125,7 @@ class _SearchState extends State<Search> {
 
               searchSuggest = _buildSearchSuggest();
 
-              overlayState.insert(searchSuggest);
+              overlayState?.insert(searchSuggest!);
             } else {
               removeOverlay();
             }
@@ -169,11 +168,12 @@ class _SearchState extends State<Search> {
   }
 
   void findOverLayPosition() {
-    RenderBox renderBox = textFieldKey.currentContext.findRenderObject();
-    height = renderBox.size.height;
-    width = renderBox.size.width;
+    final renderObject = textFieldKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox) return;
+    height = renderObject.size.height;
+    width = renderObject.size.width;
 
-    Offset offset = renderBox.localToGlobal(Offset.zero);
+    Offset offset = renderObject.localToGlobal(Offset.zero);
     xPosition = offset.dx;
 
     yPosition = offset.dy;
@@ -185,7 +185,7 @@ class _SearchState extends State<Search> {
       return Positioned(
         left: xPosition,
         width: width,
-        top: yPosition + height + 5,
+        top: (yPosition ?? 0) + (height ?? 0) + 5,
         height: 500,
         child: SearchAiItem(
             height: aiItemH,
@@ -217,7 +217,7 @@ class _SearchState extends State<Search> {
         enablePullUp: true,
         header: WaterDropHeader(),
         footer: CustomFooter(
-          builder: (BuildContext context, LoadStatus mode) {
+          builder: (BuildContext context, LoadStatus? mode) {
             if (mode == LoadStatus.idle) {
             } else if (mode == LoadStatus.loading) {
               body = CupertinoActivityIndicator();
@@ -240,73 +240,70 @@ class _SearchState extends State<Search> {
           itemExtent: picH,
           itemBuilder: (c, i) {
             var item = searchModel.bks[i];
-            return FrameSeparateWidget(
-                index: i,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () async {
-                    String url = Common.detail + '/${searchModel.bks[i].Id}';
-                    Response future = await HttpUtil.instance.dio.get(url);
-                    var d = future.data['data'];
-                    BookInfo b = BookInfo.fromJson(d);
-                    Routes.navigateTo(context, Routes.detail,
-                        params: {"detail": jsonEncode(b)});
-                  },
-                  child: Container(
-                    height: 130,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
-                    child: Row(
-                      children: <Widget>[
-                        PicWidget(
-                          item.Img,
-                          width: picW,
-                          height: picH,
-                        ),
-
-                        //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  item.Name,
-                                  style: TextStyle(
-                                      fontSize: 18.0,
-                                      fontWeight: FontWeight.bold),
-                                  maxLines: 1,
-                                ),
-                                Text(
-                                  item.Author,
-                                  style: TextStyle(
-                                    fontSize: 12.0,
-                                  ),
-                                  maxLines: 1,
-                                ),
-                                Text(
-                                  item.Desc ?? "尚无介绍.....",
-                                  style: TextStyle(
-                                    fontSize: 12.0,
-                                  ),
-                                  maxLines: 2,
-                                ),
-                                Text(
-                                  item.LastChapter,
-                                  style: TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () async {
+                String url = Common.detail + '/${searchModel.bks[i].Id}';
+                Response future = await HttpUtil.instance.dio.get(url);
+                var d = future.data['data'];
+                BookInfo b = BookInfo.fromJson(d);
+                Routes.navigateTo(context, Routes.detail,
+                    params: {"detail": jsonEncode(b)});
+              },
+              child: Container(
+                height: 130,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: Row(
+                  children: <Widget>[
+                    PicWidget(
+                      item.Img,
+                      width: picW,
+                      height: picH,
                     ),
-                  ),
-                ));
+
+                    //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              item.Name,
+                              style: TextStyle(
+                                  fontSize: 18.0, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                            ),
+                            Text(
+                              item.Author,
+                              style: TextStyle(
+                                fontSize: 12.0,
+                              ),
+                              maxLines: 1,
+                            ),
+                            Text(
+                              item.Desc.isEmpty ? "尚无介绍....." : item.Desc,
+                              style: TextStyle(
+                                fontSize: 12.0,
+                              ),
+                              maxLines: 2,
+                            ),
+                            Text(
+                              item.LastChapter,
+                              style: TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
           itemCount: searchModel.bks.length,
         ));
@@ -339,7 +336,7 @@ class _SearchState extends State<Search> {
               ],
             ),
             Wrap(
-              children: searchModel?.getHistory() ?? [],
+              children: searchModel.getHistory(),
               spacing: 10, //主轴上子控件的间距
             ),
             Row(
@@ -358,7 +355,7 @@ class _SearchState extends State<Search> {
               ],
             ),
             Wrap(
-              children: searchModel?.showHot ?? [], spacing: 10, //主轴上子控件的间距
+              children: searchModel.showHot, spacing: 10, //主轴上子控件的间距
             ),
           ],
         ),

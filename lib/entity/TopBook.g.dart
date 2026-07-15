@@ -8,13 +8,13 @@ part of 'TopBook.dart';
 
 TopBooks _$TopBooksFromJson(Map<String, dynamic> json) {
   return TopBooks(
-      json['Id'] as int,
-      json['Name'] as String,
-      json['Author'] as String,
-      json['Img'] as String,
-      json['Desc'] as String,
-      json['CName'] as String,
-      (json['Score'] as num)?.toDouble());
+      json['Id'] as int? ?? 0,
+      json['Name'] as String? ?? '',
+      json['Author'] as String? ?? '',
+      json['Img'] as String? ?? '',
+      json['Desc'] as String? ?? '',
+      json['CName'] as String? ?? '',
+      (json['Score'] as num?)?.toDouble() ?? 0);
 }
 
 Map<String, dynamic> _$TopBooksToJson(TopBooks instance) => <String, dynamic>{

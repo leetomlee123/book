@@ -1,5 +1,5 @@
-import 'package:book/common/Screen.dart';
-import 'package:flustars/flustars.dart';
+﻿import 'package:book/common/Screen.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class ReadSetting {

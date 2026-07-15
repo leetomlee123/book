@@ -12,11 +12,9 @@ import 'package:book/view/person/Skin.dart';
 import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_xupdate/flutter_xupdate.dart';
-import 'package:flutter_xupdate/update_entity.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -48,14 +46,14 @@ class Me extends StatelessWidget {
         children: [
           _headImg(),
           Text(
-            SpUtil.getString('username') ?? "",
+            SpUtil.getString('username'),
             style: TextStyle(fontSize: 20),
           ),
           SizedBox(
             height: 5,
           ),
           Text(
-            SpUtil.getString('email') ?? "",
+            SpUtil.getString('email'),
           ),
         ],
       ),
@@ -166,7 +164,7 @@ class Me extends StatelessWidget {
                   ImageIcon(AssetImage("images/github.png")),
                   '开源地址',
                   () {
-                    launch('https://github.com/leetomlee123/book');
+                    launchUrl(Uri.parse('https://github.com/leetomlee123/book'));
                   },
                   c,
                 ),
@@ -183,24 +181,8 @@ class Me extends StatelessWidget {
                     AppInfo appInfo = AppInfo.fromJson(data);
                     if (int.parse(appInfo.version.replaceAll(".", "")) >
                         int.parse(version.replaceAll(".", ""))) {
-                      Navigator.pop(context);
-                      Future.delayed(Duration(milliseconds: 400), () {
-                        var up = UpdateEntity(
-                            hasUpdate: true,
-                            isForce: appInfo.forceUpdate == "2",
-                            isIgnorable: false,
-                            versionCode: 1,
-                            versionName: appInfo.version,
-                            updateContent: appInfo.msg,
-                            downloadUrl: appInfo.link,
-                            apkSize: int.parse(appInfo.apkSize),
-                            apkMd5: appInfo.apkMD5);
-
-                        FlutterXUpdate.updateByInfo(
-                          updateEntity: up,
-                          supportBackgroundUpdate: true,
-                        );
-                      });
+                      BotToast.showText(
+                          text: "发现新版本 ${appInfo.version}，请前往下载");
                     } else {
                       BotToast.showText(text: "暂无更新");
                     }
@@ -223,7 +205,7 @@ class Me extends StatelessWidget {
                               ),
                               actions: <Widget>[
                                 TextButton(
-                                  child: new Text(
+                                  child: Text(
                                     "确定",
                                   ),
                                   onPressed: () {

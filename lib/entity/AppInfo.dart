@@ -8,33 +8,32 @@ class AppInfo {
   String apkSize;
 
   AppInfo(
-      {this.id,
-      this.msg,
-      this.link,
-      this.version,
-      this.forceUpdate,
-      this.apkMD5,
-      this.apkSize});
+      {this.id = '',
+      this.msg = '',
+      this.link = '',
+      this.version = '',
+      this.forceUpdate = '',
+      this.apkMD5 = '',
+      this.apkSize = ''});
 
-  AppInfo.fromJson(Map<String, dynamic> json) {
-    id = json['id'];
-    msg = json['msg'];
-    link = json['link'];
-    version = json['version'];
-    forceUpdate = json['forceUpdate'];
-    apkMD5 = json['apkMD5'];
-    apkSize = json['apkSize'];
-  }
+  AppInfo.fromJson(Map<String, dynamic> json)
+      : id = json['id'] as String? ?? '',
+        msg = json['msg'] as String? ?? '',
+        link = json['link'] as String? ?? '',
+        version = json['version'] as String? ?? '',
+        forceUpdate = json['forceUpdate'] as String? ?? '',
+        apkMD5 = json['apkMD5'] as String? ?? '',
+        apkSize = json['apkSize'] as String? ?? '';
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['msg'] = this.msg;
-    data['link'] = this.link;
-    data['version'] = this.version;
-    data['forceUpdate'] = this.forceUpdate;
-    data['apkMD5'] = this.apkMD5;
-    data['apkSize'] = this.apkSize;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['msg'] = msg;
+    data['link'] = link;
+    data['version'] = version;
+    data['forceUpdate'] = forceUpdate;
+    data['apkMD5'] = apkMD5;
+    data['apkSize'] = apkSize;
     return data;
   }
 }

@@ -3,32 +3,61 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Global ChangeNotifier-backed providers (Riverpod).
+final searchModelProvider =
+    ChangeNotifierProvider<SearchModel>((ref) => SearchModel());
+final colorModelProvider =
+    ChangeNotifierProvider<ColorModel>((ref) => ColorModel());
+final shelfModelProvider =
+    ChangeNotifierProvider<ShelfModel>((ref) => ShelfModel());
+final readModelProvider =
+    ChangeNotifierProvider<ReadModel>((ref) => ReadModel());
+
+/// Thin facade kept for existing call sites (`Store.value` / `Store.connect`).
 class Store {
-  static BuildContext context;
-  static BuildContext widgetCtx;
+  static BuildContext? context;
+  static BuildContext? widgetCtx;
 
-  //  我们将会在main.dart中runAPP实例化init
-  static init({context, child}) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => SearchModel()),
-        ChangeNotifierProvider(create: (_) => ColorModel()),
-        ChangeNotifierProvider(create: (_) => ShelfModel()),
-        ChangeNotifierProvider(create: (_) => ReadModel()),
-      ],
+  /// Root wrapper — was MultiProvider, now [ProviderScope].
+  static Widget init({context, child}) {
+    return ProviderScope(child: child);
+  }
+
+  /// Non-listening read (was `Provider.of(context, listen: false)`).
+  static T value<T>(BuildContext context) {
+    final container = ProviderScope.containerOf(context);
+    return container.read(_listenable<T>());
+  }
+
+  /// Listening rebuild (was `Consumer<T>`).
+  static Widget connect<T>({
+    required Widget Function(BuildContext, T, Widget?) builder,
+    Widget? child,
+  }) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final model = ref.watch(_listenable<T>());
+        return builder(context, model, child);
+      },
       child: child,
     );
   }
 
-  //  通过Provider.value<T>(context)获取状态数据
-  static T value<T>(context) {
-    return Provider.of(context, listen: false);
-  }
-
-  //  通过Consumer获取状态数据
-  static Consumer connect<T>({builder, child}) {
-    return Consumer<T>(builder: builder, child: child);
+  static ProviderListenable<T> _listenable<T>() {
+    if (T == SearchModel) {
+      return searchModelProvider as ProviderListenable<T>;
+    }
+    if (T == ColorModel) {
+      return colorModelProvider as ProviderListenable<T>;
+    }
+    if (T == ShelfModel) {
+      return shelfModelProvider as ProviderListenable<T>;
+    }
+    if (T == ReadModel) {
+      return readModelProvider as ProviderListenable<T>;
+    }
+    throw ArgumentError('No Riverpod provider registered for type $T');
   }
 }

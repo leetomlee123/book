@@ -7,8 +7,11 @@ part of 'BookTag.dart';
 // **************************************************************************
 
 BookTag _$BookTagFromJson(Map<String, dynamic> json) {
-  return BookTag(json['cur'] as int, json['index'] as int,
-      json['bookName'] as String, (json['offset'] as num)?.toDouble());
+  return BookTag(
+      json['cur'] as int? ?? 0,
+      json['index'] as int? ?? 0,
+      json['bookName'] as String? ?? '',
+      (json['offset'] as num?)?.toDouble() ?? 0);
 }
 
 Map<String, dynamic> _$BookTagToJson(BookTag instance) => <String, dynamic>{

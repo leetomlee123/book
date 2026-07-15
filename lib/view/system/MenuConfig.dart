@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class MenuConfig extends StatefulWidget {
   final String title;
-  final Function sub;
-  final Function add;
-  final Function change;
+  final VoidCallback sub;
+  final VoidCallback add;
+  final ValueChanged<double> change;
   final double value;
   final double min;
   final double max;
@@ -21,9 +21,9 @@ class _MenuConfigState extends State<MenuConfig> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(this.widget.title, style: TextStyle(fontSize: 13.0)),
+        Text(widget.title, style: TextStyle(fontSize: 13.0)),
         IconButton(
-          onPressed: this.widget.sub,
+          onPressed: widget.sub,
           icon: Icon(Icons.remove),
         ),
         Expanded(
@@ -36,23 +36,22 @@ class _MenuConfigState extends State<MenuConfig> {
                 overlayShape: SliderComponentShape.noOverlay,
               ),
               child: Slider(
-                value: this.widget.value,
+                value: widget.value,
                 onChanged: (v) {
                   setState(() {
-                    this.widget.change(v);
+                    widget.change(v);
                   });
                 },
-                min: this.widget.min,
-                max: this.widget.max,
+                min: widget.min,
+                max: widget.max,
               ),
             ),
           ),
         ),
         IconButton(
-          onPressed: this.widget.add,
+          onPressed: widget.add,
           icon: Icon(Icons.add),
         ),
-        // Text('${this.widget.value.toStringAsFixed(1)}')
       ],
     );
   }

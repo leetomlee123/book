@@ -5,7 +5,7 @@ import 'RouteHandler.dart';
 
 class Routes {
   // 路由管理
-  static FluroRouter router;
+  static late FluroRouter router;
 
   static String root = '/'; // 根目录
   static String search = '/search';
@@ -27,7 +27,6 @@ class Routes {
   static String videoTest = '/videoTest';
   static String update = '/update';
 
-
   // 配置route
   static void configureRoutes(FluroRouter router) {
     // 未发现对应route
@@ -47,15 +46,15 @@ class Routes {
 
   // 对参数进行encode，解决参数中有特殊字符，影响fluro路由匹配
   static Future navigateTo(BuildContext context, String path,
-      {Map<String, dynamic> params,
-      TransitionType transition = TransitionType.fadeIn,bool replace = false,}) {
-
+      {Map<String, dynamic>? params,
+      TransitionType transition = TransitionType.fadeIn,
+      bool replace = false}) {
     String query = "";
 
     if (params != null) {
       int index = 0;
       for (var key in params.keys) {
-        var value = Uri.encodeComponent(params[key]);
+        var value = Uri.encodeComponent(params[key].toString());
         if (index == 0) {
           query = "?";
         } else {
@@ -67,6 +66,6 @@ class Routes {
     }
     path = path + query;
     return router.navigateTo(context, path,
-        transition: transition,replace: replace);
+        transition: transition, replace: replace);
   }
 }

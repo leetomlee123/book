@@ -6,27 +6,18 @@ import 'package:flutter/material.dart';
 abstract class BaseAnimationPage {
   Offset mTouch = Offset(0, 0);
 
-  AnimationController mAnimationController;
+  late AnimationController mAnimationController;
 
   Size currentSize = Size(Screen.width, Screen.height);
 
-//  @protected
-//  ReaderContentViewModel contentModel=ReaderContentViewModel.instance;
-
-  ReadModel readerViewModel;
-
-//  void setData(ReaderChapterPageContentConfig prePageConfig,ReaderChapterPageContentConfig currentPageConfig,ReaderChapterPageContentConfig nextPageConfig){
-//    currentPageContentConfig=pageConfig;
-//  }
+  late ReadModel readerViewModel;
 
   void setSize(Size size) {
     currentSize = size;
-//    mTouch=Offset(currentSize.width, currentSize.height);
   }
 
   void setContentViewModel(ReadModel viewModel) {
     readerViewModel = viewModel;
-//    mTouch=Offset(currentSize.width, currentSize.height);
   }
 
   void onDraw(Canvas canvas);
@@ -50,13 +41,13 @@ abstract class BaseAnimationPage {
   bool isCancelArea();
   bool isConfirmArea();
 
-  Animation<Offset> getCancelAnimation(
+  Animation<Offset>? getCancelAnimation(
       AnimationController controller, GlobalKey canvasKey);
-  Animation<Offset> getConfirmAnimation(
+  Animation<Offset>? getConfirmAnimation(
     AnimationController controller,
     GlobalKey canvasKey,
   );
-  Simulation getFlingAnimationSimulation(
+  Simulation? getFlingAnimationSimulation(
       AnimationController controller, DragEndDetails details);
 }
 

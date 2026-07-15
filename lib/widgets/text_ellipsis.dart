@@ -1,4 +1,4 @@
-import 'package:flustars/flustars.dart';
+﻿import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:readmore/readmore.dart';
 

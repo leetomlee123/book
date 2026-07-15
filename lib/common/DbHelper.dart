@@ -1,14 +1,14 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/chapter.pb.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DbHelper {
-  static DbHelper _dbHelper = new DbHelper();
+  static DbHelper _dbHelper = DbHelper();
   static DbHelper instance = _dbHelper;
   final String _tableName = "chapters";
   final String _tableName1 = "books";
@@ -16,44 +16,44 @@ class DbHelper {
   final String _tableName3 = "cord";
   final String _tableName4 = "voice";
 
-  static Database _db;
-  static Database _db1;
-  static Database _db2;
-  static Database _db3;
-  static Database _db4;
+  static Database? _db;
+  static Database? _db1;
+  static Database? _db2;
+  static Database? _db3;
+  static Database? _db4;
   int version = 3;
 
   Future<Database> get db async {
     if (_db != null) {
-      return _db;
+      return _db!;
     }
     _db = await _initDb();
 
-    return _db;
+    return _db!;
   }
 
   Future<Database> get db1 async {
-    if (_db1 != null) return _db1;
+    if (_db1 != null) return _db1!;
     _db1 = await _initDb1();
-    return _db1;
+    return _db1!;
   }
 
   Future<Database> get db2 async {
-    if (_db2 != null) return _db2;
+    if (_db2 != null) return _db2!;
     _db2 = await _initDb2();
-    return _db2;
+    return _db2!;
   }
 
   Future<Database> get db3 async {
-    if (_db3 != null) return _db3;
+    if (_db3 != null) return _db3!;
     _db3 = await _initDb3();
-    return _db3;
+    return _db3!;
   }
 
   Future<Database> get db4 async {
-    if (_db4 != null) return _db4;
+    if (_db4 != null) return _db4!;
     _db4 = await _initDb4();
-    return _db4;
+    return _db4!;
   }
 
   //初始化数据库
@@ -186,7 +186,7 @@ class DbHelper {
     if (list.isEmpty) {
       return {'idx': -1, 'position': 1};
     } else {
-      return {'idx': list[0]['idx'] ?? 0, 'position': list[0]['position']};
+      return {'idx': list[0]['idx'] as int? ?? 0, 'position': list[0]['position'] as int? ?? 0};
     }
   }
 
@@ -195,13 +195,13 @@ class DbHelper {
     var dbClient = await db4;
     var list = await dbClient.rawQuery(
         "select count(*) as cnt from $_tableName4 where key=?", [key]);
-    int cnt = list[0]['cnt'];
+    int cnt = list[0]['cnt'] as int;
     if (cnt > 0) {
-      await dbClient.rawUpdate(
+      return await dbClient.rawUpdate(
           "update $_tableName4 set position=? , tm=? ,chapter=? ,idx=? where key=?",
           [position, DateUtil.getNowDateMs(), chapter, idx, key]);
     } else {
-      await dbClient.rawInsert(
+      return await dbClient.rawInsert(
           "insert into $_tableName4(title,key,cover,author,position,idx,tm,chapter) values(?,?,?,?,?,?,?,?)",
           [
             title,
@@ -216,7 +216,7 @@ class DbHelper {
     }
   }
 
-  Future<Null> addCords(String key, List<String> contents) async {
+  Future<void> addCords(String key, List<String> contents) async {
     var dbClient = await db3;
     var batch = dbClient.batch();
     for (String content in contents) {
@@ -244,19 +244,19 @@ class DbHelper {
     return list.length > 0;
   }
 
-  Future<Null> delContents(String key) async {
+  Future<void> delContents(String key) async {
     var dbClient = await db3;
     await dbClient.rawDelete("delete from $_tableName3 where key=?", [key]);
   }
 
-  Future<Null> updBookStatus(String bookId, int s) async {
+  Future<void> updBookStatus(String bookId, int s) async {
     var dbClient = await db1;
     dbClient.rawUpdate(
         "update $_tableName1 set newChapter=? where book_id=?", [s, bookId]);
     // await close();
   }
 
-  Future<Null> updBook(String lastChapter, int newStatus, String utime,
+  Future<void> updBook(String lastChapter, int newStatus, String utime,
       String img, String bookId) async {
     var dbClient = await db1;
     dbClient.rawUpdate(
@@ -264,7 +264,7 @@ class DbHelper {
         [lastChapter, newStatus, utime, img, bookId]);
   }
 
-  Future<Null> delBookAndCps(String bookId) async {
+  Future<void> delBookAndCps(String bookId) async {
     var dbClient = await db1;
     await dbClient
         .rawDelete("delete from $_tableName1  where book_id=?", [bookId]);
@@ -280,55 +280,55 @@ class DbHelper {
         .rawQuery("select * from $_tableName1 order by sortTime desc", []);
     for (var i in list) {
       bks.add(Book.fromSql(
-          i['book_id'],
-          i['name'],
-          i['cname'],
-          i['author'],
-          i['utime'],
-          i['img'],
-          i['intro'],
-          i['cur'],
-          i['sortTime'],
-          i['idx'],
-          i['position'],
-          i['newChapter'],
-          i['lastChapter']));
+          i['book_id'] as String,
+          i['name'] as String? ?? '',
+          i['cname'] as String? ?? '',
+          i['author'] as String? ?? '',
+          i['utime'] as String? ?? '',
+          i['img'] as String? ?? '',
+          i['intro'] as String? ?? '',
+          i['cur'] as int? ?? 0,
+          i['sortTime'] as int? ?? 0,
+          i['idx'] as int? ?? 0,
+          (i['position'] as num?)?.toDouble() ?? 0.0,
+          i['newChapter'] as int? ?? 0,
+          i['lastChapter'] as String? ?? ''));
     }
     return bks;
   }
 
-  Future<Book> getBook(String bookId) async {
+  Future<Book?> getBook(String bookId) async {
     var dbClient = await db1;
-    Book bk;
+    Book? bk;
     var list = await dbClient
         .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
     for (var i in list) {
       bk = Book.fromSql(
-          i['book_id'],
-          i['name'],
-          i['cname'],
-          i['author'],
-          i['utime'],
-          i['img'],
-          i['intro'],
-          i['cur'] ?? 0,
-          i['sortTime'] ?? 0,
-          i['idx'] ?? 0,
-          i['position'] ?? 0.0,
-          i['newChapter'],
-          i['lastChapter']);
+          i['book_id'] as String,
+          i['name'] as String? ?? '',
+          i['cname'] as String? ?? '',
+          i['author'] as String? ?? '',
+          i['utime'] as String? ?? '',
+          i['img'] as String? ?? '',
+          i['intro'] as String? ?? '',
+          i['cur'] as int? ?? 0,
+          i['sortTime'] as int? ?? 0,
+          i['idx'] as int? ?? 0,
+          (i['position'] as num?)?.toDouble() ?? 0.0,
+          i['newChapter'] as int? ?? 0,
+          i['lastChapter'] as String? ?? '');
     }
     return bk;
   }
 
-  Future<Null> delBook(String bookId) async {
+  Future<void> delBook(String bookId) async {
     var dbClient = await db1;
 
     await dbClient
         .rawDelete('delete from $_tableName1 where book_id=?', [bookId]);
   }
 
-  Future<Null> sortBook(String bookId) async {
+  Future<void> sortBook(String bookId) async {
     var dbClient = await db1;
 
     await dbClient.rawUpdate(
@@ -336,7 +336,7 @@ class DbHelper {
         [bookId]);
   }
 
-  Future<Null> addBooks(List<Book> bks) async {
+  Future<void> addBooks(List<Book> bks) async {
     var dbClient = await db1;
 
     var batch = dbClient.batch();
@@ -352,8 +352,8 @@ class DbHelper {
         "utime": book.UTime,
         "cur": book.cur,
         "sortTime": book.sortTime,
-        "idx": book.index ?? 0,
-        "position": book.position ?? 0,
+        "idx": book.index,
+        "position": book.position,
         "newChapter": 0,
         "lastChapter": book.LastChapter
       });
@@ -361,7 +361,7 @@ class DbHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<Null> updBookProcess(
+  Future<void> updBookProcess(
       int cur, int idx, double position, String bookId) async {
     var dbClient = await db1;
 
@@ -388,7 +388,7 @@ class DbHelper {
   // }
 
   /// 添加章节
-  Future<Null> addChapters(List<ChapterProto> cps, String bookId) async {
+  Future<void> addChapters(List<ChapterProto> cps, String bookId) async {
     var dbClient = await db;
     var batch = dbClient.batch();
     for (var i = 0; i < cps.length; i++) {
@@ -411,7 +411,7 @@ class DbHelper {
     var dbClient = await db;
     var list = await dbClient.rawQuery(
         "select count(*) as cnt from $_tableName where book_id=?", [bookId]);
-    return list[0]['cnt'];
+    return list[0]['cnt'] as int;
   }
 
   Future<List<ChapterProto>> getChapters(String bookId) async {
@@ -422,15 +422,15 @@ class DbHelper {
     List<ChapterProto> cps = [];
     for (var i in list) {
       cps.add(ChapterProto(
-          chapterId: i['chapter_id'],
-          chapterName: i['name'],
-          hasContent: i['hasContent'].toString()));
+          chapterId: i['chapter_id'] as String?,
+          chapterName: i['name'] as String?,
+          hasContent: i['hasContent']?.toString()));
     }
     return cps;
   }
 
   /// 添加章节
-  Future<Null> clearChapters(String bookId) async {
+  Future<void> clearChapters(String bookId) async {
     var dbClient = await db;
     await dbClient
         .rawDelete("delete from $_tableName where book_id=?", [bookId]);
@@ -440,17 +440,17 @@ class DbHelper {
     var dbClient = await db;
     List list = await dbClient.rawQuery(
         "select content from $_tableName where chapter_id=?", [chapterId]);
-    return list.first['content'];
+    return list.first['content'] as String? ?? '';
   }
 
   Future<bool> getHasContent(String chapterId) async {
     var dbClient = await db;
     List list = await dbClient.rawQuery(
         "select hasContent from $_tableName where chapter_id=?", [chapterId]);
-    return "2" == list.first['hasContent'];
+    return '2' == list.first['hasContent']?.toString();
   }
 
-  Future<Null> udpChapter(List<ChapterNode> cpnodes) async {
+  Future<void> udpChapter(List<ChapterNode> cpnodes) async {
     var dbClient = await db;
     var batch = dbClient.batch();
     cpnodes.forEach((cpnode) {

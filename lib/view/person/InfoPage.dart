@@ -1,10 +1,8 @@
-import 'package:book/common/common.dart';
+﻿import 'package:book/common/common.dart';
 import 'package:book/common/Http.dart';
 import 'package:book/entity/Info.dart';
-import 'package:book/model/ColorModel.dart';
-import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class InfoPage extends StatefulWidget {
@@ -69,11 +67,11 @@ class InfoState extends State<InfoPage> {
 
   Future<void> getInfo() async {
     Response res = await HttpUtil.instance.dio.get(Common.info);
-    List data = res.data['data'];
-    if (data == null) {
+    final raw = res.data['data'];
+    if (raw is! List) {
       return;
     }
-    ifs = data.map((f) => Info.fromJson(f)).toList();
+    ifs = raw.map((f) => Info.fromJson(f)).toList();
     if (mounted) {
       setState(() {});
     }

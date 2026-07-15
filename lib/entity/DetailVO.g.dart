@@ -7,7 +7,8 @@ part of 'DetailVO.dart';
 // **************************************************************************
 
 DetailVO _$DetailVOFromJson(Map<String, dynamic> json) {
-  return DetailVO(json['link'] as String, json['name'] as String);
+  return DetailVO(
+      json['link'] as String? ?? '', json['name'] as String? ?? '');
 }
 
 Map<String, dynamic> _$DetailVOToJson(DetailVO instance) =>

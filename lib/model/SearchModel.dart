@@ -10,14 +10,14 @@ import 'package:book/entity/SearchItem.dart';
 import 'package:book/entity/book_ai.dart';
 import 'package:book/route/Routes.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class SearchModel with ChangeNotifier {
-  List<String> searchHistory = new List();
+  List<String> searchHistory = [];
   bool isBookSearch = false;
-  BuildContext context;
+  BuildContext? context;
   bool showResult = false;
   List<SearchItem> bks = [];
   List<BookAi> bksAi = [];
@@ -26,7 +26,7 @@ class SearchModel with ChangeNotifier {
   List<Widget> showHot = [];
   int idx = 0;
   bool loading = false;
-  GlobalKey textFieldKey;
+  GlobalKey? textFieldKey;
 
   // ignore: non_constant_identifier_names
   String store_word = "";
@@ -36,7 +36,7 @@ class SearchModel with ChangeNotifier {
   var temp = "";
   RefreshController refreshController =
       RefreshController(initialRefresh: false);
-  TextEditingController controller;
+  TextEditingController? controller;
 
   List<Color> colors = Colors.accents;
 
@@ -68,9 +68,9 @@ class SearchModel with ChangeNotifier {
     var url = '${Common.searchAi}?key=$word';
     Response res = await HttpUtil.instance.dio.get(url);
     var d = res.data;
-    List data = d['data'];
+    List? data = d['data'];
     if (data?.isNotEmpty ?? false)
-      bksAi = data.map((e) => BookAi.fromJson(e)).toList();
+      bksAi = data!.map((e) => BookAi.fromJson(e)).toList();
     else
       bksAi.clear();
     notifyListeners();
@@ -88,16 +88,18 @@ class SearchModel with ChangeNotifier {
       }
     }
     //收起键盘
-    FocusScope.of(context).requestFocus(FocusNode());
+    if (context != null) {
+      FocusScope.of(context!).requestFocus(FocusNode());
+    }
     var url = '${Common.search}?key=$word&page=$page&size=$size';
     Response res = await HttpUtil.instance.dio.get(url);
     var d = res.data;
-    List data = d['data'];
+    List? data = d['data'];
     // ignore: null_aware_in_condition
     if (data?.isEmpty ?? true) {
       refreshController.loadNoData();
     } else {
-      for (var d in data) {
+      for (var d in data!) {
         bks.add(SearchItem.fromJson(d));
       }
       refreshController.loadComplete();
@@ -145,7 +147,7 @@ class SearchModel with ChangeNotifier {
       wds.add(GestureDetector(
         onTap: () {
           word = value;
-          controller.text = value;
+          controller?.text = value;
           search(value);
           notifyListeners();
         },
@@ -224,7 +226,7 @@ class SearchModel with ChangeNotifier {
       hot.add(
         TextButton(
             style: ButtonStyle(
-                fixedSize: MaterialStateProperty.all(Size(h / 2, 40)),
+                fixedSize: WidgetStateProperty.all(Size(h / 2, 40)),
                 // backgroundColor: MaterialStateProperty.resolveWith(
                 //   (states) {
                 //     return SpUtil.getBool("dark")
@@ -239,13 +241,15 @@ class SearchModel with ChangeNotifier {
               Response future = await HttpUtil.instance.dio.get(url);
               var d = future.data['data'];
               BookInfo b = BookInfo.fromJson(d);
-              Routes.navigateTo(
-                context,
-                Routes.detail,
-                params: {
-                  'detail': jsonEncode(b),
-                },
-              );
+              if (context != null) {
+                Routes.navigateTo(
+                  context!,
+                  Routes.detail,
+                  params: {
+                    'detail': jsonEncode(b),
+                  },
+                );
+              }
             },
             child: Text(
               "${(i + 1).toString() + '.' + hbs[i].Name}",

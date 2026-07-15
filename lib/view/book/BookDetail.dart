@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Http.dart';
@@ -9,14 +9,13 @@ import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/text_ellipsis.dart';
 import 'package:book/widgets/text_two.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class BookDetail extends StatefulWidget {
@@ -26,12 +25,12 @@ class BookDetail extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return new _BookDetailState();
+    return _BookDetailState();
   }
 }
 
 class _BookDetailState extends State<BookDetail> {
-  Book book;
+  late Book book;
   int maxLines = 3;
   bool ellipsis = true;
 
@@ -93,7 +92,7 @@ class _BookDetailState extends State<BookDetail> {
                   style: TextStyle(fontSize: 12, color: Colors.white)),
               RatingBar(
                 itemSize: 15,
-                initialRating: this.widget._bookInfo.Rate ?? 1,
+                initialRating: this.widget._bookInfo.Rate,
                 minRating: 1,
                 direction: Axis.horizontal,
                 allowHalfRating: true,
@@ -112,7 +111,7 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   Widget _bookDesc() {
-    return TextEllipsis(this.widget._bookInfo.Desc ?? "".trim());
+    return TextEllipsis(this.widget._bookInfo.Desc.trim());
   }
 
   Widget _bookMenu() {
@@ -153,7 +152,7 @@ class _BookDetailState extends State<BookDetail> {
 
   Widget _sameAuthorBooks() {
     return Offstage(
-      offstage: this.widget._bookInfo.SameAuthorBooks?.isEmpty ?? true,
+      offstage: this.widget._bookInfo.SameAuthorBooks.isEmpty,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -232,7 +231,7 @@ class _BookDetailState extends State<BookDetail> {
                   },
                 );
               },
-              itemCount: this.widget._bookInfo.SameAuthorBooks?.length ?? 0,
+              itemCount: this.widget._bookInfo.SameAuthorBooks.length,
               cacheExtent: 200,
             )
           ],
@@ -275,13 +274,13 @@ class _BookDetailState extends State<BookDetail> {
                   )),
               TextButton(
                   onPressed: () async {
-                    Book b = await DbHelper.instance.getBook(book.Id);
+                    Book? b = await DbHelper.instance.getBook(book.Id);
 
                     Routes.navigateTo(
                       context,
                       Routes.read,
                       params: {
-                        'read': jsonEncode(b == null ? book : b),
+                        'read': jsonEncode(b ?? book),
                       },
                     );
                   },

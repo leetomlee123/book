@@ -1,8 +1,7 @@
 
-
 import 'package:book/common/common.dart';
 import 'package:book/entity/ParseContentConfig.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' show parse;
 
@@ -12,9 +11,10 @@ class ParseHtml {
   List<ParseContentConfig> configs = [];
   ParseHtml() {
     if (configs.isEmpty) {
-      configs = SpUtil.getObjectList(Common.parse_html_config)
-          .map((e) => ParseContentConfig.fromJson(e))
-          .toList();
+      final list = SpUtil.getObjectList(Common.parse_html_config);
+      if (list != null) {
+        configs = list.map((e) => ParseContentConfig.fromJson(e)).toList();
+      }
     }
   }
 
@@ -22,7 +22,7 @@ class ParseHtml {
     var c = "";
     var html = await HttpUtil.instance.dio.get(url);
 
-    Element content;
+    Element? content;
     configs.forEach((element) {
       if (url.contains(element.domain)) {
         content = parse(html.data, encoding: element.encode)
@@ -33,13 +33,12 @@ class ParseHtml {
       content = parse(html.data).getElementById("content");
     }
 
-    content.nodes.forEach((element) {
-      var text = element.text.trim();
+    content?.nodes.forEach((element) {
+      var text = element.text?.trim() ?? '';
       if (text.isNotEmpty) {
         c += "\t\t\t\t\t\t\t\t" + text + "\n";
       }
     });
     return c;
   }
-
 }

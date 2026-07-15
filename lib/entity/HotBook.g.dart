@@ -7,8 +7,8 @@ part of 'HotBook.dart';
 // **************************************************************************
 
 HotBook _$HotBookFromJson(Map<String, dynamic> json) {
-  return HotBook(
-      json['Id'] as String, json['Name'] as String, json['Hot'] as int);
+  return HotBook(json['Id'] as String? ?? '', json['Name'] as String? ?? '',
+      json['Hot'] as int? ?? 0);
 }
 
 Map<String, dynamic> _$HotBookToJson(HotBook instance) => <String, dynamic>{

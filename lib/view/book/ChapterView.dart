@@ -1,18 +1,16 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:book/common/Http.dart';
+import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
-import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
-import 'package:flustars/flustars.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:keframe/frame_separate_widget.dart';
 
 class ChapterView extends StatefulWidget {
   @override
@@ -22,7 +20,7 @@ class ChapterView extends StatefulWidget {
 }
 
 class _ChapterViewItem extends State<ChapterView> {
-  ScrollController _scrollController;
+  late ScrollController _scrollController;
 
   double itemHeight = 50.0;
 
@@ -41,7 +39,7 @@ class _ChapterViewItem extends State<ChapterView> {
     super.initState();
     _scrollController = ScrollController(
         initialScrollOffset:
-            (Store.value<ReadModel>(context).book.cur - 8) * itemHeight);
+            (Store.value<ReadModel>(context).book!.cur - 8) * itemHeight);
     _scrollController.addListener(() {
       if (_scrollController.offset < itemHeight * 8 && showToTopBtn) {
         setState(() {
@@ -68,7 +66,6 @@ class _ChapterViewItem extends State<ChapterView> {
 
   @override
   Widget build(BuildContext context) {
-    ColorModel colorModel = Store.value<ColorModel>(context);
     return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
       return Scaffold(
         appBar: PreferredSize(
@@ -77,13 +74,13 @@ class _ChapterViewItem extends State<ChapterView> {
             child: Container(
               padding: EdgeInsets.only(
                   left: 10,
-                  top: ScreenUtil.getStatusBarH(context) + 10,
+                  top: Screen.topSafeHeight + 10,
                   right: 20),
               height: 140,
-              width: ScreenUtil.getScreenW(context),
+              width: Screen.width,
               child: Row(
                 children: [
-                  ExtendedImage.network(data.book.Img,
+                  ExtendedImage.network(data.book!.Img,
                     width: 85,
                   ),
                   Padding(
@@ -93,7 +90,7 @@ class _ChapterViewItem extends State<ChapterView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data.book.Name,
+                          data.book!.Name,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -101,7 +98,7 @@ class _ChapterViewItem extends State<ChapterView> {
                           overflow: TextOverflow.clip,
                         ),
                         Text(
-                          data.book.Author,
+                          data.book!.Author,
                           style: TextStyle(
                             fontWeight: FontWeight.w100,
                             fontSize: 10,
@@ -141,28 +138,26 @@ class _ChapterViewItem extends State<ChapterView> {
                   itemBuilder: (context, index) {
                     var title = data.chapters[index].chapterName;
                     var has = data.chapters[index].hasContent;
-                    return FrameSeparateWidget(
-                      child: ListTile(
-                        title: Text(
-                          title,
-                          maxLines: 2,
-                          style: TextStyle(fontSize: 15),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Text(
-                          has == "2" ? "已缓存" : "",
-                          style: TextStyle(fontSize: 10,color: Colors.grey),
-                        ),
-                        selected: index == data.book.cur,
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          //不是卷目录
-                          data.book.cur = index;
-                          Future.delayed(Duration(milliseconds: 400), () async {
-                            await data.initPageContent(index, true);
-                          });
-                        },
+                    return ListTile(
+                      title: Text(
+                        title,
+                        maxLines: 2,
+                        style: TextStyle(fontSize: 15),
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      trailing: Text(
+                        has == "2" ? "已缓存" : "",
+                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
+                      selected: index == data.book!.cur,
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        //不是卷目录
+                        data.book!.cur = index;
+                        Future.delayed(Duration(milliseconds: 400), () async {
+                          await data.initPageContent(index, true);
+                        });
+                      },
                     );
                   },
                   itemCount: data.chapters.length,
@@ -187,7 +182,7 @@ class _ChapterViewItem extends State<ChapterView> {
   }
 
   Future goDetail(ReadModel data, context) async {
-    String url = Common.detail + '/${data.book.Id}';
+    String url = Common.detail + '/${data.book!.Id}';
     Response future = await HttpUtil.instance.dio.get(url);
     var d = future.data['data'];
     BookInfo bookInfo = BookInfo.fromJson(d);

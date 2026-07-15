@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -7,10 +7,9 @@ import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/has_update_icon_img.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:keframe/frame_separate_widget.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class BooksWidget extends StatefulWidget {
@@ -23,10 +22,10 @@ class BooksWidget extends StatefulWidget {
 }
 
 class _BooksWidgetState extends State<BooksWidget> {
-  Widget body;
-  RefreshController _refreshController;
-  ShelfModel _shelfModel;
-  bool isShelf;
+  Widget? body;
+  late RefreshController _refreshController;
+  late ShelfModel _shelfModel;
+  late bool isShelf;
 
   final double aspectRatioList = 0.69;
   final double aspectRatioCover = 0.75;
@@ -59,7 +58,7 @@ class _BooksWidgetState extends State<BooksWidget> {
     return SmartRefresher(
         enablePullDown: true,
         footer: CustomFooter(
-          builder: (BuildContext context, LoadStatus mode) {
+          builder: (BuildContext context, LoadStatus? mode) {
             if (mode == LoadStatus.idle) {
             } else if (mode == LoadStatus.loading) {
               body = CupertinoActivityIndicator();
@@ -69,7 +68,7 @@ class _BooksWidgetState extends State<BooksWidget> {
               body = Text("松手,加载更多!");
             } else {
               body = Text(DateUtil.formatDate(DateTime.now(),
-                  format: DateFormats.zh_h_m_s));
+                  format: DateFormats.full));
             }
             return Center(
               child: body,
@@ -192,10 +191,7 @@ class _BooksWidgetState extends State<BooksWidget> {
     return ListView.builder(
       cacheExtent: 500,
       itemCount: _shelfModel.shelf.length,
-      itemBuilder: (c, i) => FrameSeparateWidget(
-        index: i,
-        child: bookAction(getBookItemView(i), i),
-      ),
+      itemBuilder: (c, i) => bookAction(getBookItemView(i), i),
     );
   }
 
@@ -253,7 +249,7 @@ class _BooksWidgetState extends State<BooksWidget> {
                       maxLines: 1,
                     ),
                     Text(
-                      item?.UTime ?? '',
+                      item.UTime,
                       style: TextStyle(color: Colors.grey, fontSize: 11),
                       maxLines: 1,
                     ),
@@ -319,7 +315,7 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   @override
   void dispose() {
-    _refreshController?.dispose();
+    _refreshController.dispose();
     super.dispose();
   }
 }

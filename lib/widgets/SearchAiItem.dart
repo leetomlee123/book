@@ -6,7 +6,9 @@ class SearchAiItem extends StatelessWidget {
   final double height;
   final Function function;
 
-  const SearchAiItem({Key key, this.height, this.function}) : super(key: key);
+  const SearchAiItem(
+      {Key? key, required this.height, required this.function})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {

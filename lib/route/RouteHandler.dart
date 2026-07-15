@@ -19,46 +19,46 @@ import 'package:flutter/material.dart';
 
 // 根目录
 var rootHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return BookShelf();
 });
 // 根目录
 
 // 设置页 - 示例：不传参数
 var searchHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String type = (params['type'][0]);
-  String name = (params['name'][0]);
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  String type = (params['type']![0]);
+  String name = (params['name']![0]);
   return Search(type, name);
 });
 var loginHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return Login();
 });
 
 var registerHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return Register();
 });
 var modifyPasswordHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return ForgetPass();
 });
 var fontSetHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return FontSet();
 });
 
 var allTagBookHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  String title = (params['title'][0]);
-  List list = convert.jsonDecode(params["bks"][0]);
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  String title = (params['title']![0]);
+  List list = convert.jsonDecode(params["bks"]![0]);
   List<GBook> list2 = list.map((f) => GBook.fromJson(f)).toList();
   return AllTagBook(title, list2);
 });
 
 var sortShelfHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return SortShelf();
 });
 
@@ -76,19 +76,19 @@ var sortShelfHandler =
 
 // 示例：传多个model参数
 var readHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
-  Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read'][0]));
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read']![0]));
   return ReadBook(_bookInfo);
 });
 var chaptersHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return ChapterView();
 });
 
 var detailHandler =
-    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   BookInfo _bookInfo =
-      BookInfo.fromJson(convert.jsonDecode(params['detail'][0]));
+      BookInfo.fromJson(convert.jsonDecode(params['detail']![0]));
 
   return BookDetail(_bookInfo);
 });

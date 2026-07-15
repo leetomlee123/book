@@ -5,7 +5,7 @@ import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 
 class ShelfModel with ChangeNotifier {
@@ -23,14 +23,11 @@ class ShelfModel with ChangeNotifier {
   }
 
   Future<void> initShelf() async {
-    if (_dbHelper == null) {
-      _dbHelper = DbHelper();
-    }
     shelf = await _dbHelper.getBooks();
     notifyListeners();
   }
 
-  BuildContext context;
+  BuildContext? context;
   bool cover = SpUtil.getBool("cover", defValue: false);
   bool sortShelf = false;
   DbHelper _dbHelper = DbHelper.instance;
@@ -124,7 +121,7 @@ class ShelfModel with ChangeNotifier {
   refreshShelf() async {
     try {
       Response response2 = await HttpUtil.instance.dio.get(Common.shelf);
-      List decode = response2.data['data'];
+      List? decode = response2.data['data'];
       if (decode == null) {
         return;
       }

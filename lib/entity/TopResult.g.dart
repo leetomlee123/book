@@ -8,12 +8,12 @@ part of 'TopResult.dart';
 
 TopResult _$TopResultFromJson(Map<String, dynamic> json) {
   return TopResult(
-      (json['BookList'] as List)
-          ?.map((e) =>
-              e == null ? null : TopBooks.fromJson(e as Map<String, dynamic>))
-          ?.toList(),
-      json['Page'] as int,
-      json['HasNext'] as bool);
+      (json['BookList'] as List<dynamic>?)
+              ?.map((e) => TopBooks.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          <TopBooks>[],
+      json['Page'] as int? ?? 0,
+      json['HasNext'] as bool? ?? false);
 }
 
 Map<String, dynamic> _$TopResultToJson(TopResult instance) => <String, dynamic>{

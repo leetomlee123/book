@@ -1,0 +1,10 @@
+[target.x86_64-pc-windows-gnu]
+linker = "D:/tools/mingw64/bin/gcc.exe"
+ar = "D:/tools/mingw64/bin/ar.exe"
+
+[target.aarch64-linux-android]
+linker = "D:/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/bin/aarch64-linux-android24-clang.cmd"
+ar = "D:/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-ar.exe"
+rustflags = [
+  "-C", "link-arg=-Wl,-soname,libbook_pager.so",
+]

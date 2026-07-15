@@ -4,11 +4,13 @@ import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/book_pager.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// * 暂不支持图片
@@ -19,12 +21,12 @@ class TextComposition {
   /// 待渲染文本段落
   /// 已经预处理: 不重新计算空行 不重新缩进
   static Color darkFont = Color(0x5FFFFFFF);
-  ReadPage readPage;
+  ReadPage? readPage;
   final List<String> paragraphs;
-  bool justRender;
+  bool? justRender;
 
   /// 字体样式 字号 [size] 行高 [height] 字体 [family] 字色[Color]
-  TextStyle style;
+  TextStyle? style;
 
   /// 段间距
   final double paragraph;
@@ -41,16 +43,16 @@ class TextComposition {
   final Size boxSize;
 
   /// 内部边距
-  final EdgeInsets padding;
+  final EdgeInsets? padding;
 
   /// 是否底栏对齐
   final bool shouldJustifyHeight;
 
   /// 前景 页眉页脚 菜单等
-  final Widget Function(int pageIndex) getForeground;
+  final Widget Function(int pageIndex)? getForeground;
 
   /// 背景 背景色或者背景图片
-  final ui.Image Function(int pageIndex) getBackground;
+  final ui.Image Function(int pageIndex)? getBackground;
 
   /// 是否显示动画
   bool showAnimation;
@@ -81,19 +83,19 @@ class TextComposition {
   /// * [columnGap] 分栏间距
   /// * onLinkTap canvas 点击事件不生效
   TextComposition({
-    String text,
-    List<String> paragraphs,
+    String? text,
+    List<String>? paragraphs,
     this.style,
     this.readPage,
     this.justRender,
-    Size boxSize,
+    Size? boxSize,
     this.padding,
     this.shouldJustifyHeight = true,
     this.paragraph = 10.0,
     this.getForeground,
     this.getBackground,
     this.debug = false,
-    List<TextPage> pages,
+    List<TextPage>? pages,
     this.showAnimation = true,
     // this.linkPattern,
     // this.linkStyle,
@@ -101,19 +103,30 @@ class TextComposition {
     // this.onLinkTap,
   })  : pages = pages ?? <TextPage>[],
         paragraphs = paragraphs ?? text?.split("\n") ?? <String>[],
-        boxSize =
-            boxSize ?? ui.window.physicalSize / ui.window.devicePixelRatio,
-        columnWidth = (boxSize.width - (padding?.horizontal ?? 0)) {
+        boxSize = boxSize ??
+            (ui.PlatformDispatcher.instance.views.isNotEmpty
+                ? ui.PlatformDispatcher.instance.views.first.physicalSize /
+                    ui.PlatformDispatcher.instance.views.first.devicePixelRatio
+                : const Size(360, 640)),
+        columnWidth = ((boxSize ??
+                    (ui.PlatformDispatcher.instance.views.isNotEmpty
+                        ? ui.PlatformDispatcher.instance.views.first
+                                .physicalSize /
+                            ui.PlatformDispatcher.instance.views.first
+                                .devicePixelRatio
+                        : const Size(360, 640)))
+                .width -
+            (padding?.horizontal ?? 0)) {
     // [_width2] [_height2] 用于调整判断
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
     final offset = Offset(columnWidth, 1);
-    final size = style.fontSize ?? 14;
+    final size = style?.fontSize ?? 14;
     final _dx = padding?.left ?? 0;
     final _dy = padding?.top ?? 0;
     final _width = columnWidth;
     final _width2 = _width - size;
     final _height = this.boxSize.height - (padding?.vertical ?? 0);
-    final _height2 = _height - size * (style.height ?? 1.0);
+    final _height2 = _height - size * (style?.height ?? 1.0);
 
     var lines = <TextLine>[];
     var columnNum = 1;
@@ -157,7 +170,7 @@ class TextComposition {
         tp.text = TextSpan(text: p, style: style);
         tp.layout(maxWidth: columnWidth);
         final textCount = tp.getPositionForOffset(offset).offset;
-        double spacing;
+        double? spacing;
         final text = p.substring(0, textCount);
         if (tp.width > _width2) {
           // tp.text = TextSpan(text: text, style: style);
@@ -241,28 +254,151 @@ class TextComposition {
     }
   }
 
+  /// Collect layout metrics on the UI isolate (SpUtil / Screen are main-only).
+  static Map<String, dynamic> layoutParams({
+    bool shouldJustifyHeight = true,
+  }) {
+    final fontSize = ReadSetting.getFontSize();
+    final lineHeight = ReadSetting.getLineHeight();
+    return <String, dynamic>{
+      'fontSize': fontSize,
+      'lineHeight': lineHeight,
+      'paragraph': ReadSetting.getParagraph() * fontSize * lineHeight,
+      'padH': ReadSetting.getPageDis().toDouble(),
+      'boxW': Screen.width,
+      'boxH': Screen.height -
+          (30 + SpUtil.getDouble(Common.top_safe_height)) * 2 -
+          Screen.bottomSafeHeight,
+      'fontFamily': SpUtil.getString("fontName", defValue: "Roboto"),
+      'shouldJustifyHeight': shouldJustifyHeight,
+    };
+  }
+
+  /// Sync parse — may block the current isolate. Prefer [parseContentAsync].
   static List<TextPage> parseContent(ReadPage readPage,
       {shouldJustifyHeight = true, justRender = false}) {
-    TextComposition textComposition = TextComposition(
+    final p = layoutParams(shouldJustifyHeight: shouldJustifyHeight == true);
+    return _parseWithParams(readPage, p, justRender: justRender == true);
+  }
+
+  /// Async parse: Rust path runs in a **background isolate**; Dart fallback
+  /// stays on the caller isolate (TextPainter needs the Flutter binding).
+  static Future<List<TextPage>> parseContentAsync(ReadPage readPage,
+      {bool shouldJustifyHeight = true, bool justRender = false}) async {
+    final p = layoutParams(shouldJustifyHeight: shouldJustifyHeight);
+    final fontSize = p['fontSize'] as double;
+    final lineHeight = p['lineHeight'] as double;
+    final paragraph = p['paragraph'] as double;
+    final padH = p['padH'] as double;
+    final boxW = p['boxW'] as double;
+    final boxH = p['boxH'] as double;
+    final fontFamily = p['fontFamily'] as String;
+
+    if (BookPager.isAvailable) {
+      try {
+        return await BookPager.paginateAsync(
+          text: readPage.chapterContent,
+          fontSize: fontSize,
+          lineHeight: lineHeight,
+          paragraph: paragraph,
+          boxWidth: boxW,
+          boxHeight: boxH,
+          paddingHorizontal: padH,
+          paddingVertical: 0,
+          shouldJustifyHeight: shouldJustifyHeight,
+          fontFamily: fontFamily,
+        );
+      } catch (e, st) {
+        debugPrint('BookPager async failed, falling back to Dart: $e\n$st');
+      }
+    }
+
+    // Yield once so loading UI can paint before heavy TextPainter work.
+    await Future<void>.delayed(Duration.zero);
+    return _dartParse(
+      readPage,
+      fontSize: fontSize,
+      lineHeight: lineHeight,
+      paragraph: paragraph,
+      padH: padH,
+      boxW: boxW,
+      boxH: boxH,
+      fontFamily: fontFamily,
+      shouldJustifyHeight: shouldJustifyHeight,
+      justRender: justRender,
+    );
+  }
+
+  static List<TextPage> _parseWithParams(
+    ReadPage readPage,
+    Map<String, dynamic> p, {
+    bool justRender = false,
+  }) {
+    final fontSize = p['fontSize'] as double;
+    final lineHeight = p['lineHeight'] as double;
+    final paragraph = p['paragraph'] as double;
+    final padH = p['padH'] as double;
+    final boxW = p['boxW'] as double;
+    final boxH = p['boxH'] as double;
+    final fontFamily = p['fontFamily'] as String;
+    final shouldJustifyHeight = p['shouldJustifyHeight'] as bool? ?? true;
+
+    if (BookPager.isAvailable) {
+      try {
+        return BookPager.paginate(
+          text: readPage.chapterContent,
+          fontSize: fontSize,
+          lineHeight: lineHeight,
+          paragraph: paragraph,
+          boxWidth: boxW,
+          boxHeight: boxH,
+          paddingHorizontal: padH,
+          paddingVertical: 0,
+          shouldJustifyHeight: shouldJustifyHeight,
+          fontFamily: fontFamily,
+        );
+      } catch (e, st) {
+        debugPrint('BookPager failed, falling back to Dart: $e\n$st');
+      }
+    }
+    return _dartParse(
+      readPage,
+      fontSize: fontSize,
+      lineHeight: lineHeight,
+      paragraph: paragraph,
+      padH: padH,
+      boxW: boxW,
+      boxH: boxH,
+      fontFamily: fontFamily,
+      shouldJustifyHeight: shouldJustifyHeight,
+      justRender: justRender,
+    );
+  }
+
+  static List<TextPage> _dartParse(
+    ReadPage readPage, {
+    required double fontSize,
+    required double lineHeight,
+    required double paragraph,
+    required double padH,
+    required double boxW,
+    required double boxH,
+    required String fontFamily,
+    required bool shouldJustifyHeight,
+    bool justRender = false,
+  }) {
+    final textComposition = TextComposition(
       text: readPage.chapterContent,
       readPage: readPage,
       style: TextStyle(
           locale: Locale('zh_CN'),
-          fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
-          fontSize: ReadSetting.getFontSize(),
-          // letterSpacing: ReadSetting.getLatterSpace(),
-          height: ReadSetting.getLineHeight()),
-      paragraph: ReadSetting.getParagraph() *
-          ReadSetting.getFontSize() *
-          ReadSetting.getLineHeight(),
+          fontFamily: fontFamily,
+          fontSize: fontSize,
+          height: lineHeight),
+      paragraph: paragraph,
       justRender: justRender,
-      boxSize: Size(
-          Screen.width,
-          Screen.height -
-              (30 + SpUtil.getDouble(Common.top_safe_height)) * 2 -
-              Screen.bottomSafeHeight),
-      padding:
-          EdgeInsets.symmetric(horizontal: ReadSetting.getPageDis().toDouble()),
+      boxSize: Size(boxW, boxH),
+      padding: EdgeInsets.symmetric(horizontal: padH),
       shouldJustifyHeight: shouldJustifyHeight,
       debug: false,
     );
@@ -335,43 +471,16 @@ class SelfForePainter extends CustomPainter {
 
 class MyPagePainter extends CustomPaint {
   final ReadPage readPage;
-  final CustomPainter forePainter;
+  final CustomPainter? forePainter;
   final TextStyle style;
   final int pageIndex;
   final bool debug;
-  TextPage page;
+  final TextPage page;
 
   MyPagePainter(this.pageIndex, this.readPage, this.style, this.forePainter,
       [this.debug = false])
       : page = readPage.pages[pageIndex],
         super(foregroundPainter: forePainter);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final lineCount = page.lines.length;
-    final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
-
-    for (var i = 0; i < lineCount; i++) {
-      final line = page.lines[i];
-      if (line.letterSpacing != null &&
-          (line.letterSpacing < -0.1 || line.letterSpacing > 0.1)) {
-        tp.text = TextSpan(
-          text: line.text,
-          style: style.copyWith(letterSpacing: line?.letterSpacing),
-        );
-      } else {
-        tp.text = TextSpan(text: line.text, style: style);
-      }
-      final offset = Offset(line.dx, line.dy);
-      tp.layout();
-      tp.paint(canvas, offset);
-    }
-  }
-
-  @override
-  bool shouldRepaint(MyPagePainter old) {
-    return old.pageIndex != pageIndex;
-  }
 }
 
 class PagePainter extends CustomPainter {
@@ -391,10 +500,10 @@ class PagePainter extends CustomPainter {
     for (var i = 0; i < lineCount; i++) {
       final line = page.lines[i];
       if (line.letterSpacing != null &&
-          (line.letterSpacing < -0.1 || line.letterSpacing > 0.1)) {
+          (line.letterSpacing! < -0.1 || line.letterSpacing! > 0.1)) {
         tp.text = TextSpan(
           text: line.text,
-          style: style.copyWith(letterSpacing: line?.letterSpacing),
+          style: style.copyWith(letterSpacing: line.letterSpacing),
         );
       } else {
         tp.text = TextSpan(text: line.text, style: style);

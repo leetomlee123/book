@@ -8,16 +8,16 @@ part of 'SearchItem.dart';
 
 SearchItem _$SearchItemFromJson(Map<String, dynamic> json) {
   return SearchItem(
-      json['Id'] as String,
-      json['Name'] as String,
-      json['Author'] as String,
-      json['Img'] as String,
-      json['Desc'] as String,
-      json['BookStatus'] as String,
-      json['LastChapterId'] as String,
-      json['LastChapter'] as String,
-      json['CName'] as String,
-      json['UpdateTime'] as String);
+      json['Id'] as String? ?? '',
+      json['Name'] as String? ?? '',
+      json['Author'] as String? ?? '',
+      json['Img'] as String? ?? '',
+      json['Desc'] as String? ?? '',
+      json['BookStatus'] as String? ?? '',
+      json['LastChapterId'] as String? ?? '',
+      json['LastChapter'] as String? ?? '',
+      json['CName'] as String? ?? '',
+      json['UpdateTime'] as String? ?? '');
 }
 
 Map<String, dynamic> _$SearchItemToJson(SearchItem instance) =>

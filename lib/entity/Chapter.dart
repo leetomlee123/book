@@ -4,7 +4,7 @@ part 'Chapter.g.dart';
 
 @JsonSerializable()
 class Chapter {
-  int hasContent = 1;
+  int hasContent;
   String id;
   String name;
   String link;
@@ -14,5 +14,5 @@ class Chapter {
 
   Map<String, dynamic> toJson() => _$ChapterToJson(this);
 
-  Chapter(this.hasContent, this.id, this.name);
+  Chapter(this.hasContent, this.id, this.name, {this.link = ''});
 }

@@ -8,9 +8,9 @@ class TextLine {
   double dx;
   double dy;
 
-  double letterSpacing;
+  double? letterSpacing;
 
-  TextLine(this.text, this.dx, this.dy, this.letterSpacing );
+  TextLine(this.text, this.dx, this.dy, this.letterSpacing);
 
   factory TextLine.fromJson(Map<String, dynamic> json) =>
       _$TextLineFromJson(json);

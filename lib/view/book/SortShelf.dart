@@ -10,12 +10,12 @@ class SortShelf extends StatefulWidget {
 }
 
 class _SortShelfState extends State<SortShelf> {
-  ShelfModel _shelfModel;
+  late ShelfModel _shelfModel;
 
   @override
   void initState() {
     super.initState();
-    _shelfModel = Store.value(context);
+    _shelfModel = Store.value<ShelfModel>(context);
   }
 
   @override

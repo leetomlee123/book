@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 
 class Rating extends StatefulWidget {
   final int initialRating;
-  final void Function(int) onRated;
+  final void Function(int)? onRated;
   final double size;
   final Color color;
 
   Rating(
-      {this.initialRating,
+      {this.initialRating = 0,
       this.onRated,
       this.size = 18.0,
       this.color = Colors.amber});
@@ -30,12 +30,12 @@ class _RatingState extends State<Rating> {
     if (_rating == 1 && newRating == 1 && _isDragging != true) {
       setState(() {
         _rating = 0;
-        widget.onRated(0);
+        widget.onRated?.call(0);
       });
     } else {
       setState(() {
         _rating = newRating;
-        widget.onRated(newRating);
+        widget.onRated?.call(newRating);
       });
     }
   }
@@ -53,28 +53,37 @@ class _RatingState extends State<Rating> {
         _isDragging = true;
       },
       onHorizontalDragUpdate: (DragUpdateDetails details) {
-        RenderBox star1 = _starOneKey.currentContext.findRenderObject();
+        RenderBox? star1 =
+            _starOneKey.currentContext?.findRenderObject() as RenderBox?;
+        if (star1 == null) return;
         final positionStar1 = star1.localToGlobal(Offset.zero);
         final sizeStar1 = star1.size;
 
-        RenderBox star2 = _starTwoKey.currentContext.findRenderObject();
+        RenderBox? star2 =
+            _starTwoKey.currentContext?.findRenderObject() as RenderBox?;
+        if (star2 == null) return;
         final positionStar2 = star2.localToGlobal(Offset.zero);
         final sizeStar2 = star2.size;
 
-        RenderBox star3 = _starThreeKey.currentContext.findRenderObject();
+        RenderBox? star3 =
+            _starThreeKey.currentContext?.findRenderObject() as RenderBox?;
+        if (star3 == null) return;
         final positionStar3 = star3.localToGlobal(Offset.zero);
         final sizeStar3 = star3.size;
 
-        RenderBox star4 = _starFourKey.currentContext.findRenderObject();
+        RenderBox? star4 =
+            _starFourKey.currentContext?.findRenderObject() as RenderBox?;
+        if (star4 == null) return;
         final positionStar4 = star4.localToGlobal(Offset.zero);
         final sizeStar4 = star4.size;
 
-        RenderBox star5 = _starFiveKey.currentContext.findRenderObject();
+        RenderBox? star5 =
+            _starFiveKey.currentContext?.findRenderObject() as RenderBox?;
+        if (star5 == null) return;
         final positionStar5 = star5.localToGlobal(Offset.zero);
         final sizeStar5 = star5.size;
 
         if (details.globalPosition.dx < positionStar1.dx) {
-     
           _updateRating(0);
         } else if (details.globalPosition.dx > positionStar1.dx &&
             details.globalPosition.dx < (positionStar1.dx + sizeStar1.width)) {

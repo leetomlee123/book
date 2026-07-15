@@ -5,7 +5,7 @@ import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:dio/dio.dart';
 import 'package:fluro/fluro.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,8 +21,13 @@ class AppInit {
     WidgetsFlutterBinding.ensureInitialized();
     GestureBinding.instance.resamplingEnabled = true;
     if (Platform.isIOS || Platform.isAndroid) {
-      if (!await Permission.storage.request().isGranted) {
-        return;
+      // Prefer photos on modern Android; fall back to storage where available.
+      final status = await Permission.photos.request();
+      if (!status.isGranted && !status.isLimited) {
+        final storage = await Permission.storage.request();
+        if (!storage.isGranted) {
+          // Continue even if denied so app can still start.
+        }
       }
     }
 

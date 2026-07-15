@@ -12,19 +12,17 @@ class BookAi {
   String get author => _author;
 
   BookAi({
-      String id, 
-      String name, 
-      String author}){
-    _id = id;
-    _name = name;
-    _author = author;
-}
+    String id = '',
+    String name = '',
+    String author = '',
+  })  : _id = id,
+        _name = name,
+        _author = author;
 
-  BookAi.fromJson(dynamic json) {
-    _id = json["Id"];
-    _name = json["Name"];
-    _author = json["Author"];
-  }
+  BookAi.fromJson(dynamic json)
+      : _id = json["Id"] as String? ?? '',
+        _name = json["Name"] as String? ?? '',
+        _author = json["Author"] as String? ?? '';
 
   Map<String, dynamic> toJson() {
     var map = <String, dynamic>{};
@@ -33,5 +31,4 @@ class BookAi {
     map["Author"] = _author;
     return map;
   }
-
 }

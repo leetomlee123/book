@@ -10,16 +10,16 @@ class HttpUtil {
   factory HttpUtil() => _getInstance();
 
   static HttpUtil get instance => _getInstance();
-  static HttpUtil _instance;
-  Dio dio;
-  BaseOptions options;
+  static HttpUtil? _instance;
+  late Dio dio;
+  late BaseOptions options;
 
   HttpUtil._internal() {
     dio = Dio()
       ..options = BaseOptions(
           // baseUrl: Common.domain,
-          connectTimeout: 10000,
-          receiveTimeout: 1000 * 60 * 60 * 24)
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(hours: 24))
 
       //网络状态拦截
       ..interceptors.add(AuthInterceptor())
@@ -28,10 +28,7 @@ class HttpUtil {
   }
 
   static HttpUtil _getInstance() {
-    if (_instance == null) {
-      _instance = new HttpUtil._internal();
-    }
-    return _instance;
+    return _instance ??= HttpUtil._internal();
   }
 }
 

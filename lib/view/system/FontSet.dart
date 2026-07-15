@@ -7,11 +7,10 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/download_progress.dart';
-import 'package:flustars/flustars.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:flutter_statusbar_manager/flutter_statusbar_manager.dart';
 
 class FontSet extends StatefulWidget {
   @override
@@ -21,7 +20,7 @@ class FontSet extends StatefulWidget {
 }
 
 class StateFontSet extends State<FontSet> {
-  ColorModel _colorModel;
+  late ColorModel _colorModel;
   List<Widget> wds = [];
   bool downloading = false;
   double v = 0.0;
@@ -30,7 +29,7 @@ class StateFontSet extends State<FontSet> {
 
   @override
   void initState() {
-    FlutterStatusbarManager.setFullscreen(false);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
     _colorModel = Store.value<ColorModel>(context);
     fetchData();
@@ -102,8 +101,7 @@ class StateFontSet extends State<FontSet> {
                                 try {
                                   var event2 = event as DownloadProgress;
                                   v = NumUtil.getNumByValueDouble(
-                                      event2.progress, 2);
-                                  // print(v);
+                                      event2.progress, 2)?.toDouble() ?? 0.0;
                                   eventBus.fire(DownLoadNotify(e.value, v));
                                   if (v == 1.0) {
                                     if (mounted) {
@@ -140,7 +138,6 @@ class StateFontSet extends State<FontSet> {
                                 await fontLoader.load();
                                 _colorModel.setFontFamily(e.key);
                                 readModel.updPage();
-                                //  Theme.of(context).textTheme.
                               }
                             }
                             if (mounted) {
@@ -179,14 +176,13 @@ class StateFontSet extends State<FontSet> {
     }
   }
 
-  Future<FileInfo> getFileInfo(String key) async {
-    // CustomCacheManager.instanceFont.emptyCache();
+  Future<FileInfo?> getFileInfo(String key) async {
     return await CustomCacheManager.instanceFont.getFileFromCache(key);
   }
 
   @override
   void dispose() {
-    FlutterStatusbarManager.setFullscreen(true);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     super.dispose();
   }
@@ -195,7 +191,7 @@ class StateFontSet extends State<FontSet> {
 class FontInfo {
   String key;
   String value;
-  FileInfo fileInfo;
+  FileInfo? fileInfo;
 
   FontInfo(this.key, this.value, this.fileInfo);
 }

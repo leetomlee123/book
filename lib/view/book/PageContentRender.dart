@@ -8,7 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 class PageContentReader extends StatefulWidget {
-  const PageContentReader({Key key}) : super(key: key);
+  const PageContentReader({Key? key}) : super(key: key);
 
   @override
   _PageContentReaderState createState() => _PageContentReaderState();
@@ -16,13 +16,13 @@ class PageContentReader extends StatefulWidget {
 
 class _PageContentReaderState extends State<PageContentReader>
     with TickerProviderStateMixin {
-  TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_UP, null);
-  AnimationController animationController;
-  NovelPagePainter mPainter;
-  GlobalKey canvasKey = new GlobalKey();
-  ReadModel viewModel;
-  ReaderPageManager pageManager;
-  DragDownDetails dragDownDetails;
+  TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
+  AnimationController? animationController;
+  NovelPagePainter? mPainter;
+  GlobalKey canvasKey = GlobalKey();
+  late ReadModel viewModel;
+  ReaderPageManager? pageManager;
+  DragDownDetails? dragDownDetails;
 
   @override
   void initState() {
@@ -44,10 +44,10 @@ class _PageContentReaderState extends State<PageContentReader>
 
     if (animationController != null) {
       pageManager = ReaderPageManager();
-      pageManager.setCurrentAnimation(viewModel.currentAnimationMode);
-      pageManager.setCurrentCanvasContainerContext(canvasKey);
-      pageManager.setAnimationController(animationController);
-      pageManager.setContentViewModel(viewModel);
+      pageManager!.setCurrentAnimation(viewModel.currentAnimationMode);
+      pageManager!.setCurrentCanvasContainerContext(canvasKey);
+      pageManager!.setAnimationController(animationController!);
+      pageManager!.setContentViewModel(viewModel);
       mPainter = NovelPagePainter(pageManager: pageManager);
     }
     viewModel.mPainter = mPainter;
@@ -70,8 +70,10 @@ class _PageContentReaderState extends State<PageContentReader>
                     currentTouchEvent.touchPos != detail.localPosition) {
                   currentTouchEvent =
                       TouchEvent(TouchEvent.ACTION_DOWN, detail.localPosition);
-                  mPainter.setCurrentTouchEvent(currentTouchEvent);
-                  canvasKey.currentContext.findRenderObject().markNeedsPaint();
+                  mPainter?.setCurrentTouchEvent(currentTouchEvent);
+                  canvasKey.currentContext
+                      ?.findRenderObject()
+                      ?.markNeedsPaint();
                 }
               };
             instance
@@ -81,10 +83,10 @@ class _PageContentReaderState extends State<PageContentReader>
                       currentTouchEvent.touchPos != detail.localPosition) {
                     currentTouchEvent = TouchEvent(
                         TouchEvent.ACTION_MOVE, detail.localPosition);
-                    mPainter.setCurrentTouchEvent(currentTouchEvent);
+                    mPainter?.setCurrentTouchEvent(currentTouchEvent);
                     canvasKey.currentContext
-                        .findRenderObject()
-                        .markNeedsPaint();
+                        ?.findRenderObject()
+                        ?.markNeedsPaint();
                   }
                 }
               };
@@ -97,10 +99,10 @@ class _PageContentReaderState extends State<PageContentReader>
                         TouchEvent.ACTION_UP, Offset(0, 0));
                     currentTouchEvent.touchDetail = detail;
 
-                    mPainter.setCurrentTouchEvent(currentTouchEvent);
+                    mPainter?.setCurrentTouchEvent(currentTouchEvent);
                     canvasKey.currentContext
-                        .findRenderObject()
-                        .markNeedsPaint();
+                        ?.findRenderObject()
+                        ?.markNeedsPaint();
                   }
                 }
               };

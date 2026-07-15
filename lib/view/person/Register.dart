@@ -13,10 +13,10 @@ class Register extends StatefulWidget {
 }
 
 class _RegisterState extends State<Register> {
-  String name;
-  String pwd;
-  String email;
-  String repassword;
+  String name = '';
+  String pwd = '';
+  String email = '';
+  String repassword = '';
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +69,7 @@ class _RegisterState extends State<Register> {
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
                 autofocus: false,
-                validator: (v)=>checkEmail(v),
+                validator: (v) => checkEmail(v ?? ''),
                 decoration: InputDecoration(
                     hintText: '邮箱 找回密码的唯一凭证,请谨慎输入...',
                     contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
@@ -111,7 +111,7 @@ class _RegisterState extends State<Register> {
     );
   }
 
-  String checkEmail(String input) {
+  String? checkEmail(String input) {
     bool flag = false;
 
     String regexEmail = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*\$";

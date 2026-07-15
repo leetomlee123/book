@@ -27,16 +27,66 @@ class Book {
 
   Map<String, dynamic> toJson() => _$BookToJson(this);
 
-  Book.Id(this.Id);
-  Book.Image(this.Img);
+  Book.Id(this.Id)
+      : ChapterId = '',
+        ChapterName = '',
+        NewChapterCount = 0,
+        CId = '',
+        cur = 0,
+        sortTime = 0,
+        index = 0,
+        position = 0,
+        CName = '',
+        Name = '',
+        Author = '',
+        Img = '',
+        Desc = '',
+        LastChapterId = '',
+        LastChapter = '',
+        UTime = '';
 
+  Book.Image(this.Img)
+      : ChapterId = '',
+        ChapterName = '',
+        NewChapterCount = 0,
+        Id = '',
+        CId = '',
+        cur = 0,
+        sortTime = 0,
+        index = 0,
+        position = 0,
+        CName = '',
+        Name = '',
+        Author = '',
+        Desc = '',
+        LastChapterId = '',
+        LastChapter = '',
+        UTime = '';
 
-
-  Book.fromSql(this.Id, this.Name, this.CName, this.Author, this.UTime,
-      this.Img,this.Desc, this.cur, this.sortTime,this.index,this.position, this.NewChapterCount, this.LastChapter);
+  Book.fromSql(
+      this.Id,
+      this.Name,
+      this.CName,
+      this.Author,
+      this.UTime,
+      this.Img,
+      this.Desc,
+      this.cur,
+      this.sortTime,
+      this.index,
+      this.position,
+      this.NewChapterCount,
+      this.LastChapter)
+      : ChapterId = '',
+        ChapterName = '',
+        CId = '',
+        LastChapterId = '';
 
   Book(
-    this.cur,this.sortTime,this.index,this.position,
+      this.cur,
+      this.sortTime,
+      this.index,
+      this.position,
       this.ChapterId,
       this.ChapterName,
       this.NewChapterCount,
