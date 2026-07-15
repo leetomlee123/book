@@ -1,16 +1,16 @@
-import 'dart:convert';
-
-import 'package:book/common/Http.dart';
-import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
-import 'package:book/entity/HotBook.dart';
 import 'package:book/entity/SearchItem.dart';
 import 'package:book/entity/book_ai.dart';
+import 'package:book/model/SourceModel.dart';
 import 'package:book/route/Routes.dart';
-import 'package:dio/dio.dart';
+import 'package:book/source/engine/book_source_engine.dart';
+import 'package:book/source/model/book_source.dart';
+import 'package:book/source/model/search_book.dart';
+import 'package:book/source/util/book_id.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/common.dart';
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
@@ -40,6 +40,12 @@ class SearchModel with ChangeNotifier {
 
   List<Color> colors = Colors.accents;
 
+  final BookSourceEngine _engine = BookSourceEngine();
+  SourceModel? sourceModel;
+
+  /// Concurrent source search pool size.
+  static const int poolSize = 5;
+
   clear1() {
     searchHistory = [];
     page = 1;
@@ -65,15 +71,16 @@ class SearchModel with ChangeNotifier {
   }
 
   searchAi(var word) async {
-    var url = '${Common.searchAi}?key=$word';
-    Response res = await HttpUtil.instance.dio.get(url);
-    var d = res.data;
-    List? data = d['data'];
-    if (data?.isNotEmpty ?? false)
-      bksAi = data!.map((e) => BookAi.fromJson(e)).toList();
-    else
-      bksAi.clear();
+    // AI suggest removed with backend; keep empty for UI compatibility.
+    bksAi.clear();
     notifyListeners();
+  }
+
+  Future<List<BookSource>> _enabled() async {
+    if (sourceModel != null) {
+      return sourceModel!.enabledSources();
+    }
+    return SourceModel().enabledSources();
   }
 
   getSearchData() async {
@@ -91,18 +98,96 @@ class SearchModel with ChangeNotifier {
     if (context != null) {
       FocusScope.of(context!).requestFocus(FocusNode());
     }
-    var url = '${Common.search}?key=$word&page=$page&size=$size';
-    Response res = await HttpUtil.instance.dio.get(url);
-    var d = res.data;
-    List? data = d['data'];
-    // ignore: null_aware_in_condition
-    if (data?.isEmpty ?? true) {
+
+    final sources = await _enabled();
+    final searchable =
+        sources.where((s) => s.searchUrl.isNotEmpty && s.enabled).toList();
+    if (searchable.isEmpty) {
+      refreshController.loadNoData();
+      BotToast.showText(text: '请先在「书源管理」导入并启用书源');
+      return;
+    }
+
+    final hits = await _searchAll(searchable, word, page);
+    if (hits.isEmpty) {
       refreshController.loadNoData();
     } else {
-      for (var d in data!) {
-        bks.add(SearchItem.fromJson(d));
+      for (final h in hits) {
+        bks.add(_toSearchItem(h));
       }
       refreshController.loadComplete();
+    }
+  }
+
+  SearchItem _toSearchItem(SearchBook h) {
+    final id = makeBookKey(h.sourceUrl, h.bookUrl);
+    return SearchItem(
+      id,
+      h.name,
+      h.author,
+      h.coverUrl,
+      h.intro,
+      '',
+      '',
+      h.lastChapter,
+      h.kind,
+      '',
+      sourceUrl: h.sourceUrl,
+      bookUrl: h.bookUrl,
+      sourceName: h.sourceName,
+    );
+  }
+
+  Future<List<SearchBook>> _searchAll(
+      List<BookSource> sources, String key, int page) async {
+    final results = <SearchBook>[];
+    for (var i = 0; i < sources.length; i += poolSize) {
+      final chunk = sources.skip(i).take(poolSize);
+      final futures = chunk.map((s) async {
+        try {
+          return await _engine
+              .search(s, key, page)
+              .timeout(BookSourceEngine.sourceTimeout);
+        } catch (_) {
+          return <SearchBook>[];
+        }
+      });
+      final lists = await Future.wait(futures);
+      for (final list in lists) {
+        results.addAll(list);
+      }
+    }
+    return results;
+  }
+
+  /// Open book detail via local source rules.
+  Future<BookInfo?> openDetail(SearchItem item) async {
+    if (item.sourceUrl.isEmpty || item.bookUrl.isEmpty) {
+      BotToast.showText(text: '该书缺少书源信息，请重新搜索');
+      return null;
+    }
+    final src = await SourceModel().findByUrl(item.sourceUrl);
+    if (src == null) {
+      BotToast.showText(text: '书源不存在或已删除：${item.sourceName}');
+      return null;
+    }
+    try {
+      final seed = SearchBook(
+        name: item.Name,
+        author: item.Author,
+        intro: item.Desc,
+        coverUrl: item.Img,
+        lastChapter: item.LastChapter,
+        kind: item.CName,
+        bookUrl: item.bookUrl,
+        sourceUrl: item.sourceUrl,
+        sourceName: item.sourceName,
+      );
+      final info = await _engine.bookInfo(src, item.bookUrl, seed: seed);
+      return info;
+    } catch (e) {
+      BotToast.showText(text: '获取详情失败：$e');
+      return null;
     }
   }
 
@@ -200,86 +285,36 @@ class SearchModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> search(String w) async {
-    if (w.isEmpty) {
-      return;
-    }
-    bks = [];
-    mks = [];
-    notifyListeners();
-    showResult = true;
+  Future search(String w) async {
     word = w;
+    if (w.isEmpty) return;
+    setHistory(w);
+    showResult = true;
+    bks = [];
+    page = 1;
     loading = true;
+    notifyListeners();
     await getSearchData();
     loading = false;
-    setHistory(w);
     notifyListeners();
   }
 
-  Future<void> initBookHot() async {
+  Future initBookHot() async {
+    // Server hot list removed — show source tip instead.
     hot = [];
-    Response res = await HttpUtil.instance.dio.get(Common.hot);
-    List data = res.data['data'];
-    List<HotBook> hbs = data.map((f) => HotBook.fromJson(f)).toList();
-    var h = Screen.width - 60;
-    for (int i = 0; i < hbs.length; i++) {
-      hot.add(
-        TextButton(
-            style: ButtonStyle(
-                fixedSize: WidgetStateProperty.all(Size(h / 2, 40)),
-                // backgroundColor: MaterialStateProperty.resolveWith(
-                //   (states) {
-                //     return SpUtil.getBool("dark")
-                //         ? Colors.white10
-                //         : Colors.grey.shade50;
-                //   },
-                // ),
-                alignment: Alignment.centerLeft),
-            clipBehavior: Clip.hardEdge,
-            onPressed: () async {
-              String url = Common.detail + '/${hbs[i].Id}';
-              Response future = await HttpUtil.instance.dio.get(url);
-              var d = future.data['data'];
-              BookInfo b = BookInfo.fromJson(d);
-              if (context != null) {
-                Routes.navigateTo(
-                  context!,
-                  Routes.detail,
-                  params: {
-                    'detail': jsonEncode(b),
-                  },
-                );
-              }
-            },
-            child: Text(
-              "${(i + 1).toString() + '.' + hbs[i].Name}",
-              overflow: TextOverflow.ellipsis,
-            )),
-      );
-    }
+    final n = await SourceModel().enabledCount();
+    hot.add(Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Text(
+        n == 0 ? '尚未启用书源，请先导入书源' : '已启用 $n 个书源，输入书名或作者搜索',
+        style: TextStyle(color: Colors.grey),
+      ),
+    ));
     notifyListeners();
   }
 
   getHot() {
-    if (hot.isNotEmpty) {
-      showHot = [];
-      var j = 0;
-      if (((idx * 10) + 9) >= hot.length - 1) {
-        j = hot.length - 1;
-        idx = 0;
-      } else {
-        j = (idx * 10 + 9);
-        idx += 1;
-      }
-      for (var i = j - 9; i <= j; i++) {
-        showHot.add(hot[i]);
-      }
-    }
-    notifyListeners();
-  }
-
-  Future<void> initMovieHot() async {
-    hot = [];
+    showHot = hot;
     notifyListeners();
   }
 }

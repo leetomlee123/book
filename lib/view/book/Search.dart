@@ -1,15 +1,11 @@
 ﻿import 'dart:convert';
 
-import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/common.dart';
-import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/widgets/SearchAiItem.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -118,20 +114,8 @@ class _SearchState extends State<Search> {
           searchModel.search(word);
         },
         onChanged: (value) async {
-          if (value.isNotEmpty) {
-            await searchModel.searchAi(value);
-            if (searchModel.bksAi.isNotEmpty) {
-              if (searchSuggest != null) removeOverlay();
-
-              searchSuggest = _buildSearchSuggest();
-
-              overlayState?.insert(searchSuggest!);
-            } else {
-              removeOverlay();
-            }
-          } else {
-            if (searchSuggest != null) removeOverlay();
-          }
+          // AI suggest removed with backend.
+          removeOverlay();
           setState(() {});
         },
         style: TextStyle(
@@ -179,36 +163,6 @@ class _SearchState extends State<Search> {
     yPosition = offset.dy;
   }
 
-  // 生成搜索建议
-  OverlayEntry _buildSearchSuggest() {
-    return OverlayEntry(builder: (context) {
-      return Positioned(
-        left: xPosition,
-        width: width,
-        top: (yPosition ?? 0) + (height ?? 0) + 5,
-        height: 500,
-        child: SearchAiItem(
-            height: aiItemH,
-            function: (id) async {
-              searchModel.setHistory(controller.value.text);
-
-              String url = Common.detail + '/$id';
-              Response future = await HttpUtil.instance.dio.get(url);
-              var d = future.data['data'];
-              BookInfo b = BookInfo.fromJson(d);
-              Routes.navigateTo(
-                context,
-                Routes.detail,
-                params: {
-                  'detail': jsonEncode(b),
-                },
-              );
-              removeOverlay();
-            }),
-      );
-    });
-  }
-
   Widget resultWidget() {
     var picW = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
     var picH = picW / .65;
@@ -243,10 +197,8 @@ class _SearchState extends State<Search> {
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () async {
-                String url = Common.detail + '/${searchModel.bks[i].Id}';
-                Response future = await HttpUtil.instance.dio.get(url);
-                var d = future.data['data'];
-                BookInfo b = BookInfo.fromJson(d);
+                final b = await searchModel.openDetail(item);
+                if (b == null) return;
                 Routes.navigateTo(context, Routes.detail,
                     params: {"detail": jsonEncode(b)});
               },
@@ -290,11 +242,31 @@ class _SearchState extends State<Search> {
                               ),
                               maxLines: 2,
                             ),
-                            Text(
-                              item.LastChapter,
-                              style: TextStyle(fontSize: 12),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
+                            Row(
+                              children: [
+                                if (item.sourceName.isNotEmpty)
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueGrey.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      item.sourceName,
+                                      style: TextStyle(fontSize: 11),
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    item.LastChapter,
+                                    style: TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -342,7 +314,7 @@ class _SearchState extends State<Search> {
             Row(
               children: <Widget>[
                 Text(
-                  '热门书籍',
+                  '书源提示',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Spacer(),

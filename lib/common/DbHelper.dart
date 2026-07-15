@@ -1,8 +1,8 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
-import 'package:book/entity/chapter.pb.dart';
+import 'package:book/entity/LocalChapter.dart';
 import 'package:book/common/local_store.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -21,7 +21,7 @@ class DbHelper {
   static Database? _db2;
   static Database? _db3;
   static Database? _db4;
-  int version = 3;
+  int version = 4;
 
   Future<Database> get db async {
     if (_db != null) {
@@ -56,16 +56,15 @@ class DbHelper {
     return _db4!;
   }
 
-  //初始化数据库
   _initDb1() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/books.db";
-    var db = await openDatabase(path, version: version, onCreate: _onCreate1);
+    var db = await openDatabase(path,
+        version: version, onCreate: _onCreate1, onUpgrade: _onUpgradeBooks);
     return db;
   }
 
-//初始化数据库
   _initDb2() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
@@ -74,7 +73,6 @@ class DbHelper {
     return db;
   }
 
-  //初始化数据库
   _initDb3() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
@@ -83,7 +81,6 @@ class DbHelper {
     return db;
   }
 
-  //初始化数据库
   _initDb4() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
@@ -92,49 +89,82 @@ class DbHelper {
     return db;
   }
 
-  //初始化数据库
   _initDb() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
     String path = documentsDirectory.path + "/chapters.db";
-    var db = await openDatabase(path, version: version, onCreate: _onCreate);
+    var db = await openDatabase(path,
+        version: version, onCreate: _onCreate, onUpgrade: _onUpgradeChapters);
     return db;
   }
 
-  // When creating the db, create the table
   void _onCreate(Database db, int version) async {
-    if (!SpUtil.haveKey(_tableName)) {
-      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName("
-          "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-          "chapter_id TEXT,"
-          "name TEXT,"
-          "content TEXT,"
-          "book_id TEXT,"
-          "hasContent INTEGER)");
-      await db.execute("CREATE INDEX book_id_idx ON $_tableName (book_id);");
-      await db
-          .execute("CREATE INDEX chapter_id_idx ON $_tableName (chapter_id);");
-      SpUtil.putString(_tableName, "");
+    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "chapter_id TEXT,"
+        "name TEXT,"
+        "content TEXT,"
+        "book_id TEXT,"
+        "hasContent INTEGER,"
+        "url TEXT,"
+        "source_url TEXT,"
+        "idx INTEGER,"
+        "book_key TEXT)");
+    await db.execute("CREATE INDEX IF NOT EXISTS book_id_idx ON $_tableName (book_id);");
+    await db
+        .execute("CREATE INDEX IF NOT EXISTS chapter_id_idx ON $_tableName (chapter_id);");
+    await db.execute("CREATE INDEX IF NOT EXISTS chapters_url_idx ON $_tableName (url);");
+    SpUtil.putString(_tableName, "");
+  }
+
+  Future<void> _onUpgradeChapters(Database db, int oldV, int newV) async {
+    if (oldV < 4) {
+      await _tryAddColumn(db, _tableName, 'url', 'TEXT');
+      await _tryAddColumn(db, _tableName, 'source_url', 'TEXT');
+      await _tryAddColumn(db, _tableName, 'idx', 'INTEGER');
+      await _tryAddColumn(db, _tableName, 'book_key', 'TEXT');
+      await db.execute(
+          "CREATE INDEX IF NOT EXISTS chapters_url_idx ON $_tableName (url)");
     }
   }
 
   void _onCreate1(Database db, int version) async {
-    if (!SpUtil.haveKey(_tableName1)) {
-      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName1("
-          "book_id TEXT PRIMARY KEY,"
-          "name TEXT,"
-          "cname TEXT,"
-          "author TEXT,"
-          "utime TEXT,"
-          "img TEXT,"
-          "intro TEXT,"
-          "position REAL,"
-          "cur INTEGER,"
-          "sortTime INTEGER,"
-          "newChapter INTEGER,"
-          "idx INTEGER,"
-          "lastChapter TEXT)");
-      SpUtil.putString(_tableName1, "");
+    await db.execute("CREATE TABLE IF NOT EXISTS $_tableName1("
+        "book_id TEXT PRIMARY KEY,"
+        "name TEXT,"
+        "cname TEXT,"
+        "author TEXT,"
+        "utime TEXT,"
+        "img TEXT,"
+        "intro TEXT,"
+        "position REAL,"
+        "cur INTEGER,"
+        "sortTime INTEGER,"
+        "newChapter INTEGER,"
+        "idx INTEGER,"
+        "lastChapter TEXT,"
+        "source_url TEXT,"
+        "book_url TEXT,"
+        "origin_name TEXT,"
+        "toc_url TEXT)");
+    SpUtil.putString(_tableName1, "");
+  }
+
+  Future<void> _onUpgradeBooks(Database db, int oldV, int newV) async {
+    if (oldV < 4) {
+      await _tryAddColumn(db, _tableName1, 'source_url', 'TEXT');
+      await _tryAddColumn(db, _tableName1, 'book_url', 'TEXT');
+      await _tryAddColumn(db, _tableName1, 'origin_name', 'TEXT');
+      await _tryAddColumn(db, _tableName1, 'toc_url', 'TEXT');
+    }
+  }
+
+  Future<void> _tryAddColumn(
+      Database db, String table, String col, String type) async {
+    try {
+      await db.execute('ALTER TABLE $table ADD COLUMN $col $type');
+    } catch (_) {
+      // column may already exist
     }
   }
 
@@ -186,7 +216,10 @@ class DbHelper {
     if (list.isEmpty) {
       return {'idx': -1, 'position': 1};
     } else {
-      return {'idx': list[0]['idx'] as int? ?? 0, 'position': list[0]['position'] as int? ?? 0};
+      return {
+        'idx': list[0]['idx'] as int? ?? 0,
+        'position': list[0]['position'] as int? ?? 0
+      };
     }
   }
 
@@ -253,7 +286,6 @@ class DbHelper {
     var dbClient = await db1;
     dbClient.rawUpdate(
         "update $_tableName1 set newChapter=? where book_id=?", [s, bookId]);
-    // await close();
   }
 
   Future<void> updBook(String lastChapter, int newStatus, String utime,
@@ -262,6 +294,15 @@ class DbHelper {
     dbClient.rawUpdate(
         "update $_tableName1 set lastChapter=?,newChapter=?,utime=?,img=? where book_id=?",
         [lastChapter, newStatus, utime, img, bookId]);
+  }
+
+  Future<void> updBookSource(
+      String sourceUrl, String bookUrl, String originName, String tocUrl,
+      String bookId) async {
+    var dbClient = await db1;
+    await dbClient.rawUpdate(
+        "update $_tableName1 set source_url=?,book_url=?,origin_name=?,toc_url=? where book_id=?",
+        [sourceUrl, bookUrl, originName, tocUrl, bookId]);
   }
 
   Future<void> delBookAndCps(String bookId) async {
@@ -273,26 +314,35 @@ class DbHelper {
         .rawDelete("delete from $_tableName where book_id=?", [bookId]);
   }
 
+  Book _bookFromRow(Map<String, Object?> i) {
+    return Book.fromSql(
+      i['book_id'] as String,
+      i['name'] as String? ?? '',
+      i['cname'] as String? ?? '',
+      i['author'] as String? ?? '',
+      i['utime'] as String? ?? '',
+      i['img'] as String? ?? '',
+      i['intro'] as String? ?? '',
+      i['cur'] as int? ?? 0,
+      i['sortTime'] as int? ?? 0,
+      i['idx'] as int? ?? 0,
+      (i['position'] as num?)?.toDouble() ?? 0.0,
+      i['newChapter'] as int? ?? 0,
+      i['lastChapter'] as String? ?? '',
+      sourceUrl: i['source_url'] as String? ?? '',
+      bookUrl: i['book_url'] as String? ?? '',
+      originName: i['origin_name'] as String? ?? '',
+      tocUrl: i['toc_url'] as String? ?? '',
+    );
+  }
+
   Future<List<Book>> getBooks() async {
     var dbClient = await db1;
     List<Book> bks = [];
     var list = await dbClient
         .rawQuery("select * from $_tableName1 order by sortTime desc", []);
     for (var i in list) {
-      bks.add(Book.fromSql(
-          i['book_id'] as String,
-          i['name'] as String? ?? '',
-          i['cname'] as String? ?? '',
-          i['author'] as String? ?? '',
-          i['utime'] as String? ?? '',
-          i['img'] as String? ?? '',
-          i['intro'] as String? ?? '',
-          i['cur'] as int? ?? 0,
-          i['sortTime'] as int? ?? 0,
-          i['idx'] as int? ?? 0,
-          (i['position'] as num?)?.toDouble() ?? 0.0,
-          i['newChapter'] as int? ?? 0,
-          i['lastChapter'] as String? ?? ''));
+      bks.add(_bookFromRow(i));
     }
     return bks;
   }
@@ -303,20 +353,7 @@ class DbHelper {
     var list = await dbClient
         .rawQuery("select * from $_tableName1 where book_id=?", [bookId]);
     for (var i in list) {
-      bk = Book.fromSql(
-          i['book_id'] as String,
-          i['name'] as String? ?? '',
-          i['cname'] as String? ?? '',
-          i['author'] as String? ?? '',
-          i['utime'] as String? ?? '',
-          i['img'] as String? ?? '',
-          i['intro'] as String? ?? '',
-          i['cur'] as int? ?? 0,
-          i['sortTime'] as int? ?? 0,
-          i['idx'] as int? ?? 0,
-          (i['position'] as num?)?.toDouble() ?? 0.0,
-          i['newChapter'] as int? ?? 0,
-          i['lastChapter'] as String? ?? '');
+      bk = _bookFromRow(i);
     }
     return bk;
   }
@@ -355,7 +392,11 @@ class DbHelper {
         "idx": book.index,
         "position": book.position,
         "newChapter": 0,
-        "lastChapter": book.LastChapter
+        "lastChapter": book.LastChapter,
+        "source_url": book.sourceUrl,
+        "book_url": book.bookUrl,
+        "origin_name": book.originName,
+        "toc_url": book.tocUrl,
       });
     }
     await batch.commit(noResult: true);
@@ -374,33 +415,24 @@ class DbHelper {
     ]);
   }
 
-  // Future<BookTag> getBookProcess(String bookId, String name) async {
-  //   var dbClient = await db1;
-  //
-  //   var list = await dbClient.rawQuery(
-  //       "select cur,idx,position,name from $_tableName1 where book_id=?", [bookId]);
-  //   if (list.length == 0) {
-  //     return BookTag(0, 0, name, 0.0);
-  //   }
-  //   var i = list[0];
-  //
-  //   return BookTag(i['cur'] ?? 0, i['idx'] ?? 0, i['name'], 0.0);
-  // }
-
-  /// 添加章节
-  Future<void> addChapters(List<ChapterProto> cps, String bookId) async {
+  Future<void> addChapters(List<LocalChapter> cps, String bookId,
+      {String sourceUrl = ''}) async {
     var dbClient = await db;
     var batch = dbClient.batch();
     for (var i = 0; i < cps.length; i++) {
-      ChapterProto chapter = cps[i];
+      LocalChapter chapter = cps[i];
       batch.rawInsert(
-          'insert into $_tableName (chapter_id,name,content,book_id,hasContent) values(?,?,?,?,?)',
+          'insert into $_tableName (chapter_id,name,content,book_id,hasContent,url,source_url,idx,book_key) values(?,?,?,?,?,?,?,?,?)',
           [
             chapter.chapterId,
             chapter.chapterName,
             "",
             bookId,
-            chapter.hasContent
+            chapter.hasContent,
+            chapter.url,
+            sourceUrl,
+            chapter.index,
+            bookId,
           ]);
     }
 
@@ -414,22 +446,26 @@ class DbHelper {
     return list[0]['cnt'] as int;
   }
 
-  Future<List<ChapterProto>> getChapters(String bookId) async {
+  Future<List<LocalChapter>> getChapters(String bookId) async {
     var dbClient = await db;
     var list = await dbClient.rawQuery(
-        "select hasContent,chapter_id,name from $_tableName where book_id=?",
+        "select hasContent,chapter_id,name,url,idx from $_tableName where book_id=? order by idx ASC, id ASC",
         [bookId]);
-    List<ChapterProto> cps = [];
-    for (var i in list) {
-      cps.add(ChapterProto(
-          chapterId: i['chapter_id'] as String?,
-          chapterName: i['name'] as String?,
-          hasContent: i['hasContent']?.toString()));
+    List<LocalChapter> cps = [];
+    var i = 0;
+    for (var row in list) {
+      cps.add(LocalChapter(
+        chapterId: row['chapter_id'] as String? ?? '',
+        chapterName: row['name'] as String? ?? '',
+        url: row['url'] as String? ?? '',
+        hasContent: row['hasContent']?.toString() ?? '0',
+        index: (row['idx'] as int?) ?? i,
+      ));
+      i++;
     }
     return cps;
   }
 
-  /// 添加章节
   Future<void> clearChapters(String bookId) async {
     var dbClient = await db;
     await dbClient
@@ -440,6 +476,7 @@ class DbHelper {
     var dbClient = await db;
     List list = await dbClient.rawQuery(
         "select content from $_tableName where chapter_id=?", [chapterId]);
+    if (list.isEmpty) return '';
     return list.first['content'] as String? ?? '';
   }
 
@@ -447,6 +484,7 @@ class DbHelper {
     var dbClient = await db;
     List list = await dbClient.rawQuery(
         "select hasContent from $_tableName where chapter_id=?", [chapterId]);
+    if (list.isEmpty) return false;
     return '2' == list.first['hasContent']?.toString();
   }
 
@@ -460,10 +498,8 @@ class DbHelper {
     });
 
     await batch.commit();
-    // await batch.commit(noResult: true);
   }
 
-  //  关闭
   Future closeChapter() async {
     await _db?.close();
     _db = null;

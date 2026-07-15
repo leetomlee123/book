@@ -1,8 +1,6 @@
-import 'package:book/common/Http.dart';
-import 'package:book/common/common.dart';
+import 'package:book/common/local_account.dart';
 import 'package:book/route/Routes.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 class Register extends StatefulWidget {
@@ -18,6 +16,29 @@ class _RegisterState extends State<Register> {
   String email = '';
   String repassword = '';
 
+  String? checkEmail(String v) {
+    if (v.isEmpty) return null;
+    return v.contains('@') ? null : '邮箱格式不正确';
+  }
+
+  void _submit() {
+    FocusScope.of(context).requestFocus(FocusNode());
+    if (pwd != repassword) {
+      BotToast.showText(text: '两次密码不一致');
+      return;
+    }
+    final err =
+        LocalAccount.register(name: name, password: pwd, email: email);
+    if (err != null) {
+      BotToast.showText(text: err);
+      return;
+    }
+    // auto login
+    LocalAccount.login(name: name, password: pwd);
+    BotToast.showText(text: '注册成功');
+    Navigator.of(context).popUntil(ModalRoute.withName('/'));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,8 +51,13 @@ class _RegisterState extends State<Register> {
         child: Center(
           child: Column(
             children: <Widget>[
+              Text(
+                '本地注册，数据仅保存在本机',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              SizedBox(height: 12),
               TextFormField(
-                keyboardType: TextInputType.phone,
+                keyboardType: TextInputType.text,
                 autofocus: false,
                 decoration: InputDecoration(
                     hintText: '账号',
@@ -69,98 +95,29 @@ class _RegisterState extends State<Register> {
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
                 autofocus: false,
-                validator: (v) => checkEmail(v ?? ''),
                 decoration: InputDecoration(
-                    hintText: '邮箱 找回密码的唯一凭证,请谨慎输入...',
+                    hintText: '邮箱（本地找回密码用，可选）',
                     contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                     prefixIcon: Icon(Icons.email)),
                 onChanged: (String value) {
                   email = value;
                 },
               ),
-              SizedBox(height: 8.0),
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: GestureDetector(
-                  child: Container(
-                    width: 320.0,
-                    height: 44.0,
-                    alignment: FractionalOffset.center,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                      borderRadius:
-                          BorderRadius.all(const Radius.circular(22.0)),
-                    ),
-                    child: Text(
-                      "注 册",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                  onTap: () => register(),
-                ),
-              )
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _submit,
+                child: Text('注册'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Routes.navigateTo(context, Routes.login, replace: true);
+                },
+                child: Text('已有账号？去登录'),
+              ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  String? checkEmail(String input) {
-    bool flag = false;
-
-    String regexEmail = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*\$";
-
-    if (RegExp(regexEmail).hasMatch(input)) {
-      flag = true;
-    }
-    return flag ? null : "邮箱地址不合法";
-  }
-
-  register() async {
-    if (pwd.isNotEmpty &&
-        repassword.isNotEmpty &&
-        name.isNotEmpty &&
-        email.isNotEmpty) {
-      if (pwd != repassword) {
-        BotToast.showText(text: '两次密码不一致');
-        return;
-      }
-
-      String regexEmail =
-          "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*\$";
-
-      if (RegExp(regexEmail).hasMatch(email)) {
-        BotToast.showText(text: '输入正确邮箱账号');
-
-        return;
-      }
-      Response response;
-      var formData =
-          FormData.fromMap({"name": name, "password": pwd, "email": email});
-      try {
-        response = await HttpUtil.instance.dio.post(
-          Common.register,
-          data: formData,
-        );
-        var data = response.data;
-        if (data["code"] == 200) {
-          BotToast.showText(text: data['msg']);
-
-          Routes.navigateTo(context, Routes.login);
-        } else {
-          BotToast.showText(text: data['msg']);
-        }
-      } catch (e) {
-        BotToast.showText(text: "注册异常,请重试...");
-      }
-    } else {
-      BotToast.showText(text: "检查输入项不可为空");
-    }
   }
 }

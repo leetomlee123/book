@@ -1,15 +1,8 @@
-import 'dart:convert';
-
-import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
-import 'package:book/common/common.dart';
-import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AllTagBook extends StatelessWidget {
@@ -30,20 +23,11 @@ class AllTagBook extends StatelessWidget {
             
               ),
               onTap: () async {
-                String url = Common.two + '/${gbk.name}/${gbk.author}';
-                Response future =
-                    await HttpUtil.instance.dio.get(url);
-                var d = future.data['data'];
-                if (d == null) {
-                  Routes.navigateTo(context, Routes.search, params: {
-                    "type": "book",
-                    "name": gbk.name,
-                  });
-                } else {
-                  BookInfo bookInfo = BookInfo.fromJson(d);
-                  Routes.navigateTo(context, Routes.detail,
-                      params: {"detail": jsonEncode(bookInfo)});
-                }
+                // Backend resolve removed — jump to multi-source search.
+                Routes.navigateTo(context, Routes.search, params: {
+                  "type": "book",
+                  "name": gbk.name,
+                });
               },
             ),
             Text(

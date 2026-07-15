@@ -23,6 +23,22 @@ class Book {
   String LastChapter;
   String UTime;
 
+  /// Active book source url (Legado bookSourceUrl).
+  @JsonKey(defaultValue: '')
+  String sourceUrl;
+
+  /// Book detail / info page url on the source site.
+  @JsonKey(defaultValue: '')
+  String bookUrl;
+
+  /// Cached display name of the source.
+  @JsonKey(defaultValue: '')
+  String originName;
+
+  /// Optional toc url override.
+  @JsonKey(defaultValue: '')
+  String tocUrl;
+
   factory Book.fromJson(Map<String, dynamic> json) => _$BookFromJson(json);
 
   Map<String, dynamic> toJson() => _$BookToJson(this);
@@ -43,7 +59,11 @@ class Book {
         Desc = '',
         LastChapterId = '',
         LastChapter = '',
-        UTime = '';
+        UTime = '',
+        sourceUrl = '',
+        bookUrl = '',
+        originName = '',
+        tocUrl = '';
 
   Book.Image(this.Img)
       : ChapterId = '',
@@ -61,7 +81,11 @@ class Book {
         Desc = '',
         LastChapterId = '',
         LastChapter = '',
-        UTime = '';
+        UTime = '',
+        sourceUrl = '',
+        bookUrl = '',
+        originName = '',
+        tocUrl = '';
 
   Book.fromSql(
       this.Id,
@@ -76,7 +100,11 @@ class Book {
       this.index,
       this.position,
       this.NewChapterCount,
-      this.LastChapter)
+      this.LastChapter,
+      {this.sourceUrl = '',
+      this.bookUrl = '',
+      this.originName = '',
+      this.tocUrl = ''})
       : ChapterId = '',
         ChapterName = '',
         CId = '',
@@ -99,5 +127,9 @@ class Book {
       this.Desc,
       this.LastChapterId,
       this.LastChapter,
-      this.UTime);
+      this.UTime,
+      {this.sourceUrl = '',
+      this.bookUrl = '',
+      this.originName = '',
+      this.tocUrl = ''});
 }

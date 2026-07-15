@@ -1,6 +1,5 @@
 ﻿import 'dart:convert';
 
-import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
@@ -10,9 +9,9 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/SourceSwitchSheet.dart';
 import 'package:book/view/system/MenuConfig.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
@@ -59,14 +58,44 @@ class _MenuState extends State<Menu> {
             },
           ),
           IconButton(
+            tooltip: '换源',
+            icon: Icon(Icons.swap_horiz),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (_) => SourceSwitchSheet(readModel: _readModel),
+              );
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.info),
             onPressed: () async {
-              String url = Common.detail + '/${_readModel.book!.Id}';
-              Response future = await HttpUtil.instance.dio.get(url);
-              var d = future.data['data'];
-              BookInfo bookInfo = BookInfo.fromJson(d);
+              final b = _readModel.book;
+              if (b == null) return;
+              final info = BookInfo(
+                0,
+                b.Author,
+                '',
+                b.CId,
+                b.CName,
+                b.Id,
+                b.Name,
+                b.Img,
+                0,
+                b.Desc,
+                b.LastChapterId,
+                b.LastChapter,
+                '',
+                b.UTime,
+                const [],
+                sourceUrl: b.sourceUrl,
+                bookUrl: b.bookUrl,
+                originName: b.originName,
+                tocUrl: b.tocUrl,
+              );
               Routes.navigateTo(context, Routes.detail,
-                  params: {"detail": jsonEncode(bookInfo)}, replace: true);
+                  params: {"detail": jsonEncode(info)}, replace: true);
             },
           )
         ],

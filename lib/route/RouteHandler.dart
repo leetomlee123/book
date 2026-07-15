@@ -13,6 +13,7 @@ import 'package:book/view/book/SortShelf.dart';
 import 'package:book/view/person/Forgetpass.dart';
 import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
+import 'package:book/view/person/SourceManage.dart';
 import 'package:book/view/system/FontSet.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
@@ -91,4 +92,9 @@ var detailHandler =
       BookInfo.fromJson(convert.jsonDecode(params['detail']![0]));
 
   return BookDetail(_bookInfo);
+});
+
+var sourcesHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return SourceManagePage();
 });

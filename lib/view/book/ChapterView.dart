@@ -1,13 +1,10 @@
 ﻿import 'dart:convert';
 
-import 'package:book/common/Http.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:dio/dio.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -182,10 +179,29 @@ class _ChapterViewItem extends State<ChapterView> {
   }
 
   Future goDetail(ReadModel data, context) async {
-    String url = Common.detail + '/${data.book!.Id}';
-    Response future = await HttpUtil.instance.dio.get(url);
-    var d = future.data['data'];
-    BookInfo bookInfo = BookInfo.fromJson(d);
+    final b = data.book;
+    if (b == null) return;
+    final bookInfo = BookInfo(
+      0,
+      b.Author,
+      '',
+      b.CId,
+      b.CName,
+      b.Id,
+      b.Name,
+      b.Img,
+      0,
+      b.Desc,
+      b.LastChapterId,
+      b.LastChapter,
+      '',
+      b.UTime,
+      const [],
+      sourceUrl: b.sourceUrl,
+      bookUrl: b.bookUrl,
+      originName: b.originName,
+      tocUrl: b.tocUrl,
+    );
     Routes.navigateTo(context, Routes.detail,
         params: {"detail": jsonEncode(bookInfo)}, replace: true);
   }

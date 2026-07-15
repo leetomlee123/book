@@ -1,7 +1,5 @@
-import 'package:book/common/Http.dart';
 import 'package:book/common/ReadSetting.dart';
-import 'package:book/common/common.dart';
-import 'package:book/entity/AppInfo.dart';
+import 'package:book/common/local_account.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
@@ -11,9 +9,7 @@ import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
 import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,7 +34,7 @@ class Me extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    bool login = SpUtil.haveKey("auth");
+    bool login = LocalAccount.isLoggedIn;
 
     return Visibility(
       child: Column(
@@ -46,14 +42,12 @@ class Me extends StatelessWidget {
         children: [
           _headImg(),
           Text(
-            SpUtil.getString('username'),
+            LocalAccount.username,
             style: TextStyle(fontSize: 20),
           ),
-          SizedBox(
-            height: 5,
-          ),
+          SizedBox(height: 5),
           Text(
-            SpUtil.getString('email'),
+            LocalAccount.email.isEmpty ? '本地账号' : LocalAccount.email,
           ),
         ],
       ),
@@ -64,9 +58,7 @@ class Me extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             _headImg(),
-            SizedBox(
-              width: 10,
-            ),
+            SizedBox(width: 10),
             Text(
               "登陆/注册",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -74,9 +66,7 @@ class Me extends StatelessWidget {
           ],
         ),
         onTap: () {
-          if (login) {
-            return;
-          } else {
+          if (!login) {
             Routes.navigateTo(context, Routes.login);
           }
         },
@@ -120,25 +110,27 @@ class Me extends StatelessWidget {
                     showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                              title: Text(
-                                '免责声明',
-                              ),
+                              title: Text('免责声明'),
                               content: SingleChildScrollView(
-                                child: Text(
-                                  ReadSetting.lawWarn,
-                                ),
+                                child: Text(ReadSetting.lawWarn),
                               ),
                               actions: <Widget>[
                                 TextButton(
-                                  child: Text(
-                                    "确定",
-                                  ),
+                                  child: Text("确定"),
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                   },
                                 ),
                               ],
                             ));
+                  },
+                  c,
+                ),
+                getItem(
+                  Icon(Icons.library_books_outlined),
+                  '书源管理',
+                  () {
+                    Routes.navigateTo(context, Routes.sources);
                   },
                   c,
                 ),
@@ -164,7 +156,8 @@ class Me extends StatelessWidget {
                   ImageIcon(AssetImage("images/github.png")),
                   '开源地址',
                   () {
-                    launchUrl(Uri.parse('https://github.com/leetomlee123/book'));
+                    launchUrl(
+                        Uri.parse('https://github.com/leetomlee123/book'));
                   },
                   c,
                 ),
@@ -173,19 +166,8 @@ class Me extends StatelessWidget {
                   '应用更新',
                   () async {
                     PackageInfo packageInfo = await PackageInfo.fromPlatform();
-                    String version = packageInfo.version;
-
-                    Response response =
-                        await HttpUtil.instance.dio.get(Common.update);
-                    var data = response.data['data'];
-                    AppInfo appInfo = AppInfo.fromJson(data);
-                    if (int.parse(appInfo.version.replaceAll(".", "")) >
-                        int.parse(version.replaceAll(".", ""))) {
-                      BotToast.showText(
-                          text: "发现新版本 ${appInfo.version}，请前往下载");
-                    } else {
-                      BotToast.showText(text: "暂无更新");
-                    }
+                    BotToast.showText(
+                        text: "当前版本 ${packageInfo.version}（已移除云端更新检查）");
                   },
                   c,
                 ),
@@ -196,18 +178,15 @@ class Me extends StatelessWidget {
                     showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                              title: Text(('清阅揽胜 V${SpUtil.getString(
-                                "version",
-                              )}')),
+                              title: Text(
+                                  ('清阅揽胜 V${SpUtil.getString("version")}')),
                               content: Text(
                                 ReadSetting.poet,
                                 style: TextStyle(fontSize: 15, height: 2.1),
                               ),
                               actions: <Widget>[
                                 TextButton(
-                                  child: Text(
-                                    "确定",
-                                  ),
+                                  child: Text("确定"),
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                   },
@@ -224,7 +203,7 @@ class Me extends StatelessWidget {
               left: 10,
               right: 10,
               child: Offstage(
-                offstage: !SpUtil.haveKey("username"),
+                offstage: !LocalAccount.isLoggedIn,
                 child: Store.connect<ShelfModel>(
                     builder: (context, ShelfModel model, child) {
                   return GestureDetector(
@@ -235,6 +214,7 @@ class Me extends StatelessWidget {
                         ),
                         45),
                     onTap: () async {
+                      LocalAccount.logout();
                       await model.dropAccountOut();
                     },
                   );

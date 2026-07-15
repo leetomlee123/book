@@ -1,25 +1,27 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/DbHelper.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/parse_html.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
+import 'package:book/entity/LocalChapter.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextPage.dart';
-import 'package:book/entity/chapter.pb.dart';
+import 'package:book/model/SourceModel.dart';
+import 'package:book/source/engine/book_source_engine.dart';
+import 'package:book/source/engine/progress_mapper.dart';
+import 'package:book/source/model/book_source.dart';
+import 'package:book/source/model/search_book.dart';
+import 'package:book/source/util/book_id.dart';
 import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -46,7 +48,9 @@ class ReadModel with ChangeNotifier {
   int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
 
   Book? book;
-  List<ChapterProto> chapters = [];
+  List<LocalChapter> chapters = [];
+  final BookSourceEngine _engine = BookSourceEngine();
+  BookSource? _activeSource;
 
   var currentPageValue = 0.0;
   String poet = "";
@@ -104,9 +108,19 @@ class ReadModel with ChangeNotifier {
     if (bgUI == null) await changeBgUI();
     final b = book;
     if (b == null) return;
+
+    if (b.sourceUrl.isEmpty || b.bookUrl.isEmpty) {
+      BotToast.showText(text: '旧版云端书籍无法继续阅读，请重新搜索添加');
+      loadOk = true;
+      notifyListeners();
+      return;
+    }
+
+    await _ensureSource();
     chapters = await DbHelper.instance.getChapters(b.Id);
 
     if (chapters.isNotEmpty) {
+      // refresh toc in background for new chapters
       getChapters();
 
       await initPageContent(b.cur, false);
@@ -118,24 +132,23 @@ class ReadModel with ChangeNotifier {
 
       notifyListeners();
     } else {
-      int cur = 0;
-      String userName = SpUtil.getString("username");
-      if (userName.isNotEmpty) {
-        var url = Common.process + '/$userName/${b.Id}';
-        Response response = await HttpUtil.instance.dio.get(url);
-        String data = response.data['data'];
-        if (data.isNotEmpty) {
-          cur = int.parse(data);
-        }
-      }
-      b.cur = cur;
+      b.cur = 0;
       await getChapters(init: true);
-      getChapters();
       await initPageContent(b.cur, false);
       b.index = 0;
       loadOk = true;
       notifyListeners();
     }
+  }
+
+  Future<void> _ensureSource() async {
+    final b = book;
+    if (b == null) return;
+    if (_activeSource != null &&
+        _activeSource!.bookSourceUrl == b.sourceUrl) {
+      return;
+    }
+    _activeSource = await SourceModel().findByUrl(b.sourceUrl);
   }
 
   Future initPageContent(int idx, bool jump) async {
@@ -182,36 +195,65 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ChapterProto>?> reqChapters(var bid, var skip, bool init) async {
-    var url;
+  Future<List<LocalChapter>?> reqChapters() async {
     final b = book;
-    if (init) {
-      url =
-          Common.chaptersUrl + '/$bid/0/${(b?.cur ?? 0) == 0 ? 15 : ((b?.cur ?? 0) + 1)}';
-    } else {
-      url = Common.chaptersUrl + '/$bid/$skip/1000000';
+    if (b == null) return null;
+    await _ensureSource();
+    final source = _activeSource;
+    if (source == null) {
+      BotToast.showText(text: '书源不存在：${b.originName}');
+      return null;
     }
-    Response response = await HttpUtil.instance.dio.get(url);
+    final tocUrl =
+        b.tocUrl.isNotEmpty ? b.tocUrl : (b.bookUrl.isNotEmpty ? b.bookUrl : '');
+    if (tocUrl.isEmpty) return null;
     try {
-      String data = response.data['data'];
-      if (data.isEmpty) return null;
-
-      var x = base64Decode(data);
-      ChaptersProto cps = ChaptersProto.fromBuffer(x);
-      return cps.chaptersProto.toList();
-    } catch (e) {}
-    return null;
+      final list = await _engine.toc(source, tocUrl);
+      return list
+          .map((c) => LocalChapter(
+                chapterId: makeChapterId(b.Id, c.url),
+                chapterName: c.name,
+                url: c.url,
+                hasContent: '0',
+                index: c.index,
+              ))
+          .toList();
+    } catch (e) {
+      BotToast.showText(text: '目录加载失败：$e');
+      return null;
+    }
   }
 
   Future getChapters({bool init = false}) async {
     final b = book;
     if (b == null) return;
-    List<ChapterProto>? list =
-        await reqChapters(b.Id, chapters.length, init);
-    if (list == null) return;
-    chapters.addAll(list);
-    if (SpUtil.containsKey(b.Id)) {
-      DbHelper.instance.addChapters(list, b.Id);
+    List<LocalChapter>? list = await reqChapters();
+    if (list == null || list.isEmpty) return;
+
+    if (init || chapters.isEmpty) {
+      chapters = list;
+      if (SpUtil.containsKey(b.Id)) {
+        await DbHelper.instance.clearChapters(b.Id);
+        await DbHelper.instance
+            .addChapters(list, b.Id, sourceUrl: b.sourceUrl);
+      }
+    } else {
+      // append only new urls
+      final existing = chapters.map((e) => e.url).toSet();
+      final fresh = list.where((e) => !existing.contains(e.url)).toList();
+      if (fresh.isNotEmpty) {
+        for (final c in fresh) {
+          c.index = chapters.length;
+          chapters.add(c);
+        }
+        if (SpUtil.containsKey(b.Id)) {
+          await DbHelper.instance
+              .addChapters(fresh, b.Id, sourceUrl: b.sourceUrl);
+        }
+      }
+    }
+    if (list.isNotEmpty) {
+      b.LastChapter = list.last.chapterName;
     }
     notifyListeners();
   }
@@ -220,12 +262,10 @@ class ReadModel with ChangeNotifier {
     ReadPage r = ReadPage.kong();
     if (idx < 0) {
       r.chapterName = "1";
-      // r.height = Screen.height;
       r.chapterContent = "Fall In Love At First Sight ,Miss.Zhang";
       return r;
     } else if (idx == chapters.length) {
       r.chapterName = "-1";
-      // r.height = Screen.height;
       r.chapterContent = "没有更多内容,等待作者更新";
       return null;
     }
@@ -247,7 +287,7 @@ class ReadModel with ChangeNotifier {
         await DbHelper.instance.udpChapter(temp);
         chapters[idx].hasContent = "2";
       } else {
-        r.chapterContent = "章节数据不存在,可手动重载或联系管理员";
+        r.chapterContent = "章节内容加载失败，请检查书源或换源后重试";
         return r;
       }
     }
@@ -300,7 +340,8 @@ class ReadModel with ChangeNotifier {
       if (b == null) return;
       if (!SpUtil.containsKey(b.Id)) {
         SpUtil.putString(b.Id, "");
-        DbHelper.instance.addChapters(chapters, b.Id);
+        DbHelper.instance
+            .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
       }
       SpUtil.putObjectList('${b.Id}pages${prePage?.chapterName ?? ' '}',
           prePage?.pages ?? []);
@@ -308,11 +349,8 @@ class ReadModel with ChangeNotifier {
           '${b.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
       SpUtil.putObjectList('${b.Id}pages${nextPage?.chapterName ?? ''}',
           nextPage?.pages ?? []);
-      String userName = SpUtil.getString("username");
-      if (userName.isNotEmpty) {
-        HttpUtil.instance.dio
-            .patch(Common.process + '/$userName/${b.Id}/${b.cur}');
-      }
+      await DbHelper.instance
+          .updBookProcess(b.cur, b.index, b.position, b.Id);
     }
   }
 
@@ -634,38 +672,32 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return;
     chapters = [];
-    DbHelper.instance.clearChapters(b.Id);
+    await DbHelper.instance.clearChapters(b.Id);
 
-    chapters = await reqChapters(b.Id, 0, false) ?? [];
+    chapters = await reqChapters() ?? [];
     if (chapters.isEmpty) return;
 
-    DbHelper.instance.addChapters(chapters, b.Id);
+    await DbHelper.instance
+        .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
     notifyListeners();
   }
 
   Future<void> reloadCurrentPage() async {
     final b = book;
     if (b == null) return;
+    if (chapters.isEmpty || b.cur < 0 || b.cur >= chapters.length) return;
     toggleShowMenu();
     var chapter = chapters[b.cur];
     BotToast.showCustomLoading(
         toastBuilder: (_) => LoadingDialog(),
         clickClose: true,
         backgroundColor: Colors.white);
-    var id = chapters[b.cur].chapterId;
-    var url = Common.bookContentUrl + '/$id';
-    var responseBody = await HttpUtil.instance.dio.get(url);
-
-    var data = responseBody.data['data'];
-    var link = data['link'];
 
     var content = "";
     try {
-      content = await ParseHtml().content(link);
-      var formData = FormData.fromMap({"id": id, "content": content});
-      HttpUtil.instance.dio.patch(Common.bookContentUpload, data: formData);
+      content = await getChapterContent(chapter.chapterId, idx: b.cur);
     } catch (e) {
-      content = "章节内容加载失败,请重试.......\n$link";
+      content = "章节内容加载失败，请检查书源或换源后重试";
     }
 
     BotToast.closeAllLoading();
@@ -690,20 +722,20 @@ class ReadModel with ChangeNotifier {
   }
 
   downloadAll(int start) async {
-    List<ChapterProto> temp = chapters;
+    List<LocalChapter> temp = chapters;
     if (temp.isEmpty) {
-      await getChapters();
+      await getChapters(init: true);
       temp = chapters;
     }
     List<ChapterNode> cpNodes = [];
     for (var i = start; i < temp.length; i++) {
-      ChapterProto chapter = temp[i];
+      LocalChapter chapter = temp[i];
       var id = chapter.chapterId;
       if (chapter.hasContent != "2") {
-        // String content = await compute(requestDataWithCompute, id);
-        String content = await getChapterContent(id);
+        String content = await getChapterContent(id, idx: i);
         if (content.isNotEmpty) {
           cpNodes.add(ChapterNode(content, id));
+          chapter.hasContent = "2";
         }
       }
       if (cpNodes.length % batchNum == 0) {
@@ -719,26 +751,120 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<String> getChapterContent(String id, {int? idx}) async {
-    var url = Common.bookContentUrl + '/$id';
-    var responseBody = await HttpUtil.instance.dio.get(url);
-
-    var data = responseBody.data['data'];
-    var link = data['link'];
-
-    var content = data['content'].toString();
-    if (content.isNotEmpty &&
-        !content.contains("DEMOONE") &&
-        !content.contains("请重新刷新页面")) {
-      return content;
+    final b = book;
+    if (b == null) return '';
+    await _ensureSource();
+    final source = _activeSource;
+    if (source == null) {
+      return '书源不存在，请重新搜索添加或换源';
+    }
+    String chapterUrl = '';
+    if (idx != null && idx >= 0 && idx < chapters.length) {
+      chapterUrl = chapters[idx].url;
+    } else {
+      for (final c in chapters) {
+        if (c.chapterId == id) {
+          chapterUrl = c.url;
+          break;
+        }
+      }
+    }
+    if (chapterUrl.isEmpty) {
+      return '章节地址为空，请重新加载目录';
     }
     try {
-      content = await ParseHtml().content(link);
-      var formData = FormData.fromMap({"id": id, "content": content});
-      HttpUtil.instance.dio.patch(Common.bookContentUpload, data: formData);
+      final content = await _engine.content(source, chapterUrl);
+      if (content.isEmpty) {
+        return '章节内容加载失败，请检查书源或换源后重试';
+      }
+      return content;
     } catch (e) {
-      content = "章节内容加载失败,请重试.......\n$link";
+      return '章节内容加载失败，请检查书源或换源后重试\n$e';
     }
-    return content;
+  }
+
+  /// Switch active source for the current book, remap progress, reload toc.
+  Future<bool> switchSource(BookSource source, SearchBook hit) async {
+    final b = book;
+    if (b == null) return false;
+    final oldName =
+        (b.cur >= 0 && b.cur < chapters.length) ? chapters[b.cur].chapterName : b.ChapterName;
+    final oldIndex = b.cur;
+
+    BotToast.showCustomLoading(
+        toastBuilder: (_) => LoadingDialog(),
+        clickClose: true,
+        backgroundColor: Colors.white);
+    try {
+      final info = await _engine.bookInfo(source, hit.bookUrl, seed: hit);
+      final tocUrl = info.tocUrl.isNotEmpty ? info.tocUrl : hit.bookUrl;
+      final toc = await _engine.toc(source, tocUrl);
+      if (toc.isEmpty) {
+        BotToast.showText(text: '目标书源目录为空');
+        return false;
+      }
+      final mapped = ProgressMapper.map(
+        oldName: oldName,
+        oldIndex: oldIndex,
+        newChapters: toc,
+      );
+
+      // Keep stable shelf id; only rebind source urls.
+      b.sourceUrl = source.bookSourceUrl;
+      b.bookUrl = hit.bookUrl;
+      b.originName = source.bookSourceName;
+      b.tocUrl = tocUrl;
+      b.Name = info.Name.isNotEmpty ? info.Name : b.Name;
+      b.Author = info.Author.isNotEmpty ? info.Author : b.Author;
+      b.Img = info.Img.isNotEmpty ? info.Img : b.Img;
+      b.Desc = info.Desc.isNotEmpty ? info.Desc : b.Desc;
+      b.LastChapter = toc.last.name;
+      b.cur = mapped;
+      b.index = 0;
+      b.position = 0;
+      _activeSource = source;
+
+      // wipe chapter cache + page caches
+      await DbHelper.instance.clearChapters(b.Id);
+      final keys = SpUtil.getKeys().toList();
+      for (final key in keys) {
+        if (key.startsWith('${b.Id}pages')) {
+          SpUtil.remove(key);
+        }
+      }
+
+      chapters = toc
+          .map((c) => LocalChapter(
+                chapterId: makeChapterId(b.Id, c.url),
+                chapterName: c.name,
+                url: c.url,
+                hasContent: '0',
+                index: c.index,
+              ))
+          .toList();
+      if (SpUtil.containsKey(b.Id)) {
+        await DbHelper.instance
+            .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
+        await DbHelper.instance.updBookSource(
+            b.sourceUrl, b.bookUrl, b.originName, b.tocUrl, b.Id);
+        await DbHelper.instance
+            .updBookProcess(b.cur, b.index, b.position, b.Id);
+      }
+
+      reSetPages();
+      widgets.clear();
+      await initPageContent(b.cur, true);
+      final name =
+          (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].chapterName : '';
+      BotToast.showText(text: '已切换至「${source.bookSourceName}」，定位到：$name');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      BotToast.showText(text: '换源失败：$e');
+      return false;
+    } finally {
+      BotToast.closeAllLoading();
+    }
   }
 
   switchClickNextPage() {

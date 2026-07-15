@@ -1,10 +1,7 @@
-﻿import 'package:book/common/common.dart';
-import 'package:book/common/Http.dart';
-import 'package:book/entity/Info.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
+/// Local static notices (no network).
 class InfoPage extends StatefulWidget {
   @override
   State<StatefulWidget> createState() {
@@ -13,69 +10,53 @@ class InfoPage extends StatefulWidget {
 }
 
 class InfoState extends State<InfoPage> {
-  List<Info> ifs = [];
-
-  @override
-  void initState() {
-    super.initState();
-    getInfo();
-  }
-
   @override
   Widget build(BuildContext context) {
-      return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              "公告",
+    final version = SpUtil.getString('version');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("公告"),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Center(
+              child: Text(
+                '本地书源模式',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
             ),
-            centerTitle: true,
-            elevation: 0,
-          ),
-          body: Padding(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            SizedBox(height: 12),
+            Text(
+              '本版本已切换为本地书源阅读：\n'
+              '1. 请在「书源管理」自行导入 Legado / 阅读书源 JSON\n'
+              '2. 应用不附带、不自动下载任何第三方书源\n'
+              '3. 账号为本地账号，仅保存在本机，不上传服务器\n'
+              '4. 阅读进度与书架缓存保存在本机\n\n'
+              '请勿导入或使用侵犯他人版权的书源。',
+              textAlign: TextAlign.start,
+              style: TextStyle(height: 1.5),
+            ),
+            Spacer(),
+            Row(
               children: <Widget>[
-                Center(
-                  child: Text(ifs.length == 0 ? "公告" : ifs[0].Title),
-                ),
-                Container(
-                  child: Text(
-                    ifs.length == 0 ? "太平无事" : ifs[0].Content,
-                    textAlign: TextAlign.start,
-                  ),
-                ),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Container(),
-                    ),
-                    Text(
-                      ifs.length == 0
-                          ? DateUtil.getNowDateStr()
-                          : ifs[0].Date,
-                      textAlign: TextAlign.start,
-                    )
-                  ],
+                Expanded(child: Container()),
+                Text(
+                  version.isEmpty
+                      ? DateUtil.getNowDateStr()
+                      : 'v$version · ${DateUtil.getNowDateStr()}',
+                  textAlign: TextAlign.start,
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
                 )
               ],
-            ),
-            padding: EdgeInsets.all(15),
-          ),
-        );
-  
-  }
-
-  Future<void> getInfo() async {
-    Response res = await HttpUtil.instance.dio.get(Common.info);
-    final raw = res.data['data'];
-    if (raw is! List) {
-      return;
-    }
-    ifs = raw.map((f) => Info.fromJson(f)).toList();
-    if (mounted) {
-      setState(() {});
-    }
+            )
+          ],
+        ),
+      ),
+    );
   }
 }
-
-

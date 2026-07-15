@@ -22,6 +22,15 @@ class BookInfo {
   String LastTime;
   List<Book> SameAuthorBooks;
 
+  @JsonKey(defaultValue: '')
+  String sourceUrl;
+  @JsonKey(defaultValue: '')
+  String bookUrl;
+  @JsonKey(defaultValue: '')
+  String originName;
+  @JsonKey(defaultValue: '')
+  String tocUrl;
+
   factory BookInfo.fromJson(Map<String, dynamic> json) =>
       _$BookInfoFromJson(json);
 
@@ -39,7 +48,11 @@ class BookInfo {
         LastChapter = '',
         FirstChapterId = '',
         LastTime = '',
-        SameAuthorBooks = const [];
+        SameAuthorBooks = const [],
+        sourceUrl = '',
+        bookUrl = '',
+        originName = '',
+        tocUrl = '';
 
   BookInfo.name(this.CId, this.Name)
       : Author = '',
@@ -54,7 +67,11 @@ class BookInfo {
         LastChapter = '',
         FirstChapterId = '',
         LastTime = '',
-        SameAuthorBooks = const [];
+        SameAuthorBooks = const [],
+        sourceUrl = '',
+        bookUrl = '',
+        originName = '',
+        tocUrl = '';
 
   BookInfo.x(this.Id)
       : Author = '',
@@ -70,7 +87,11 @@ class BookInfo {
         LastChapter = '',
         FirstChapterId = '',
         LastTime = '',
-        SameAuthorBooks = const [];
+        SameAuthorBooks = const [],
+        sourceUrl = '',
+        bookUrl = '',
+        originName = '',
+        tocUrl = '';
 
   BookInfo(
       this.Count,
@@ -87,5 +108,35 @@ class BookInfo {
       this.LastChapter,
       this.FirstChapterId,
       this.LastTime,
-      this.SameAuthorBooks);
+      this.SameAuthorBooks,
+      {this.sourceUrl = '',
+      this.bookUrl = '',
+      this.originName = '',
+      this.tocUrl = ''});
+
+  Book toBook() {
+    return Book(
+      0,
+      0,
+      0,
+      0,
+      FirstChapterId,
+      '',
+      0,
+      Id,
+      CId,
+      Name,
+      CName,
+      Author,
+      Img,
+      Desc,
+      LastChapterId,
+      LastChapter,
+      LastTime,
+      sourceUrl: sourceUrl,
+      bookUrl: bookUrl,
+      originName: originName,
+      tocUrl: tocUrl,
+    );
+  }
 }

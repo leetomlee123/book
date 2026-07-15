@@ -1,36 +1,17 @@
 class Common {
-//
-//   static String domain = "http://192.168.0.109:8011/v1";
-  static String domain = "http://121.37.139.13:8011/v1";
-
-//  static String domain = "https://newbook.leetomlee.xyz/v1";
+  // Video / voice service (unchanged; not part of book-source path).
   static String video_domain = "http://121.37.139.13:8012";
 
-  static String login = domain + "/login";
-  static String gitHubLogin = domain + "/oauth/redirect";
-  static String freshToken = domain + "/book/freshToken";
-  static String info = domain + '/info';
-  static String modifypassword = domain + "/password";
-  static String register = domain + "/register";
-  static String update = domain + "/update";
-  static String hot = domain + '/hot';
-  static String detail = domain + "/book/detail";
-  static String shelf = domain + "/book/shelf";
-  static String rank = domain + "/book/rank";
-  static String config = domain + "/book/config";
+  // Residual account endpoints (optional; reading does not require them).
+  static String domain = "";
+  static String login = "";
+  static String gitHubLogin = "";
+  static String freshToken = "";
+  static String info = "";
+  static String modifypassword = "";
+  static String register = "";
+  static String update = "";
 
-//  static String search = video_domain + "/book/search";
-  static String two = domain + "/book/two";
-
-  static String search = domain + "/book/search";
-  static String searchAi = domain + "/book/searchAi";
-  static String bookInfo = domain + "/book/info/";
-  static String chaptersUrl = domain + "/book/proto/chapters";
-  static String bookContentUrl = domain + '/book/chapter';
-  static String bookContentUpload = domain + '/book/chapter/content';
-  static String reload = domain + '/book/chapter';
-  static String bookAction = domain + '/book/action';
-  static String process = domain + '/book/process';
   static String page_height_pre = "php";
 
   static String listbookname = "booklist";
@@ -38,8 +19,6 @@ class Common {
   static String downloadlist = "downloadlist";
   static String bgIdx = "bgIdx";
   static String turnPageAnima = "turnPageAnima";
-
-//  static String video_domain = "http://192.168.3.56:8082";
 
   static String index = video_domain + '/index';
   static String voiceIndex = video_domain + '/voice/index';
@@ -59,9 +38,9 @@ class Common {
   static String movie_search_history = "movie_search_history";
   static String notice_info = "notice_info";
   static String reading_style = "READINGSTYLE";
-  static String parse_html_config = "parse_html_config";
   static String fonts = "fonts";
   static String book_pic_width = "book_pic_width";
   static String top_safe_height = "top_safe_height";
   static String shimmer_nums = "shimmer_nums";
+  static String source_disclaimer_agreed = "source_disclaimer_agreed";
 }

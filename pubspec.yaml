@@ -36,6 +36,9 @@ dependencies:
   intl: ^0.20.2
   ffi: ^2.1.4
   path: ^1.9.1
+  # Book-source engine: charset + JS rules (Legado subset)
+  fast_gbk: ^1.0.0
+  flutter_js: ^0.8.5
   # Force modern Android embedding (namespace) for AGP 8+/9
   flutter_plugin_android_lifecycle: ^2.0.28
 

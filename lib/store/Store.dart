@@ -2,6 +2,7 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/model/ShelfModel.dart';
+import 'package:book/model/SourceModel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,6 +15,8 @@ final shelfModelProvider =
     ChangeNotifierProvider<ShelfModel>((ref) => ShelfModel());
 final readModelProvider =
     ChangeNotifierProvider<ReadModel>((ref) => ReadModel());
+final sourceModelProvider =
+    ChangeNotifierProvider<SourceModel>((ref) => SourceModel());
 
 /// Thin facade kept for existing call sites (`Store.value` / `Store.connect`).
 class Store {
@@ -57,6 +60,9 @@ class Store {
     }
     if (T == ReadModel) {
       return readModelProvider as ProviderListenable<T>;
+    }
+    if (T == SourceModel) {
+      return sourceModelProvider as ProviderListenable<T>;
     }
     throw ArgumentError('No Riverpod provider registered for type $T');
   }

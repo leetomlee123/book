@@ -1,13 +1,10 @@
-﻿import 'package:book/common/Http.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
+import 'package:book/common/local_account.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/text_two.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class Login extends StatefulWidget {
@@ -17,53 +14,19 @@ class Login extends StatefulWidget {
 
 class _LoginState extends State<Login> {
   String username = '';
-  bool isLogin = false;
   String pwd = "";
-
-  githubLogin() async {
-    BotToast.showText(text: "not support yet");
-  }
-
-  googleLogin() async {
-    BotToast.showText(text: "not support yet");
-    // try {
-    //   GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
-    //   BotToast.showText(text: googleSignInAccount.toString());
-
-    // } catch (error) {
-    // }
-  }
 
   login(BuildContext context) async {
     FocusScope.of(context).requestFocus(FocusNode());
-    var formData = FormData.fromMap({"name": username, "password": pwd});
-    Response response =
-        await HttpUtil.instance.dio.post(Common.login, data: formData);
-    var data = response.data;
-    if (data['code'] != 201) {
-      BotToast.showText(text: data['msg']);
-    } else {
-      //收起键盘
-      SpUtil.putString('email', data['data']['email']);
-      SpUtil.putString('username', username);
-      SpUtil.putString("auth", data['data']['token']);
-
-      // eventBus.fire(SyncShelfEvent(""));
-      var s = Store.value<ShelfModel>(context);
-      s.refreshShelf();
-      //书架同步
-      var shelf2 = s.shelf;
-      if (shelf2.length > 0) {
-        for (var value in shelf2) {
-          if (SpUtil.haveKey("auth")) {
-            HttpUtil.instance.dio.get(Common.bookAction + '/${value.Id}/add');
-          }
-        }
-      }
-      // Routes.navigateTo(context, Routes.root);
-      //
-      Navigator.of(context).popUntil(ModalRoute.withName('/'));
+    final err = LocalAccount.login(name: username, password: pwd);
+    if (err != null) {
+      BotToast.showText(text: err);
+      return;
     }
+    BotToast.showText(text: '登录成功（本地账号）');
+    var s = Store.value<ShelfModel>(context);
+    s.refreshShelf();
+    Navigator.of(context).popUntil(ModalRoute.withName('/'));
   }
 
   @override
@@ -77,7 +40,6 @@ class _LoginState extends State<Login> {
         body: SingleChildScrollView(
           child: Container(
             child: Column(
-              key: UniqueKey(),
               children: <Widget>[
                 SizedBox(
                   height: Screen.topSafeHeight + 5,
@@ -87,13 +49,14 @@ class _LoginState extends State<Login> {
                   backgroundImage: const AssetImage("images/login.jpg"),
                   backgroundColor: Colors.white,
                 ),
-                SizedBox(
-                  height: 10,
-                ),
+                SizedBox(height: 10),
                 Center(child: Text('即刻追书')),
-                SizedBox(
-                  height: 10,
+                SizedBox(height: 6),
+                Text(
+                  '本地账号 · 无需服务器',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
+                SizedBox(height: 10),
                 TextFormField(
                   autofocus: false,
                   decoration: InputDecoration(
@@ -105,9 +68,7 @@ class _LoginState extends State<Login> {
                     this.username = value;
                   },
                 ),
-                SizedBox(
-                  height: 15,
-                ),
+                SizedBox(height: 15),
                 TextFormField(
                   autofocus: false,
                   obscureText: true,
@@ -120,9 +81,7 @@ class _LoginState extends State<Login> {
                     this.pwd = value;
                   },
                 ),
-                SizedBox(
-                  height: 30,
-                ),
+                SizedBox(height: 30),
                 GestureDetector(
                   child: Container(
                     width: 320.0,
@@ -145,57 +104,24 @@ class _LoginState extends State<Login> {
                   ),
                   onTap: () => login(context),
                 ),
-                SizedBox(
-                  height: 20,
-                ),
+                SizedBox(height: 20),
                 TextTwo(
-                  "其他账号登录",
+                  "账号仅保存在本机",
                   fontSize: 12,
                 ),
-                SizedBox(
-                  height: 20,
-                ),
+                SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    GestureDetector(
-                      child: CircleAvatar(
-                        backgroundImage:
-                            const AssetImage("images/google-logo.jpg"),
-                        backgroundColor: Colors.white,
-                      ),
-                      onTap: () => googleLogin(),
-                    ),
-                    GestureDetector(
-                      child: CircleAvatar(
-                        backgroundImage: const AssetImage("images/github.png"),
-                        backgroundColor: Colors.white,
-                      ),
-                      onTap: () => githubLogin(),
-                    ),
-                  ],
-                ),
-                Row(
-                  key: UniqueKey(),
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: <Widget>[
                     TextButton(
-                      child: Text(
-                        '忘记密码',
-                        // style: TextStyle(color: Colors.white),
-                      ),
+                      child: Text('忘记密码'),
                       onPressed: () {
                         Routes.navigateTo(context, Routes.modifyPassword);
                       },
                     ),
-                    SizedBox(
-                      width: 30,
-                    ),
+                    SizedBox(width: 30),
                     TextButton(
-                      child: Text(
-                        '注册',
-                        // style: TextStyle(color: Colors.white),
-                      ),
+                      child: Text('注册'),
                       onPressed: () {
                         Routes.navigateTo(context, Routes.register);
                       },

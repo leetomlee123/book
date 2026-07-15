@@ -1,10 +1,7 @@
 import 'package:book/common/DbHelper.dart';
-import 'package:book/common/Http.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -16,7 +13,16 @@ class ShelfModel with ChangeNotifier {
   }
 
   updReadBookProcess(UpdateBookProcess up) {
-    var b = shelf.first;
+    // Prefer matching by active book if present in shelf; fallback first.
+    Book? b;
+    for (final item in shelf) {
+      // UpdateBookProcess historically only carried cur/index; update first book
+      // that matches progress event target if extended later. For now update head.
+      b = item;
+      break;
+    }
+    if (b == null && shelf.isNotEmpty) b = shelf.first;
+    if (b == null) return;
     b.cur = up.cur;
     b.index = up.index;
     DbHelper.instance.updBookProcess(b.cur, b.index, 0, b.Id);
@@ -60,17 +66,8 @@ class ShelfModel with ChangeNotifier {
     shelf = bks;
     _picks = pics;
     sortShelf = false;
-    deleteCloudIds(ids);
-    notifyListeners();
-  }
-
-  deleteCloudIds(List<String> ids) async {
-    if (SpUtil.haveKey("auth")) {
-      for (var id in ids) {
-        await HttpUtil.instance.dio.get(Common.bookAction + '/$id/del');
-      }
-    }
     BotToast.showText(text: "删除书籍成功");
+    notifyListeners();
   }
 
   pickAll() {
@@ -118,48 +115,10 @@ class ShelfModel with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Local-only shelf refresh (no cloud).
   refreshShelf() async {
-    try {
-      Response response2 = await HttpUtil.instance.dio.get(Common.shelf);
-      List? decode = response2.data['data'];
-      if (decode == null) {
-        return;
-      }
-      List<Book> bs = decode.map((m) => Book.fromJson(m)).toList();
-      if (shelf.isNotEmpty) {
-        int len = bs.length;
-        for (var i = 0; i < len; i++) {
-          var f = bs[i];
-          if (!exitsInBookShelfById(f.Id)) {
-            f.sortTime = DateUtil.getNowDateMs();
-            await _dbHelper.addBooks([f]);
-            shelf.add(f);
-          }
-        }
-
-        for (var i = 0; i < shelf.length; i++) {
-          for (var j = 0; j < bs.length; j++) {
-            if (shelf[i].Id == bs[j].Id) {
-              if (shelf[i].LastChapter != bs[j].LastChapter) {
-                shelf[i].UTime = bs[j].UTime;
-                shelf[i].LastChapter = bs[j].LastChapter;
-                shelf[i].NewChapterCount = 1;
-                shelf[i].Img = bs[j].Img;
-                _dbHelper.updBook(
-                    bs[j].LastChapter, 1, bs[j].UTime, bs[j].Img, shelf[i].Id);
-              }
-            }
-          }
-        }
-      } else {
-        bs.forEach((element) {
-          element.sortTime = DateUtil.getNowDateMs();
-          shelf.add(element);
-        });
-        await _dbHelper.addBooks(bs);
-      }
-      notifyListeners();
-    } catch (e) {}
+    shelf = await _dbHelper.getBooks();
+    notifyListeners();
   }
 
   /**
@@ -176,24 +135,19 @@ class ShelfModel with ChangeNotifier {
   }
 
   /**
-   * 退出登录
+   * 退出登录（本地账号，不清除书架）
    */
   dropAccountOut() async {
-    var keys = SpUtil.getKeys();
+    final keys = SpUtil.getKeys();
     for (var key in keys) {
       if (key.contains("pages")) {
-        SpUtil.remove(key);
+        // keep reading caches
       }
     }
     SpUtil.remove("username");
     SpUtil.remove("auth");
-
-    for (var i = 0; i < shelf.length; i++) {
-      var bid = shelf[i].Id;
-      await SpUtil.remove(bid);
-      await _dbHelper.delBookAndCps(bid);
-    }
-    shelf = [];
+    SpUtil.remove("email");
+    BotToast.showText(text: "已退出登录");
     notifyListeners();
   }
 
@@ -216,6 +170,7 @@ class ShelfModel with ChangeNotifier {
     if (action == "add") {
       shelf.insert(0, book);
       await _dbHelper.addBooks([book]);
+      SpUtil.putString(book.Id, "");
       notifyListeners();
 
       BotToast.showText(text: "已添加到书架");
@@ -235,18 +190,8 @@ class ShelfModel with ChangeNotifier {
       });
       BotToast.showText(text: "已移除出书架");
     }
-    if (SpUtil.haveKey("auth")) {
-      HttpUtil.instance.dio.get(Common.bookAction + '/${book.Id}/$action');
-    }
   }
 
-  freshToken() async {
-    if (SpUtil.haveKey("auth")) {
-      Response res = await HttpUtil.instance.dio.get(Common.freshToken);
-      var data = res.data;
-      if (data['code'] == 200) {
-        SpUtil.putString("auth", data['data']['token']);
-      }
-    }
-  }
+  /// No-op: token refresh removed with book backend.
+  freshToken() async {}
 }

@@ -1,0 +1,37 @@
+[
+  {
+    "bookSourceUrl": "https://fixture.local",
+    "bookSourceName": "Fixture CSS Source",
+    "bookSourceGroup": "test",
+    "enabled": true,
+    "searchUrl": "https://fixture.local/search?q={{key}}&page={{page}}",
+    "ruleSearch": {
+      "bookList": ".book-item",
+      "name": ".title@text",
+      "author": ".author@text",
+      "coverUrl": "img@src",
+      "bookUrl": "a@href",
+      "intro": ".intro@text",
+      "lastChapter": ".latest@text"
+    },
+    "ruleBookInfo": {
+      "name": "h1@text",
+      "author": ".author@text",
+      "intro": "#intro@text",
+      "coverUrl": ".cover@src",
+      "tocUrl": "",
+      "lastChapter": ".latest@text"
+    },
+    "ruleToc": {
+      "chapterList": "#list dd a",
+      "chapterName": "text",
+      "chapterUrl": "href",
+      "nextTocUrl": ""
+    },
+    "ruleContent": {
+      "content": "#content",
+      "nextContentUrl": "",
+      "replaceRegex": ""
+    }
+  }
+]

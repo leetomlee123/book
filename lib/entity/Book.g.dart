@@ -1,30 +1,32 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// Hand-maintained for sourceUrl / bookUrl / originName / tocUrl.
 
 part of 'Book.dart';
 
-// **************************************************************************
-// JsonSerializableGenerator
-// **************************************************************************
-
 Book _$BookFromJson(Map<String, dynamic> json) {
   return Book(
-      json['cur'] as int? ?? 0,
-      json['sortTime'] as int? ?? 0,
-      json['index'] as int? ?? 0,
-      (json['position'] as num?)?.toDouble() ?? 0,
-      json['ChapterId'] as String? ?? '',
-      json['ChapterName'] as String? ?? '',
-      json['NewChapterCount'] as int? ?? 0,
-      json['Id'] as String? ?? '',
-      json['CId'] as String? ?? '',
-      json['Name'] as String? ?? '',
-      json['CName'] as String? ?? '',
-      json['Author'] as String? ?? '',
-      json['Img'] as String? ?? '',
-      json['Desc'] as String? ?? '',
-      json['LastChapterId'] as String? ?? '',
-      json['LastChapter'] as String? ?? '',
-      json['UTime'] as String? ?? '');
+    json['cur'] as int? ?? 0,
+    json['sortTime'] as int? ?? 0,
+    json['index'] as int? ?? 0,
+    (json['position'] as num?)?.toDouble() ?? 0,
+    json['ChapterId'] as String? ?? '',
+    json['ChapterName'] as String? ?? '',
+    json['NewChapterCount'] as int? ?? 0,
+    json['Id'] as String? ?? '',
+    json['CId'] as String? ?? '',
+    json['Name'] as String? ?? '',
+    json['CName'] as String? ?? '',
+    json['Author'] as String? ?? '',
+    json['Img'] as String? ?? '',
+    json['Desc'] as String? ?? '',
+    json['LastChapterId'] as String? ?? '',
+    json['LastChapter'] as String? ?? '',
+    json['UTime'] as String? ?? '',
+    sourceUrl: json['sourceUrl'] as String? ?? '',
+    bookUrl: json['bookUrl'] as String? ?? '',
+    originName: json['originName'] as String? ?? '',
+    tocUrl: json['tocUrl'] as String? ?? '',
+  );
 }
 
 Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
@@ -44,5 +46,9 @@ Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'Desc': instance.Desc,
       'LastChapterId': instance.LastChapterId,
       'LastChapter': instance.LastChapter,
-      'UTime': instance.UTime
+      'UTime': instance.UTime,
+      'sourceUrl': instance.sourceUrl,
+      'bookUrl': instance.bookUrl,
+      'originName': instance.originName,
+      'tocUrl': instance.tocUrl,
     };

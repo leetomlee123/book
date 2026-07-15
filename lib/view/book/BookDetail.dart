@@ -1,22 +1,21 @@
 ﻿import 'dart:convert';
 
 import 'package:book/common/DbHelper.dart';
-import 'package:book/common/Http.dart';
 import 'package:book/common/PicWidget.dart';
-import 'package:book/common/RatingBar.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
+import 'package:book/model/ReadModel.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/book/SourceSwitchSheet.dart';
 import 'package:book/widgets/text_ellipsis.dart';
 import 'package:book/widgets/text_two.dart';
-import 'package:dio/dio.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
+
 
 class BookDetail extends StatefulWidget {
   final BookInfo _bookInfo;
@@ -36,24 +35,7 @@ class _BookDetailState extends State<BookDetail> {
 
   @override
   void initState() {
-    book = Book(
-        0,
-        0,
-        0,
-        0.0,
-        "",
-        "",
-        0,
-        this.widget._bookInfo.Id,
-        '',
-        this.widget._bookInfo.Name,
-        "",
-        this.widget._bookInfo.Author,
-        this.widget._bookInfo.Img,
-        this.widget._bookInfo.Desc,
-        this.widget._bookInfo.LastChapterId,
-        this.widget._bookInfo.LastChapter,
-        this.widget._bookInfo.LastTime);
+    book = this.widget._bookInfo.toBook();
     super.initState();
   }
 
@@ -86,23 +68,16 @@ class _BookDetailState extends State<BookDetail> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
                   style: TextStyle(fontSize: 12, color: Colors.white)),
-              Text('状态: ${this.widget._bookInfo.BookStatus}',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                  style: TextStyle(fontSize: 12, color: Colors.white)),
-              RatingBar(
-                itemSize: 15,
-                initialRating: this.widget._bookInfo.Rate,
-                minRating: 1,
-                direction: Axis.horizontal,
-                allowHalfRating: true,
-                itemCount: 5,
-                itemBuilder: (context, _) => Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                ),
-                onRatingUpdate: (rating) {},
-              )
+              if (book.originName.isNotEmpty)
+                Text('书源: ${book.originName}',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              if (this.widget._bookInfo.BookStatus.isNotEmpty)
+                Text('状态: ${this.widget._bookInfo.BookStatus}',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
             ],
           ),
         ),
@@ -218,16 +193,8 @@ class _BookDetailState extends State<BookDetail> {
                       ],
                     ),
                   ),
-                  onTap: () async {
-                    String url = Common.detail +
-                        '/${this.widget._bookInfo.SameAuthorBooks[i].Id}';
-                    Response future = await HttpUtil.instance.dio.get(url);
-                    var d = future.data['data'];
-                    BookInfo bookInfo = BookInfo.fromJson(d);
-                    Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => BookDetail(bookInfo)));
+                  onTap: () {
+                    // Same-author list is no longer backed by server detail.
                   },
                 );
               },
@@ -272,6 +239,17 @@ class _BookDetailState extends State<BookDetail> {
                     key:
                         ValueKey<bool>(model.inShelf(this.widget._bookInfo.Id)),
                   )),
+              TextButton(
+                  onPressed: () {
+                    final readModel = Store.value<ReadModel>(context);
+                    readModel.book = book;
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (_) => SourceSwitchSheet(readModel: readModel),
+                    );
+                  },
+                  child: Text("换源")),
               TextButton(
                   onPressed: () async {
                     Book? b = await DbHelper.instance.getBook(book.Id);
