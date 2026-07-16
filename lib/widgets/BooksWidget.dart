@@ -1,13 +1,14 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:book/common/Screen.dart';
+import 'package:book/common/app_colors.dart';
 import 'package:book/common/common.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/has_update_icon_img.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -28,18 +29,11 @@ class _BooksWidgetState extends State<BooksWidget> {
   late bool isShelf;
 
   final double aspectRatioList = 0.69;
-  final double aspectRatioCover = 0.75;
-  double bookPicWidth = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
-  int spacingLen = 20;
-  int axisLen = 4;
+  final double aspectRatioCover = AppDimens.coverAspect;
 
   @override
   void initState() {
     super.initState();
-    if (bookPicWidth == .0) {
-      bookPicWidth = Screen.width / 4.3;
-      SpUtil.putDouble(Common.book_pic_width, bookPicWidth);
-    }
     isShelf = this.widget.type == '';
     _shelfModel = Store.value<ShelfModel>(context);
     _refreshController = RefreshController();
@@ -52,6 +46,14 @@ class _BooksWidgetState extends State<BooksWidget> {
       if (isShelf) _refreshController.requestRefresh();
     });
   }
+
+  double get _coverWidth {
+    final pad = AppDimens.pagePadding * 2;
+    final gaps = AppDimens.shelfSpacing * (AppDimens.shelfColumns - 1);
+    return (Screen.width - pad - gaps) / AppDimens.shelfColumns;
+  }
+
+  double get _coverHeight => _coverWidth / aspectRatioCover;
 
   @override
   Widget build(BuildContext context) {
@@ -77,10 +79,35 @@ class _BooksWidgetState extends State<BooksWidget> {
         ),
         controller: _refreshController,
         onRefresh: freshShelf,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: _shelfModel.cover ? coverModel() : listModel(),
-        ));
+        child: _shelfModel.shelf.isEmpty
+            ? _emptyShelf()
+            : Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppDimens.pagePadding),
+                child: _shelfModel.cover ? coverModel() : listModel(),
+              ));
+  }
+
+  Widget _emptyShelf() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.menu_book_outlined,
+              size: 56, color: AppColors.textTertiary),
+          const SizedBox(height: 12),
+          Text(
+            '书架空空如也',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '去搜索添加喜欢的书吧',
+            style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
   }
 
   //刷新书架
@@ -98,17 +125,72 @@ class _BooksWidgetState extends State<BooksWidget> {
     _refreshController.refreshCompleted();
   }
 
-  //书架封面模式
+  //书架封面模式 — 3 列网格 + 软阴影 + 进度文案
   Widget coverModel() {
-    return Padding(
-      padding: const EdgeInsets.all(15),
-      child: Wrap(
-        alignment: WrapAlignment.spaceEvenly,
-        spacing: 20, //主轴上子控件的间距
-        runSpacing: 30, //交叉轴上子控件之间的间距
-        children: cover(), //要显示的子控件集合
+    final w = _coverWidth;
+    final h = _coverHeight;
+    return GridView.builder(
+      padding: const EdgeInsets.only(top: 12, bottom: 24),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: AppDimens.shelfColumns,
+        crossAxisSpacing: AppDimens.shelfSpacing,
+        mainAxisSpacing: AppDimens.shelfRunSpacing,
+        // cover + title + progress
+        childAspectRatio: w / (h + 48),
       ),
+      itemCount: _shelfModel.shelf.length,
+      itemBuilder: (context, i) {
+        final book = _shelfModel.shelf[i];
+        return bookAction(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+                  boxShadow: AppShadows.cover,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+                  child: HasUpdateIconImg(w, h, this.widget.type, i),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                book.Name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: AppColors.textPrimary,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _progressLabel(book),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          i,
+        );
+      },
     );
+  }
+
+  String _progressLabel(Book book) {
+    final name = book.ChapterName.isNotEmpty
+        ? book.ChapterName
+        : (book.LastChapter.isNotEmpty ? book.LastChapter : '');
+    if (name.isEmpty) return '未开始阅读';
+    return '读到 · $name';
   }
 
   Widget bookAction(Widget widget, int i) {
@@ -129,69 +211,15 @@ class _BooksWidgetState extends State<BooksWidget> {
     );
   }
 
-  /**
-   * 封面子项
-   */
-  List<Widget> cover() {
-    List<Widget> wds = [];
-    List<Book> books = _shelfModel.shelf;
-    Book book;
-    for (int i = 0; i < books.length; i++) {
-      book = books[i];
-      wds.add(Container(
-        width: bookPicWidth,
-        child: bookAction(
-            Column(
-              children: [
-                Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadiusDirectional.circular(3)),
-                  clipBehavior: Clip.antiAlias,
-                  child: HasUpdateIconImg(bookPicWidth,
-                      bookPicWidth / aspectRatioCover, this.widget.type, i),
-                ),
-                SizedBox(
-                  height: 5,
-                ),
-                Center(
-                  child: Text(
-                    book.Name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                )
-              ],
-            ),
-            i),
-      ));
-    }
-    int len = 0;
-
-    len = (Screen.width - 20) ~/ bookPicWidth;
-    if (((Screen.width - 20) % bookPicWidth) < (len - 1) * 5) {
-      len -= 1;
-    }
-    SpUtil.putInt("lenx", len);
-    // }
-    //不满4的倍数填充container
-    int z = wds.length < len ? len - wds.length : len - wds.length % len;
-    if (z != 0) {
-      for (var i = 0; i < z; i++) {
-        wds.add(Container(
-          width: bookPicWidth,
-        ));
-      }
-    }
-    return wds;
-  }
-
   //书架列表模式
   Widget listModel() {
-    return ListView.builder(
-      cacheExtent: 500,
+    final w = _coverWidth * 0.85;
+    final h = w / aspectRatioList;
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 8, bottom: 24),
       itemCount: _shelfModel.shelf.length,
-      itemBuilder: (c, i) => bookAction(getBookItemView(i), i),
+      separatorBuilder: (_, __) => const Divider(height: 1, indent: 12),
+      itemBuilder: (c, i) => bookAction(getBookItemView(i, w, h), i),
     );
   }
 
@@ -207,52 +235,57 @@ class _BooksWidgetState extends State<BooksWidget> {
     _shelfModel.sort(i);
   }
 
-  /**
-   * 列表子项
-   */
-  getBookItemView(int i) {
+  getBookItemView(int i, double coverW, double coverH) {
     Book item = _shelfModel.shelf[i];
     return Dismissible(
       key: Key(item.Id.toString()),
       child: Container(
-        height: bookPicWidth / aspectRatioList,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        height: coverH + 16,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Row(
           children: <Widget>[
-            HasUpdateIconImg(bookPicWidth, bookPicWidth / aspectRatioList,
-                this.widget.type, i),
-            //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+              child: HasUpdateIconImg(
+                  coverW, coverH, this.widget.type, i),
+            ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
                       item.Name,
-                      style: TextStyle(
-                          fontSize: 18.0, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary),
                       maxLines: 1,
                     ),
                     Text(
                       item.Author,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12.0,
+                        color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                     ),
                     Text(
-                      item.LastChapter,
-                      style: TextStyle(fontSize: 12),
+                      _progressLabel(item),
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textSecondary),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    Text(
-                      item.UTime,
-                      style: TextStyle(color: Colors.grey, fontSize: 11),
-                      maxLines: 1,
-                    ),
+                    if (item.UTime.isNotEmpty)
+                      Text(
+                        item.UTime,
+                        style: const TextStyle(
+                            color: AppColors.textTertiary, fontSize: 11),
+                        maxLines: 1,
+                      ),
                   ],
                 ),
               ),
@@ -264,58 +297,11 @@ class _BooksWidgetState extends State<BooksWidget> {
         _shelfModel.modifyShelf(item);
       },
       background: Container(
-        color: Colors.green,
-        // 这里使用 ListTile 因为可以快速设置左右两端的Icon
-        child: ListTile(
-          leading: Icon(
-            Icons.bookmark,
-            color: Colors.white,
-          ),
+        color: AppColors.danger.withValues(alpha: 0.15),
+        child: const ListTile(
+          leading: Icon(Icons.delete, color: AppColors.danger),
         ),
       ),
-      secondaryBackground: Container(
-        color: Colors.red,
-        // 这里使用 ListTile 因为可以快速设置左右两端的Icon
-        child: ListTile(
-          trailing: Icon(
-            Icons.delete,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      confirmDismiss: (direction) async {
-        var _alertDialog;
-
-        if (direction == DismissDirection.endToStart) {
-          // 从右向左  也就是删除
-
-          _alertDialog = AlertDialog(
-              title: Text("确认删除"),
-              content: Text(item.Name),
-              actions: <Widget>[
-                TextButton(
-                    child: Text("取消"),
-                    onPressed: () => Navigator.of(context).pop(false)),
-                TextButton(
-                    child: Text("确定"),
-                    onPressed: () => Navigator.of(context).pop(true)),
-              ]);
-        } else {
-          return false;
-        }
-        var isDismiss = await showDialog(
-            context: context,
-            builder: (context) {
-              return _alertDialog;
-            });
-        return isDismiss;
-      },
     );
-  }
-
-  @override
-  void dispose() {
-    _refreshController.dispose();
-    super.dispose();
   }
 }

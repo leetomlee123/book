@@ -1,12 +1,13 @@
 ﻿import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
+import 'package:book/common/app_colors.dart';
 import 'package:book/common/common.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/model/ColorModel.dart';
 import 'package:book/model/SearchModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -15,7 +16,10 @@ class Search extends StatefulWidget {
   final String type;
   final String name;
 
-  Search(this.type, this.name);
+  /// When true, hosted inside [MainShell] — no back button, keep state.
+  final bool embedded;
+
+  Search(this.type, this.name, {this.embedded = false});
 
   @override
   State<StatefulWidget> createState() {
@@ -43,18 +47,14 @@ class _SearchState extends State<Search> {
   @override
   Widget build(BuildContext context) {
     value = Store.value<ColorModel>(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      backgroundColor: dark ? AppColors.scaffoldDark : AppColors.scaffold,
       appBar: AppBar(
         title: buildSearchWidget(),
-        backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        // actions: [TextButton(
-       
-        //   onPressed: () {
-        //     Navigator.pop(context);
-        //   }, child: Text("返回"),
-        // )],
+        automaticallyImplyLeading: !widget.embedded,
+        titleSpacing: widget.embedded ? AppDimens.pagePadding : 0,
       ),
       body:
           Store.connect<SearchModel>(builder: (context, SearchModel d, child) {
@@ -65,9 +65,17 @@ class _SearchState extends State<Search> {
 
   @override
   void dispose() {
+    // Keep SearchModel state when embedded in MainShell tabs.
+    if (!widget.embedded) {
+      try {
+        searchModel.clear();
+      } catch (_) {}
+    }
+    // Don't dispose controller if SearchModel still holds it (embedded tab).
+    if (!widget.embedded) {
+      controller.dispose();
+    }
     super.dispose();
-    searchModel.clear();
-    controller.dispose();
   }
 
   @override
@@ -105,7 +113,14 @@ class _SearchState extends State<Search> {
   }
 
   Widget buildSearchWidget() {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
+      height: AppDimens.searchBarHeight,
+      decoration: BoxDecoration(
+        color: dark ? AppColors.surfaceDark : const Color(0xFFF2F2F2),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      alignment: Alignment.center,
       child: TextField(
         key: textFieldKey,
         controller: controller,
@@ -114,35 +129,36 @@ class _SearchState extends State<Search> {
           searchModel.search(word);
         },
         onChanged: (value) async {
-          // AI suggest removed with backend.
           removeOverlay();
           setState(() {});
         },
-        style: TextStyle(
-          fontSize: 15,
-          height: 1.3,
-        ),
+        style: const TextStyle(fontSize: 14, height: 1.2),
         autofocus: false,
+        textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-            border: InputBorder.none,
-            isDense: true,
-            hintStyle: TextStyle(
-              fontSize: 15,
-            ),
-            prefixIcon: Icon(
-              Icons.search,
-            ),
-            suffixIcon: IconButton(
-              icon: Icon(Icons.close),
-              onPressed: () {
-                controller.text = "";
-                searchModel.reset();
-                removeOverlay();
-              },
-            ),
-            hintText: "书籍/作者名"),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          hintStyle: TextStyle(
+            fontSize: 14,
+            color: AppColors.textTertiary,
+          ),
+          prefixIcon: Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+          prefixIconConstraints: const BoxConstraints(minWidth: 36),
+          suffixIcon: controller.text.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close, size: 18, color: AppColors.textSecondary),
+                  onPressed: () {
+                    controller.text = "";
+                    searchModel.reset();
+                    removeOverlay();
+                    setState(() {});
+                  },
+                ),
+          hintText: "搜索书名或作者",
+        ),
       ),
-      height: 40,
     );
   }
 
@@ -205,40 +221,46 @@ class _SearchState extends State<Search> {
               child: Container(
                 height: 130,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(
                   children: <Widget>[
-                    PicWidget(
-                      item.Img,
-                      width: picW,
-                      height: picH,
+                    ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(AppDimens.coverRadius),
+                      child: PicWidget(
+                        item.Img,
+                        width: picW,
+                        height: picH,
+                      ),
                     ),
-
-                    //expanded 回占据剩余空间 text maxLine=1 就不会超过屏幕了
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
                               item.Name,
-                              style: TextStyle(
-                                  fontSize: 18.0, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  fontSize: 16.0,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary),
                               maxLines: 1,
                             ),
                             Text(
                               item.Author,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12.0,
+                                color: AppColors.textSecondary,
                               ),
                               maxLines: 1,
                             ),
                             Text(
-                              item.Desc.isEmpty ? "尚无介绍....." : item.Desc,
-                              style: TextStyle(
+                              item.Desc.isEmpty ? "暂无简介" : item.Desc,
+                              style: const TextStyle(
                                 fontSize: 12.0,
+                                color: AppColors.textSecondary,
                               ),
                               maxLines: 2,
                             ),
@@ -250,18 +272,22 @@ class _SearchState extends State<Search> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Colors.blueGrey.withOpacity(0.15),
+                                      color: AppColors.brandSoft,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
                                       item.sourceName,
-                                      style: TextStyle(fontSize: 11),
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.brand),
                                     ),
                                   ),
                                 Expanded(
                                   child: Text(
                                     item.LastChapter,
-                                    style: TextStyle(fontSize: 12),
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textTertiary),
                                     overflow: TextOverflow.ellipsis,
                                     maxLines: 1,
                                   ),

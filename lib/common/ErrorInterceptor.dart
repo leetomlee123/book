@@ -1,9 +1,13 @@
+import 'package:book/common/app_log.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:dio/dio.dart';
 
 class ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException e, ErrorInterceptorHandler handler) {
+    final url = e.requestOptions.uri.toString();
+    AppLog.e('Http', '${e.type.name} $url', error: e.message ?? e.error);
+
     if (e.type == DioExceptionType.connectionTimeout) {
       // It occurs when url is opened timeout.
       BotToast.showText(text: "连接超时");
@@ -21,7 +25,6 @@ class ErrorInterceptor extends Interceptor {
       BotToast.showText(text: "请求取消");
     } else {
       //DEFAULT Default error type, Some other Error. In this case, you can read the DioException.error if it is not null.
-//      log(e.message);
       BotToast.showText(text: "未知错误");
     }
     handler.next(e);

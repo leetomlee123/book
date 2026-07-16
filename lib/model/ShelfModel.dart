@@ -34,7 +34,8 @@ class ShelfModel with ChangeNotifier {
   }
 
   BuildContext? context;
-  bool cover = SpUtil.getBool("cover", defValue: false);
+  // WeChat Reading–like: cover grid is the product default.
+  bool cover = SpUtil.getBool("cover", defValue: true);
   bool sortShelf = false;
   DbHelper _dbHelper = DbHelper.instance;
   List<bool> _picks = [];

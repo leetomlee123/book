@@ -6,12 +6,14 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/app_log.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/LocalChapter.dart';
 import 'package:book/entity/ReadPage.dart';
+import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/model/SourceModel.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -74,9 +76,11 @@ class ReadModel with ChangeNotifier {
   //显示上层 设置
   bool showMenu = false;
 
-  //背景色索引
+  //背景色索引（legacy texture path; solid paper preferred）
   String bgPath =
       SpUtil.getString(Common.bgIdx, defValue: ReadSetting.bgImg.first);
+
+  PaperTheme paperTheme = ReadSetting.getPaperTheme();
 
 //章节翻页标志
   bool loadOk = false;
@@ -104,41 +108,118 @@ class ReadModel with ChangeNotifier {
     showMenu = false;
     loadOk = false;
     sSave = true;
+    widgets.clear();
+    prePage = null;
+    curPage = null;
+    nextPage = null;
     notifyListeners();
     if (bgUI == null) await changeBgUI();
     final b = book;
-    if (b == null) return;
+    if (b == null) {
+      AppLog.w('Read', 'getBookRecord: book is null');
+      return;
+    }
+
+    AppLog.i(
+      'Read',
+      'open id=${b.Id} name=${b.Name} cur=${b.cur} index=${b.index} '
+          'source=${b.originName} sourceUrl=${b.sourceUrl} bookUrl=${b.bookUrl}',
+    );
 
     if (b.sourceUrl.isEmpty || b.bookUrl.isEmpty) {
+      AppLog.w('Read', 'missing sourceUrl/bookUrl for ${b.Id}');
       BotToast.showText(text: '旧版云端书籍无法继续阅读，请重新搜索添加');
+      curPage = await _messagePage(
+        '无法阅读',
+        '旧版云端书籍缺少书源信息，请重新搜索添加后再阅读。',
+      );
+      b.index = 0;
       loadOk = true;
       notifyListeners();
       return;
     }
 
     await _ensureSource();
+    if (_activeSource == null) {
+      AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
+      BotToast.showText(text: '书源不存在：${b.originName}');
+      curPage = await _messagePage(
+        '书源不可用',
+        '未找到书源「${b.originName}」，请在书源管理中导入对应书源，或在阅读菜单中换源。',
+      );
+      b.index = 0;
+      loadOk = true;
+      notifyListeners();
+      return;
+    }
+
     chapters = await DbHelper.instance.getChapters(b.Id);
+    AppLog.i('Read', 'local chapters=${chapters.length}');
 
     if (chapters.isNotEmpty) {
       // refresh toc in background for new chapters
       getChapters();
 
+      if (b.cur < 0 || b.cur >= chapters.length) {
+        AppLog.w('Read', 'clamp cur ${b.cur} -> 0 (len=${chapters.length})');
+        b.cur = 0;
+      }
       await initPageContent(b.cur, false);
 
-      if (b.index == -1) {
-        b.index = (curPage?.pageOffsets ?? 1) - 1;
+      if (b.index < 0 || b.index >= (curPage?.pageOffsets ?? 1)) {
+        AppLog.w(
+          'Read',
+          'clamp index ${b.index} -> 0 (pages=${curPage?.pageOffsets})',
+        );
+        b.index = 0;
       }
       loadOk = true;
+      AppLog.i(
+        'Read',
+        'ready cur=${b.cur} index=${b.index} pages=${curPage?.pageOffsets} '
+            'contentLen=${curPage?.chapterContent.length}',
+      );
 
       notifyListeners();
     } else {
       b.cur = 0;
       await getChapters(init: true);
-      await initPageContent(b.cur, false);
-      b.index = 0;
+      AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
+      if (chapters.isEmpty) {
+        AppLog.e('Read', 'toc empty after fetch for ${b.bookUrl}');
+        curPage = await _messagePage(
+          '目录为空',
+          '未能获取章节目录，请检查书源规则、网络，或尝试换源。',
+        );
+        b.index = 0;
+      } else {
+        await initPageContent(b.cur, false);
+        b.index = 0;
+      }
       loadOk = true;
       notifyListeners();
     }
+  }
+
+  /// Build a single-page ReadPage with a readable error/hint message.
+  Future<ReadPage> _messagePage(String title, String message) async {
+    final page = ReadPage.kong();
+    page.chapterName = title;
+    page.chapterContent = message;
+    try {
+      page.pages = await TextComposition.parseContentAsync(page);
+    } catch (_) {
+      page.pages = const [];
+    }
+    if (page.pages.isEmpty) {
+      // Absolute fallback so drawContent never paints a blank canvas.
+      page.pages = [
+        TextPage([
+          TextLine(message, 16, 0, 0),
+        ], 24),
+      ];
+    }
+    return page;
   }
 
   Future<void> _ensureSource() async {
@@ -158,22 +239,40 @@ class ReadModel with ChangeNotifier {
         backgroundColor: isDark() ? Colors.black : Colors.white);
 
     try {
-      // await Future.wait([
+      final b = book;
+      if (b != null && chapters.isNotEmpty) {
+        if (idx < 0) idx = 0;
+        if (idx >= chapters.length) idx = chapters.length - 1;
+        b.cur = idx;
+      }
+
       curPage = await loadChapter(idx);
+      if (curPage == null) {
+        curPage = await _messagePage(
+          '加载失败',
+          '当前章节内容为空，请检查书源或点击菜单刷新。',
+        );
+      }
 
-      loadChapter(idx + 1).then((value) => {nextPage = value});
+      // Drop stale page-picture cache for this book so new layout is painted.
+      widgets.clear();
 
-      loadChapter(idx - 1).then((value) => {prePage = value});
+      loadChapter(idx + 1).then((value) => nextPage = value);
+      loadChapter(idx - 1).then((value) => prePage = value);
 
       if (jump) {
         book?.index = 0;
-        final ro = canvasKey?.currentContext?.findRenderObject();
-        if (ro != null) {
-          ro.markNeedsPaint();
-        }
+      }
+      final ro = canvasKey?.currentContext?.findRenderObject();
+      if (ro != null) {
+        ro.markNeedsPaint();
       }
       notifyListeners();
-    } catch (e) {}
+    } catch (e, st) {
+      AppLog.e('Read', 'initPageContent failed idx=$idx', error: e, stackTrace: st);
+      curPage ??= await _messagePage('加载失败', '章节加载异常：$e');
+      notifyListeners();
+    }
 
     BotToast.closeAllLoading();
   }
@@ -189,8 +288,21 @@ class ReadModel with ChangeNotifier {
   }
 
   switchBgColor(i) async {
+    // Legacy texture path.
     bgPath = i;
     SpUtil.putString(Common.bgIdx, i);
+    ReadSetting.setUseSolidPaper(false);
+    await colorModelSwitch();
+    notifyListeners();
+  }
+
+  /// WeChat-style solid paper swatch.
+  Future<void> switchPaperTheme(PaperTheme theme) async {
+    paperTheme = theme;
+    ReadSetting.setPaperTheme(theme);
+    ReadSetting.setUseSolidPaper(true);
+    widgets.clear();
+    bgUI = null; // solid fill only
     await colorModelSwitch();
     notifyListeners();
   }
@@ -259,17 +371,28 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<ReadPage?> loadChapter(int idx) async {
-    ReadPage r = ReadPage.kong();
+    // Empty toc: never treat as "beyond last chapter" (0 == length).
+    if (chapters.isEmpty) {
+      return _messagePage(
+        '目录为空',
+        '暂无章节，请检查书源或网络后重试。',
+      );
+    }
     if (idx < 0) {
+      final r = ReadPage.kong();
       r.chapterName = "1";
       r.chapterContent = "Fall In Love At First Sight ,Miss.Zhang";
       return r;
-    } else if (idx == chapters.length) {
+    }
+    // Past last chapter — used as nextPage sentinel.
+    if (idx >= chapters.length) {
+      final r = ReadPage.kong();
       r.chapterName = "-1";
       r.chapterContent = "没有更多内容,等待作者更新";
       return null;
     }
     var chapter = chapters[idx];
+    final r = ReadPage.kong();
     r.chapterName = chapter.chapterName;
     String chapterId = chapter.chapterId;
 
@@ -282,13 +405,15 @@ class ReadModel with ChangeNotifier {
 
     if (r.chapterContent.isEmpty) {
       r.chapterContent = await getChapterContent(chapterId, idx: idx);
-      if (r.chapterContent.isNotEmpty) {
+      if (r.chapterContent.isNotEmpty &&
+          !r.chapterContent.startsWith('章节内容加载失败') &&
+          !r.chapterContent.startsWith('书源不存在') &&
+          !r.chapterContent.startsWith('章节地址为空')) {
         var temp = [ChapterNode(r.chapterContent, chapterId)];
         await DbHelper.instance.udpChapter(temp);
         chapters[idx].hasContent = "2";
-      } else {
+      } else if (r.chapterContent.isEmpty) {
         r.chapterContent = "章节内容加载失败，请检查书源或换源后重试";
-        return r;
       }
     }
 
@@ -303,7 +428,24 @@ class ReadModel with ChangeNotifier {
       SpUtil.remove(k);
     } else {
       // Rust pagination runs in a background isolate; Dart fallback yields once.
-      r.pages = await TextComposition.parseContentAsync(r);
+      try {
+        r.pages = await TextComposition.parseContentAsync(r);
+      } catch (e, st) {
+        AppLog.e('Read', 'parseContentAsync failed idx=$idx', error: e, stackTrace: st);
+        r.pages = const [];
+      }
+    }
+
+    if (r.pages.isEmpty) {
+      // Ensure something is always drawable.
+      try {
+        r.pages = await TextComposition.parseContentAsync(r);
+      } catch (_) {}
+      if (r.pages.isEmpty) {
+        r.pages = [
+          TextPage([TextLine(r.chapterContent, 16, 0, 0)], 24),
+        ];
+      }
     }
 
     return r;
@@ -475,6 +617,12 @@ class ReadModel with ChangeNotifier {
   ui.Picture? cur() {
     final b = book;
     if (b == null || curPage == null) return null;
+    // Clamp page index so we never index past pages (blank canvas / crash).
+    if (curPage!.pages.isEmpty) return null;
+    if (b.index < 0) b.index = 0;
+    if (b.index >= curPage!.pageOffsets) {
+      b.index = curPage!.pageOffsets - 1;
+    }
     var key = b.Id.toString() + b.cur.toString() + b.index.toString();
 
     if (widgets.containsKey(key)) {
@@ -517,18 +665,35 @@ class ReadModel with ChangeNotifier {
   ui.Picture drawContent(ReadPage readPage, int i) {
     ui.PictureRecorder pageRecorder = ui.PictureRecorder();
 
-    final bool isDark = SpUtil.getBool("dark", defValue: false);
+    paperTheme = ReadSetting.getPaperTheme();
+    final bool night = paperTheme == PaperTheme.night ||
+        SpUtil.getBool("dark", defValue: false);
+    final effectivePaper =
+        night ? PaperTheme.night : paperTheme;
+    final paper = ReadSetting.paperColor(effectivePaper);
+    final ink = ReadSetting.inkColor(effectivePaper);
+    final meta = ReadSetting.metaColor(effectivePaper);
+
     var contentPadding = ReadSetting.getPageDis().toDouble();
+    final pageW = Screen.width;
+    final pageH = Screen.height;
     Canvas pageCanvas = Canvas(
-        pageRecorder, Rect.fromLTWH(0, 0, Screen.width, Screen.height));
-    Paint selfPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true
-      ..strokeCap = StrokeCap.butt
-      ..strokeWidth = 30.0;
-    final bg = bgUI;
-    if (bg != null) {
-      pageCanvas.drawImage(bg, Offset(0, 0), selfPaint);
+        pageRecorder, Rect.fromLTWH(0, 0, pageW, pageH));
+    // Solid paper base (WeChat style). Texture image is optional overlay.
+    pageCanvas.drawRect(
+      Rect.fromLTWH(0, 0, pageW, pageH),
+      Paint()..color = paper,
+    );
+    if (!ReadSetting.useSolidPaper()) {
+      Paint selfPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..isAntiAlias = true
+        ..strokeCap = StrokeCap.butt
+        ..strokeWidth = 30.0;
+      final bg = bgUI;
+      if (bg != null) {
+        pageCanvas.drawImage(bg, Offset(0, 0), selfPaint);
+      }
     }
 
     //章节
@@ -536,7 +701,7 @@ class ReadModel with ChangeNotifier {
         text: "${readPage.chapterName}",
         style: TextStyle(
           fontSize: 12 / Screen.textScaleFactor,
-          color: isDark ? darkFont : Colors.black54,
+          color: meta,
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
         ));
     textPainter.layout();
@@ -545,17 +710,35 @@ class ReadModel with ChangeNotifier {
         Offset(contentPadding, 15 + SpUtil.getDouble(Common.top_safe_height)));
     //正文
     TextStyle style = TextStyle(
-        color: SpUtil.getBool('dark') ? darkFont : Colors.black,
+        color: ink,
         locale: Locale('zh_CN'),
         fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
         fontSize: ReadSetting.getFontSize(),
         // letterSpacing: ReadSetting.getLatterSpace(),
         height: ReadSetting.getLineHeight());
 
-    final TextPage page = readPage.pages[i];
+    if (readPage.pages.isEmpty) {
+      textPainter.text = TextSpan(
+        text: readPage.chapterContent.isNotEmpty
+            ? readPage.chapterContent
+            : '内容为空',
+        style: style,
+      );
+      textPainter.layout(maxWidth: pageW - contentPadding * 2);
+      textPainter.paint(
+        pageCanvas,
+        Offset(
+          contentPadding,
+          45 + SpUtil.getDouble(Common.top_safe_height),
+        ),
+      );
+      return pageRecorder.endRecording();
+    }
+    final pageIndex = i.clamp(0, readPage.pages.length - 1);
+    final TextPage page = readPage.pages[pageIndex];
     final lineCount = page.lines.length;
-    for (var i = 0; i < lineCount; i++) {
-      final line = page.lines[i];
+    for (var li = 0; li < lineCount; li++) {
+      final line = page.lines[li];
       final ls = line.letterSpacing;
       if (ls != null && (ls < -0.1 || ls > 0.1)) {
         textPainter.text = TextSpan(
@@ -601,8 +784,7 @@ class ReadModel with ChangeNotifier {
     double electricQuantityBottom = size.height - 2 * mStrokeWidth + bottomH;
 
     mPaint.style = PaintingStyle.fill;
-    mPaint.color = isDark ? darkFont : Colors.black54;
-    // mPaint.color = Color(0x80ffffff);
+    mPaint.color = meta;
     //画电池头部
     pageCanvas.drawRRect(
         RRect.fromLTRBR(
@@ -623,7 +805,7 @@ class ReadModel with ChangeNotifier {
             Radius.circular(mStrokeWidth)),
         mPaint);
     mPaint.style = PaintingStyle.fill;
-    mPaint.color = isDark ? darkFont : Colors.black38;
+    mPaint.color = meta;
     //画电池电量
     pageCanvas.drawRRect(
         RRect.fromLTRBR(
@@ -639,7 +821,7 @@ class ReadModel with ChangeNotifier {
       style: TextStyle(
         fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
         fontSize: 12 / Screen.textScaleFactor,
-        color: SpUtil.getBool('dark') ? darkFont : Colors.black54,
+        color: meta,
       ),
     );
     textPainter.layout();
@@ -651,7 +833,7 @@ class ReadModel with ChangeNotifier {
         style: TextStyle(
           fontSize: 12 / Screen.textScaleFactor,
           fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
-          color: isDark ? darkFont : Colors.black54,
+          color: meta,
         ));
     textPainter.layout();
     textPainter.paint(
@@ -773,12 +955,17 @@ class ReadModel with ChangeNotifier {
       return '章节地址为空，请重新加载目录';
     }
     try {
+      AppLog.d('Read', 'fetch content idx=$idx url=$chapterUrl');
       final content = await _engine.content(source, chapterUrl);
       if (content.isEmpty) {
+        AppLog.w('Read', 'empty content idx=$idx url=$chapterUrl');
         return '章节内容加载失败，请检查书源或换源后重试';
       }
+      AppLog.d('Read', 'content ok idx=$idx len=${content.length}');
       return content;
-    } catch (e) {
+    } catch (e, st) {
+      AppLog.e('Read', 'content failed idx=$idx url=$chapterUrl',
+          error: e, stackTrace: st);
       return '章节内容加载失败，请检查书源或换源后重试\n$e';
     }
   }
@@ -952,7 +1139,6 @@ class ReadModel with ChangeNotifier {
   bool isCanGoNext() {
     final b = book;
     if (b == null) return false;
-    print(b.index);
     if (b.cur >= (chapters.length - 1)) {
       if (b.index >= ((curPage?.pageOffsets ?? 1) - 1)) {
         return false;
@@ -972,7 +1158,13 @@ class ReadModel with ChangeNotifier {
   }
 
   changeBgUI() async {
-    if (SpUtil.getBool("dark")) {
+    paperTheme = ReadSetting.getPaperTheme();
+    // Solid paper mode: no texture image.
+    if (ReadSetting.useSolidPaper()) {
+      bgUI = null;
+      return;
+    }
+    if (SpUtil.getBool("dark") || paperTheme == PaperTheme.night) {
       bgUI = await getAssetImage("images/${ReadSetting.bgImg.last}",
           width: Screen.width.ceil(), height: Screen.height.ceil());
     } else {

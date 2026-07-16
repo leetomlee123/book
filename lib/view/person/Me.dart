@@ -1,5 +1,7 @@
 import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_account.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/main.dart';
 import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
@@ -9,12 +11,16 @@ import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
 import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Me extends StatelessWidget {
+  /// Hosted inside MainShell bottom tab.
+  final bool embedded;
+
+  const Me({this.embedded = false, super.key});
+
   Widget getItem(imageIcon, text, func, Color c) {
     return ListTile(
       onTap: func,
@@ -78,10 +84,13 @@ class Me extends StatelessWidget {
   Widget build(BuildContext context) {
     bool dark = SpUtil.getBool("dark");
     Color c = Color(dark ? 0x4D000000 : 0xFBFFFFFF);
+    final topPad = embedded ? MediaQuery.of(context).padding.top + 12 : kToolbarHeight;
 
-    return Padding(
+    return Scaffold(
+      backgroundColor: dark ? AppColors.scaffoldDark : AppColors.scaffold,
+      body: Padding(
       padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: kToolbarHeight),
+          EdgeInsets.symmetric(horizontal: 10, vertical: topPad),
       child: ConstrainedBox(
         constraints: BoxConstraints.expand(),
         child: Stack(
@@ -131,6 +140,14 @@ class Me extends StatelessWidget {
                   '书源管理',
                   () {
                     Routes.navigateTo(context, Routes.sources);
+                  },
+                  c,
+                ),
+                getItem(
+                  Icon(Icons.bug_report_outlined),
+                  '运行日志',
+                  () {
+                    Routes.navigateTo(context, Routes.logs);
                   },
                   c,
                 ),
@@ -224,6 +241,7 @@ class Me extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

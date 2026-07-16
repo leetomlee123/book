@@ -1,8 +1,7 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:book/common/ReadSetting.dart';
-import 'package:book/common/Screen.dart';
-import 'package:book/common/common.dart';
+import 'package:book/common/app_colors.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -12,7 +11,6 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/SourceSwitchSheet.dart';
 import 'package:book/view/system/MenuConfig.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class Menu extends StatefulWidget {
@@ -27,7 +25,7 @@ class _MenuState extends State<Menu> {
   late ReadModel _readModel;
   late ColorModel _colorModel;
 
-  double settingH = 340;
+  double settingH = 360;
 
   @override
   void initState() {
@@ -36,69 +34,88 @@ class _MenuState extends State<Menu> {
     _colorModel = Store.value<ColorModel>(context);
   }
 
+  Color get _panelBg =>
+      _colorModel.dark ? AppColors.surfaceDark : AppColors.surface;
+
+  Color get _fg =>
+      _colorModel.dark ? AppColors.textOnDark : AppColors.textPrimary;
+
   Widget head() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _colorModel.dark ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(10.0)),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 15.0),
-      child: Row(
-        children: [
-          Text(
-            '${_readModel.book?.Name ?? ""}',
-            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 22),
-          ),
-          // Spacer(),
-          Spacer(),
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: () {
-              _readModel.reloadCurrentPage();
-            },
-          ),
-          IconButton(
-            tooltip: '换源',
-            icon: Icon(Icons.swap_horiz),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (_) => SourceSwitchSheet(readModel: _readModel),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.info),
-            onPressed: () async {
-              final b = _readModel.book;
-              if (b == null) return;
-              final info = BookInfo(
-                0,
-                b.Author,
-                '',
-                b.CId,
-                b.CName,
-                b.Id,
-                b.Name,
-                b.Img,
-                0,
-                b.Desc,
-                b.LastChapterId,
-                b.LastChapter,
-                '',
-                b.UTime,
-                const [],
-                sourceUrl: b.sourceUrl,
-                bookUrl: b.bookUrl,
-                originName: b.originName,
-                tocUrl: b.tocUrl,
-              );
-              Routes.navigateTo(context, Routes.detail,
-                  params: {"detail": jsonEncode(info)}, replace: true);
-            },
-          )
-        ],
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: _panelBg,
+          boxShadow: AppShadows.softBar,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.arrow_back_ios_new, size: 18, color: _fg),
+              onPressed: () => Navigator.maybePop(context),
+            ),
+            Expanded(
+              child: Text(
+                _readModel.book?.Name ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: _fg,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: '刷新',
+              icon: Icon(Icons.refresh, color: _fg),
+              onPressed: () => _readModel.reloadCurrentPage(),
+            ),
+            IconButton(
+              tooltip: '换源',
+              icon: Icon(Icons.swap_horiz, color: _fg),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => SourceSwitchSheet(readModel: _readModel),
+                );
+              },
+            ),
+            IconButton(
+              tooltip: '详情',
+              icon: Icon(Icons.info_outline, color: _fg),
+              onPressed: () async {
+                final b = _readModel.book;
+                if (b == null) return;
+                final info = BookInfo(
+                  0,
+                  b.Author,
+                  '',
+                  b.CId,
+                  b.CName,
+                  b.Id,
+                  b.Name,
+                  b.Img,
+                  0,
+                  b.Desc,
+                  b.LastChapterId,
+                  b.LastChapter,
+                  '',
+                  b.UTime,
+                  const [],
+                  sourceUrl: b.sourceUrl,
+                  bookUrl: b.bookUrl,
+                  originName: b.originName,
+                  tocUrl: b.tocUrl,
+                );
+                Routes.navigateTo(context, Routes.detail,
+                    params: {"detail": jsonEncode(info)}, replace: true);
+              },
+            )
+          ],
+        ),
       ),
     );
   }
@@ -107,160 +124,102 @@ class _MenuState extends State<Menu> {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          color: Colors.transparent,
-        ),
+        child: Container(color: Colors.transparent),
         onTap: () {
           type = Type.SLIDE;
           _readModel.toggleShowMenu();
-          // if (_readModel.font) {
-          //   _readModel.reCalcPages();
-          // }
         },
       ),
     );
   }
 
   Widget chapterSlide() {
+    final max = (_readModel.chapters.isEmpty)
+        ? 0.0
+        : (_readModel.chapters.length - 1).toDouble();
+    final cur = (_readModel.book?.cur ?? 0).toDouble().clamp(0.0, max);
     return Container(
-        padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
-        child: Row(
-          children: <Widget>[
-            TextButton(
-                onPressed: () async {
-                  if ((_readModel.book!.cur - 1) < 0) {
-                    BotToast.showText(text: '已经是第一章');
-                    return;
-                  }
-                  _readModel.book!.cur -= 1;
-                  await _readModel.initPageContent(_readModel.book!.cur, true);
-                },
-                child: Text('上一章')),
-            Expanded(
-              child: Container(
-                child: Slider(
-                  // activeColor: Colors.white,
-                  // inactiveColor: Colors.white70,
-                  value: _readModel.book!.cur.toDouble(),
-                  max: (_readModel.chapters.length - 1).toDouble(),
-                  min: 0.0,
-                  onChanged: (newValue) {
-                    int temp = newValue.round();
-                    _readModel.book!.cur = temp;
-
-                    _readModel.initPageContent(_readModel.book!.cur, true);
-                  },
-                  label:
-                      '${_readModel.chapters[_readModel.book!.cur].chapterName} ',
-                  semanticFormatterCallback: (newValue) {
-                    return '${newValue.round()} dollars';
-                  },
-                ),
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Row(
+        children: <Widget>[
+          TextButton(
+              onPressed: () async {
+                if ((_readModel.book!.cur - 1) < 0) {
+                  BotToast.showText(text: '已经是第一章');
+                  return;
+                }
+                _readModel.book!.cur -= 1;
+                await _readModel.initPageContent(_readModel.book!.cur, true);
+              },
+              child: const Text('上一章', style: TextStyle(fontSize: 13))),
+          Expanded(
+            child: Slider(
+              value: cur,
+              max: max <= 0 ? 1 : max,
+              min: 0.0,
+              onChanged: max <= 0
+                  ? null
+                  : (newValue) {
+                      _readModel.book!.cur = newValue.round();
+                      setState(() {});
+                    },
+              onChangeEnd: max <= 0
+                  ? null
+                  : (newValue) {
+                      _readModel.initPageContent(newValue.round(), true);
+                    },
             ),
-            TextButton(
-                onPressed: () async {
-                  if ((_readModel.book!.cur + 1) >= _readModel.chapters.length) {
-                    BotToast.showText(text: "已经是最后一章");
-                    return;
-                  }
-                  _readModel.book!.cur += 1;
-
-                  await _readModel.initPageContent(_readModel.book!.cur, true);
-                },
-                child: Text('下一章')),
-          ],
-        ));
+          ),
+          TextButton(
+              onPressed: () async {
+                if ((_readModel.book!.cur + 1) >= _readModel.chapters.length) {
+                  BotToast.showText(text: "已经是最后一章");
+                  return;
+                }
+                _readModel.book!.cur += 1;
+                await _readModel.initPageContent(_readModel.book!.cur, true);
+              },
+              child: const Text('下一章', style: TextStyle(fontSize: 13))),
+        ],
+      ),
+    );
   }
 
   Widget downloadWidget() {
     return Container(
-      decoration: BoxDecoration(
-        color: _colorModel.dark ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(10.0)),
-      ),
       height: 70,
-      child: Column(
-        children: <Widget>[
-          Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: <Widget>[
-                Container(
-                  decoration: BoxDecoration(
-                      color: _colorModel.dark ? Colors.black : Colors.white),
-                  height: 40,
-                  width: (Screen.width - 40) / 2,
-                  margin: EdgeInsets.only(top: 15, bottom: 15),
-                  child: GestureDetector(
-                    onTap: () {
-                      BotToast.showText(text: '从当前章节开始下载...');
-
-                      _readModel.downloadAll(_readModel.book!.cur);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(20.0)),
-                          border: Border.all(
-                            width: 1,
-                            color:
-                                _colorModel.dark ? Colors.white : Colors.black,
-                          )),
-                      alignment: Alignment(0, 0),
-                      child: Text(
-                        '从当前章节缓存',
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 20,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                      color: _colorModel.dark ? Colors.black : Colors.white),
-                  height: 40,
-                  width: (Screen.width - 40) / 2,
-                  margin: EdgeInsets.only(top: 15, bottom: 15),
-                  child: GestureDetector(
-                    onTap: () {
-                      BotToast.showText(text: '开始全本下载...');
-
-                      _readModel.downloadAll(0);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(25.0)),
-                          border: Border.all(
-                            width: 1,
-                            color:
-                                _colorModel.dark ? Colors.white : Colors.black,
-                          )),
-                      alignment: Alignment(0, 0),
-                      child: Text(
-                        '全本缓存',
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      child: Row(
+        children: [
+          Expanded(child: _cacheBtn('从当前章节缓存', () {
+            BotToast.showText(text: '从当前章节开始下载...');
+            _readModel.downloadAll(_readModel.book!.cur);
+          })),
+          const SizedBox(width: 12),
+          Expanded(child: _cacheBtn('全本缓存', () {
+            BotToast.showText(text: '开始全本下载...');
+            _readModel.downloadAll(0);
+          })),
         ],
       ),
-      padding: EdgeInsets.only(left: 15.0),
+    );
+  }
+
+  Widget _cacheBtn(String label, VoidCallback onTap) {
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: _fg.withValues(alpha: 0.35)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Text(label, style: TextStyle(color: _fg, fontSize: 13)),
     );
   }
 
   Widget moreSetting() {
     return Container(
-      
-      decoration: BoxDecoration(
-        // color: _colorModel.dark ? Colors.black : Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(10.0)),
-      ),
       height: settingH,
-      
+      padding: const EdgeInsets.all(15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -282,137 +241,65 @@ class _MenuState extends State<Menu> {
             min: 10,
             max: 60,
           ),
-          Row(
-            children: [
-              Text("行距", style: TextStyle(fontSize: 13.0)),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.subLineHeight();
-                  _readModel.updPage();
-                },
-                icon: Icon(Icons.remove),
-              ),
-              Expanded(
-                child: Container(
-                  height: 12,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 1,
-                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: SliderComponentShape.noOverlay,
-                    ),
-                    child: Slider(
-                      value: ReadSetting.getLineHeight(),
-                      onChanged: (v) {
-                        ReadSetting.setLineHeight(v);
-                        _readModel.updPage();
-                      },
-                      min: .1,
-                      max: 4.0,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.addLineHeight();
-                  _readModel.updPage();
-                },
-                icon: Icon(Icons.add),
-              ),
-              // Text('${ReadSetting.getLineHeight().toStringAsFixed(1)}')
-            ],
+          _sliderRow(
+            '行距',
+            ReadSetting.getLineHeight(),
+            0.1,
+            4.0,
+            (v) {
+              ReadSetting.setLineHeight(v);
+              _readModel.updPage();
+            },
+            () {
+              ReadSetting.subLineHeight();
+              _readModel.updPage();
+            },
+            () {
+              ReadSetting.addLineHeight();
+              _readModel.updPage();
+            },
           ),
-          Row(
-            children: [
-              Text("段距", style: TextStyle(fontSize: 13.0)),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.subParagraph();
-                  _readModel.updPage();
-                },
-                icon: Icon(Icons.remove),
-              ),
-              Expanded(
-                child: Container(
-                  height: 12,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 1,
-                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: SliderComponentShape.noOverlay,
-                    ),
-                    child: Slider(
-                      value: ReadSetting.getParagraph(),
-                      onChanged: (v) {
-                        ReadSetting.setParagraph(v);
-                        _readModel.updPage();
-                      },
-                      min: .1,
-                      max: 2.0,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.addParagraph();
-                  _readModel.updPage();
-                },
-                icon: Icon(Icons.add),
-              ),
-              // Text('${ReadSetting.getParagraph().toStringAsFixed(1)}')
-            ],
+          _sliderRow(
+            '段距',
+            ReadSetting.getParagraph(),
+            0.1,
+            2.0,
+            (v) {
+              ReadSetting.setParagraph(v);
+              _readModel.updPage();
+            },
+            () {
+              ReadSetting.subParagraph();
+              _readModel.updPage();
+            },
+            () {
+              ReadSetting.addParagraph();
+              _readModel.updPage();
+            },
           ),
-          Row(
-            children: [
-              Text("页距", style: TextStyle(fontSize: 13.0)),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.calcPageDis(-1);
-                  _readModel.updPage();
-                },
-                icon: Icon(Icons.remove),
-              ),
-              Expanded(
-                child: Container(
-                  height: 12,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 1,
-                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: SliderComponentShape.noOverlay,
-                    ),
-                    child: Slider(
-                      value: ReadSetting.getPageDis().toDouble(),
-                      onChanged: (v) {
-                        ReadSetting.setPageDis(v.toInt());
-                        _readModel.updPage();
-                      },
-                      min: 0,
-                      max: 50,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  ReadSetting.calcPageDis(1);
-                  _readModel.updPage();
-                },
-                icon: Icon(Icons.add),
-              ),
-              // Text('${ReadSetting.getPageDis()}')
-            ],
+          _sliderRow(
+            '页距',
+            ReadSetting.getPageDis().toDouble(),
+            0,
+            50,
+            (v) {
+              ReadSetting.setPageDis(v.toInt());
+              _readModel.updPage();
+            },
+            () {
+              ReadSetting.calcPageDis(-1);
+              _readModel.updPage();
+            },
+            () {
+              ReadSetting.calcPageDis(1);
+              _readModel.updPage();
+            },
           ),
-          Expanded(
-              child: ListView(
-            children: bgThemes(),
-            scrollDirection: Axis.horizontal,
-          )),
-          // Expanded(
-          //   child: flipType(),
-          // ),
+          const SizedBox(height: 8),
+          Text('背景', style: TextStyle(fontSize: 13, color: _fg)),
+          const SizedBox(height: 8),
+          Row(children: solidPaperSwatches()),
+          const Spacer(),
           Row(
             children: [
               Expanded(
@@ -423,29 +310,27 @@ class _MenuState extends State<Menu> {
                         borderRadius: BorderRadius.circular(18.0),
                       ),
                       side: BorderSide(
-                        width: 2,
-                        color: _colorModel.dark ? Colors.white : Theme.of(context).primaryColor,
+                        width: 1.5,
+                        color: Theme.of(context).primaryColor,
                       ),
                     ),
                     onPressed: () {
                       Routes.navigateTo(context, Routes.fontSet);
                     },
-                    child: Text('字体')),
+                    child: const Text('字体')),
               ),
-              Expanded(child: Container(), flex: 2),
+              const Spacer(flex: 1),
               Expanded(
                 flex: 3,
                 child: SwitchListTile(
-                  contentPadding: EdgeInsets.only(left: 15),
+                  contentPadding: EdgeInsets.zero,
                   value: _readModel.leftClickNext,
                   onChanged: (value) {
                     _readModel.switchClickNextPage();
                   },
                   title: Text(
                     '单手模式',
-                    style: TextStyle(
-                        fontSize: 13,
-                        color: _colorModel.dark ? Colors.white : Colors.black),
+                    style: TextStyle(fontSize: 13, color: _fg),
                   ),
                   selected: _readModel.leftClickNext,
                 ),
@@ -454,66 +339,85 @@ class _MenuState extends State<Menu> {
           ),
         ],
       ),
-      padding: EdgeInsets.all(15),
     );
   }
 
-  Widget flipType() {
+  Widget _sliderRow(
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+    VoidCallback onMinus,
+    VoidCallback onPlus,
+  ) {
     return Row(
-      children: <Widget>[
-        Container(
-          child: Center(
-            child: Text('翻页动画', style: TextStyle(fontSize: 13.0)),
+      children: [
+        Text(label, style: TextStyle(fontSize: 13.0, color: _fg)),
+        IconButton(
+            onPressed: onMinus, icon: const Icon(Icons.remove, size: 18)),
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 1,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: SliderComponentShape.noOverlay,
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              onChanged: onChanged,
+              min: min,
+              max: max,
+            ),
           ),
-          height: 40,
-          width: 40,
         ),
-        SizedBox(
-          width: 10,
-        ),
-        TextButton(
-            style: ButtonStyle(
-              side: WidgetStateProperty.all(BorderSide(
-                  color: !SpUtil.getBool(Common.turnPageAnima)
-                      ? _colorModel.dark
-                          ? Colors.white
-                          : Theme.of(context).primaryColor
-                      : Colors.white10,
-                  width: 1)),
-            ),
-            onPressed: () {
-              if (mounted) {
-                setState(() {
-                  SpUtil.putBool(Common.turnPageAnima, false);
-                  eventBus.fire(ZEvent(200));
-                });
-              }
-            },
-            child: Text('无')),
-        SizedBox(
-          width: 10,
-        ),
-        TextButton(
-            style: ButtonStyle(
-              side: WidgetStateProperty.all(BorderSide(
-                  color: SpUtil.getBool(Common.turnPageAnima)
-                      ? _colorModel.dark
-                          ? Colors.white
-                          : Theme.of(context).primaryColor
-                      : Colors.white10,
-                  width: 1)),
-            ),
-            onPressed: () {
-              if (mounted) {
-                setState(() {
-                  SpUtil.putBool(Common.turnPageAnima, true);
-                  eventBus.fire(ZEvent(200));
-                });
-              }
-            },
-            child: Text('覆盖')),
+        IconButton(onPressed: onPlus, icon: const Icon(Icons.add, size: 18)),
       ],
     );
+  }
+
+  List<Widget> solidPaperSwatches() {
+    final current = ReadSetting.getPaperTheme();
+    return ReadSetting.solidPapers.map((t) {
+      final selected = current == t;
+      return Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: GestureDetector(
+          onTap: () async {
+            final wasDark = _colorModel.dark;
+            await _readModel.switchPaperTheme(t);
+            final nowDark = t == PaperTheme.night;
+            if (wasDark != nowDark) {
+              _colorModel.switchModel();
+            }
+            setState(() {});
+          },
+          child: Column(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: ReadSetting.paperColor(t),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    width: selected ? 2 : 1,
+                    color: selected
+                        ? Theme.of(context).primaryColor
+                        : AppColors.divider,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                ReadSetting.paperLabel(t),
+                style: TextStyle(fontSize: 11, color: _fg),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Widget bottomHead() {
@@ -527,188 +431,103 @@ class _MenuState extends State<Menu> {
     }
   }
 
-  Widget reloadCurChapterWidget() {
-    return Container(
-      width: 50,
-      height: 50,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-          color: Colors.grey, borderRadius: BorderRadius.circular(25)),
-      child: IconButton(
-        onPressed: () {
-          _readModel.reloadCurrentPage();
-        },
-        icon: Icon(
-          Icons.refresh,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: GestureDetector(
-        child: Stack(
-          children: [
-            Column(
-              children: <Widget>[
-                // head(),
-
-                midTransparent(),
-
-                Container(
-                  decoration: BoxDecoration(
-                    color: _colorModel.dark ? Colors.black : Colors.white,
-                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[bottomHead(), buildBottomMenus()],
-                  ),
-                )
-              ],
+    return Material(
+      color: Colors.transparent,
+      child: Column(
+        children: <Widget>[
+          head(),
+          midTransparent(),
+          Container(
+            decoration: BoxDecoration(
+              color: _panelBg,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+              boxShadow: AppShadows.softBar,
             ),
-            Offstage(
-                offstage: type != Type.SLIDE,
-                child: Align(
-                  child: reloadCurChapterWidget(),
-                  alignment: Alignment(.9, .5),
-                ))
-          ],
-        ),
-        onTap: () {
-          _readModel.toggleShowMenu();
-        },
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[bottomHead(), buildBottomMenus()],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  buildBottomMenus() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: <Widget>[
-        buildBottomItem('目录', Icons.menu),
-        TextButton(
-            child: Container(
+  Widget buildBottomMenus() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4, top: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: <Widget>[
+          buildBottomItem('目录', Icons.menu),
+          TextButton(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Icon(
                     _colorModel.dark ? Icons.light_mode : Icons.dark_mode,
-                    // color: Colors.white,
+                    color: _fg,
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 4),
                   Text(_colorModel.dark ? '日间' : '夜间',
-                      style: TextStyle(fontSize: 12)),
+                      style: TextStyle(fontSize: 11, color: _fg)),
                 ],
               ),
-            ),
-            onPressed: () async {
-              Store.value<ColorModel>(context).switchModel();
-              await _readModel.colorModelSwitch();
-            }),
-        buildBottomItem('缓存', Icons.cloud_download),
-        buildBottomItem('设置', Icons.settings),
-      ],
+              onPressed: () async {
+                Store.value<ColorModel>(context).switchModel();
+                final night = Store.value<ColorModel>(context).dark;
+                await _readModel.switchPaperTheme(
+                    night ? PaperTheme.night : PaperTheme.cream);
+                setState(() {});
+              }),
+          buildBottomItem('缓存', Icons.cloud_download),
+          buildBottomItem('设置', Icons.settings),
+        ],
+      ),
     );
   }
 
-  buildBottomItem(String title, IconData iconData) {
+  Widget buildBottomItem(String title, IconData iconData) {
     return TextButton(
-      child: Container(
-        child: Column(
-          children: <Widget>[
-            Icon(
-              iconData,
-              // color: Colors.white,
-            ),
-            SizedBox(height: 5),
-            Text(title, style: TextStyle(fontSize: 12)),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(iconData, color: _fg),
+          const SizedBox(height: 4),
+          Text(title, style: TextStyle(fontSize: 11, color: _fg)),
+        ],
       ),
       onPressed: () {
         switch (title) {
           case '目录':
             {
               eventBus.fire(OpenChapters("dd"));
-              // Routes.navigateTo(context, Routes.chapters,replace: true);
               _readModel.toggleShowMenu();
             }
             break;
           case '缓存':
             {
               setState(() {
-                if (type == Type.DOWNLOAD) {
-                  type = Type.SLIDE;
-                } else {
-                  type = Type.DOWNLOAD;
-                }
+                type = type == Type.DOWNLOAD ? Type.SLIDE : Type.DOWNLOAD;
               });
             }
             break;
           case '设置':
             {
               setState(() {
-                if (type == Type.MORE_SETTING) {
-                  type = Type.SLIDE;
-                } else {
-                  type = Type.MORE_SETTING;
-                }
+                type =
+                    type == Type.MORE_SETTING ? Type.SLIDE : Type.MORE_SETTING;
               });
             }
             break;
         }
       },
     );
-  }
-
-  List<Widget> bgThemes() {
-    List<Widget> wds = [];
-    wds.add(
-      Center(
-        child: Text(
-          '背景',
-          style: TextStyle(fontSize: 13.0),
-        ),
-      ),
-    );
-    for (int i = 0; i < ReadSetting.bgImg.length - 1; i++) {
-      var path = ReadSetting.bgImg[i];
-      var f = "images/${ReadSetting.bgImg[i]}";
-      wds.add(RawMaterialButton(
-        onPressed: () async {
-          var cv = Store.value<ColorModel>(context);
-          if (cv.dark) {
-            cv.switchModel();
-          }
-          _readModel.switchBgColor(path);
-        },
-        constraints: BoxConstraints(minWidth: 60.0, minHeight: 50.0),
-        child: Container(
-            margin: EdgeInsets.only(top: 5.0, bottom: 5.0),
-            width: 45.0,
-            height: 45.0,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.all(Radius.circular(25.0)),
-              border: Border.all(
-                width: 1.5,
-                color: _readModel.bgPath == path
-                    ? Theme.of(context).primaryColor
-                    : Colors.white10,
-              ),
-              image: DecorationImage(
-                image: AssetImage(f),
-                fit: BoxFit.cover,
-              ),
-            )),
-      ));
-    }
-    wds.add(SizedBox(
-      height: 8,
-    ));
-    return wds;
   }
 }

@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
 import 'package:book/common/common.dart';
 import 'package:book/entity/ReadPage.dart';
@@ -309,6 +310,7 @@ class TextComposition {
           fontFamily: fontFamily,
         );
       } catch (e, st) {
+        AppLog.w('Pager', 'BookPager async failed, Dart fallback', error: e);
         debugPrint('BookPager async failed, falling back to Dart: $e\n$st');
       }
     }
@@ -358,6 +360,7 @@ class TextComposition {
           fontFamily: fontFamily,
         );
       } catch (e, st) {
+        AppLog.w('Pager', 'BookPager sync failed, Dart fallback', error: e);
         debugPrint('BookPager failed, falling back to Dart: $e\n$st');
       }
     }

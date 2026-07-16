@@ -15,6 +15,7 @@ import 'package:book/view/person/Login.dart';
 import 'package:book/view/person/Register.dart';
 import 'package:book/view/person/SourceManage.dart';
 import 'package:book/view/system/FontSet.dart';
+import 'package:book/view/system/LogViewer.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
@@ -97,4 +98,9 @@ var detailHandler =
 var sourcesHandler =
     Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return SourceManagePage();
+});
+
+var logsHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return const LogViewer();
 });

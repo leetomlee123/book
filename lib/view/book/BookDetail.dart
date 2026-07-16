@@ -3,6 +3,8 @@
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/common/app_colors.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
@@ -13,7 +15,6 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/SourceSwitchSheet.dart';
 import 'package:book/widgets/text_ellipsis.dart';
 import 'package:book/widgets/text_two.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 
@@ -41,47 +42,68 @@ class _BookDetailState extends State<BookDetail> {
 
   Widget _bookHead() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      height: 100,
-      child:
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-        PicWidget(
-          book.Img,
-          height: 130,
-          width: 95,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Text(
-                book.Name,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, color: Colors.white),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+              boxShadow: AppShadows.cover,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+              child: PicWidget(
+                book.Img,
+                height: 130,
+                width: 95,
               ),
-              Text('作者: ${book.Author}',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: Colors.white)),
-              Text('类型: ' + book.CName,
-                  overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  book.Name,
                   maxLines: 2,
-                  style: TextStyle(fontSize: 12, color: Colors.white)),
-              if (book.originName.isNotEmpty)
-                Text('书源: ${book.originName}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                Text('作者: ${book.Author}',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, color: Colors.white70)),
+                const SizedBox(height: 4),
+                Text('类型: ${book.CName}',
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
-                    style: TextStyle(fontSize: 12, color: Colors.white)),
-              if (this.widget._bookInfo.BookStatus.isNotEmpty)
-                Text('状态: ${this.widget._bookInfo.BookStatus}',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 12, color: Colors.white)),
-            ],
+                    style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                if (book.originName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text('书源: ${book.originName}',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.white70)),
+                ],
+                if (this.widget._bookInfo.BookStatus.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text('状态: ${this.widget._bookInfo.BookStatus}',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.white70)),
+                ],
+              ],
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -210,59 +232,57 @@ class _BookDetailState extends State<BookDetail> {
   Widget _buildBottom() {
     return Store.connect<ShelfModel>(
         builder: (context, ShelfModel model, child) {
+      final dark = SpUtil.getBool("dark");
+      final inShelf = model.inShelf(this.widget._bookInfo.Id);
       return Align(
         alignment: Alignment.bottomCenter,
         child: Container(
-          decoration: BoxDecoration( color: SpUtil.getBool("dark") ? Colors.black : Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(1.0)),
+          decoration: BoxDecoration(
+            color: dark ? AppColors.surfaceDark : AppColors.surface,
+            boxShadow: AppShadows.softBar,
           ),
-          padding: EdgeInsets.only(bottom: Screen.bottomSafeHeight),
-
-          child: ButtonBar(
-            alignment: MainAxisAlignment.spaceEvenly,
+          padding: EdgeInsets.fromLTRB(
+              16, 10, 16, Screen.bottomSafeHeight + 10),
+          child: Row(
             children: [
               TextButton(
-                  onPressed: () {
-                    SpUtil.putString(book.Id, "");
-                    model.modifyShelf(book);
-                  },
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    transitionBuilder:
-                        (Widget child, Animation<double> animation) {
-                      //执行缩放动画
-                      return ScaleTransition(child: child, scale: animation);
+                onPressed: () {
+                  SpUtil.putString(book.Id, "");
+                  model.modifyShelf(book);
+                },
+                child: Text(inShelf ? "移出书架" : "加入书架"),
+              ),
+              TextButton(
+                onPressed: () {
+                  final readModel = Store.value<ReadModel>(context);
+                  readModel.book = book;
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => SourceSwitchSheet(readModel: readModel),
+                  );
+                },
+                child: const Text("换源"),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: AppDimens.ctaHeight,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Book? b = await DbHelper.instance.getBook(book.Id);
+                      Routes.navigateTo(
+                        context,
+                        Routes.read,
+                        params: {
+                          'read': jsonEncode(b ?? book),
+                        },
+                      );
                     },
-                    child: Text(model.inShelf(this.widget._bookInfo.Id)
-                        ? "移出书架"
-                        : "加入书架"),
-                    key:
-                        ValueKey<bool>(model.inShelf(this.widget._bookInfo.Id)),
-                  )),
-              TextButton(
-                  onPressed: () {
-                    final readModel = Store.value<ReadModel>(context);
-                    readModel.book = book;
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (_) => SourceSwitchSheet(readModel: readModel),
-                    );
-                  },
-                  child: Text("换源")),
-              TextButton(
-                  onPressed: () async {
-                    Book? b = await DbHelper.instance.getBook(book.Id);
-
-                    Routes.navigateTo(
-                      context,
-                      Routes.read,
-                      params: {
-                        'read': jsonEncode(b ?? book),
-                      },
-                    );
-                  },
-                  child: Text(SpUtil.haveKey(book.Id) ? "继续阅读" : "立即阅读")),
+                    child: Text(SpUtil.haveKey(book.Id) ? "继续阅读" : "立即阅读"),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -280,30 +300,40 @@ class _BookDetailState extends State<BookDetail> {
               SliverAppBar(
                 pinned: true,
                 elevation: 0,
+                backgroundColor: AppColors.brand,
+                iconTheme: const IconThemeData(color: Colors.white),
                 actions: <Widget>[
                   GestureDetector(
-                    child: Center(
+                    child: const Center(
                       child: Text(
                         '书架',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                     onTap: () {
                       Navigator.of(context).popUntil(ModalRoute.withName('/'));
-                      eventBus.fire(new NavEvent(0));
+                      eventBus.fire(NavEvent(0));
                     },
                   ),
-                  SizedBox(
-                    width: 20,
-                  )
+                  const SizedBox(width: 20)
                 ],
-                expandedHeight: 210.0,
+                expandedHeight: 230.0,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Padding(
-                    padding: EdgeInsets.only(top: Screen.topSafeHeight + 45),
-                    child: _bookHead(),
+                  background: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFF1AAD19),
+                          Color(0xFF148A13),
+                        ],
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.only(top: Screen.topSafeHeight + 45),
+                      child: _bookHead(),
+                    ),
                   ),
                 ),
               ),

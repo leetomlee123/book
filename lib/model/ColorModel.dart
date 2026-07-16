@@ -1,11 +1,10 @@
 import 'dart:typed_data';
 
+import 'package:book/common/app_colors.dart';
 import 'package:book/common/common.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:book/common/local_store.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -14,6 +13,10 @@ class ColorModel with ChangeNotifier {
   BuildContext? buildContext;
   bool dark = false;
   Map _fonts = {};
+
+  /// When true, use WeChat-neutral theme (product default).
+  /// Skin grid still available; picking a swatch sets this false.
+  bool useWeReadSkin = SpUtil.getBool('use_weread_skin', defValue: true);
 
   Map fonts() {
     if (_fonts.isEmpty) {
@@ -45,21 +48,62 @@ class ColorModel with ChangeNotifier {
     if (SpUtil.haveKey("dark")) {
       dark = SpUtil.getBool("dark");
     }
-    var scheme = FlexScheme.values[idx];
-    _theme = dark
-        ? FlexColorScheme.dark(
-            scheme: scheme,
-            fontFamily: font,
-          ).toTheme
-        : FlexColorScheme.light(
-            scheme: scheme,
-            fontFamily: font,
-          ).toTheme;
+    useWeReadSkin = SpUtil.getBool('use_weread_skin', defValue: true);
+
+    if (useWeReadSkin) {
+      _theme = buildWeReadTheme(
+        dark: dark,
+        fontFamily: font == "Roboto" || font.isEmpty ? null : font,
+      );
+    } else {
+      final scheme = FlexScheme.values[idx.clamp(0, FlexScheme.values.length - 1)];
+      _theme = dark
+          ? FlexColorScheme.dark(
+              scheme: scheme,
+              fontFamily: font,
+            ).toTheme
+          : FlexColorScheme.light(
+              scheme: scheme,
+              fontFamily: font,
+            ).toTheme;
+    }
     return _theme!;
   }
 
   getSkins() {
     List<Widget> wds = [];
+    // First tile: WeChat default
+    wds.add(GestureDetector(
+      onTap: () {
+        useWeReadSkin = true;
+        SpUtil.putBool('use_weread_skin', true);
+        notifyListeners();
+      },
+      child: Stack(
+        children: [
+          Container(color: AppColors.brand),
+          if (useWeReadSkin)
+            const Align(
+              alignment: Alignment.topRight,
+              child: ImageIcon(
+                AssetImage('images/pick.png'),
+                color: Colors.white,
+              ),
+            ),
+          const Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: EdgeInsets.all(4),
+              child: Text(
+                '默认',
+                style: TextStyle(color: Colors.white, fontSize: 11),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ));
+
     for (var i = 0; i < skins.length; i++) {
       wds.add(GestureDetector(
         child: Stack(
@@ -67,7 +111,7 @@ class ColorModel with ChangeNotifier {
             Container(
               color: skins[i],
             ),
-            i == idx
+            (!useWeReadSkin && i == idx)
                 ? Align(
                     alignment: Alignment.topRight,
                     child: ImageIcon(
@@ -80,6 +124,8 @@ class ColorModel with ChangeNotifier {
         ),
         onTap: () {
           idx = i;
+          useWeReadSkin = false;
+          SpUtil.putBool('use_weread_skin', false);
           notifyListeners();
           SpUtil.putInt('skin', idx);
         },
@@ -112,12 +158,4 @@ class ColorModel with ChangeNotifier {
     fontLoader.addFont(Future.value(ByteData.view(readAsBytes.buffer)));
     await fontLoader.load();
   }
-//
-// Future<ByteData> getCustomFont(String path) async {
-//   File file = File(path);
-//   var uint8list = await file.readAsBytes();
-//
-//   ByteData asByteData = uint8list.buffer.asByteData();
-//   return Future.value(asByteData);
-// }
 }

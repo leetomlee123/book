@@ -1,8 +1,13 @@
 ﻿import 'package:book/common/Screen.dart';
+import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
+/// Solid paper theme for the reader canvas (WeChat Reading style).
+enum PaperTheme { white, cream, green, night }
+
 class ReadSetting {
+  /// Legacy texture backgrounds (optional advanced skins).
   static List<String> bgImg = [
     "QR_bg_1.jpg",
     "QR_bg_2.jpg",
@@ -21,6 +26,105 @@ class ReadSetting {
   static String latterSpace = "LATTER_SPACE";
   static String paragraph = "paragraph";
   static String pageDis = "pageDis";
+  static String paperKey = "paper_theme";
+  static String useSolidPaperKey = "use_solid_paper";
+  static String fontMigratedKey = "font_size_migrated_v19";
+
+  /// Product solid papers (preferred over texture images).
+  static const List<PaperTheme> solidPapers = [
+    PaperTheme.white,
+    PaperTheme.cream,
+    PaperTheme.green,
+    PaperTheme.night,
+  ];
+
+  static String paperLabel(PaperTheme t) {
+    switch (t) {
+      case PaperTheme.white:
+        return '白';
+      case PaperTheme.cream:
+        return '米';
+      case PaperTheme.green:
+        return '绿';
+      case PaperTheme.night:
+        return '夜';
+    }
+  }
+
+  static Color paperColor(PaperTheme t) {
+    switch (t) {
+      case PaperTheme.white:
+        return AppColors.paperWhite;
+      case PaperTheme.cream:
+        return AppColors.paperCream;
+      case PaperTheme.green:
+        return AppColors.paperGreen;
+      case PaperTheme.night:
+        return AppColors.paperNight;
+    }
+  }
+
+  static Color inkColor(PaperTheme t) {
+    switch (t) {
+      case PaperTheme.white:
+      case PaperTheme.cream:
+        return AppColors.inkOnLight;
+      case PaperTheme.green:
+        return AppColors.inkOnGreen;
+      case PaperTheme.night:
+        return AppColors.inkOnNight;
+    }
+  }
+
+  static Color metaColor(PaperTheme t) {
+    switch (t) {
+      case PaperTheme.night:
+        return const Color(0x66FFFFFF);
+      case PaperTheme.green:
+        return AppColors.inkOnGreen.withValues(alpha: 0.55);
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  static PaperTheme getPaperTheme() {
+    final name = SpUtil.getString(paperKey, defValue: 'cream');
+    return PaperTheme.values.firstWhere(
+      (e) => e.name == name,
+      orElse: () => PaperTheme.cream,
+    );
+  }
+
+  static void setPaperTheme(PaperTheme t) {
+    SpUtil.putString(paperKey, t.name);
+    // Keep global dark flag aligned with night paper.
+    if (t == PaperTheme.night) {
+      SpUtil.putBool('dark', true);
+    } else if (SpUtil.getBool('dark') && t != PaperTheme.night) {
+      // Leaving night paper turns off global dark for reader consistency.
+      SpUtil.putBool('dark', false);
+    }
+  }
+
+  /// Prefer solid paper fill over legacy texture images.
+  static bool useSolidPaper() =>
+      SpUtil.getBool(useSolidPaperKey, defValue: true);
+
+  static void setUseSolidPaper(bool v) => SpUtil.putBool(useSolidPaperKey, v);
+
+  /// One-shot: old default 26 → calm 19.
+  static void migrateFontDefaultsIfNeeded() {
+    if (SpUtil.getBool(fontMigratedKey, defValue: false)) return;
+    final stored = SpUtil.getDouble(fontSizeKey, defValue: 26);
+    if (stored == 26) {
+      SpUtil.putDouble(fontSizeKey, 19);
+    }
+    final lh = SpUtil.getDouble(latterHeight, defValue: 1.8);
+    if (lh == 1.8) {
+      SpUtil.putDouble(latterHeight, 1.7);
+    }
+    SpUtil.putBool(fontMigratedKey, true);
+  }
 
   static double listPageChapterName = 200;
   static double listPageBottom = Screen.height / 2;
@@ -52,11 +156,13 @@ class ReadSetting {
 若您和清阅小说之间发生任何纠纷或争议，首先应友好协商解决；协商不成的，您同意将纠纷或争议提交清阅小说所在地的人民法院处理。''';
 
   static double getFontSize() {
-    return SpUtil.getDouble(fontSizeKey, defValue: 26);
+    migrateFontDefaultsIfNeeded();
+    return SpUtil.getDouble(fontSizeKey, defValue: 19);
   }
 
   static double getLineHeight() {
-    return SpUtil.getDouble(latterHeight, defValue: 1.8);
+    migrateFontDefaultsIfNeeded();
+    return SpUtil.getDouble(latterHeight, defValue: 1.7);
   }
 
   static void setLineHeight(double lineHeight) {

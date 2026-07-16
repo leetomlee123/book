@@ -1,3 +1,5 @@
+import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
@@ -7,7 +9,6 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/PageContentRender.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -115,20 +116,34 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
             ),
             body: Store.connect<ReadModel>(
                 builder: (context, ReadModel model, child) {
-              return model.loadOk
-                  ? Stack(
-                      children: [
-                        GestureDetector(
-                          child: RepaintBoundary(child: PageContentReader()),
-                          onTapUp: (e) => readModel.tapPage(context, e),
-                        ),
-                        Offstage(
-                          child: Menu(),
-                          offstage: !model.showMenu,
-                        ),
-                      ],
-                    )
-                  : Container();
+              final paper = ReadSetting.paperColor(
+                model.paperTheme == PaperTheme.night ||
+                        SpUtil.getBool('dark', defValue: false)
+                    ? PaperTheme.night
+                    : model.paperTheme,
+              );
+              if (!model.loadOk) {
+                return ColoredBox(
+                  color: paper,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+              return Stack(
+                children: [
+                  // Opaque base follows current paper theme.
+                  ColoredBox(
+                    color: paper,
+                    child: const SizedBox.expand(),
+                  ),
+                  GestureDetector(
+                    child: RepaintBoundary(child: PageContentReader()),
+                    onTapUp: (e) => readModel.tapPage(context, e),
+                  ),
+                  if (model.showMenu) Menu(),
+                ],
+              );
             })));
   }
 

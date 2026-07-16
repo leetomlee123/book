@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:book/common/app_log.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:ffi/ffi.dart';
@@ -42,6 +43,7 @@ class BookPager {
           lib.lookupFunction<_FreeNative, _FreeDart>('book_pager_free_string');
     } catch (e, st) {
       lastError = '$e';
+      AppLog.w('BookPager', 'failed to load native lib', error: e);
       debugPrint('BookPager: failed to load native lib: $e\n$st');
       _paginate = null;
       _free = null;

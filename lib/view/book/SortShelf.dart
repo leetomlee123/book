@@ -33,7 +33,6 @@ class _SortShelfState extends State<SortShelf> {
             leading: TextButton(
               child: Text(
                 shelfModel.pickAllFlag ? '全不选' : '全选',
-                style: TextStyle(color: Colors.white),
               ),
               onPressed: () {
                 shelfModel.pickAll();
@@ -41,7 +40,7 @@ class _SortShelfState extends State<SortShelf> {
             ),
             actions: [
               TextButton(
-                child: Text('完成', style: TextStyle(color: Colors.white)),
+                child: const Text('完成'),
                 onPressed: () {
                   Navigator.pop(context);
                 },
