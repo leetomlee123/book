@@ -29,8 +29,11 @@ class Store {
   }
 
   /// Non-listening read (was `Provider.of(context, listen: false)`).
+  ///
+  /// Must use [listen]: false so this is safe from [State.initState]
+  /// (inherited deps cannot be registered there).
   static T value<T>(BuildContext context) {
-    final container = ProviderScope.containerOf(context);
+    final container = ProviderScope.containerOf(context, listen: false);
     return container.read(_listenable<T>());
   }
 

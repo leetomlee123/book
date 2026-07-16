@@ -38,7 +38,11 @@ dependencies:
   path: ^1.9.1
   # Book-source engine: charset + JS rules (Legado subset)
   fast_gbk: ^1.0.0
-  flutter_js: ^0.8.5
+  # Hosted 0.8.7 still applies kotlin-android (KGP warning on Flutter 3.44+).
+  # Local patch of 0.8.7: drop KGP apply (mirrors abner/flutter_js#191).
+  # Revert to hosted once upstream ships Built-in Kotlin (0.8.8+).
+  flutter_js:
+    path: third_party/flutter_js
   # Force modern Android embedding (namespace) for AGP 8+/9
   flutter_plugin_android_lifecycle: ^2.0.28
 

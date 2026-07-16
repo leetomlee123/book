@@ -109,11 +109,15 @@ Pages are painted by `NovelPagePainter` / `ReadModel.drawContent` (per-page, cac
 **Rust pager build**
 
 ```bat
-build_book_pager.bat            # host DLL for Windows
-build_book_pager.bat --android  # arm64-v8a → android/app/src/main/jniLibs
+build_book_pager.bat              # host DLL for Windows
+build_book_pager.bat --android    # arm64-v8a + x86_64 → android/app/src/main/jniLibs
+build_book_pager.bat --android-only
 ```
 
-Requires `rustup`/`cargo`. Android needs NDK. Host GNU builds need a working MinGW (`D:\tools\mingw64` on this machine).
+Requires `rustup`/`cargo`. Android needs NDK. Host GNU builds need a working MinGW (`D:\tools\mingw64` or update `native\.cargo\config.toml`).
+
+`libbook_pager.so` is only packaged for ABIs present under `android/app/src/main/jniLibs/`.  
+x86_64 emulators need `jniLibs/x86_64/libbook_pager.so` — without it the app falls back to Dart `TextPainter` (works, just slower / noisier logs). Physical arm64 devices use the existing arm64 build.
 
 ### Navigation
 

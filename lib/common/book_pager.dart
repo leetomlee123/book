@@ -43,8 +43,21 @@ class BookPager {
           lib.lookupFunction<_FreeNative, _FreeDart>('book_pager_free_string');
     } catch (e, st) {
       lastError = '$e';
-      AppLog.w('BookPager', 'failed to load native lib', error: e);
-      debugPrint('BookPager: failed to load native lib: $e\n$st');
+      // Missing ABI is expected on emulators until jniLibs/<abi>/ is built.
+      // TextComposition falls back to Dart TextPainter — not a hard failure.
+      final msg = '$e';
+      final missing = msg.contains('not found') ||
+          msg.contains('Failed to load dynamic library');
+      if (missing) {
+        AppLog.i(
+          'BookPager',
+          'native lib not packaged for this ABI; using Dart pager '
+          '(build with build_book_pager.bat --android for arm64+x86_64)',
+        );
+      } else {
+        AppLog.w('BookPager', 'failed to load native lib', error: e);
+        debugPrint('BookPager: failed to load native lib: $e\n$st');
+      }
       _paginate = null;
       _free = null;
     }

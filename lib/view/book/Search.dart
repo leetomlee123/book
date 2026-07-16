@@ -58,7 +58,8 @@ class _SearchState extends State<Search> {
       ),
       body:
           Store.connect<SearchModel>(builder: (context, SearchModel d, child) {
-        return d.showResult ? resultWidget() : suggestionWidget(d);
+        // Prefer the watched model so rebuilds stay in sync with the provider.
+        return d.showResult ? resultWidget(d) : suggestionWidget(d);
       }),
     );
   }
@@ -86,22 +87,28 @@ class _SearchState extends State<Search> {
 
   @override
   void initState() {
+    super.initState();
     overlayState = Overlay.of(context);
     textFieldKey = GlobalKey();
-    super.initState();
-    if (this.widget.type == "book" && this.widget.name != "") {
-      controller.text = this.widget.name;
+    // Non-listening read only — do not mutate / notify here (Riverpod forbids
+    // provider updates while the tree is building).
+    searchModel = Store.value<SearchModel>(context);
+    if (widget.type == "book" && widget.name != "") {
+      controller.text = widget.name;
     }
 
-    var widgetsBinding = WidgetsBinding.instance;
-    widgetsBinding.addPostFrameCallback((callback) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       initModel();
     });
   }
 
   Future<void> initModel() async {
-    searchModel = Store.value<SearchModel>(context);
-    searchModel.showResult = false;
+    // Safe to mutate SearchModel after the first frame.
+    // Don't clobber an in-flight / finished search if the user typed quickly.
+    if (!searchModel.showResult && searchModel.word.isEmpty) {
+      searchModel.showResult = false;
+    }
     searchModel.context = context;
     searchModel.textFieldKey = textFieldKey;
     searchModel.controller = controller;
@@ -109,7 +116,11 @@ class _SearchState extends State<Search> {
     searchModel.initHistory();
     findOverLayPosition();
     await searchModel.initBookHot();
-    searchModel.getHot();
+    if (!mounted) return;
+    // Skip hot-list notify if results are already on screen.
+    if (!searchModel.showResult) {
+      searchModel.getHot();
+    }
   }
 
   Widget buildSearchWidget() {
@@ -179,9 +190,14 @@ class _SearchState extends State<Search> {
     yPosition = offset.dy;
   }
 
-  Widget resultWidget() {
+  Widget resultWidget(SearchModel model) {
+    // book_pic_width may never have been written; 0 makes itemExtent 0 → blank list.
     var picW = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
-    var picH = picW / .65;
+    if (picW <= 0) {
+      picW = 72;
+    }
+    final picH = picW / .65;
+    final rowH = picH + 20; // vertical padding 10*2
     return SmartRefresher(
         enablePullDown: true,
         enablePullUp: true,
@@ -203,23 +219,31 @@ class _SearchState extends State<Search> {
             );
           },
         ),
-        controller: searchModel.refreshController,
-        onRefresh: searchModel.onRefresh,
-        onLoading: searchModel.onLoading,
-        child: ListView.builder(
-          itemExtent: picH,
+        controller: model.refreshController,
+        onRefresh: model.onRefresh,
+        onLoading: model.onLoading,
+        child: model.bks.isEmpty
+            ? ListView(
+                children: const [
+                  SizedBox(height: 120),
+                  Center(child: Text('暂无搜索结果')),
+                ],
+              )
+            : ListView.builder(
+          itemExtent: rowH,
+          itemCount: model.bks.length,
           itemBuilder: (c, i) {
-            var item = searchModel.bks[i];
+            var item = model.bks[i];
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () async {
-                final b = await searchModel.openDetail(item);
-                if (b == null) return;
+                final b = await model.openDetail(item);
+                if (b == null || !mounted) return;
                 Routes.navigateTo(context, Routes.detail,
                     params: {"detail": jsonEncode(b)});
               },
               child: Container(
-                height: 130,
+                height: rowH,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Row(
@@ -303,11 +327,10 @@ class _SearchState extends State<Search> {
               ),
             );
           },
-          itemCount: searchModel.bks.length,
         ));
   }
 
-  Widget suggestionWidget(data) {
+  Widget suggestionWidget(SearchModel model) {
     return SingleChildScrollView(
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -328,14 +351,14 @@ class _SearchState extends State<Search> {
                     size: 18,
                   ),
                   onPressed: () {
-                    searchModel.clearHistory();
+                    model.clearHistory();
                   },
                 )
               ],
             ),
             Wrap(
-              children: searchModel.getHistory(),
               spacing: 10, //主轴上子控件的间距
+              children: model.getHistory(),
             ),
             Row(
               children: <Widget>[
@@ -347,13 +370,14 @@ class _SearchState extends State<Search> {
                 IconButton(
                   icon: Icon(Icons.refresh),
                   onPressed: () {
-                    searchModel.getHot();
+                    model.getHot();
                   },
                 )
               ],
             ),
             Wrap(
-              children: searchModel.showHot, spacing: 10, //主轴上子控件的间距
+              spacing: 10, //主轴上子控件的间距
+              children: model.showHot,
             ),
           ],
         ),
