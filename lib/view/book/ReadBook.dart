@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
@@ -30,6 +32,8 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   late ShelfModel shelfModel;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   ColorModel? colorModel;
+  StreamSubscription? _refreshSub;
+  StreamSubscription? _chaptersSub;
 
   @override
   void initState() {
@@ -40,28 +44,43 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
   setUp() async {
     readModel = Store.value<ReadModel>(context);
     shelfModel = Store.value<ShelfModel>(context);
-    eventBus.on<ReadRefresh>().listen((event) {
+    _refreshSub = eventBus.on<ReadRefresh>().listen((event) {
+      final b = readModel.book;
+      if (b == null) return;
       readModel.reSetPages();
-      readModel.initPageContent(readModel.book!.cur, true);
+      readModel.initPageContent(b.cur, true);
     });
 
     WidgetsBinding.instance.addObserver(this);
-    eventBus.on<OpenChapters>().listen((event) {
+    _chaptersSub = eventBus.on<OpenChapters>().listen((event) {
       _scaffoldKey.currentState?.openDrawer();
     });
     colorModel = Store.value<ColorModel>(context);
     readModel.book = this.widget.book;
-    await readModel.getBookRecord();
+    try {
+      await readModel.getBookRecord();
+    } catch (e, st) {
+      // Keep reader alive; getBookRecord already logs failures.
+      // ignore: avoid_print
+      print('getBookRecord failed: $e\n$st');
+      if (!readModel.loadOk) {
+        await readModel.failOpen(e);
+      }
+    }
+    if (!mounted) return;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
   void dispose() {
-    super.dispose();
+    _refreshSub?.cancel();
+    _chaptersSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    // Persist progress before clearing model state.
     saveState();
     readModel.clear();
-    WidgetsBinding.instance.removeObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
   }
 
   @override
@@ -69,11 +88,12 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
     saveState();
   }
 
-  saveState() async {
+  saveState() {
+    final b = readModel.book;
+    if (b == null) return;
     readModel.saveData();
     if (readModel.sSave == true) {
-      shelfModel.updReadBookProcess(
-          UpdateBookProcess(readModel.book!.cur, readModel.book!.index));
+      shelfModel.updReadBookProcess(UpdateBookProcess(b.cur, b.index));
     }
   }
 
@@ -101,8 +121,9 @@ class _ReadBookState extends State<ReadBook> with WidgetsBindingObserver {
           if (!popWithMenuAndChapterView2) {
             return;
           }
-          if (!Store.value<ShelfModel>(context)
-              .exitsInBookShelfById(readModel.book!.Id)) {
+          final bookId = readModel.book?.Id;
+          if (bookId != null &&
+              !Store.value<ShelfModel>(context).exitsInBookShelfById(bookId)) {
             await confirmAddToShelf(context);
           }
           if (context.mounted) {

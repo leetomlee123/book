@@ -104,7 +104,12 @@ class ReadModel with ChangeNotifier {
 
   //获取本书记录
   getBookRecord() async {
-    electricQuantity = (await Battery().batteryLevel) / 100;
+    try {
+      electricQuantity = (await Battery().batteryLevel) / 100;
+    } catch (e) {
+      AppLog.w('Read', 'batteryLevel failed', error: e);
+      electricQuantity = 1.0;
+    }
     showMenu = false;
     loadOk = false;
     sSave = true;
@@ -199,6 +204,14 @@ class ReadModel with ChangeNotifier {
       loadOk = true;
       notifyListeners();
     }
+  }
+
+  /// Surface a fatal open failure without crashing the reader route.
+  Future<void> failOpen(Object error) async {
+    curPage = await _messagePage('打开失败', '阅读页初始化异常：$error');
+    book?.index = 0;
+    loadOk = true;
+    notifyListeners();
   }
 
   /// Build a single-page ReadPage with a readable error/hint message.
@@ -564,94 +577,89 @@ class ReadModel with ChangeNotifier {
 
   void preLoadWidget() {
     final b = book;
-    if (prePage == null || b == null) return;
-    var preIdx = b.index - 1;
-    late String preKey;
-    if (preIdx < 0) {
-      preKey = b.Id.toString() +
-          (b.cur - 1).toString() +
-          (prePage!.pageOffsets - 1).toString();
-    } else {
-      preKey = b.Id.toString() + b.cur.toString() + preIdx.toString();
-    }
-    if (!widgets.containsKey(preKey)) {
-      if (prePage?.pages == null) return;
-      final p = pre();
-      if (p != null) {
-        widgets.putIfAbsent(preKey, () => p);
-      }
-    }
+    if (b == null || curPage == null) return;
 
-    var nextIdx = b.index + 1;
-    late String nextKey;
-    if (nextIdx >= (curPage?.pageOffsets ?? 0)) {
-      nextKey = b.Id.toString() + (b.cur + 1).toString() + 0.toString();
-    } else {
-      nextKey = b.Id.toString() + b.cur.toString() + nextIdx.toString();
+    // Previous / next page pictures; null neighbors are handled inside pre/next.
+    if (prePage != null || b.index > 0) {
+      pre();
     }
-    if (!widgets.containsKey(nextKey)) {
-      if (nextPage?.pages == null) return;
-      final n = next();
-      if (n != null) {
-        widgets.putIfAbsent(preKey, () => n);
-      }
+    if (nextPage != null || b.index + 1 < curPage!.pageOffsets) {
+      next();
     }
   }
 
   ui.Picture? pre() {
     final b = book;
-    if (prePage == null || b == null) return null;
-    var i = b.index - 1;
-    var key = b.Id.toString() + b.cur.toString() + i.toString();
+    final current = curPage;
+    if (b == null || current == null) return null;
+    final i = b.index - 1;
+    final key = b.Id.toString() + b.cur.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
-    } else {
-      final pic = i < 0
-          ? drawContent(prePage!, prePage!.pageOffsets - 1)
-          : drawContent(curPage!, i);
-      return widgets.putIfAbsent(key, () => pic);
     }
+
+    final ui.Picture pic;
+    if (i < 0) {
+      final previous = prePage;
+      if (previous == null || previous.pages.isEmpty) return null;
+      pic = drawContent(previous, previous.pageOffsets - 1);
+    } else {
+      pic = drawContent(current, i);
+    }
+    return widgets.putIfAbsent(key, () => pic);
   }
 
   ui.Picture? cur() {
     final b = book;
-    if (b == null || curPage == null) return null;
+    final current = curPage;
+    if (b == null || current == null) return null;
     // Clamp page index so we never index past pages (blank canvas / crash).
-    if (curPage!.pages.isEmpty) return null;
+    if (current.pages.isEmpty) return null;
     if (b.index < 0) b.index = 0;
-    if (b.index >= curPage!.pageOffsets) {
-      b.index = curPage!.pageOffsets - 1;
+    if (b.index >= current.pageOffsets) {
+      b.index = current.pageOffsets - 1;
     }
-    var key = b.Id.toString() + b.cur.toString() + b.index.toString();
+    final key = b.Id.toString() + b.cur.toString() + b.index.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
-    } else {
-      Future.delayed(Duration(milliseconds: 200), () => preLoadWidget());
-      final pic = drawContent(curPage!, b.index);
-      return widgets.putIfAbsent(key, () => pic);
     }
+    Future.delayed(const Duration(milliseconds: 200), () {
+      // Skip if reader already left this book.
+      if (book?.Id == b.Id) preLoadWidget();
+    });
+    final pic = drawContent(current, b.index);
+    return widgets.putIfAbsent(key, () => pic);
   }
 
   ui.Picture? next() {
     final b = book;
-    if (b == null || curPage == null) return null;
-    var i = b.index + 1;
-
-    var key = b.Id.toString() + b.cur.toString() + i.toString();
+    final current = curPage;
+    if (b == null || current == null) return null;
+    final i = b.index + 1;
+    final key = b.Id.toString() + b.cur.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
-    } else {
-      if (nextPage == null) {
-        loadChapter(b.cur + 1).then((value) => {nextPage = value});
-      }
-      final pic = i >= curPage!.pageOffsets
-          ? drawContent(nextPage!, 0)
-          : drawContent(curPage!, i);
-      return widgets.putIfAbsent(key, () => pic);
     }
+
+    final ui.Picture pic;
+    if (i >= current.pageOffsets) {
+      final following = nextPage;
+      if (following == null) {
+        // Kick off async load; do not force-unwrap a null next chapter.
+        loadChapter(b.cur + 1).then((value) {
+          if (book?.Id == b.Id) nextPage = value;
+        });
+        return null;
+      }
+      if (following.pages.isEmpty) return null;
+      pic = drawContent(following, 0);
+    } else {
+      pic = drawContent(current, i);
+    }
+    return widgets.putIfAbsent(key, () => pic);
   }
 
   Future<ui.Image> getAssetImage(String asset, {int? width, int? height}) async {
@@ -844,10 +852,13 @@ class ReadModel with ChangeNotifier {
   clear() async {
     chapters = [];
     loadOk = false;
+    widgets.clear();
     book = null;
     curPage = null;
     prePage = null;
     nextPage = null;
+    mPainter = null;
+    canvasKey = null;
   }
 
   Future<void> reloadChapters() async {
@@ -1060,6 +1071,16 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
+  void _refreshBattery() {
+    Future.delayed(const Duration(milliseconds: 500), () async {
+      try {
+        electricQuantity = (await Battery().batteryLevel) / 100;
+      } catch (_) {
+        // Desktop / unsupported platforms: keep previous value.
+      }
+    });
+  }
+
   void changeCoverPage(var offsetDifference) {
     final b = book;
     if (b == null) return;
@@ -1067,73 +1088,95 @@ class ReadModel with ChangeNotifier {
 
     int curLen = (curPage?.pageOffsets ?? 0);
     if (idx == curLen - 1 && offsetDifference > 0) {
-      Future.delayed(
-          Duration(milliseconds: 500),
-          () => {
-                Battery()
-                    .batteryLevel
-                    .then((value) => electricQuantity = value / 100)
-              });
+      _refreshBattery();
       int tempCur = b.cur + 1;
       if (tempCur >= chapters.length) {
-        //到最后一页
-        // book.index = -1;
         BotToast.showText(text: "最后一页");
         return;
-      } else {
-        b.cur += 1;
-        prePage = curPage;
-        if ((nextPage?.chapterName ?? "") == "-1") {
-          BotToast.showCustomLoading(
-              toastBuilder: (_) => LoadingDialog(),
-              clickClose: true,
-              backgroundColor: Colors.white);
-
-          loadChapter(b.cur).then((value) => curPage = value);
-
-          BotToast.closeAllLoading();
-        } else {
-          curPage = nextPage;
-        }
-        b.index = 0;
-        nextPage = null;
-        // notifyListeners();
-        Future.delayed(Duration(milliseconds: 500), () {
-          loadChapter(b.cur + 1).then((value) => nextPage = value);
-        });
-
-        return;
       }
+
+      b.cur += 1;
+      prePage = curPage;
+      final following = nextPage;
+      if (following == null || following.chapterName == "-1") {
+        // Next chapter not ready yet — load it synchronously path.
+        BotToast.showCustomLoading(
+            toastBuilder: (_) => LoadingDialog(),
+            clickClose: true,
+            backgroundColor: Colors.white);
+        loadChapter(b.cur).then((value) {
+          if (book?.Id == b.Id) {
+            curPage = value;
+            final ro = canvasKey?.currentContext?.findRenderObject();
+            ro?.markNeedsPaint();
+          }
+          BotToast.closeAllLoading();
+        });
+      } else {
+        curPage = following;
+      }
+      b.index = 0;
+      nextPage = null;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (book?.Id == b.Id) {
+          loadChapter(b.cur + 1).then((value) {
+            if (book?.Id == b.Id) nextPage = value;
+          });
+        }
+      });
+      return;
     }
     if (idx == 0 && offsetDifference < 0) {
-      Future.delayed(
-          Duration(milliseconds: 500),
-          () => {
-                Battery()
-                    .batteryLevel
-                    .then((value) => electricQuantity = value / 100)
-              });
+      _refreshBattery();
       int tempCur = b.cur - 1;
       if (tempCur < 0) {
         BotToast.showText(text: "第一页");
-
+        return;
+      }
+      final previous = prePage;
+      if (previous == null) {
+        // Previous chapter not ready — load it.
+        BotToast.showCustomLoading(
+            toastBuilder: (_) => LoadingDialog(),
+            clickClose: true,
+            backgroundColor: Colors.white);
+        loadChapter(tempCur).then((value) {
+          if (book?.Id != b.Id) return;
+          nextPage = curPage;
+          curPage = value;
+          b.cur = tempCur;
+          b.index = (curPage?.pageOffsets ?? 1) - 1;
+          prePage = null;
+          final ro = canvasKey?.currentContext?.findRenderObject();
+          ro?.markNeedsPaint();
+          notifyListeners();
+          BotToast.closeAllLoading();
+          loadChapter(b.cur - 1).then((v) {
+            if (book?.Id == b.Id) prePage = v;
+          });
+        });
         return;
       }
       nextPage = curPage;
-      curPage = prePage;
+      curPage = previous;
       b.cur -= 1;
-
       b.index = (curPage?.pageOffsets ?? 1) - 1;
       notifyListeners();
       prePage = null;
-      Future.delayed(Duration(milliseconds: 500), () {
-        loadChapter(b.cur - 1).then((value) => prePage = value);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (book?.Id == b.Id) {
+          loadChapter(b.cur - 1).then((value) {
+            if (book?.Id == b.Id) prePage = value;
+          });
+        }
       });
-
       return;
     }
-    offsetDifference > 0 ? b.index += 1 : b.index -= 1;
-    // notifyListeners();
+    if (offsetDifference > 0) {
+      b.index += 1;
+    } else {
+      b.index -= 1;
+    }
   }
 
   bool isCanGoNext() {
