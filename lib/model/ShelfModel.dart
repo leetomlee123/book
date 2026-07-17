@@ -122,10 +122,8 @@ class ShelfModel with ChangeNotifier {
     notifyListeners();
   }
 
-  /**
-   * 书架排序
-   */
-  sort(int i) async {
+  /// 书架排序
+  Future<void> sort(int i) async {
     var book = shelf[i];
     book.NewChapterCount = 0;
     book.sortTime = DateUtil.getNowDateMs();
@@ -135,10 +133,8 @@ class ShelfModel with ChangeNotifier {
     await _dbHelper.sortBook(book.Id);
   }
 
-  /**
-   * 退出登录（本地账号，不清除书架）
-   */
-  dropAccountOut() async {
+  /// 退出登录（本地账号，不清除书架）
+  Future<void> dropAccountOut() async {
     final keys = SpUtil.getKeys();
     for (var key in keys) {
       if (key.contains("pages")) {

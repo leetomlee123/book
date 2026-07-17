@@ -1,22 +1,22 @@
 import 'package:book/model/ReadModel.dart';
-import 'package:book/model/SourceModel.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Bottom sheet: search enabled sources for the current book and switch.
-class SourceSwitchSheet extends StatefulWidget {
+class SourceSwitchSheet extends ConsumerStatefulWidget {
   final ReadModel readModel;
   SourceSwitchSheet({required this.readModel});
 
   @override
-  State<SourceSwitchSheet> createState() => _SourceSwitchSheetState();
+  ConsumerState<SourceSwitchSheet> createState() => _SourceSwitchSheetState();
 }
 
-class _SourceSwitchSheetState extends State<SourceSwitchSheet> {
+class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
   final BookSourceEngine _engine = BookSourceEngine();
   bool loading = true;
   final List<_Candidate> candidates = [];
@@ -38,7 +38,7 @@ class _SourceSwitchSheetState extends State<SourceSwitchSheet> {
       setState(() => loading = false);
       return;
     }
-    final sources = await Store.value<SourceModel>(context).enabledSources();
+    final sources = await ref.read(sourceModelProvider).enabledSources();
     final list = <_Candidate>[];
     const pool = 5;
     for (var i = 0; i < sources.length; i += pool) {

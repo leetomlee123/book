@@ -103,19 +103,26 @@ class SearchModel with ChangeNotifier {
     final searchable =
         sources.where((s) => s.searchUrl.isNotEmpty && s.enabled).toList();
     if (searchable.isEmpty) {
+      loading = false;
       refreshController.loadNoData();
       BotToast.showText(text: '请先在「书源管理」导入并启用书源');
+      notifyListeners();
       return;
     }
 
-    final hits = await _searchAll(searchable, word, page);
-    if (hits.isEmpty) {
-      refreshController.loadNoData();
-    } else {
-      for (final h in hits) {
-        bks.add(_toSearchItem(h));
+    try {
+      final hits = await _searchAll(searchable, word, page);
+      if (hits.isEmpty) {
+        refreshController.loadNoData();
+      } else {
+        for (final h in hits) {
+          bks.add(_toSearchItem(h));
+        }
+        refreshController.loadComplete();
       }
-      refreshController.loadComplete();
+    } catch (e) {
+      refreshController.loadFailed();
+      BotToast.showText(text: '搜索失败：$e');
     }
   }
 
@@ -291,12 +298,21 @@ class SearchModel with ChangeNotifier {
     setHistory(w);
     showResult = true;
     bks = [];
+    mks = [];
     page = 1;
+    temp = w;
     loading = true;
-    notifyListeners();
-    await getSearchData();
-    loading = false;
-    notifyListeners();
+    // Reset pull-to-refresh footer so a previous "no more" doesn't stick.
+    try {
+      refreshController.resetNoData();
+    } catch (_) {}
+    notifyListeners(); // UI shows loading spinner
+    try {
+      await getSearchData();
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
   }
 
   Future initBookHot() async {

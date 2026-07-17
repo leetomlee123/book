@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/app_colors.dart';
@@ -10,9 +10,10 @@ import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class Search extends StatefulWidget {
+class Search extends ConsumerStatefulWidget {
   final String type;
   final String name;
 
@@ -22,12 +23,12 @@ class Search extends StatefulWidget {
   Search(this.type, this.name, {this.embedded = false});
 
   @override
-  State<StatefulWidget> createState() {
+  ConsumerState<Search> createState() {
     return _SearchState();
   }
 }
 
-class _SearchState extends State<Search> {
+class _SearchState extends ConsumerState<Search> {
   late SearchModel searchModel;
   ColorModel? value;
   Widget? body;
@@ -46,7 +47,8 @@ class _SearchState extends State<Search> {
 
   @override
   Widget build(BuildContext context) {
-    value = Store.value<ColorModel>(context);
+    value = ref.watch(colorModelProvider);
+    final d = ref.watch(searchModelProvider);
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: dark ? AppColors.scaffoldDark : AppColors.scaffold,
@@ -56,11 +58,7 @@ class _SearchState extends State<Search> {
         automaticallyImplyLeading: !widget.embedded,
         titleSpacing: widget.embedded ? AppDimens.pagePadding : 0,
       ),
-      body:
-          Store.connect<SearchModel>(builder: (context, SearchModel d, child) {
-        // Prefer the watched model so rebuilds stay in sync with the provider.
-        return d.showResult ? resultWidget(d) : suggestionWidget(d);
-      }),
+      body: d.showResult ? resultWidget(d) : suggestionWidget(d),
     );
   }
 
@@ -92,7 +90,7 @@ class _SearchState extends State<Search> {
     textFieldKey = GlobalKey();
     // Non-listening read only — do not mutate / notify here (Riverpod forbids
     // provider updates while the tree is building).
-    searchModel = Store.value<SearchModel>(context);
+    searchModel = ref.read(searchModelProvider);
     if (widget.type == "book" && widget.name != "") {
       controller.text = widget.name;
     }
@@ -222,112 +220,142 @@ class _SearchState extends State<Search> {
         controller: model.refreshController,
         onRefresh: model.onRefresh,
         onLoading: model.onLoading,
-        child: model.bks.isEmpty
-            ? ListView(
-                children: const [
-                  SizedBox(height: 120),
-                  Center(child: Text('暂无搜索结果')),
-                ],
-              )
-            : ListView.builder(
-          itemExtent: rowH,
-          itemCount: model.bks.length,
-          itemBuilder: (c, i) {
-            var item = model.bks[i];
-            return GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () async {
-                final b = await model.openDetail(item);
-                if (b == null || !mounted) return;
-                Routes.navigateTo(context, Routes.detail,
-                    params: {"detail": jsonEncode(b)});
-              },
-              child: Container(
-                height: rowH,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  children: <Widget>[
-                    ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppDimens.coverRadius),
-                      child: PicWidget(
-                        item.Img,
-                        width: picW,
-                        height: picH,
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              item.Name,
-                              style: const TextStyle(
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary),
-                              maxLines: 1,
-                            ),
-                            Text(
-                              item.Author,
-                              style: const TextStyle(
-                                fontSize: 12.0,
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 1,
-                            ),
-                            Text(
-                              item.Desc.isEmpty ? "暂无简介" : item.Desc,
-                              style: const TextStyle(
-                                fontSize: 12.0,
-                                color: AppColors.textSecondary,
-                              ),
-                              maxLines: 2,
-                            ),
-                            Row(
-                              children: [
-                                if (item.sourceName.isNotEmpty)
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 6),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.brandSoft,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      item.sourceName,
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.brand),
-                                    ),
-                                  ),
-                                Expanded(
-                                  child: Text(
-                                    item.LastChapter,
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textTertiary),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
+        child: _resultBody(model, picW, picH, rowH));
+  }
+
+  Widget _resultBody(
+    SearchModel model,
+    double picW,
+    double picH,
+    double rowH,
+  ) {
+    // First-page search in flight — show spinner, not "empty".
+    if (model.loading && model.bks.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 140),
+          Center(child: CupertinoActivityIndicator(radius: 14)),
+          SizedBox(height: 16),
+          Center(
+            child: Text(
+              '正在搜索书源…',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      );
+    }
+    if (model.bks.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 120),
+          Center(
+            child: Text(
+              '暂无搜索结果',
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      );
+    }
+    return ListView.builder(
+      itemExtent: rowH,
+      itemCount: model.bks.length,
+      itemBuilder: (c, i) {
+        var item = model.bks[i];
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () async {
+            final b = await model.openDetail(item);
+            if (b == null || !mounted) return;
+            Routes.navigateTo(context, Routes.detail,
+                params: {"detail": jsonEncode(b)});
+          },
+          child: Container(
+            height: rowH,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: <Widget>[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+                  child: PicWidget(
+                    item.Img,
+                    width: picW,
+                    height: picH,
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          item.Name,
+                          style: const TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary),
+                          maxLines: 1,
+                        ),
+                        Text(
+                          item.Author,
+                          style: const TextStyle(
+                            fontSize: 12.0,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                        ),
+                        Text(
+                          item.Desc.isEmpty ? "暂无简介" : item.Desc,
+                          style: const TextStyle(
+                            fontSize: 12.0,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                        ),
+                        Row(
+                          children: [
+                            if (item.sourceName.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(right: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.brandSoft,
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
-                              ],
+                                child: Text(
+                                  item.sourceName,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: AppColors.brand),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                item.LastChapter,
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textTertiary),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
-        ));
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget suggestionWidget(SearchModel model) {

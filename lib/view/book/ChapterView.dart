@@ -1,227 +1,311 @@
-﻿import 'dart:convert';
-
-import 'package:book/common/Screen.dart';
-import 'package:book/entity/BookInfo.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/route/Routes.dart';
+import 'package:book/common/app_colors.dart';
 import 'package:book/store/Store.dart';
-import 'package:extended_image/extended_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
-class ChapterView extends StatefulWidget {
+class ChapterView extends ConsumerStatefulWidget {
+  const ChapterView({super.key});
+
   @override
-  State<StatefulWidget> createState() {
-    return _ChapterViewItem();
-  }
+  ConsumerState<ChapterView> createState() => _ChapterViewItem();
 }
 
-class _ChapterViewItem extends State<ChapterView> {
-  late ScrollController _scrollController;
+class _ChapterViewItem extends ConsumerState<ChapterView> {
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
 
-  double itemHeight = 50.0;
-
-  bool up = false;
-  int curIndex = 0;
-  bool showToTopBtn = false; //是否显示“返回到顶部”按钮
-
-  @override
-  void dispose() {
-    super.dispose();
-    _scrollController.dispose();
-  }
+  bool showToTopBtn = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController(
-        initialScrollOffset:
-            (Store.value<ReadModel>(context).book!.cur - 8) * itemHeight);
-    _scrollController.addListener(() {
-      if (_scrollController.offset < itemHeight * 8 && showToTopBtn) {
-        setState(() {
-          showToTopBtn = false;
-        });
-      } else if (_scrollController.offset >= 1000 && showToTopBtn == false) {
-        setState(() {
-          showToTopBtn = true;
-        });
-      }
+    _itemPositionsListener.itemPositions.addListener(_onPositionsChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cur = ref.read(readModelProvider).book?.cur ?? 0;
+      _jumpTo(cur);
     });
   }
 
-//滚动到当前阅读位置
-  scrollTo() async {
-    // if (_scrollController.hasClients) {
-    //   // curIndex = Store.value<ReadModel>(context).book.cur - 8;
-    //   await _scrollController.animateTo(
-    //       (Store.value<ReadModel>(context).book.cur - 8) * itemHeight,
-    //       duration: Duration(microseconds: 1),
-    //       curve: Curves.ease);
-    // }
+  @override
+  void dispose() {
+    _itemPositionsListener.itemPositions.removeListener(_onPositionsChanged);
+    super.dispose();
+  }
+
+  void _onPositionsChanged() {
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+    final minIndex =
+        positions.map((e) => e.index).reduce((a, b) => a < b ? a : b);
+    final next = minIndex >= 8;
+    if (next != showToTopBtn && mounted) {
+      setState(() => showToTopBtn = next);
+    }
+  }
+
+  void _jumpTo(int index) {
+    if (!_itemScrollController.isAttached) return;
+    final chapters = ref.read(readModelProvider).chapters;
+    if (chapters.isEmpty) return;
+    _itemScrollController.jumpTo(
+      index: index.clamp(0, chapters.length - 1),
+    );
+  }
+
+  Future<void> _scrollTo(int index) async {
+    if (!_itemScrollController.isAttached) return;
+    final chapters = ref.read(readModelProvider).chapters;
+    if (chapters.isEmpty) return;
+    await _itemScrollController.scrollTo(
+      index: index.clamp(0, chapters.length - 1),
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Store.connect<ReadModel>(builder: (context, ReadModel data, child) {
-      return Scaffold(
-        appBar: PreferredSize(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: EdgeInsets.only(
-                  left: 10,
-                  top: Screen.topSafeHeight + 10,
-                  right: 20),
-              height: 140,
-              width: Screen.width,
-              child: Row(
-                children: [
-                  ExtendedImage.network(data.book!.Img,
-                    width: 85,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10,horizontal: 5),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data.book!.Name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                          overflow: TextOverflow.clip,
-                        ),
-                        Text(
-                          data.book!.Author,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w100,
-                            fontSize: 10,
-                          ),
-                        ),
-                        Text(
-                          '共${data.chapters.length}章',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Spacer(),
-                  Icon(
-                    Icons.arrow_forward_sharp,
-                    // color: colorModel.dark ? Colors.white24 : Colors.black26,
-                  )
-                ],
-              ),
-            ),
-            onTap: () async {
-              await goDetail(data, context);
-            },
-          ),
-          preferredSize: Size.fromHeight(140),
-        ),
-        body: Column(
+    final theme = Theme.of(context);
+    final data = ref.watch(readModelProvider);
+    final chapters = data.chapters;
+    final cur = data.book?.cur ?? 0;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
           children: [
-            SizedBox(
-              height: 10,
-            ),
             Expanded(
-              child: Scrollbar(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemExtent: itemHeight,
-                  itemBuilder: (context, index) {
-                    var title = data.chapters[index].chapterName;
-                    var has = data.chapters[index].hasContent;
-                    return ListTile(
-                      title: Text(
-                        title,
-                        maxLines: 2,
-                        style: TextStyle(fontSize: 15),
-                        overflow: TextOverflow.ellipsis,
+              child: data.chaptersLoading && chapters.isEmpty
+                  ? Center(
+                      child: Text(
+                        data.loadingHint.isEmpty
+                            ? '正在加载目录…'
+                            : data.loadingHint,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                      trailing: Text(
-                        has == "2" ? "已缓存" : "",
-                        style: TextStyle(fontSize: 10, color: Colors.grey),
-                      ),
-                      selected: index == data.book!.cur,
-                      onTap: () async {
-                        Navigator.of(context).pop();
-                        //不是卷目录
-                        data.book!.cur = index;
-                        Future.delayed(Duration(milliseconds: 400), () async {
-                          await data.initPageContent(index, true);
-                        });
-                      },
-                    );
-                  },
-                  itemCount: data.chapters.length,
-                ),
-              ),
+                    )
+                  : chapters.isEmpty
+                      ? Center(
+                          child: Text(
+                            '暂无章节',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        )
+                      : ScrollablePositionedList.builder(
+                          itemScrollController: _itemScrollController,
+                          itemPositionsListener: _itemPositionsListener,
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          itemCount: chapters.length,
+                          itemBuilder: (context, index) {
+                            final chapter = chapters[index];
+                            final selected = index == cur;
+                            final cached = chapter.hasContent == '2';
+                            return _ChapterTile(
+                              index: index,
+                              title: chapter.chapterName,
+                              selected: selected,
+                              cached: cached,
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                data.book!.cur = index;
+                                Future.delayed(
+                                  const Duration(milliseconds: 400),
+                                  () async {
+                                    await data.initPageContent(index, true);
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
             ),
-            Divider(),
-            ButtonBar(
-              mainAxisSize: MainAxisSize.max,
-              alignment: MainAxisAlignment.spaceAround,
-              children: [
-                TextButton(onPressed: refresh, child: Text("重新加载")),
-                TextButton(
-                    onPressed: topOrBottom,
-                    child: Text(!showToTopBtn ? "回到底部" : "回到顶部"))
-              ],
+            _BottomBar(
+              showToTop: showToTopBtn,
+              reloading: data.chaptersLoading,
+              onReload: data.chaptersLoading ? null : refresh,
+              onJump: data.chaptersLoading ? null : topOrBottom,
             ),
           ],
         ),
-      );
-    });
-  }
-
-  Future goDetail(ReadModel data, context) async {
-    final b = data.book;
-    if (b == null) return;
-    final bookInfo = BookInfo(
-      0,
-      b.Author,
-      '',
-      b.CId,
-      b.CName,
-      b.Id,
-      b.Name,
-      b.Img,
-      0,
-      b.Desc,
-      b.LastChapterId,
-      b.LastChapter,
-      '',
-      b.UTime,
-      const [],
-      sourceUrl: b.sourceUrl,
-      bookUrl: b.bookUrl,
-      originName: b.originName,
-      tocUrl: b.tocUrl,
+      ),
     );
-    Routes.navigateTo(context, Routes.detail,
-        params: {"detail": jsonEncode(bookInfo)}, replace: true);
   }
 
-  topOrBottom() async {
-    if (_scrollController.hasClients) {
-      int temp = showToTopBtn
-          ? 0
-          : Store.value<ReadModel>(context).chapters.length - 8;
-      await _scrollController.animateTo(temp * itemHeight,
-          duration: Duration(microseconds: 1), curve: Curves.ease);
+  Future<void> topOrBottom() async {
+    final chapters = ref.read(readModelProvider).chapters;
+    if (chapters.isEmpty) return;
+    if (showToTopBtn) {
+      await _scrollTo(0);
+    } else {
+      await _scrollTo(chapters.length - 1);
     }
   }
 
   Future<void> refresh() async {
-    Store.value<ReadModel>(context).reloadChapters();
-    if (_scrollController.hasClients) {
-      int temp = Store.value<ReadModel>(context).chapters.length - 8;
-      await _scrollController.animateTo(temp * itemHeight,
-          duration: Duration(microseconds: 1), curve: Curves.ease);
-    }
+    final model = ref.read(readModelProvider);
+    await model.reloadChapters();
+    if (!mounted) return;
+    final chapters = model.chapters;
+    if (chapters.isEmpty) return;
+    final last = chapters.length - 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollTo(last);
+    });
+  }
+}
+
+class _ChapterTile extends StatelessWidget {
+  final int index;
+  final String title;
+  final bool selected;
+  final bool cached;
+  final VoidCallback onTap;
+
+  const _ChapterTile({
+    required this.index,
+    required this.title,
+    required this.selected,
+    required this.cached,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final titleColor = selected ? AppColors.brand : AppColors.textPrimary;
+    final indexColor = selected ? AppColors.brand : AppColors.textTertiary;
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        color: selected ? AppColors.brandSoft : null,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40,
+              child: Text(
+                '${index + 1}',
+                textAlign: TextAlign.left,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: indexColor,
+                  fontSize: 12,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: titleColor,
+                  fontSize: 15,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            if (cached)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Text(
+                  '已缓存',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.textTertiary,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomBar extends StatelessWidget {
+  final bool showToTop;
+  final bool reloading;
+  final VoidCallback? onReload;
+  final VoidCallback? onJump;
+
+  const _BottomBar({
+    required this.showToTop,
+    this.reloading = false,
+    required this.onReload,
+    required this.onJump,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottom = MediaQuery.paddingOf(context).bottom;
+
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      elevation: 0,
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            top: BorderSide(color: AppColors.divider, width: 0.5),
+          ),
+        ),
+        padding: EdgeInsets.fromLTRB(8, 4, 8, 4 + bottom),
+        child: reloading
+            ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: Text(
+                    '正在重新加载目录…',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onReload,
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: const Text('重新加载'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Container(width: 0.5, height: 20, color: AppColors.divider),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onJump,
+                      icon: Icon(
+                        showToTop
+                            ? Icons.vertical_align_top
+                            : Icons.vertical_align_bottom,
+                        size: 18,
+                      ),
+                      label: Text(showToTop ? '回到顶部' : '回到底部'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 }

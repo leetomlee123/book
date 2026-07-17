@@ -49,20 +49,17 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 
 ### Boot sequence
 
-1. `main()` → `AppInit.init()` then `runApp(Store.init(child: MyApp()))`.
+1. `main()` → `AppInit.init()` then `runApp(const ProviderScope(child: MyApp()))`.
 2. `AppInit` requests media/storage permission (mobile), initializes local `SpUtil` (`lib/common/local_store.dart`), registers `TelAndSmsService` on global `GetIt` (`locator` in `lib/main.dart`), configures Fluro (`Routes`), loads package version, and fetches remote parse/font config from `Common.config`.
-3. `MyApp` wraps the tree in `Store.connect<ColorModel>` for theming; home is `BookShelf`; routes via `Routes.router.generator`; toasts via BotToast.
+3. `MyApp` is a `ConsumerWidget` watching `colorModelProvider` for theming; home is `MainShell` (书架 / 发现 / 我); routes via `Routes.router.generator`; toasts via BotToast.
 
 ### State management
 
-- **Riverpod** via `lib/store/Store.dart`:
-  - Root: `Store.init` → `ProviderScope`
-  - Providers: `searchModelProvider`, `colorModelProvider`, `shelfModelProvider`, `readModelProvider` (`ChangeNotifierProvider`)
-  - Models remain `ChangeNotifier` subclasses (`SearchModel`, `ColorModel`, `ShelfModel`, `ReadModel`)
-  - Facade kept for call sites:
-    - `Store.value<T>(context)` → `ref.read` / `ProviderScope.containerOf(context).read`
-    - `Store.connect<T>(builder: ...)` → Riverpod `Consumer` + `ref.watch`
-  - Prefer new code use `ConsumerWidget` / `ref.watch(colorModelProvider)` directly; facade is for legacy call sites.
+- **Riverpod** via `lib/store/Store.dart` (providers only; no `Store` facade class):
+  - Root: `ProviderScope` in `main.dart`
+  - Providers: `searchModelProvider`, `exploreModelProvider`, `colorModelProvider`, `shelfModelProvider`, `readModelProvider`, `sourceModelProvider` (`ChangeNotifierProvider`)
+  - Models remain `ChangeNotifier` subclasses (`SearchModel`, `ExploreModel`, `ColorModel`, `ShelfModel`, `ReadModel`, `SourceModel`)
+  - UI uses `ConsumerWidget` / `ConsumerStatefulWidget` with `ref.watch` / `ref.read` directly.
 - **event_bus** (`lib/event/event.dart`) for cross-widget signals (reading progress, shelf sync, page controller, download progress, etc.). Global: `eventBus`.
 - **GetIt** for a few services (`locator`), not for the main UI models.
 
@@ -140,7 +137,7 @@ Fluro paths are constants on `Routes` (e.g. `/read`, `/search`, `/detail`, `/log
 
 ## Conventions when changing code
 
-- Follow existing patterns: `Store` / Riverpod providers for models, `HttpUtil.instance.dio` for HTTP, `Common.*` for URLs/keys, `eventBus.fire/on` for loose coupling.
+- Follow existing patterns: Riverpod providers (`ref.watch`/`ref.read`) for models, `HttpUtil.instance.dio` for HTTP, `Common.*` for URLs/keys, `eventBus.fire/on` for loose coupling. Do not reintroduce a `Store` facade.
 - Prefer `package:book/common/local_store.dart` for prefs/date/num helpers — do not reintroduce flustars.
 - Entity JSON: models use `fromJson`/`toJson` with sibling `*.g.dart`. Keep JSON key names stable (server contract). Protobuf chapter types are generated; treat `chapter.pb*.dart` as generated.
 - Prefer Chinese UI strings consistent with the rest of the app.

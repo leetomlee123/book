@@ -3,109 +3,107 @@ import 'package:book/store/Store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 书源管理：导入 / 启用 / 删除 / 导出
-class SourceManagePage extends StatefulWidget {
+class SourceManagePage extends ConsumerStatefulWidget {
   @override
-  State<SourceManagePage> createState() => _SourceManagePageState();
+  ConsumerState<SourceManagePage> createState() => _SourceManagePageState();
 }
 
-class _SourceManagePageState extends State<SourceManagePage> {
+class _SourceManagePageState extends ConsumerState<SourceManagePage> {
   bool _agreed = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Store.value<SourceModel>(context).load();
+      ref.read(sourceModelProvider).load();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Store.connect<SourceModel>(
-      builder: (context, model, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('书源管理'),
-            actions: [
-              IconButton(
-                tooltip: '导出',
-                icon: Icon(Icons.upload_file),
-                onPressed: () async {
-                  final json = model.exportAll();
-                  await Clipboard.setData(ClipboardData(text: json));
-                  BotToast.showText(text: '已复制全部书源 JSON 到剪贴板');
-                },
-              ),
-              IconButton(
-                tooltip: '导入',
-                icon: Icon(Icons.add),
-                onPressed: () => _showImport(context, model),
-              ),
-            ],
+    final model = ref.watch(sourceModelProvider);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('书源管理'),
+        actions: [
+          IconButton(
+            tooltip: '导出',
+            icon: Icon(Icons.upload_file),
+            onPressed: () async {
+              final json = model.exportAll();
+              await Clipboard.setData(ClipboardData(text: json));
+              BotToast.showText(text: '已复制全部书源 JSON 到剪贴板');
+            },
           ),
-          body: model.loading && model.sources.isEmpty
-              ? Center(child: CircularProgressIndicator())
-              : model.sources.isEmpty
-                  ? _empty(context, model)
-                  : ListView.separated(
-                      itemCount: model.sources.length,
-                      separatorBuilder: (_, __) => Divider(height: 1),
-                      itemBuilder: (ctx, i) {
-                        final s = model.sources[i];
-                        return ListTile(
-                          title: Text(s.bookSourceName.isEmpty
-                              ? s.bookSourceUrl
-                              : s.bookSourceName),
-                          subtitle: Text(
-                            [
-                              if (s.bookSourceGroup.isNotEmpty) s.bookSourceGroup,
-                              s.bookSourceUrl,
-                            ].where((e) => e.isNotEmpty).join(' · '),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+          IconButton(
+            tooltip: '导入',
+            icon: Icon(Icons.add),
+            onPressed: () => _showImport(context, model),
+          ),
+        ],
+      ),
+      body: model.loading && model.sources.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : model.sources.isEmpty
+              ? _empty(context, model)
+              : ListView.separated(
+                  itemCount: model.sources.length,
+                  separatorBuilder: (_, __) => Divider(height: 1),
+                  itemBuilder: (ctx, i) {
+                    final s = model.sources[i];
+                    return ListTile(
+                      title: Text(s.bookSourceName.isEmpty
+                          ? s.bookSourceUrl
+                          : s.bookSourceName),
+                      subtitle: Text(
+                        [
+                          if (s.bookSourceGroup.isNotEmpty) s.bookSourceGroup,
+                          s.bookSourceUrl,
+                        ].where((e) => e.isNotEmpty).join(' · '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch(
+                            value: s.enabled,
+                            onChanged: (_) => model.toggle(s),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Switch(
-                                value: s.enabled,
-                                onChanged: (_) => model.toggle(s),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete_outline),
-                                onPressed: () async {
-                                  final ok = await showDialog<bool>(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: Text('删除书源'),
-                                      content: Text(
-                                          '确定删除「${s.bookSourceName}」？'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: Text('取消'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: Text('删除'),
-                                        ),
-                                      ],
+                          IconButton(
+                            icon: Icon(Icons.delete_outline),
+                            onPressed: () async {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: Text('删除书源'),
+                                  content: Text(
+                                      '确定删除「${s.bookSourceName}」？'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: Text('取消'),
                                     ),
-                                  );
-                                  if (ok == true) await model.remove(s);
-                                },
-                              ),
-                            ],
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: Text('删除'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (ok == true) await model.remove(s);
+                            },
                           ),
-                        );
-                      },
-                    ),
-        );
-      },
+                        ],
+                      ),
+                    );
+                  },
+                ),
     );
   }
 

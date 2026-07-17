@@ -1,4 +1,4 @@
-// import 'package:extended_image/extended_image.dart';
+// import 'package:cached_network_image/cached_network_image.dart';
 // import 'package:flutter/material.dart';
 // import 'package:palette_generator/palette_generator.dart';
 //
@@ -12,18 +12,17 @@
 // }
 //
 // class _BookHeadBgColorState extends State<BookHeadBgColor> {
-//   Color color;
+//   Color? color;
 //
 //   @override
 //   void initState() {
 //     super.initState();
-//
 //     getBkColor();
 //   }
 //
 //   getBkColor() async {
 //     PaletteGenerator.fromImageProvider(
-//             ExtendedNetworkImageProvider(this.widget.imgUrl))
+//             CachedNetworkImageProvider(widget.imgUrl))
 //         .then((fromImageProvider) {
 //       if (mounted) {
 //         setState(() {

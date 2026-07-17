@@ -1,32 +1,31 @@
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/common/Screen.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PageContentReader extends StatefulWidget {
+class PageContentReader extends ConsumerStatefulWidget {
   const PageContentReader({Key? key}) : super(key: key);
 
   @override
-  _PageContentReaderState createState() => _PageContentReaderState();
+  ConsumerState<PageContentReader> createState() => _PageContentReaderState();
 }
 
-class _PageContentReaderState extends State<PageContentReader>
+class _PageContentReaderState extends ConsumerState<PageContentReader>
     with TickerProviderStateMixin {
   TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
   AnimationController? animationController;
   NovelPagePainter? mPainter;
   GlobalKey canvasKey = GlobalKey();
-  late ReadModel viewModel;
   ReaderPageManager? pageManager;
-  DragDownDetails? dragDownDetails;
 
   @override
   void initState() {
-    viewModel = Store.value<ReadModel>(context);
+    super.initState();
+    final viewModel = ref.read(readModelProvider);
     viewModel.canvasKey = canvasKey;
     switch (viewModel.currentAnimationMode) {
       case ReaderPageManager.TYPE_ANIMATION_SIMULATION_TURN:
@@ -51,11 +50,11 @@ class _PageContentReaderState extends State<PageContentReader>
       mPainter = NovelPagePainter(pageManager: pageManager);
     }
     viewModel.mPainter = mPainter;
-    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = ref.watch(readModelProvider);
     return RawGestureDetector(
       gestures: <Type, GestureRecognizerFactory>{
         NovelPagePanGestureRecognizer:
@@ -116,11 +115,6 @@ class _PageContentReaderState extends State<PageContentReader>
         painter: mPainter,
       ),
     );
-  }
-
-  @override
-  void didUpdateWidget(covariant PageContentReader oldWidget) {
-    super.didUpdateWidget(oldWidget);
   }
 
   @override

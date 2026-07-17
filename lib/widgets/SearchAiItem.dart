@@ -1,8 +1,8 @@
-import 'package:book/model/SearchModel.dart';
 import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SearchAiItem extends StatelessWidget {
+class SearchAiItem extends ConsumerWidget {
   final double height;
   final Function function;
 
@@ -11,23 +11,21 @@ class SearchAiItem extends StatelessWidget {
       : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Store.connect<SearchModel>(
-        builder: (context, SearchModel searchModel, child) {
-      return Material(
-        child: ListView.builder(
-            padding: EdgeInsets.zero,
-            cacheExtent: height,
-            itemBuilder: (context, index) {
-              return ListTile(
-                leading: Icon(Icons.search),
-                title: Text(searchModel.bksAi[index].name),
-                subtitle: Text(searchModel.bksAi[index].author),
-                onTap: () => function(searchModel.bksAi[index].id),
-              );
-            },
-            itemCount: searchModel.bksAi.length),
-      );
-    });
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchModel = ref.watch(searchModelProvider);
+    return Material(
+      child: ListView.builder(
+          padding: EdgeInsets.zero,
+          cacheExtent: height,
+          itemBuilder: (context, index) {
+            return ListTile(
+              leading: Icon(Icons.search),
+              title: Text(searchModel.bksAi[index].name),
+              subtitle: Text(searchModel.bksAi[index].author),
+              onTap: () => function(searchModel.bksAi[index].id),
+            );
+          },
+          itemCount: searchModel.bksAi.length),
+    );
   }
 }

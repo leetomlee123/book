@@ -3,7 +3,6 @@ import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_account.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/main.dart';
-import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
@@ -12,10 +11,11 @@ import 'package:book/view/person/Skin.dart';
 import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class Me extends StatelessWidget {
+class Me extends ConsumerWidget {
   /// Hosted inside MainShell bottom tab.
   final bool embedded;
 
@@ -81,7 +81,7 @@ class Me extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     bool dark = SpUtil.getBool("dark");
     Color c = Color(dark ? 0x4D000000 : 0xFBFFFFFF);
     final topPad = embedded ? MediaQuery.of(context).padding.top + 12 : kToolbarHeight;
@@ -221,21 +221,18 @@ class Me extends StatelessWidget {
               right: 10,
               child: Offstage(
                 offstage: !LocalAccount.isLoggedIn,
-                child: Store.connect<ShelfModel>(
-                    builder: (context, ShelfModel model, child) {
-                  return GestureDetector(
-                    child: WhiteArea(
-                        Text(
-                          "退出登录",
-                          style: TextStyle(color: Colors.redAccent),
-                        ),
-                        45),
-                    onTap: () async {
-                      LocalAccount.logout();
-                      await model.dropAccountOut();
-                    },
-                  );
-                }),
+                child: GestureDetector(
+                  child: WhiteArea(
+                      Text(
+                        "退出登录",
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                      45),
+                  onTap: () async {
+                    LocalAccount.logout();
+                    await ref.read(shelfModelProvider).dropAccountOut();
+                  },
+                ),
               ),
             ),
           ],

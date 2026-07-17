@@ -85,6 +85,13 @@ class ReadModel with ChangeNotifier {
 //章节翻页标志
   bool loadOk = false;
 
+  /// True while TOC is being fetched (open book / 重新加载目录).
+  /// UI should show text hint, not a spinner.
+  bool chaptersLoading = false;
+
+  /// Status text while [loadOk] is false or chapters are refreshing.
+  String loadingHint = '正在加载目录…';
+
   //页面宽高
 
   bool jump = true;
@@ -112,6 +119,8 @@ class ReadModel with ChangeNotifier {
     }
     showMenu = false;
     loadOk = false;
+    chaptersLoading = true;
+    loadingHint = '正在加载目录…';
     sSave = true;
     widgets.clear();
     prePage = null;
@@ -122,6 +131,7 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) {
       AppLog.w('Read', 'getBookRecord: book is null');
+      chaptersLoading = false;
       return;
     }
 
@@ -140,10 +150,13 @@ class ReadModel with ChangeNotifier {
       );
       b.index = 0;
       loadOk = true;
+      chaptersLoading = false;
       notifyListeners();
       return;
     }
 
+    loadingHint = '正在准备书源…';
+    notifyListeners();
     await _ensureSource();
     if (_activeSource == null) {
       AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
@@ -154,10 +167,13 @@ class ReadModel with ChangeNotifier {
       );
       b.index = 0;
       loadOk = true;
+      chaptersLoading = false;
       notifyListeners();
       return;
     }
 
+    loadingHint = '正在读取本地目录…';
+    notifyListeners();
     chapters = await DbHelper.instance.getChapters(b.Id);
     AppLog.i('Read', 'local chapters=${chapters.length}');
 
@@ -169,6 +185,8 @@ class ReadModel with ChangeNotifier {
         AppLog.w('Read', 'clamp cur ${b.cur} -> 0 (len=${chapters.length})');
         b.cur = 0;
       }
+      loadingHint = '正在加载正文…';
+      notifyListeners();
       await initPageContent(b.cur, false);
 
       if (b.index < 0 || b.index >= (curPage?.pageOffsets ?? 1)) {
@@ -179,6 +197,7 @@ class ReadModel with ChangeNotifier {
         b.index = 0;
       }
       loadOk = true;
+      chaptersLoading = false;
       AppLog.i(
         'Read',
         'ready cur=${b.cur} index=${b.index} pages=${curPage?.pageOffsets} '
@@ -188,6 +207,8 @@ class ReadModel with ChangeNotifier {
       notifyListeners();
     } else {
       b.cur = 0;
+      loadingHint = '正在获取章节目录…';
+      notifyListeners();
       await getChapters(init: true);
       AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
       if (chapters.isEmpty) {
@@ -198,10 +219,13 @@ class ReadModel with ChangeNotifier {
         );
         b.index = 0;
       } else {
+        loadingHint = '正在加载正文…';
+        notifyListeners();
         await initPageContent(b.cur, false);
         b.index = 0;
       }
       loadOk = true;
+      chaptersLoading = false;
       notifyListeners();
     }
   }
@@ -211,6 +235,7 @@ class ReadModel with ChangeNotifier {
     curPage = await _messagePage('打开失败', '阅读页初始化异常：$error');
     book?.index = 0;
     loadOk = true;
+    chaptersLoading = false;
     notifyListeners();
   }
 
@@ -333,7 +358,13 @@ class ReadModel with ChangeNotifier {
         b.tocUrl.isNotEmpty ? b.tocUrl : (b.bookUrl.isNotEmpty ? b.bookUrl : '');
     if (tocUrl.isEmpty) return null;
     try {
+      AppLog.i(
+        'Read',
+        'reqChapters source=${source.bookSourceName} '
+            'tocUrl=$tocUrl chapterList=${source.ruleToc.chapterList}',
+      );
       final list = await _engine.toc(source, tocUrl);
+      AppLog.i('Read', 'reqChapters got ${list.length} chapters');
       return list
           .map((c) => LocalChapter(
                 chapterId: makeChapterId(b.Id, c.url),
@@ -343,7 +374,8 @@ class ReadModel with ChangeNotifier {
                 index: c.index,
               ))
           .toList();
-    } catch (e) {
+    } catch (e, st) {
+      AppLog.e('Read', 'reqChapters failed for $tocUrl', error: e, stackTrace: st);
       BotToast.showText(text: '目录加载失败：$e');
       return null;
     }
@@ -416,23 +448,35 @@ class ReadModel with ChangeNotifier {
       r.chapterContent = "";
     }
 
-    if (r.chapterContent.isEmpty) {
-      r.chapterContent = await getChapterContent(chapterId, idx: idx);
-      if (r.chapterContent.isNotEmpty &&
-          !r.chapterContent.startsWith('章节内容加载失败') &&
-          !r.chapterContent.startsWith('书源不存在') &&
-          !r.chapterContent.startsWith('章节地址为空')) {
+    // Re-fetch if cache is empty or looks truncated (common after a bad source rule).
+    final cached = r.chapterContent;
+    final cacheLooksBad = cached.isEmpty ||
+        (cached.length < 120 &&
+            !cached.startsWith('章节内容加载失败') &&
+            !cached.startsWith('书源不存在') &&
+            !cached.startsWith('章节地址为空') &&
+            !cached.startsWith('内容为空'));
+    if (cacheLooksBad) {
+      final fresh = await getChapterContent(chapterId, idx: idx);
+      if (fresh.isNotEmpty &&
+          !fresh.startsWith('章节内容加载失败') &&
+          !fresh.startsWith('书源不存在') &&
+          !fresh.startsWith('章节地址为空') &&
+          fresh.length > cached.length) {
+        r.chapterContent = fresh;
         var temp = [ChapterNode(r.chapterContent, chapterId)];
         await DbHelper.instance.udpChapter(temp);
         chapters[idx].hasContent = "2";
       } else if (r.chapterContent.isEmpty) {
-        r.chapterContent = "章节内容加载失败，请检查书源或换源后重试";
+        r.chapterContent = fresh.isNotEmpty
+            ? fresh
+            : "章节内容加载失败，请检查书源或换源后重试";
       }
     }
 
     //本地是否有分页的缓存
     final b = book;
-    var k = '${b?.Id ?? ''}pages' + r.chapterName;
+    var k = '${b?.Id ?? ''}pages${r.chapterName}';
     if (SpUtil.haveKey(k)) {
       final objs = SpUtil.getObjectList(k);
       List<TextPage> list =
@@ -450,18 +494,66 @@ class ReadModel with ChangeNotifier {
     }
 
     if (r.pages.isEmpty) {
-      // Ensure something is always drawable.
+      // Ensure something is always drawable (and actually paginated/wrapped).
       try {
         r.pages = await TextComposition.parseContentAsync(r);
-      } catch (_) {}
+      } catch (e, st) {
+        AppLog.e('Read', 'parseContentAsync retry failed idx=$idx',
+            error: e, stackTrace: st);
+      }
       if (r.pages.isEmpty) {
-        r.pages = [
-          TextPage([TextLine(r.chapterContent, 16, 0, 0)], 24),
-        ];
+        // Last-resort wrap: never dump the whole chapter as a single maxLines:1 line.
+        r.pages = _fallbackPages(r.chapterContent);
       }
     }
 
+    AppLog.i(
+      'Read',
+      'loadChapter idx=$idx name=${r.chapterName} '
+          'contentLen=${r.chapterContent.length} pages=${r.pages.length} '
+          'lines0=${r.pages.isEmpty ? 0 : r.pages.first.lines.length}',
+    );
+
     return r;
+  }
+
+  /// Wrap plain text into simple pages when the normal pager failed.
+  List<TextPage> _fallbackPages(String content) {
+    final text = content.trim();
+    if (text.isEmpty) {
+      return [TextPage([TextLine('内容为空', 16, 0, 0)], 24)];
+    }
+    try {
+      final pages = TextComposition.parseContent(
+        ReadPage(text, '', 0, const []),
+      );
+      if (pages.isNotEmpty && pages.any((p) => p.lines.isNotEmpty)) {
+        return pages;
+      }
+    } catch (_) {}
+    // Character-chunk wrap so paint still shows multiple lines.
+    const charsPerLine = 18;
+    const linesPerPage = 20;
+    final lines = <TextLine>[];
+    final pages = <TextPage>[];
+    var dy = 0.0;
+    final lineH = ReadSetting.getFontSize() * ReadSetting.getLineHeight();
+    for (var i = 0; i < text.length; i += charsPerLine) {
+      final end = (i + charsPerLine > text.length) ? text.length : i + charsPerLine;
+      lines.add(TextLine(text.substring(i, end), 16, dy, 0));
+      dy += lineH;
+      if (lines.length >= linesPerPage) {
+        pages.add(TextPage(List<TextLine>.from(lines), dy));
+        lines.clear();
+        dy = 0;
+      }
+    }
+    if (lines.isNotEmpty) {
+      pages.add(TextPage(lines, dy));
+    }
+    return pages.isEmpty
+        ? [TextPage([TextLine(text, 16, 0, 0)], 24)]
+        : pages;
   }
 
   /*
@@ -714,8 +806,10 @@ class ReadModel with ChangeNotifier {
         ));
     textPainter.layout();
     //章节高30 画在中间
-    textPainter.paint(pageCanvas,
-        Offset(contentPadding, 15 + SpUtil.getDouble(Common.top_safe_height)));
+    textPainter.paint(
+      pageCanvas,
+      Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
+    );
     //正文
     TextStyle style = TextStyle(
         color: ink,
@@ -725,20 +819,22 @@ class ReadModel with ChangeNotifier {
         // letterSpacing: ReadSetting.getLatterSpace(),
         height: ReadSetting.getLineHeight());
 
+    final bodyTop = ReadSetting.contentTopInset();
     if (readPage.pages.isEmpty) {
-      textPainter.text = TextSpan(
-        text: readPage.chapterContent.isNotEmpty
-            ? readPage.chapterContent
-            : '内容为空',
-        style: style,
-      );
-      textPainter.layout(maxWidth: pageW - contentPadding * 2);
-      textPainter.paint(
-        pageCanvas,
-        Offset(
-          contentPadding,
-          45 + SpUtil.getDouble(Common.top_safe_height),
+      // Multi-line wrap fallback (textPainter is maxLines:1 by default).
+      final fallbackPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          text: readPage.chapterContent.isNotEmpty
+              ? readPage.chapterContent
+              : '内容为空',
+          style: style,
         ),
+      );
+      fallbackPainter.layout(maxWidth: pageW - contentPadding * 2);
+      fallbackPainter.paint(
+        pageCanvas,
+        Offset(contentPadding, bodyTop),
       );
       return pageRecorder.endRecording();
     }
@@ -756,8 +852,7 @@ class ReadModel with ChangeNotifier {
       } else {
         textPainter.text = TextSpan(text: line.text, style: style);
       }
-      final offset = Offset(
-          line.dx, line.dy + 45 + SpUtil.getDouble(Common.top_safe_height));
+      final offset = Offset(line.dx, line.dy + bodyTop);
       textPainter.layout();
       textPainter.paint(pageCanvas, offset);
     }
@@ -852,6 +947,8 @@ class ReadModel with ChangeNotifier {
   clear() async {
     chapters = [];
     loadOk = false;
+    chaptersLoading = false;
+    loadingHint = '正在加载目录…';
     widgets.clear();
     book = null;
     curPage = null;
@@ -864,15 +961,25 @@ class ReadModel with ChangeNotifier {
   Future<void> reloadChapters() async {
     final b = book;
     if (b == null) return;
+    chaptersLoading = true;
+    loadingHint = '正在重新加载目录…';
     chapters = [];
+    notifyListeners();
     await DbHelper.instance.clearChapters(b.Id);
 
-    chapters = await reqChapters() ?? [];
-    if (chapters.isEmpty) return;
+    try {
+      chapters = await reqChapters() ?? [];
+      if (chapters.isEmpty) {
+        BotToast.showText(text: '目录为空，请检查书源或网络');
+        return;
+      }
 
-    await DbHelper.instance
-        .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
-    notifyListeners();
+      await DbHelper.instance
+          .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
+    } finally {
+      chaptersLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> reloadCurrentPage() async {

@@ -1,18 +1,18 @@
 import 'package:book/common/Screen.dart';
 import 'package:book/common/local_account.dart';
-import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/text_two.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class Login extends StatefulWidget {
+class Login extends ConsumerStatefulWidget {
   @override
-  _LoginState createState() => _LoginState();
+  ConsumerState<Login> createState() => _LoginState();
 }
 
-class _LoginState extends State<Login> {
+class _LoginState extends ConsumerState<Login> {
   String username = '';
   String pwd = "";
 
@@ -24,7 +24,7 @@ class _LoginState extends State<Login> {
       return;
     }
     BotToast.showText(text: '登录成功（本地账号）');
-    var s = Store.value<ShelfModel>(context);
+    var s = ref.read(shelfModelProvider);
     s.refreshShelf();
     Navigator.of(context).popUntil(ModalRoute.withName('/'));
   }

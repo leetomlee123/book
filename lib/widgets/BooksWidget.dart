@@ -11,18 +11,19 @@ import 'package:book/store/Store.dart';
 import 'package:book/widgets/has_update_icon_img.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-class BooksWidget extends StatefulWidget {
+class BooksWidget extends ConsumerStatefulWidget {
   final String type;
 
   BooksWidget(this.type);
 
   @override
-  _BooksWidgetState createState() => _BooksWidgetState();
+  ConsumerState<BooksWidget> createState() => _BooksWidgetState();
 }
 
-class _BooksWidgetState extends State<BooksWidget> {
+class _BooksWidgetState extends ConsumerState<BooksWidget> {
   Widget? body;
   late RefreshController _refreshController;
   late ShelfModel _shelfModel;
@@ -34,8 +35,8 @@ class _BooksWidgetState extends State<BooksWidget> {
   @override
   void initState() {
     super.initState();
-    isShelf = this.widget.type == '';
-    _shelfModel = Store.value<ShelfModel>(context);
+    isShelf = widget.type == '';
+    _shelfModel = ref.read(shelfModelProvider);
     _refreshController = RefreshController();
     var widgetsBinding = WidgetsBinding.instance;
     widgetsBinding.addPostFrameCallback((callback) {
@@ -57,6 +58,8 @@ class _BooksWidgetState extends State<BooksWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when shelf model notifies.
+    _shelfModel = ref.watch(shelfModelProvider);
     return SmartRefresher(
         enablePullDown: true,
         footer: CustomFooter(

@@ -8,7 +8,7 @@ import 'package:book/source/util/book_id.dart';
 import 'package:book/source/util/url_join.dart';
 import 'package:html/dom.dart';
 
-/// Core pipeline: search / detail / toc / content via book-source rules.
+/// Core pipeline: search / explore / detail / toc / content via book-source rules.
 class BookSourceEngine {
   static const int maxTocPages = 30;
   static const int maxContentPages = 20;
@@ -28,44 +28,20 @@ class BookSourceEngine {
         key: key,
         page: page,
       ).timeout(sourceTimeout);
-      final rule = AnalyzeRule(
-        content: resp.body,
-        baseUrl: resp.url,
-        isJson: resp.isJson,
+      return _parseBookList(
+        source,
+        resp,
+        listRule: source.ruleSearch.bookList,
+        nameRule: source.ruleSearch.name,
+        authorRule: source.ruleSearch.author,
+        kindRule: source.ruleSearch.kind,
+        wordCountRule: source.ruleSearch.wordCount,
+        lastChapterRule: source.ruleSearch.lastChapter,
+        introRule: source.ruleSearch.intro,
+        coverRule: source.ruleSearch.coverUrl,
+        bookUrlRule: source.ruleSearch.bookUrl,
+        logTag: 'search',
       );
-      final listRule = source.ruleSearch.bookList;
-      final items = rule.getList(listRule);
-      final out = <SearchBook>[];
-      for (final item in items) {
-        final name = rule.getString(source.ruleSearch.name, scope: item);
-        if (name.isEmpty) continue;
-        var bookUrl = rule.getString(source.ruleSearch.bookUrl, scope: item);
-        if (bookUrl.isEmpty && item is Element) {
-          bookUrl = item.attributes['href'] ?? '';
-        }
-        bookUrl = urlJoin(resp.url, bookUrl);
-        if (bookUrl.isEmpty) continue;
-        var cover = rule.getString(source.ruleSearch.coverUrl, scope: item);
-        if (cover.isNotEmpty) cover = urlJoin(resp.url, cover);
-        out.add(SearchBook(
-          name: name,
-          author: rule.getString(source.ruleSearch.author, scope: item),
-          kind: rule.getString(source.ruleSearch.kind, scope: item),
-          wordCount: rule.getString(source.ruleSearch.wordCount, scope: item),
-          lastChapter:
-              rule.getString(source.ruleSearch.lastChapter, scope: item),
-          intro: rule.getString(source.ruleSearch.intro, scope: item),
-          coverUrl: cover,
-          bookUrl: bookUrl,
-          sourceUrl: source.bookSourceUrl,
-          sourceName: source.bookSourceName,
-        ));
-      }
-      AppLog.i(
-        'Source',
-        'search ok "${source.bookSourceName}" hits=${out.length}',
-      );
-      return out;
     } catch (e, st) {
       AppLog.e(
         'Source',
@@ -75,6 +51,115 @@ class BookSourceEngine {
       );
       rethrow;
     }
+  }
+
+  /// Discover / category list via [url] template (`{{page}}` filled by AnalyzeUrl).
+  /// List fields prefer [BookSource.ruleExplore], fall back to [BookSource.ruleSearch].
+  Future<List<SearchBook>> explore(
+    BookSource source,
+    String url, {
+    int page = 1,
+  }) async {
+    if (url.isEmpty) return const [];
+    AppLog.d(
+      'Source',
+      'explore "${source.bookSourceName}" page=$page url=$url',
+    );
+    try {
+      final resp = await AnalyzeUrl.fetch(
+        source,
+        url,
+        page: page,
+      ).timeout(sourceTimeout);
+      final er = source.ruleExplore;
+      final sr = source.ruleSearch;
+      String pick(String a, String b) => a.isNotEmpty ? a : b;
+      return _parseBookList(
+        source,
+        resp,
+        listRule: pick(er.bookList, sr.bookList),
+        nameRule: pick(er.name, sr.name),
+        authorRule: pick(er.author, sr.author),
+        kindRule: pick(er.kind, sr.kind),
+        wordCountRule: pick(er.wordCount, sr.wordCount),
+        lastChapterRule: pick(er.lastChapter, sr.lastChapter),
+        introRule: pick(er.intro, sr.intro),
+        coverRule: pick(er.coverUrl, sr.coverUrl),
+        bookUrlRule: pick(er.bookUrl, sr.bookUrl),
+        logTag: 'explore',
+      );
+    } catch (e, st) {
+      AppLog.e(
+        'Source',
+        'explore fail "${source.bookSourceName}" url=$url',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  List<SearchBook> _parseBookList(
+    BookSource source,
+    SourceResponse resp, {
+    required String listRule,
+    required String nameRule,
+    required String authorRule,
+    required String kindRule,
+    required String wordCountRule,
+    required String lastChapterRule,
+    required String introRule,
+    required String coverRule,
+    required String bookUrlRule,
+    required String logTag,
+  }) {
+    final rule = AnalyzeRule(
+      content: resp.body,
+      baseUrl: resp.url,
+      isJson: resp.isJson,
+    );
+    final items = listRule.isEmpty ? const <dynamic>[] : rule.getList(listRule);
+    final out = <SearchBook>[];
+    for (final item in items) {
+      final name = rule.getString(nameRule, scope: item);
+      if (name.isEmpty) continue;
+      var bookUrl = rule.getString(bookUrlRule, scope: item);
+      if (bookUrl.isEmpty && item is Element) {
+        bookUrl = item.attributes['href'] ?? '';
+        if (bookUrl.isEmpty) {
+          bookUrl = item.querySelector('a')?.attributes['href'] ?? '';
+        }
+      }
+      bookUrl = urlJoin(resp.url, bookUrl);
+      if (bookUrl.isEmpty) continue;
+      var cover = rule.getString(coverRule, scope: item);
+      if ((cover.isEmpty || _isPlaceholderCover(cover)) && item is Element) {
+        final img = item.localName == 'img' ? item : item.querySelector('img');
+        if (img != null) {
+          cover = rule.getString('img@src', scope: item);
+          if (cover.isEmpty) cover = rule.getString('src', scope: img);
+        }
+      }
+      if (cover.isNotEmpty) cover = urlJoin(resp.url, cover);
+      if (_isPlaceholderCover(cover)) cover = '';
+      out.add(SearchBook(
+        name: name,
+        author: rule.getString(authorRule, scope: item),
+        kind: rule.getString(kindRule, scope: item),
+        wordCount: rule.getString(wordCountRule, scope: item),
+        lastChapter: rule.getString(lastChapterRule, scope: item),
+        intro: rule.getString(introRule, scope: item),
+        coverUrl: cover,
+        bookUrl: bookUrl,
+        sourceUrl: source.bookSourceUrl,
+        sourceName: source.bookSourceName,
+      ));
+    }
+    AppLog.i(
+      'Source',
+      '$logTag ok "${source.bookSourceName}" hits=${out.length}',
+    );
+    return out;
   }
 
   Future<BookInfo> bookInfo(
@@ -99,7 +184,26 @@ class BookSourceEngine {
     }
 
     var cover = pick(r.coverUrl, seed?.coverUrl ?? '');
+    if (cover.isEmpty || _isPlaceholderCover(cover)) {
+      // Common detail-page cover selectors (incl. lazy data-src via analyzer).
+      for (final fb in const [
+        // package:html needs quoted attr values when they contain ':'
+        'meta[property="og:image"]@content',
+        'img.cover@src',
+        '.cover img@src',
+        '#cover img@src',
+        'img@src',
+      ]) {
+        final c = rule.getString(fb);
+        if (c.isNotEmpty && !_isPlaceholderCover(c)) {
+          cover = c;
+          break;
+        }
+      }
+    }
     if (cover.isNotEmpty) cover = urlJoin(resp.url, cover);
+    if (_isPlaceholderCover(cover)) cover = seed?.coverUrl ?? '';
+    if (_isPlaceholderCover(cover)) cover = '';
     var tocUrl = pick(r.tocUrl, bookUrl);
     if (tocUrl.isNotEmpty) tocUrl = urlJoin(resp.url, tocUrl);
 
@@ -135,7 +239,11 @@ class BookSourceEngine {
   }
 
   Future<List<SourceChapter>> toc(BookSource source, String tocUrl) async {
-    AppLog.d('Source', 'toc "${source.bookSourceName}" url=$tocUrl');
+    AppLog.d(
+      'Source',
+      'toc "${source.bookSourceName}" url=$tocUrl '
+          'chapterList=${source.ruleToc.chapterList}',
+    );
     final all = <SourceChapter>[];
     final seen = <String>{};
     var next = tocUrl;
@@ -153,15 +261,58 @@ class BookSourceEngine {
           baseUrl: resp.url,
           isJson: resp.isJson,
         );
-        final items = rule.getList(source.ruleToc.chapterList);
-        for (final item in items) {
-          final name = rule.getString(source.ruleToc.chapterName, scope: item);
-          var url = rule.getString(source.ruleToc.chapterUrl, scope: item);
-          if (url.isEmpty && item is Element) {
-            url = item.attributes['href'] ?? '';
+        final listRule = source.ruleToc.chapterList;
+        var items = listRule.isEmpty
+            ? const <dynamic>[]
+            : rule.getList(listRule);
+        // Soft fallback for common novel layouts when rule misses.
+        if (items.isEmpty && !resp.isJson) {
+          for (final fb in const [
+            'ul.chapter_list a',
+            '.chapter_list a',
+            '#list dd a',
+            '.listmain dd a',
+            '#chapterlist a',
+            '.chapterlist a',
+            '#chapters a',
+          ]) {
+            items = rule.getList(fb);
+            if (items.isNotEmpty) {
+              AppLog.w(
+                'Source',
+                'toc rule miss, fallback selector="$fb" hits=${items.length}',
+              );
+              break;
+            }
           }
-          url = urlJoin(resp.url, url);
-          if (name.isEmpty || url.isEmpty) continue;
+        }
+        var skipped = 0;
+        for (final item in items) {
+          final nameRule = source.ruleToc.chapterName.isEmpty
+              ? 'text'
+              : source.ruleToc.chapterName;
+          final urlRule = source.ruleToc.chapterUrl.isEmpty
+              ? 'href'
+              : source.ruleToc.chapterUrl;
+          var name = rule.getString(nameRule, scope: item);
+          var url = rule.getString(urlRule, scope: item);
+          if (item is Element) {
+            // Scope may be <li>/<div>; prefer nested <a>.
+            final a = item.localName == 'a' ? item : item.querySelector('a');
+            if (name.isEmpty) {
+              name = (a?.attributes['title'] ?? '').trim();
+              if (name.isEmpty) name = (a?.text ?? item.text).trim();
+            }
+            if (url.isEmpty) {
+              url = a?.attributes['href'] ?? item.attributes['href'] ?? '';
+            }
+          }
+          name = name.replaceAll(RegExp(r'\s+'), ' ').trim();
+          url = urlJoin(resp.url, url.trim());
+          if (name.isEmpty || url.isEmpty) {
+            skipped++;
+            continue;
+          }
           if (!seen.add(url)) continue;
           final isVol = source.ruleToc.isVolume.isNotEmpty &&
               rule.getString(source.ruleToc.isVolume, scope: item).isNotEmpty;
@@ -172,6 +323,12 @@ class BookSourceEngine {
             index: all.length,
           ));
         }
+        AppLog.d(
+          'Source',
+          'toc page=$pages items=${items.length} kept=${all.length} '
+              'skipped=$skipped bodyLen=${resp.body.length} '
+              'status=${resp.statusCode}',
+        );
         var nextUrl = '';
         if (source.ruleToc.nextTocUrl.isNotEmpty) {
           nextUrl = rule.getString(source.ruleToc.nextTocUrl);
@@ -216,16 +373,51 @@ class BookSourceEngine {
           baseUrl: resp.url,
           isJson: resp.isJson,
         );
-        String raw;
+        String raw = '';
+        final contentRule = source.ruleContent.content;
         if (resp.isJson) {
-          raw = rule.getString(source.ruleContent.content);
+          raw = rule.getString(contentRule);
         } else {
-          raw = rule.getHtmlString(source.ruleContent.content);
-          if (raw.isEmpty) {
-            raw = rule.getString(source.ruleContent.content);
+          if (contentRule.isNotEmpty) {
+            raw = rule.getHtmlString(contentRule);
+            if (raw.isEmpty) {
+              raw = rule.getString(contentRule);
+            }
+          }
+          // Soft fallbacks when book-source content rule misses / is too narrow.
+          if (_plainLen(raw) < 80) {
+            for (final fb in const [
+              '.chapter_content_box',
+              '#chaptercontent',
+              '#content',
+              '.content',
+              '#BookText',
+              '.book-content',
+              '.read-content',
+              '#chaptercontent p',
+              '.chapter_content_box p',
+              '#content p',
+            ]) {
+              var cand = rule.getHtmlString(fb);
+              if (cand.isEmpty) cand = rule.getString(fb);
+              if (_plainLen(cand) > _plainLen(raw)) {
+                AppLog.w(
+                  'Source',
+                  'content rule weak/miss, fallback="$fb" '
+                      'rawLen=${_plainLen(raw)} fbLen=${_plainLen(cand)}',
+                );
+                raw = cand;
+              }
+              if (_plainLen(raw) >= 200) break;
+            }
           }
         }
         final part = finalizeContent(raw, source.ruleContent.replaceRegex);
+        AppLog.d(
+          'Source',
+          'content page=$pages status=${resp.statusCode} '
+              'rawLen=${raw.length} plainLen=${part.length}',
+        );
         if (part.isNotEmpty) {
           if (buf.isNotEmpty) buf.writeln();
           buf.write(part);
@@ -253,5 +445,29 @@ class BookSourceEngine {
       );
       rethrow;
     }
+  }
+
+  /// Cheap length of text after stripping tags (for fallback ranking).
+  static int _plainLen(String htmlOrText) {
+    if (htmlOrText.isEmpty) return 0;
+    return htmlOrText
+        .replaceAll(RegExp(r'<[^>]+>'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .length;
+  }
+
+  static bool _isPlaceholderCover(String url) {
+    if (url.isEmpty) return true;
+    final u = url.toLowerCase();
+    return u.contains('loading.jpg') ||
+        u.contains('loading.png') ||
+        u.contains('placeholder') ||
+        u.contains('default_cover') ||
+        u.contains('nocover') ||
+        u.contains('nopic') ||
+        u.contains('noimg') ||
+        u.contains('no-cover') ||
+        u.endsWith('/lazy.png');
   }
 }

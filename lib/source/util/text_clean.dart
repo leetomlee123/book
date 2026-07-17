@@ -23,10 +23,26 @@ String applyReplaceRegex(String input, String replaceRule) {
 /// Strip tags and normalize whitespace for chapter body.
 String htmlToPlainText(String html) {
   if (html.isEmpty) return '';
-  var t = html
+  var t = html;
+  // Drop non-content nodes before stripping tags.
+  t = t
+      .replaceAll(
+          RegExp(r'<script[\s\S]*?</script>', caseSensitive: false), '')
+      .replaceAll(RegExp(r'<style[\s\S]*?</style>', caseSensitive: false), '')
+      // Inline chapter comment/count widgets (e.g. banshanren `.z.count_n`).
+      .replaceAll(
+          RegExp(
+            r'<span[^>]*class="[^"]*\bz\b[^"]*"[^>]*>[\s\S]*?</span>',
+            caseSensitive: false,
+          ),
+          '')
+      .replaceAll(
+          RegExp(r'<button[\s\S]*?</button>', caseSensitive: false), '');
+  t = t
       .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
       .replaceAll(RegExp(r'</p\s*>', caseSensitive: false), '\n')
       .replaceAll(RegExp(r'</div\s*>', caseSensitive: false), '\n')
+      .replaceAll(RegExp(r'</h[1-6]\s*>', caseSensitive: false), '\n')
       .replaceAll(RegExp(r'<[^>]+>'), '')
       .replaceAll('&nbsp;', ' ')
       .replaceAll('&lt;', '<')
@@ -34,9 +50,18 @@ String htmlToPlainText(String html) {
       .replaceAll('&amp;', '&')
       .replaceAll('&quot;', '"')
       .replaceAll('&#39;', "'");
-  // Collapse 3+ newlines
-  t = t.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-  return t.trim();
+  t = t.replaceAllMapped(RegExp(r'&#(\d+);'), (m) {
+    final n = int.tryParse(m.group(1) ?? '');
+    if (n == null) return m.group(0) ?? '';
+    return String.fromCharCode(n);
+  });
+  // Drop leftover pure digit lines (comment counters) and collapse blanks.
+  final lines = t
+      .split(RegExp(r'[\r\n]+'))
+      .map((e) => e.replaceAll(RegExp(r'[ \t ]+'), ' ').trim())
+      .where((e) => e.isNotEmpty && !RegExp(r'^\d{1,4}$').hasMatch(e))
+      .toList();
+  return lines.join('\n').trim();
 }
 
 /// Normalize chapter titles for fuzzy matching.

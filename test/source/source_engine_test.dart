@@ -1,6 +1,7 @@
 import 'package:book/source/analyzer/js_analyzer.dart';
 import 'package:book/source/engine/progress_mapper.dart';
 import 'package:book/source/import/source_importer.dart';
+import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/source/rule/analyze_rule.dart';
 import 'package:book/source/util/book_id.dart';
@@ -64,6 +65,85 @@ void main() {
       expect(href, '/book/1');
       expect(author, '张三');
     });
+
+    test('normalizes Jsoup class./tag. and || fallbacks', () {
+      const html = '''
+<html><body>
+<div class="catalog_box">
+  <ul class="chapter_list">
+    <li><div><a href="/novel/x/1" title="第1章">第1章 开始</a><p>2026</p></div></li>
+    <li><div><a href="/novel/x/2" title="第2章">第2章 继续</a><p>2026</p></div></li>
+  </ul>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      // Jsoup-style: class.chapter_list@tag.a
+      final list = rule.getList('class.missing@tag.a||class.chapter_list@tag.a');
+      expect(list.length, 2);
+      expect(rule.getString('text', scope: list.first), contains('第1章'));
+      expect(rule.getString('href', scope: list.first), '/novel/x/1');
+      // Bare @text / @href aliases
+      expect(rule.getString('@text', scope: list.first), contains('第1章'));
+      expect(rule.getString('@href', scope: list.first), '/novel/x/1');
+    });
+
+    test('chapter list li scope resolves nested a', () {
+      const html = '''
+<html><body>
+<ul class="chapter_list">
+  <li><div><a href="/c/1" title="第一章">第一章 标题</a></div></li>
+</ul>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final list = rule.getList('.chapter_list li');
+      expect(list.length, 1);
+      // Common bad source rule: chapterName=text, chapterUrl=href on <li>
+      // Analyzer should still recover nested <a> via engine fallbacks; here
+      // getString('href') on li is empty unless we use a@href.
+      expect(rule.getString('a@href', scope: list.first), '/c/1');
+      expect(rule.getString('a@text', scope: list.first), contains('第一章'));
+    });
+
+    test('banshanren-shaped catalog with wrong primary selector', () {
+      // Mirrors https://www.banshanren.com/novel/cangxian catalog markup.
+      const html = '''
+<html><body>
+<div class="catalog_box">
+  <div class="volume_box">
+    <ul class="chapter_list">
+      <li>
+        <div><a href="/novel/cangxian/1273628667947255006"
+                title="第1章 手术穿越">第1章 手术穿越</a>
+          <p>2026.12.07</p>
+        </div>
+        <span>字数</span>
+      </li>
+      <li>
+        <div><a href="/novel/cangxian/1273628667951449311"
+                title="第2章 合欢宗">第2章 合欢宗</a>
+          <p>2026.12.07</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(
+        content: html,
+        baseUrl: 'https://www.banshanren.com/novel/cangxian',
+      );
+      // Wrong first alt (common when source is copy-pasted from another site)
+      final items = rule.getList('#list dd a||ul.chapter_list a');
+      expect(items.length, 2);
+      expect(rule.getString('text', scope: items.first), contains('第1章'));
+      expect(
+        rule.getString('href', scope: items.first),
+        '/novel/cangxian/1273628667947255006',
+      );
+    });
   });
 
   group('AnalyzeRule JSON', () {
@@ -125,6 +205,62 @@ void main() {
 
     test('replaceRegex', () {
       expect(applyReplaceRegex('abc123', r'\d+##'), 'abc');
+    });
+
+    test('htmlToPlainText drops comment spans and keeps paragraphs', () {
+      const html = '''
+<div class="chapter_content_box">
+  <h2>第1章</h2>
+  <p>第一段文字内容。<span class="z count_0">0</span></p>
+  <p>第二段继续讲述故事。<span class="z count_1">0</span></p>
+</div>
+''';
+      final plain = htmlToPlainText(html);
+      expect(plain.contains('第一段'), true);
+      expect(plain.contains('第二段'), true);
+      expect(plain.contains('\n'), true);
+      // comment counters stripped
+      expect(RegExp(r'^\d+$', multiLine: true).hasMatch(plain), false);
+    });
+
+    test('parseExploreKinds multi-line and json', () {
+      final multi = parseExploreKinds(
+        '玄幻::https://ex.com/x/{{page}}\n都市&&https://ex.com/d/{page}',
+      );
+      expect(multi.length, 2);
+      expect(multi.first.title, '玄幻');
+      expect(multi.first.url, contains('ex.com/x'));
+
+      final json = parseExploreKinds(
+        '[{"title":"完本","url":"https://ex.com/end/{{page}}"}]',
+      );
+      expect(json.length, 1);
+      expect(json.first.title, '完本');
+
+      final single = parseExploreKinds('https://ex.com/all/{{page}}');
+      expect(single.length, 1);
+      expect(single.first.title, '全部');
+    });
+  });
+
+  group('lazy cover src', () {
+    test('img@src prefers data-src over loading placeholder', () {
+      const html = '''
+<html><body>
+<div class="item">
+  <img class="sm encrypted-image"
+       src="https://cdn.example.com/static/image/loading.jpg"
+       data-src="https://cdn.example.com/file/cover/real.webp"
+       alt="书"/>
+  <a href="/novel/x">书名</a>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final items = rule.getList('.item');
+      expect(items.length, 1);
+      final cover = rule.getString('img@src', scope: items.first);
+      expect(cover, 'https://cdn.example.com/file/cover/real.webp');
     });
   });
 

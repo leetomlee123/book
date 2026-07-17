@@ -3,7 +3,7 @@
 // import 'package:book/common/Screen.dart';
 // import 'package:book/event/event.dart';
 // import 'package:book/model/ColorModel.dart';
-// import 'package:book/store/Store.dart';
+// import 'package:book/store/Store.dart'; // was Store facade; use colorModelProvider
 // import 'package:chewie/src/chewie_player.dart';
 // import 'package:chewie/src/chewie_progress_colors.dart';
 // import 'package:chewie/src/material_progress_bar.dart';
@@ -569,7 +569,7 @@
 //
 //   Future<Null> _initialize() async {
 //     controller.addListener(_updateState);
-//     _colorModel = Store.value<ColorModel>(context);
+//     _colorModel = ref.read(colorModelProvider);
 //     _updateState();
 //
 //     if ((controller.value != null && controller.value.isPlaying) ||

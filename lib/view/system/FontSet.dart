@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:book/event/event.dart';
 import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
 import 'package:book/service/CustomCacheManager.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/widgets/download_progress.dart';
@@ -11,15 +10,16 @@ import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class FontSet extends StatefulWidget {
+class FontSet extends ConsumerStatefulWidget {
   @override
-  State<StatefulWidget> createState() {
+  ConsumerState<FontSet> createState() {
     return StateFontSet();
   }
 }
 
-class StateFontSet extends State<FontSet> {
+class StateFontSet extends ConsumerState<FontSet> {
   late ColorModel _colorModel;
   List<Widget> wds = [];
   bool downloading = false;
@@ -31,14 +31,14 @@ class StateFontSet extends State<FontSet> {
   void initState() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-    _colorModel = Store.value<ColorModel>(context);
+    _colorModel = ref.read(colorModelProvider);
     fetchData();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    var readModel = Store.value<ReadModel>(context);
+    var readModel = ref.read(readModelProvider);
     return Scaffold(
       appBar: AppBar(
         title: Text(

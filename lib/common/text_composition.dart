@@ -6,7 +6,6 @@ import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
-import 'package:book/common/common.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
@@ -261,15 +260,21 @@ class TextComposition {
   }) {
     final fontSize = ReadSetting.getFontSize();
     final lineHeight = ReadSetting.getLineHeight();
+    // Content box uses shared insets from ReadSetting so paint + paginate match.
+    // Never allow a non-positive height — that collapses pagination to one line.
+    final topPad = ReadSetting.contentTopInset();
+    final bottomPad = ReadSetting.contentBottomInset();
+    final rawH = Screen.height - topPad - bottomPad;
+    final boxH =
+        rawH > 120 ? rawH : (Screen.height * 0.7).clamp(200.0, 2000.0);
+    final boxW = Screen.width > 0 ? Screen.width : 360.0;
     return <String, dynamic>{
       'fontSize': fontSize,
       'lineHeight': lineHeight,
       'paragraph': ReadSetting.getParagraph() * fontSize * lineHeight,
       'padH': ReadSetting.getPageDis().toDouble(),
-      'boxW': Screen.width,
-      'boxH': Screen.height -
-          (30 + SpUtil.getDouble(Common.top_safe_height)) * 2 -
-          Screen.bottomSafeHeight,
+      'boxW': boxW,
+      'boxH': boxH,
       'fontFamily': SpUtil.getString("fontName", defValue: "Roboto"),
       'shouldJustifyHeight': shouldJustifyHeight,
     };

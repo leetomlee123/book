@@ -24,7 +24,8 @@ dependencies:
   battery_plus: ^7.1.0
   package_info_plus: ^10.2.0
   flutter_cache_manager: ^3.4.1
-  extended_image: ^10.0.0
+  cached_network_image: ^3.4.1
+  scrollable_positioned_list: ^0.3.8
   pull_to_refresh: ^2.0.0
   flex_color_scheme: ^8.2.0
   html: ^0.15.6

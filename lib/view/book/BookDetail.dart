@@ -8,28 +8,24 @@ import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/model/ShelfModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/SourceSwitchSheet.dart';
 import 'package:book/widgets/text_ellipsis.dart';
 import 'package:book/widgets/text_two.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-class BookDetail extends StatefulWidget {
+class BookDetail extends ConsumerStatefulWidget {
   final BookInfo _bookInfo;
 
   BookDetail(this._bookInfo);
 
   @override
-  State<StatefulWidget> createState() {
-    return _BookDetailState();
-  }
+  ConsumerState<BookDetail> createState() => _BookDetailState();
 }
 
-class _BookDetailState extends State<BookDetail> {
+class _BookDetailState extends ConsumerState<BookDetail> {
   late Book book;
   int maxLines = 3;
   bool ellipsis = true;
@@ -230,64 +226,62 @@ class _BookDetailState extends State<BookDetail> {
   }
 
   Widget _buildBottom() {
-    return Store.connect<ShelfModel>(
-        builder: (context, ShelfModel model, child) {
-      final dark = SpUtil.getBool("dark");
-      final inShelf = model.inShelf(this.widget._bookInfo.Id);
-      return Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          decoration: BoxDecoration(
-            color: dark ? AppColors.surfaceDark : AppColors.surface,
-            boxShadow: AppShadows.softBar,
-          ),
-          padding: EdgeInsets.fromLTRB(
-              16, 10, 16, Screen.bottomSafeHeight + 10),
-          child: Row(
-            children: [
-              TextButton(
-                onPressed: () {
-                  SpUtil.putString(book.Id, "");
-                  model.modifyShelf(book);
-                },
-                child: Text(inShelf ? "移出书架" : "加入书架"),
-              ),
-              TextButton(
-                onPressed: () {
-                  final readModel = Store.value<ReadModel>(context);
-                  readModel.book = book;
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => SourceSwitchSheet(readModel: readModel),
-                  );
-                },
-                child: const Text("换源"),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: SizedBox(
-                  height: AppDimens.ctaHeight,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      Book? b = await DbHelper.instance.getBook(book.Id);
-                      Routes.navigateTo(
-                        context,
-                        Routes.read,
-                        params: {
-                          'read': jsonEncode(b ?? book),
-                        },
-                      );
-                    },
-                    child: Text(SpUtil.haveKey(book.Id) ? "继续阅读" : "立即阅读"),
-                  ),
+    final model = ref.watch(shelfModelProvider);
+    final dark = SpUtil.getBool("dark");
+    final inShelf = model.inShelf(this.widget._bookInfo.Id);
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        decoration: BoxDecoration(
+          color: dark ? AppColors.surfaceDark : AppColors.surface,
+          boxShadow: AppShadows.softBar,
+        ),
+        padding: EdgeInsets.fromLTRB(
+            16, 10, 16, Screen.bottomSafeHeight + 10),
+        child: Row(
+          children: [
+            TextButton(
+              onPressed: () {
+                SpUtil.putString(book.Id, "");
+                model.modifyShelf(book);
+              },
+              child: Text(inShelf ? "移出书架" : "加入书架"),
+            ),
+            TextButton(
+              onPressed: () {
+                final readModel = ref.read(readModelProvider);
+                readModel.book = book;
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => SourceSwitchSheet(readModel: readModel),
+                );
+              },
+              child: const Text("换源"),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: AppDimens.ctaHeight,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Book? b = await DbHelper.instance.getBook(book.Id);
+                    Routes.navigateTo(
+                      context,
+                      Routes.read,
+                      params: {
+                        'read': jsonEncode(b ?? book),
+                      },
+                    );
+                  },
+                  child: Text(SpUtil.haveKey(book.Id) ? "继续阅读" : "立即阅读"),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 
   @override

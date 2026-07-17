@@ -1,5 +1,6 @@
 ﻿import 'package:book/common/Screen.dart';
 import 'package:book/common/app_colors.dart';
+import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
@@ -231,6 +232,34 @@ class ReadSetting {
 
   static void calcPageDis(int s) {
     SpUtil.putInt(pageDis, getPageDis() + s);
+  }
+
+  /// Space reserved above body text: status/safe + chapter title chrome + breathing room.
+  /// Must stay in sync with [ReadModel.drawContent] body Y offset.
+  static const double contentTopChrome = 52;
+  static const double contentTopExtra = 18;
+
+  /// Space reserved below body text: battery/progress chrome + breathing room.
+  static const double contentBottomChrome = 36;
+  static const double contentBottomExtra = 18;
+
+  /// Y where chapter title is painted (below status bar).
+  static double chapterTitleOffsetY() {
+    return 15 + SpUtil.getDouble(Common.top_safe_height);
+  }
+
+  /// Top inset of the paginated content box (and paint offset for body lines).
+  static double contentTopInset() {
+    return contentTopChrome +
+        SpUtil.getDouble(Common.top_safe_height) +
+        contentTopExtra;
+  }
+
+  /// Bottom inset of the paginated content box.
+  static double contentBottomInset() {
+    return contentBottomChrome +
+        Screen.bottomSafeHeight +
+        contentBottomExtra;
   }
 
   static double getTempH() {

@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:book/common/app_colors.dart';
 import 'package:book/event/event.dart';
 import 'package:book/view/book/BookShelf.dart';
-import 'package:book/view/book/Search.dart';
+import 'package:book/view/book/ExplorePage.dart';
 import 'package:book/view/person/Me.dart';
 import 'package:flutter/material.dart';
 
-/// App root shell: 书架 / 搜索 / 我 (WeChat Reading–like bottom tabs).
+/// App root shell: 书架 / 发现 / 我 (WeChat Reading–like bottom tabs).
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -44,7 +44,7 @@ class _MainShellState extends State<MainShell> {
         index: _index,
         children: [
           BookShelf(),
-          Search('book', '', embedded: true),
+          const ExplorePage(),
           Me(embedded: true),
         ],
       ),
@@ -72,9 +72,9 @@ class _MainShellState extends State<MainShell> {
                   label: '书架',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.search),
-                  activeIcon: Icon(Icons.search),
-                  label: '搜索',
+                  icon: Icon(Icons.explore_outlined),
+                  activeIcon: Icon(Icons.explore),
+                  label: '发现',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person_outline),
