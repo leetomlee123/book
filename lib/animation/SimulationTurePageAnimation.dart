@@ -1,11 +1,10 @@
 import 'dart:math' as math;
-import 'dart:ui';
-import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
-import 'package:book/animation/BaseAnimationPage.dart';
-import 'package:book/view/newBook/touch_event.dart';
-import 'package:vector_math/vector_math_64.dart' as v;
 
+import 'package:book/animation/BaseAnimationPage.dart';
+import 'package:book/common/ReadSetting.dart';
+import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart' as v;
 
 /// 仿真翻页动画 ///
 class SimulationTurnPageAnimation extends BaseAnimationPage {
@@ -21,6 +20,9 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   double mCornerY = 1;
 
   bool mIsRTandLB = false; // 是否属于右上左下
+
+  /// 中间水平翻：触摸落在上下各 1/3 之间时，强制水平卷曲（从侧边中部翻起）。
+  bool _horizontalMode = false;
 
   Offset mBezierStart1 = Offset(0, 0); // 贝塞尔曲线起始点
   Offset mBezierControl1 = Offset(0, 0); // 贝塞尔曲线控制点
@@ -47,40 +49,50 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   Tween<Offset>? currentAnimationTween;
   Animation<Offset>? currentAnimation;
 
-  AnimationStatusListener? statusListener;
-
   void calBezierPoint() {
+    // Avoid division by zero when touch sits on the corner X.
+    if ((mTouch.dx - mCornerX).abs() < 0.5) {
+      mTouch = Offset(
+        mCornerX + (mCornerX == 0 ? 0.5 : -0.5),
+        mTouch.dy,
+      );
+    }
+    if ((mTouch.dy - mCornerY).abs() < 0.5) {
+      mTouch = Offset(
+        mTouch.dx,
+        mCornerY + (mCornerY == 0 ? 0.5 : -0.5),
+      );
+    }
+
     mMiddleX = (mTouch.dx + mCornerX) / 2;
     mMiddleY = (mTouch.dy + mCornerY) / 2;
 
     mMaxLength = math
         .sqrt(math.pow(currentSize.width, 2) + math.pow(currentSize.height, 2));
 
+    final dxCornerMid = mCornerX - mMiddleX;
+    final dyCornerMid = mCornerY - mMiddleY;
+    // Safe denominators
+    final denX = dxCornerMid.abs() < 1e-4
+        ? (dxCornerMid >= 0 ? 1e-4 : -1e-4)
+        : dxCornerMid;
+    final denY = dyCornerMid.abs() < 1e-4
+        ? (dyCornerMid >= 0 ? 1e-4 : -1e-4)
+        : dyCornerMid;
+
     mBezierControl1 = Offset(
-        mMiddleX -
-            (mCornerY - mMiddleY) *
-                (mCornerY - mMiddleY) /
-                (mCornerX - mMiddleX),
+        mMiddleX - dyCornerMid * dyCornerMid / denX,
         mCornerY.toDouble());
 
-    double f4 = mCornerY - mMiddleY;
-    if (f4 == 0) {
-      mBezierControl2 = Offset(mCornerX.toDouble(),
-          mMiddleY - (mCornerX - mMiddleX) * (mCornerX - mMiddleX) / 0.1);
-    } else {
-      mBezierControl2 = Offset(
-          mCornerX.toDouble(),
-          mMiddleY -
-              (mCornerX - mMiddleX) *
-                  (mCornerX - mMiddleX) /
-                  (mCornerY - mMiddleY));
-    }
+    mBezierControl2 = Offset(
+        mCornerX.toDouble(),
+        mMiddleY - dxCornerMid * dxCornerMid / denY);
 
     mBezierStart1 = Offset(
         mBezierControl1.dx - (mCornerX - mBezierControl1.dx) / 2,
         mCornerY.toDouble());
 
-    // 当mBezierStart1.x < 0或者mBezierStart1.x > 480时
+    // 当mBezierStart1.x < 0或者mBezierStart1.x > width时
     // 如果继续翻页，会出现BUG故在此限制
     if (mTouch.dx > 0 && mTouch.dx < currentSize.width) {
       if (mBezierStart1.dx < 0 || mBezierStart1.dx > currentSize.width) {
@@ -90,6 +102,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         }
 
         double f1 = (mCornerX - mTouch.dx).abs();
+        if (f1 < 1e-4) f1 = 1e-4;
         double f2 = currentSize.width * f1 / mBezierStart1.dx;
         mTouch = Offset((mCornerX - f2).abs(), mTouch.dy);
 
@@ -100,25 +113,18 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         mMiddleX = (mTouch.dx + mCornerX) / 2;
         mMiddleY = (mTouch.dy + mCornerY) / 2;
 
+        final dx2 = mCornerX - mMiddleX;
+        final dy2 = mCornerY - mMiddleY;
+        final denX2 = dx2.abs() < 1e-4 ? (dx2 >= 0 ? 1e-4 : -1e-4) : dx2;
+        final denY2 = dy2.abs() < 1e-4 ? (dy2 >= 0 ? 1e-4 : -1e-4) : dy2;
+
         mBezierControl1 = Offset(
-            mMiddleX -
-                (mCornerY - mMiddleY) *
-                    (mCornerY - mMiddleY) /
-                    (mCornerX - mMiddleX),
+            mMiddleX - dy2 * dy2 / denX2,
             mCornerY);
 
-        double f5 = mCornerY - mMiddleY;
-        if (f5 == 0) {
-          mBezierControl2 = Offset(mCornerX,
-              mMiddleY - (mCornerX - mMiddleX) * (mCornerX - mMiddleX) / 0.1);
-        } else {
-          mBezierControl2 = Offset(
-              mCornerX,
-              mMiddleY -
-                  (mCornerX - mMiddleX) *
-                      (mCornerX - mMiddleX) /
-                      (mCornerY - mMiddleY));
-        }
+        mBezierControl2 = Offset(
+            mCornerX,
+            mMiddleY - dx2 * dx2 / denY2);
 
         mBezierStart1 = Offset(
             mBezierControl1.dx - (mCornerX - mBezierControl1.dx) / 2,
@@ -146,85 +152,153 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         (2 * mBezierControl2.dy + mBezierStart2.dy + mBezierEnd2.dy) / 4);
   }
 
-  /// 获取交点 ///
+  /// 获取交点（含平行/零分母保护）
   Offset getCross(Offset p1, Offset p2, Offset p3, Offset p4) {
-    // 二元函数通式： y=kx+b(k是斜率)
-    double k1 = (p2.dy - p1.dy) / (p2.dx - p1.dx);
-    double b1 = ((p1.dx * p2.dy) - (p2.dx * p1.dy)) / (p1.dx - p2.dx);
-
-    double k2 = (p4.dy - p3.dy) / (p4.dx - p3.dx);
-    double b2 = ((p3.dx * p4.dy) - (p4.dx * p3.dy)) / (p3.dx - p4.dx);
-
-    return Offset((b2 - b1) / (k1 - k2), k1 * ((b2 - b1) / (k1 - k2)) + b1);
+    final d1x = p2.dx - p1.dx;
+    final d1y = p2.dy - p1.dy;
+    final d2x = p4.dx - p3.dx;
+    final d2y = p4.dy - p3.dy;
+    // Nearly vertical first line
+    if (d1x.abs() < 1e-6 && d2x.abs() < 1e-6) {
+      return Offset(p1.dx, (p1.dy + p3.dy) / 2);
+    }
+    if (d1x.abs() < 1e-6) {
+      final k2 = d2y / d2x;
+      final b2 = p3.dy - k2 * p3.dx;
+      return Offset(p1.dx, k2 * p1.dx + b2);
+    }
+    if (d2x.abs() < 1e-6) {
+      final k1 = d1y / d1x;
+      final b1 = p1.dy - k1 * p1.dx;
+      return Offset(p3.dx, k1 * p3.dx + b1);
+    }
+    final k1 = d1y / d1x;
+    final b1 = p1.dy - k1 * p1.dx;
+    final k2 = d2y / d2x;
+    final b2 = p3.dy - k2 * p3.dx;
+    if ((k1 - k2).abs() < 1e-6) {
+      // Parallel — return midpoint of segment ends
+      return Offset((p1.dx + p3.dx) / 2, (p1.dy + p3.dy) / 2);
+    }
+    final x = (b2 - b1) / (k1 - k2);
+    return Offset(x, k1 * x + b1);
   }
 
-  /// 计算拖拽点对应的拖拽脚 ///
+  /// 计算拖拽点对应的页脚角。
+  ///
+  /// - 上 1/3：上角卷曲
+  /// - 下 1/3：下角卷曲
+  /// - 中间 1/3：水平卷曲（侧边中部翻起，[mTouch.y] 锁到底边算法角）
   void calcCornerXY(double x, double y) {
-    if (x <= currentSize.width / 2) {
-      mCornerX = 0;
-    } else {
-      mCornerX = currentSize.width;
-    }
-    if (y <= currentSize.height / 2) {
+    final w = currentSize.width;
+    final h = currentSize.height;
+
+    mCornerX = x <= w / 2 ? 0.0 : w;
+
+    final topBand = h / 3;
+    final bottomBand = h * 2 / 3;
+    if (y < topBand) {
       mCornerY = 0;
+      _horizontalMode = false;
+    } else if (y > bottomBand) {
+      mCornerY = h;
+      _horizontalMode = false;
     } else {
-      mCornerY = currentSize.height;
+      // Middle band → horizontal curl from side edge.
+      // Algorithm anchors on a real corner; lock touch Y to that corner Y.
+      mCornerY = h;
+      _horizontalMode = true;
     }
 
-    if ((mCornerX == 0 && mCornerY == currentSize.height) ||
-        (mCornerX == currentSize.width && mCornerY == 0)) {
-      mIsRTandLB = true;
-    } else {
-      mIsRTandLB = false;
+    mIsRTandLB = (mCornerX == 0 && mCornerY == h) ||
+        (mCornerX == w && mCornerY == 0);
+  }
+
+  Offset _applyHorizontalLock(Offset pos) {
+    if (!_horizontalMode) return pos;
+    // Pure horizontal fold: keep Y on the fold edge (bottom corner line).
+    return Offset(pos.dx.clamp(0.0, currentSize.width), mCornerY);
+  }
+
+  Offset _normalizeTouch(Offset pos) {
+    var p = _applyHorizontalLock(pos);
+    // Keep a tiny offset from the fold edge so bezier math stays stable.
+    if (_horizontalMode) {
+      p = Offset(p.dx, mCornerY == 0 ? 0.5 : mCornerY - 0.5);
+    } else if ((p.dy - mCornerY).abs() < 0.5) {
+      p = Offset(p.dx, mCornerY == 0 ? 0.5 : mCornerY - 0.5);
+    }
+    if ((p.dx - mCornerX).abs() < 0.5) {
+      p = Offset(mCornerX == 0 ? 0.5 : mCornerX - 0.5, p.dy);
+    }
+    return p;
+  }
+
+  void _updateDirectionAndActive() {
+    // Corner on the right + finger left of corner ⇒ turn next; opposite ⇒ prev.
+    isTurnToNext = mTouch.dx < mCornerX;
+    final can = (!isTurnToNext && isCanGoPre()) || (isTurnToNext && isCanGoNext());
+    if (can) {
+      isStartAnimation = true;
     }
   }
 
   @override
   void onTouchEvent(TouchEvent event) {
-    mTouch = event.touchPos;
+    if (event.action == TouchEvent.ACTION_CANCEL) {
+      isStartAnimation = false;
+      isConfirmAnimation = false;
+      mTouch = Offset.zero;
+      return;
+    }
 
     switch (event.action) {
       case TouchEvent.ACTION_DOWN:
-        calcCornerXY(mTouch.dx, mTouch.dy);
+        calcCornerXY(event.touchPos.dx, event.touchPos.dy);
+        mTouch = _normalizeTouch(event.touchPos);
+        isStartAnimation = false;
+        isConfirmAnimation = false;
         break;
       case TouchEvent.ACTION_MOVE:
-        isTurnToNext = mTouch.dx - mCornerX < 0;
-        if ((!isTurnToNext && isCanGoPre()) ||
-            (isTurnToNext && isCanGoNext())) {
-          isStartAnimation = true;
-        }
+        // During confirm/cancel the manager drives mTouch via MOVE — keep flags.
+        mTouch = isConfirmAnimation
+            ? event.touchPos
+            : _normalizeTouch(event.touchPos);
+        _updateDirectionAndActive();
         break;
       case TouchEvent.ACTION_UP:
-      case TouchEvent.ACTION_CANCEL:
-        if ((!isTurnToNext && isCanGoPre()) ||
-            (isTurnToNext && isCanGoNext())) {
-          isStartAnimation = true;
-        }
+        mTouch = _normalizeTouch(event.touchPos);
+        _updateDirectionAndActive();
         break;
       default:
+        mTouch = event.touchPos;
         break;
     }
 
-    calBezierPoint();
+    if (mTouch != Offset.zero) {
+      calBezierPoint();
+    }
   }
 
   @override
   void onDraw(Canvas canvas) {
-    if (isStartAnimation && (mTouch.dx != 0 && mTouch.dy != 0)) {
-      drawTopPageCanvas(canvas);
+    // Draw curl while user is dragging or confirm/cancel animation is running.
+    // Do NOT require mTouch.dy != 0 — top-corner curls end with y≈0.
+    final animating = isConfirmAnimation || isStartAnimation;
+    if (animating && mTouch != Offset.zero) {
+      // Order: bottom (revealed) → top (remaining) → back of flipped flap.
       drawBottomPageCanvas(canvas);
+      drawTopPageCanvas(canvas);
       drawTopPageBackArea(canvas);
     } else {
-      var targetPicture = readerViewModel.cur();
+      final targetPicture = readerViewModel.cur();
       if (targetPicture != null) {
         canvas.drawPicture(targetPicture);
       }
     }
-
-    isStartAnimation = false;
   }
 
-  /// 画在最顶上的那页 ///
+  /// 画在最顶上的那页（剩余未翻起区域，需 clip）
   void drawTopPageCanvas(Canvas canvas) {
     mTopPagePath.reset();
 
@@ -253,17 +327,11 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         mTopPagePath);
 
     canvas.save();
-
-//    canvas.drawImageRect(
-//        readerViewModel.getCurrentPage().pageImage,
-//        Offset.zero & currentSize,
-//        Offset.zero & currentSize,
-//        Paint()..isAntiAlias = true);
+    // Clip so the revealed bottom page stays visible.
+    canvas.clipPath(mTopPagePath, doAntiAlias: false);
     final curPic = readerViewModel.cur();
     if (curPic != null) canvas.drawPicture(curPic);
-
     drawTopPageShadow(canvas);
-
     canvas.restore();
   }
 
@@ -392,9 +460,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     canvas.drawRect(Rect.fromLTRB(left, 0, right, mMaxLength), shadowPaint);
   }
 
-  /// 画在最顶上的那页的翻转过来的部分 ///
-  /// 仿真翻页中性能损失最大的部分，注释掉drawTopPageBackArea能保证绘制会在16ms以内，但是去掉注释，部分情况甚至会到40+
-  /// 盲猜是过于复杂的图层处理导致的(Flutter的图层处理性能还是不如原生啊……但是好像图层绘制性能很强大，好像甚至优于原生)
+  /// 翻起页背面：镜像绘制当前页正文（半透明）+ 纸色蒙层，呈现透光纸效果。
   void drawTopPageBackArea(Canvas canvas) {
     mBottomPagePath.reset();
     mBottomPagePath.moveTo(mCornerX, mCornerY);
@@ -407,19 +473,16 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         mBezierStart2.dx, mBezierStart2.dy);
     mBottomPagePath.close();
 
-    Path tempBackAreaPath = Path();
+    final tempBackAreaPath = Path()
+      ..moveTo(mBezierVertex1.dx, mBezierVertex1.dy)
+      ..lineTo(mBezierVertex2.dx, mBezierVertex2.dy)
+      ..lineTo(mTouch.dx, mTouch.dy)
+      ..close();
 
-    tempBackAreaPath.reset();
-    tempBackAreaPath.moveTo(mBezierVertex1.dx, mBezierVertex1.dy);
-    tempBackAreaPath.lineTo(mBezierVertex2.dx, mBezierVertex2.dy);
-    tempBackAreaPath.lineTo(mTouch.dx, mTouch.dy);
-    tempBackAreaPath.close();
-
-    /// 取path 相交部分 ///
     mTopBackAreaPagePath = Path.combine(
         PathOperation.intersect, tempBackAreaPath, mBottomPagePath);
 
-    /// 去掉PATH圈在屏幕外的区域，减少GPU使用
+    // Clip to screen bounds.
     mTopBackAreaPagePath = Path.combine(
         PathOperation.intersect,
         Path()
@@ -430,59 +493,58 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
           ..close(),
         mTopBackAreaPagePath);
 
-    canvas.save();
+    // Paper color from reader theme (bgPaint defaults to black and looks solid).
+    final paper = ReadSetting.paperColor(readerViewModel.paperTheme);
 
+    canvas.save();
     canvas.clipPath(mTopBackAreaPagePath);
-    canvas.drawPaint(Paint()..color = readerViewModel.bgPaint.color);
 
+    // 1) Soft paper base so the back is never pure black.
+    canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.92));
+
+    // 2) Mirrored current page content (see-through text).
     canvas.save();
-
-    mTopBackAreaPagePath.getBounds();
-
     canvas.translate(mBezierControl1.dx, mBezierControl1.dy);
 
-    /// 矩阵公式：α表示翻转页面和边的夹角
-    /// https://juejin.im/post/5a32ade0f265da43252954b2
-    ///
-    ///  -(1-2sin(a)^2 )   2sin(a)cos(a)   0
-    ///  2sin(a)cos(a)      1-2sin(a)^2    0
-    ///  0                0             1
-
-    double dis = math.sqrt(math.pow((mCornerX - mBezierControl1.dx), 2) +
+    final dis = math.sqrt(math.pow((mCornerX - mBezierControl1.dx), 2) +
         math.pow((mBezierControl2.dy - mCornerY), 2));
-    double sinAngle = (mCornerX - mBezierControl1.dx) / dis;
-    double cosAngle = (mBezierControl2.dy - mCornerY) / dis;
+    if (dis > 0.001) {
+      final sinAngle = (mCornerX - mBezierControl1.dx) / dis;
+      final cosAngle = (mBezierControl2.dy - mCornerY) / dis;
 
-    Matrix4 matrix4 = Matrix4.columns(
+      // Householder reflection matrix (page fold).
+      final matrix4 = Matrix4.columns(
         v.Vector4(
             -(1 - 2 * sinAngle * sinAngle), 2 * sinAngle * cosAngle, 0, 0),
-        v.Vector4(2 * sinAngle * cosAngle, (1 - 2 * sinAngle * sinAngle), 0, 0),
+        v.Vector4(
+            2 * sinAngle * cosAngle, (1 - 2 * sinAngle * sinAngle), 0, 0),
         v.Vector4(0, 0, 1, 0),
-        v.Vector4(0, 0, 0, 1));
+        v.Vector4(0, 0, 0, 1),
+      );
+      matrix4.translateByDouble(
+          -mBezierControl1.dx, -mBezierControl1.dy, 0, 1);
+      canvas.transform(matrix4.storage);
 
-    matrix4.translate(-mBezierControl1.dx, -mBezierControl1.dy);
-    canvas.transform(matrix4.storage);
-
-    /// 用image处理有奇效……原因未知，好像是picture是保存了绘制信息的原因，所以像这种n次平移->翻转->半透明图层叠加->裁剪->加阴影 的复杂操作处理不过来
-    /// image相对简单，就是张图片，处理了就处理了，不会留下需要保存的信息
-    /// 反正是一个半透明处理的，所以对清晰度没要求，所以这里用image绘制
-    /// 我个人的猜测……求精通底层的大佬解惑
-    // canvas.drawImageRect(
-    //     readerViewModel.cur(),
-    //     Offset.zero & currentSize,
-    //     Offset.zero & currentSize,
-    //     Paint()..isAntiAlias = true);
-//    canvas.drawImage(configManager.currentPageImage, Offset.zero, Paint()..isAntiAlias=true);
-//    canvas.drawPicture(configManager.currentPagePicture);
-//    canvas.drawPaint(Paint()..color = Color(0xCCFFFFFF));
-//    canvas.drawPaint(Paint()..color =Colors.blue);
-    canvas.drawPaint(Paint()..color = Color(readerViewModel.bgPaint.color.value& 0xAAFFFFFF));
-//    canvas.drawPaint(Paint()..color = Color(0xAAfff2cc));
+      final curPic = readerViewModel.cur();
+      if (curPic != null) {
+        // Slightly faded so it reads as ink showing through thin paper.
+        canvas.saveLayer(
+          Offset.zero & currentSize,
+          Paint()..color = const Color(0xB3FFFFFF), // ~70% opacity
+        );
+        canvas.drawPicture(curPic);
+        // Warm translucent paper wash over the mirrored ink.
+        canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.35));
+        canvas.restore();
+      } else {
+        canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.85));
+      }
+    }
 
     canvas.restore();
 
+    // 3) Edge shadow on the folded flap.
     drawTopPageBackAreaShadow(canvas);
-
     canvas.restore();
   }
 
@@ -534,16 +596,19 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       return null;
     }
     isConfirmAnimation = false;
+    isStartAnimation = true;
 
     if (currentAnimation == null) {
       currentAnimationTween = Tween(begin: Offset.zero, end: Offset.zero);
-
       currentAnimation = currentAnimationTween!.animate(controller);
     }
 
+    // Snap fold closed back to the corner.
     currentAnimationTween!.begin = mTouch;
-    currentAnimationTween!.end = Offset(mCornerX, mCornerY);
-
+    currentAnimationTween!.end = Offset(
+      mCornerX == 0 ? 0.5 : mCornerX - 0.5,
+      mCornerY == 0 ? 0.5 : mCornerY - 0.5,
+    );
     return currentAnimation;
   }
 
@@ -553,49 +618,23 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     if ((!isTurnToNext && !isCanGoPre()) || (isTurnToNext && !isCanGoNext())) {
       return null;
     }
+    // Drawing flags — page commit is owned by ReaderPageManager.
     isConfirmAnimation = true;
+    isStartAnimation = true;
 
     if (currentAnimation == null) {
       currentAnimationTween = Tween(begin: Offset.zero, end: Offset.zero);
       currentAnimation = currentAnimationTween!.animate(controller);
     }
 
-    if (statusListener == null) {
-      statusListener = (status) {
-        switch (status) {
-          case AnimationStatus.dismissed:
-            break;
-          case AnimationStatus.completed:
-            if (isConfirmAnimation) {
-              if (isTurnToNext) {
-                // readerViewModel.nextPage();
-              } else {
-                // readerViewModel.prePage();
-              }
-              canvasKey.currentContext?.findRenderObject()?.markNeedsPaint();
-            }
-            break;
-          case AnimationStatus.forward:
-          case AnimationStatus.reverse:
-            break;
-        }
-      };
-
-      currentAnimation!.addStatusListener(statusListener!);
-    }
-
-    if (statusListener != null &&
-        !(controller as AnimationControllerWithListenerNumber)
-            .statusListeners
-            .contains(statusListener)) {
-      currentAnimation!.addStatusListener(statusListener!);
-    }
+    // Pull the corner fully across the page.
+    final endX = mCornerX == 0
+        ? currentSize.width * 1.5
+        : -currentSize.width * 0.5;
+    final endY = mCornerY == 0 ? 0.5 : currentSize.height - 0.5;
 
     currentAnimationTween!.begin = mTouch;
-    currentAnimationTween!.end = Offset(
-        mCornerX == 0 ? currentSize.width * 3 / 2 : 0 - currentSize.width / 2,
-        mCornerY == 0 ? 0 : currentSize.height);
-
+    currentAnimationTween!.end = Offset(endX, endY);
     return currentAnimation;
   }
 
@@ -605,14 +644,18 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     return null;
   }
 
+  /// Pull distance from the anchored corner (horizontal component).
+  double get _pullFromCorner => (mTouch.dx - mCornerX).abs();
+
+  /// Confirm when the finger has pulled far enough — NOT based on absolute X
+  /// (old check was almost always true near the center and caused accidental turns).
   @override
   bool isCancelArea() {
-
-    return isTurnToNext?(mTouch.dx).abs() > (currentSize.width / 4*3):(mTouch.dx).abs() < (currentSize.width / 4);
+    return _pullFromCorner < currentSize.width / 5;
   }
 
   @override
   bool isConfirmArea() {
-    return isTurnToNext?(mTouch.dx).abs() < (currentSize.width / 4*3):(mTouch.dx).abs() > (currentSize.width / 4);
+    return _pullFromCorner >= currentSize.width / 5;
   }
 }

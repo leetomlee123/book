@@ -8,7 +8,6 @@ import 'package:book/model/ColorModel.dart';
 import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
-import 'package:book/view/book/SourceSwitchSheet.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -323,6 +322,10 @@ class _MenuState extends ConsumerState<Menu> {
           const SizedBox(height: 10),
           _paperSwatchRow(),
           const SizedBox(height: 16),
+          _sectionLabel('翻页'),
+          const SizedBox(height: 10),
+          _pageTurnModeRow(),
+          const SizedBox(height: 16),
           _sectionLabel('更多'),
           const SizedBox(height: 10),
           _settingTile(
@@ -366,6 +369,58 @@ class _MenuState extends ConsumerState<Menu> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _pageTurnModeRow() {
+    const modes = <(int, String, IconData)>[
+      (0, '无动画', Icons.flash_on_outlined),
+      (2, '覆盖', Icons.layers_outlined),
+      (1, '仿真', Icons.auto_stories_outlined),
+    ];
+    final current = _readModel.currentAnimationMode;
+    return Row(
+      children: modes.map((m) {
+        final selected = current == m.$1;
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Material(
+              color: selected ? AppColors.brandSoft : _chipBg,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  _readModel.setAnimationMode(m.$1);
+                  setState(() {});
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    children: [
+                      Icon(
+                        m.$3,
+                        size: 20,
+                        color: selected ? AppColors.brand : _fg,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        m.$2,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w400,
+                          color: selected ? AppColors.brand : _fg,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 

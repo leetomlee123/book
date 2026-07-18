@@ -35,13 +35,14 @@ class _ReadBookState extends ConsumerState<ReadBook>
   @override
   void initState() {
     super.initState();
-    // ref is available in ConsumerState.initState
+    // Sync seed: paper color + loading page before first frame (avoids flash).
+    readModel = ref.read(readModelProvider);
+    shelfModel = ref.read(shelfModelProvider);
+    readModel.prepareOpen(widget.book);
     setUp();
   }
 
   Future<void> setUp() async {
-    readModel = ref.read(readModelProvider);
-    shelfModel = ref.read(shelfModelProvider);
     _refreshSub = eventBus.on<ReadRefresh>().listen((event) {
       final b = readModel.book;
       if (b == null) return;
@@ -51,9 +52,8 @@ class _ReadBookState extends ConsumerState<ReadBook>
 
     WidgetsBinding.instance.addObserver(this);
     _chaptersSub = eventBus.on<OpenChapters>().listen((event) {
-      _scaffoldKey.currentState?.openDrawer();
+      _openChapterCatalog();
     });
-    readModel.book = widget.book;
     try {
       await readModel.getBookRecord();
     } catch (e, st) {
@@ -93,17 +93,26 @@ class _ReadBookState extends ConsumerState<ReadBook>
   }
 
   bool popWithMenuAndChapterView() {
-    if (readModel.showMenu ||
-        (_scaffoldKey.currentState?.isDrawerOpen ?? false)) {
-      if (readModel.showMenu) {
-        readModel.toggleShowMenu();
-      }
-      if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
-        _scaffoldKey.currentState?.openEndDrawer();
-      }
+    if (readModel.showMenu) {
+      readModel.toggleShowMenu();
       return false;
     }
+    // Chapter catalog is a full-screen route; system back pops it first.
     return true;
+  }
+
+  void _openChapterCatalog() {
+    if (!mounted) return;
+    // Close reader menu if open so catalog is unobstructed.
+    if (readModel.showMenu) {
+      readModel.toggleShowMenu();
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const ChapterView(),
+        fullscreenDialog: true,
+      ),
+    );
   }
 
   @override
@@ -132,47 +141,21 @@ class _ReadBookState extends ConsumerState<ReadBook>
       },
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: Drawer(
-          child: ChapterView(),
+        backgroundColor: paper,
+        // Full-screen chapter catalog is pushed as a route (not a Drawer).
+        // Loading states are painted as normal page content (no overlay text).
+        body: Stack(
+          children: [
+            // Instant paper fill under the canvas (matches reader theme).
+            ColoredBox(
+              color: paper,
+              child: const SizedBox.expand(),
+            ),
+            // Always mount the canvas so load hints can be drawn as pages.
+            const RepaintBoundary(child: PageContentReader()),
+            if (model.loadOk && model.showMenu) Menu(),
+          ],
         ),
-        body: !model.loadOk
-            ? ColoredBox(
-                color: paper,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      model.loadingHint.isEmpty
-                          ? '正在加载目录…'
-                          : model.loadingHint,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: ReadSetting.inkColor(
-                          model.paperTheme == PaperTheme.night ||
-                                  SpUtil.getBool('dark', defValue: false)
-                              ? PaperTheme.night
-                              : model.paperTheme,
-                        ).withValues(alpha: 0.75),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : Stack(
-                children: [
-                  ColoredBox(
-                    color: paper,
-                    child: const SizedBox.expand(),
-                  ),
-                  GestureDetector(
-                    child: const RepaintBoundary(child: PageContentReader()),
-                    onTapUp: (e) => readModel.tapPage(context, e),
-                  ),
-                  if (model.showMenu) Menu(),
-                ],
-              ),
       ),
     );
   }

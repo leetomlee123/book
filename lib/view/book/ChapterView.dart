@@ -1,23 +1,39 @@
 import 'package:book/common/app_colors.dart';
+import 'package:book/common/local_store.dart';
+import 'package:book/entity/LocalChapter.dart';
 import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+/// Full-screen chapter catalog with search + jump-to-index.
 class ChapterView extends ConsumerStatefulWidget {
   const ChapterView({super.key});
 
   @override
-  ConsumerState<ChapterView> createState() => _ChapterViewItem();
+  ConsumerState<ChapterView> createState() => _ChapterViewState();
 }
 
-class _ChapterViewItem extends ConsumerState<ChapterView> {
+class _ChapterViewState extends ConsumerState<ChapterView> {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
+  final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
 
   bool showToTopBtn = false;
   bool _centeredOnce = false;
+  bool _searching = false;
+  String _query = '';
+
+  bool get _dark => SpUtil.getBool('dark', defValue: false);
+  Color get _scaffold => _dark ? AppColors.scaffoldDark : AppColors.scaffold;
+  Color get _surface => _dark ? AppColors.surfaceDark : AppColors.surface;
+  Color get _primary => _dark ? AppColors.textOnDark : AppColors.textPrimary;
+  Color get _secondary => AppColors.textSecondary;
+  Color get _tertiary => AppColors.textTertiary;
+  Color get _divider => _dark ? AppColors.dividerDark : AppColors.divider;
 
   @override
   void initState() {
@@ -31,6 +47,8 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
   @override
   void dispose() {
     _itemPositionsListener.itemPositions.removeListener(_onPositionsChanged);
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -45,7 +63,6 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
     }
   }
 
-  /// [alignment] 0=顶 0.5=中 1=底（scrollable_positioned_list 约定）。
   void _jumpTo(int index, {double alignment = 0}) {
     if (!_itemScrollController.isAttached) return;
     final chapters = ref.read(readModelProvider).chapters;
@@ -68,101 +85,146 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
     );
   }
 
-  /// 打开目录时把当前章节滚到可视区域中间。
   void _centerCurrentChapter() {
     final model = ref.read(readModelProvider);
     final chapters = model.chapters;
     if (chapters.isEmpty || !_itemScrollController.isAttached) return;
     final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
-    _jumpTo(cur, alignment: 0.5);
+    _jumpTo(cur, alignment: 0.35);
     _centeredOnce = true;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final data = ref.watch(readModelProvider);
-    final chapters = data.chapters;
-    final cur = data.book?.cur ?? 0;
-
-    // 目录异步到位后，再居中一次当前章（首帧可能还是空列表）。
-    if (!_centeredOnce && chapters.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _centeredOnce) return;
-        _centerCurrentChapter();
-      });
+  List<({int index, LocalChapter chapter})> _filtered(
+    List<LocalChapter> chapters,
+  ) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) {
+      return [
+        for (var i = 0; i < chapters.length; i++)
+          (index: i, chapter: chapters[i]),
+      ];
     }
+    final out = <({int index, LocalChapter chapter})>[];
+    for (var i = 0; i < chapters.length; i++) {
+      final name = chapters[i].chapterName.toLowerCase();
+      final numStr = '${i + 1}';
+      if (name.contains(q) || numStr.contains(q)) {
+        out.add((index: i, chapter: chapters[i]));
+      }
+    }
+    return out;
+  }
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: data.chaptersLoading && chapters.isEmpty
-                  ? Center(
-                      child: Text(
-                        data.loadingHint.isEmpty
-                            ? '正在加载目录…'
-                            : data.loadingHint,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    )
-                  : chapters.isEmpty
-                      ? Center(
-                          child: Text(
-                            '暂无章节',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        )
-                      : ScrollablePositionedList.builder(
-                          itemScrollController: _itemScrollController,
-                          itemPositionsListener: _itemPositionsListener,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          itemCount: chapters.length,
-                          itemBuilder: (context, index) {
-                            final chapter = chapters[index];
-                            final selected = index == cur;
-                            final cached = chapter.hasContent == '2';
-                            return _ChapterTile(
-                              index: index,
-                              title: chapter.chapterName,
-                              selected: selected,
-                              cached: cached,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                data.book!.cur = index;
-                                Future.delayed(
-                                  const Duration(milliseconds: 400),
-                                  () async {
-                                    await data.initPageContent(index, true);
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
+  Future<void> _openChapter(int index) async {
+    final data = ref.read(readModelProvider);
+    final book = data.book;
+    if (book == null) return;
+    if (index < 0 || index >= data.chapters.length) return;
+    Navigator.of(context).pop();
+    book.cur = index;
+    // Small delay so drawer/page pop animation doesn't fight repaint.
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await data.initPageContent(index, true);
+  }
+
+  Future<void> _showJumpDialog() async {
+    final model = ref.read(readModelProvider);
+    final total = model.chapters.length;
+    if (total == 0) return;
+    final cur = ((model.book?.cur ?? 0) + 1).clamp(1, total);
+    final ctrl = TextEditingController(text: '$cur');
+
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: _surface,
+          title: Text('跳转到章节', style: TextStyle(color: _primary)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '共 $total 章，输入章节序号（1–$total）',
+                style: TextStyle(fontSize: 13, color: _secondary),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: TextStyle(color: _primary),
+                decoration: InputDecoration(
+                  hintText: '章节序号',
+                  hintStyle: TextStyle(color: _tertiary),
+                  filled: true,
+                  fillColor: _dark ? const Color(0xFF2A2A2A) : AppColors.scaffold,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+                onSubmitted: (v) {
+                  final n = int.tryParse(v.trim());
+                  if (n != null) Navigator.pop(ctx, n);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('取消', style: TextStyle(color: _secondary)),
             ),
-            _BottomBar(
-              showToTop: showToTopBtn,
-              reloading: data.chaptersLoading,
-              onReload: data.chaptersLoading ? null : refresh,
-              onJump: data.chaptersLoading ? null : topOrBottom,
+            TextButton(
+              onPressed: () {
+                final n = int.tryParse(ctrl.text.trim());
+                Navigator.pop(ctx, n);
+              },
+              child: const Text('确定', style: TextStyle(color: AppColors.brand)),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
+
+    if (result == null || !mounted) return;
+    final index = (result - 1).clamp(0, total - 1);
+
+    if (_query.isNotEmpty) {
+      // Clear search so the full list is shown, then jump.
+      setState(() {
+        _query = '';
+        _searchCtrl.clear();
+        _searching = false;
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
+    await _scrollTo(index, alignment: 0.35);
+  }
+
+  Future<void> _goCurrent() async {
+    final model = ref.read(readModelProvider);
+    final chapters = model.chapters;
+    if (chapters.isEmpty) return;
+    final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
+    if (_query.isNotEmpty) {
+      setState(() {
+        _query = '';
+        _searchCtrl.clear();
+        _searching = false;
+      });
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
+    await _scrollTo(cur, alignment: 0.35);
   }
 
   Future<void> topOrBottom() async {
     final chapters = ref.read(readModelProvider).chapters;
-    if (chapters.isEmpty) return;
+    if (chapters.isEmpty || _query.isNotEmpty) return;
     if (showToTopBtn) {
       await _scrollTo(0);
     } else {
@@ -176,19 +238,353 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
     if (!mounted) return;
     final chapters = model.chapters;
     if (chapters.isEmpty) return;
-    final last = chapters.length - 1;
+    final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _scrollTo(last);
+      _scrollTo(cur, alignment: 0.35);
     });
   }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = ref.watch(readModelProvider);
+    final chapters = data.chapters;
+    final cur = data.book?.cur ?? 0;
+    final bookName = data.book?.Name ?? '目录';
+    final filtered = _filtered(chapters);
+
+    if (!_centeredOnce && chapters.isNotEmpty && _query.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _centeredOnce) return;
+        _centerCurrentChapter();
+      });
+    }
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: _scaffold,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _Header(
+                title: bookName,
+                subtitle: chapters.isEmpty
+                    ? '暂无章节'
+                    : '共 ${chapters.length} 章 · 当前第 ${cur + 1} 章',
+                dark: _dark,
+                primary: _primary,
+                secondary: _secondary,
+                surface: _surface,
+                searching: _searching,
+                searchCtrl: _searchCtrl,
+                searchFocus: _searchFocus,
+                onBack: () => Navigator.of(context).maybePop(),
+                onToggleSearch: () {
+                  setState(() {
+                    _searching = !_searching;
+                    if (!_searching) {
+                      _query = '';
+                      _searchCtrl.clear();
+                      _searchFocus.unfocus();
+                    } else {
+                      _searchFocus.requestFocus();
+                    }
+                  });
+                },
+                onQueryChanged: (v) {
+                  setState(() {
+                    _query = v;
+                    _centeredOnce = true; // don't re-center while filtering
+                  });
+                },
+                onClearQuery: () {
+                  setState(() {
+                    _query = '';
+                    _searchCtrl.clear();
+                  });
+                },
+                onJump: chapters.isEmpty ? null : _showJumpDialog,
+                onLocate: chapters.isEmpty ? null : _goCurrent,
+              ),
+              Expanded(
+                child: data.chaptersLoading && chapters.isEmpty
+                    ? Center(
+                        child: Text(
+                          data.loadingHint.isEmpty
+                              ? '正在加载目录…'
+                              : data.loadingHint,
+                          style: TextStyle(color: _secondary, fontSize: 14),
+                        ),
+                      )
+                    : chapters.isEmpty
+                        ? Center(
+                            child: Text(
+                              '暂无章节',
+                              style: TextStyle(color: _secondary, fontSize: 14),
+                            ),
+                          )
+                        : filtered.isEmpty
+                            ? Center(
+                                child: Text(
+                                  '未找到匹配章节',
+                                  style:
+                                      TextStyle(color: _secondary, fontSize: 14),
+                                ),
+                              )
+                            : ScrollablePositionedList.builder(
+                                itemScrollController: _itemScrollController,
+                                itemPositionsListener: _itemPositionsListener,
+                                padding:
+                                    const EdgeInsets.fromLTRB(0, 4, 0, 8),
+                                itemCount: filtered.length,
+                                itemBuilder: (context, i) {
+                                  final item = filtered[i];
+                                  final index = item.index;
+                                  final chapter = item.chapter;
+                                  final selected = index == cur;
+                                  final cached = chapter.hasContent == '2';
+                                  return _ChapterTile(
+                                    index: index,
+                                    title: chapter.chapterName,
+                                    selected: selected,
+                                    cached: cached,
+                                    dark: _dark,
+                                    primary: _primary,
+                                    tertiary: _tertiary,
+                                    onTap: () => _openChapter(index),
+                                  );
+                                },
+                              ),
+              ),
+              _BottomBar(
+                dark: _dark,
+                surface: _surface,
+                primary: _primary,
+                secondary: _secondary,
+                divider: _divider,
+                showToTop: showToTopBtn && _query.isEmpty,
+                reloading: data.chaptersLoading,
+                onReload: data.chaptersLoading ? null : refresh,
+                onJumpList: data.chaptersLoading || _query.isNotEmpty
+                    ? null
+                    : topOrBottom,
+                onJumpChapter:
+                    data.chaptersLoading || chapters.isEmpty
+                        ? null
+                        : _showJumpDialog,
+                onLocateCurrent:
+                    data.chaptersLoading || chapters.isEmpty
+                        ? null
+                        : _goCurrent,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Header
+// ---------------------------------------------------------------------------
+
+class _Header extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool dark;
+  final Color primary;
+  final Color secondary;
+  final Color surface;
+  final bool searching;
+  final TextEditingController searchCtrl;
+  final FocusNode searchFocus;
+  final VoidCallback onBack;
+  final VoidCallback onToggleSearch;
+  final ValueChanged<String> onQueryChanged;
+  final VoidCallback onClearQuery;
+  final VoidCallback? onJump;
+  final VoidCallback? onLocate;
+
+  const _Header({
+    required this.title,
+    required this.subtitle,
+    required this.dark,
+    required this.primary,
+    required this.secondary,
+    required this.surface,
+    required this.searching,
+    required this.searchCtrl,
+    required this.searchFocus,
+    required this.onBack,
+    required this.onToggleSearch,
+    required this.onQueryChanged,
+    required this.onClearQuery,
+    required this.onJump,
+    required this.onLocate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: surface,
+      elevation: 0,
+      child: Column(
+        children: [
+          SizedBox(
+            height: 52,
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: '返回',
+                  icon: Icon(Icons.arrow_back_ios_new, size: 18, color: primary),
+                  onPressed: onBack,
+                ),
+                Expanded(
+                  child: searching
+                      ? _SearchField(
+                          controller: searchCtrl,
+                          focusNode: searchFocus,
+                          dark: dark,
+                          primary: primary,
+                          secondary: secondary,
+                          onChanged: onQueryChanged,
+                          onClear: onClearQuery,
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: primary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: secondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+                IconButton(
+                  tooltip: searching ? '关闭搜索' : '搜索章节',
+                  icon: Icon(
+                    searching ? Icons.close : Icons.search,
+                    size: 22,
+                    color: primary,
+                  ),
+                  onPressed: onToggleSearch,
+                ),
+                if (!searching) ...[
+                  IconButton(
+                    tooltip: '跳转章节',
+                    icon: Icon(Icons.low_priority, size: 22, color: primary),
+                    onPressed: onJump,
+                  ),
+                  IconButton(
+                    tooltip: '定位当前',
+                    icon: Icon(Icons.my_location_outlined,
+                        size: 20, color: primary),
+                    onPressed: onLocate,
+                  ),
+                ],
+                const SizedBox(width: 4),
+              ],
+            ),
+          ),
+          Divider(height: 0.5, thickness: 0.5, color: AppColors.divider.withValues(alpha: dark ? 0.2 : 1)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool dark;
+  final Color primary;
+  final Color secondary;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  const _SearchField({
+    required this.controller,
+    required this.focusNode,
+    required this.dark,
+    required this.primary,
+    required this.secondary,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      margin: const EdgeInsets.only(right: 4),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0xFF2A2A2A) : AppColors.scaffold,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Icon(Icons.search, size: 18, color: secondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              focusNode: focusNode,
+              onChanged: onChanged,
+              style: TextStyle(color: primary, fontSize: 14),
+              cursorColor: AppColors.brand,
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: '搜索章节名 / 序号',
+                hintStyle: TextStyle(color: secondary, fontSize: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: onClear,
+              child: Icon(Icons.cancel, size: 16, color: secondary),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tile
+// ---------------------------------------------------------------------------
 
 class _ChapterTile extends StatelessWidget {
   final int index;
   final String title;
   final bool selected;
   final bool cached;
+  final bool dark;
+  final Color primary;
+  final Color tertiary;
   final VoidCallback onTap;
 
   const _ChapterTile({
@@ -196,133 +592,174 @@ class _ChapterTile extends StatelessWidget {
     required this.title,
     required this.selected,
     required this.cached,
+    required this.dark,
+    required this.primary,
+    required this.tertiary,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final titleColor = selected ? AppColors.brand : AppColors.textPrimary;
-    final indexColor = selected ? AppColors.brand : AppColors.textTertiary;
+    final titleColor = selected ? AppColors.brand : primary;
+    final indexColor = selected ? AppColors.brand : tertiary;
 
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: selected ? AppColors.brandSoft : null,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 40,
-              child: Text(
-                '${index + 1}',
-                textAlign: TextAlign.left,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: indexColor,
-                  fontSize: 12,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: titleColor,
-                  fontSize: 15,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                  height: 1.3,
-                ),
-              ),
-            ),
-            if (cached)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
+    return Material(
+      color: selected
+          ? AppColors.brandSoft
+          : (dark ? AppColors.scaffoldDark : AppColors.scaffold),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 44,
                 child: Text(
-                  '已缓存',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppColors.textTertiary,
-                    fontSize: 10,
+                  '${index + 1}',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    color: indexColor,
+                    fontSize: 13,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
-          ],
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              if (selected)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(Icons.menu_book, size: 16, color: AppColors.brand),
+                )
+              else if (cached)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    '已缓存',
+                    style: TextStyle(color: tertiary, fontSize: 11),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+// ---------------------------------------------------------------------------
+// Bottom bar
+// ---------------------------------------------------------------------------
+
 class _BottomBar extends StatelessWidget {
+  final bool dark;
+  final Color surface;
+  final Color primary;
+  final Color secondary;
+  final Color divider;
   final bool showToTop;
   final bool reloading;
   final VoidCallback? onReload;
-  final VoidCallback? onJump;
+  final VoidCallback? onJumpList;
+  final VoidCallback? onJumpChapter;
+  final VoidCallback? onLocateCurrent;
 
   const _BottomBar({
+    required this.dark,
+    required this.surface,
+    required this.primary,
+    required this.secondary,
+    required this.divider,
     required this.showToTop,
     this.reloading = false,
     required this.onReload,
-    required this.onJump,
+    required this.onJumpList,
+    required this.onJumpChapter,
+    required this.onLocateCurrent,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return Material(
-      color: theme.scaffoldBackgroundColor,
-      elevation: 0,
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppColors.divider, width: 0.5),
+    Widget btn({
+      required IconData icon,
+      required String label,
+      required VoidCallback? onTap,
+    }) {
+      final enabled = onTap != null;
+      final color = enabled ? primary : secondary.withValues(alpha: 0.45);
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(height: 4),
+                Text(label, style: TextStyle(fontSize: 11, color: color)),
+              ],
+            ),
           ),
         ),
-        padding: EdgeInsets.fromLTRB(8, 4, 8, 4 + bottom),
+      );
+    }
+
+    return Material(
+      color: surface,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: divider, width: 0.5)),
+        ),
+        padding: EdgeInsets.only(bottom: bottom),
         child: reloading
             ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
                   child: Text(
                     '正在重新加载目录…',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: TextStyle(color: secondary, fontSize: 13),
                   ),
                 ),
               )
             : Row(
                 children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onReload,
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text('重新加载'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                      ),
-                    ),
+                  btn(
+                    icon: Icons.refresh,
+                    label: '刷新',
+                    onTap: onReload,
                   ),
-                  Container(width: 0.5, height: 20, color: AppColors.divider),
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onJump,
-                      icon: Icon(
-                        showToTop
-                            ? Icons.vertical_align_top
-                            : Icons.vertical_align_bottom,
-                        size: 18,
-                      ),
-                      label: Text(showToTop ? '回到顶部' : '回到底部'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                      ),
-                    ),
+                  btn(
+                    icon: Icons.low_priority,
+                    label: '跳转',
+                    onTap: onJumpChapter,
+                  ),
+                  btn(
+                    icon: Icons.my_location_outlined,
+                    label: '当前',
+                    onTap: onLocateCurrent,
+                  ),
+                  btn(
+                    icon: showToTop
+                        ? Icons.vertical_align_top
+                        : Icons.vertical_align_bottom,
+                    label: showToTop ? '顶部' : '底部',
+                    onTap: onJumpList,
                   ),
                 ],
               ),

@@ -44,8 +44,9 @@ class ReadModel with ChangeNotifier {
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
-  /// 翻页动画类型（默认静态切页，动画实现仍可通过 setCurrentAnimation 挂接）
-  int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_NONE;
+  /// 翻页动画类型：0 无动画 / 1 仿真 / 2 覆盖（见 [ReaderPageManager]）
+  int currentAnimationMode =
+      ReadSetting.getPageTurnMode();
 
   Book? book;
   List<LocalChapter> chapters = [];
@@ -108,6 +109,35 @@ class ReadModel with ChangeNotifier {
   bool? sSave;
   Load? load;
 
+  /// Sync seed when opening a book from shelf — call before first paint.
+  /// Clears previous book state and plants a centered loading page so the
+  /// transition does not flash the last book or a blank scaffold.
+  void prepareOpen(Book b) {
+    _hideTextLoading();
+    showMenu = false;
+    chaptersLoading = true;
+    loadingHint = '正在加载…';
+    sSave = true;
+    widgets.clear();
+    prePage = null;
+    nextPage = null;
+    mPainter = null;
+    canvasKey = null;
+    chapters = [];
+    book = b;
+    // Lightweight sync placeholder (no paginator / isolate).
+    final page = ReadPage.kong();
+    page.chapterName = '加载中';
+    page.chapterContent = loadingHint;
+    page.pages = [
+      TextPage([TextLine(loadingHint, 0, 0, 0)], 24),
+    ];
+    curPage = page;
+    b.index = b.index < 0 ? 0 : b.index;
+    loadOk = true;
+    // Do not notifyListeners here: the upcoming ReadBook build will watch us.
+  }
+
   //获取本书记录
   getBookRecord() async {
     try {
@@ -117,21 +147,21 @@ class ReadModel with ChangeNotifier {
       electricQuantity = 1.0;
     }
     showMenu = false;
-    loadOk = false;
     chaptersLoading = true;
-    loadingHint = '正在加载目录…';
+    loadingHint = loadingHint.isEmpty ? '正在加载…' : loadingHint;
     sSave = true;
-    widgets.clear();
-    prePage = null;
-    curPage = null;
-    nextPage = null;
-    notifyListeners();
-    if (bgUI == null) await changeBgUI();
+    // book already set by prepareOpen when coming from shelf.
+    book ??= null;
     final b = book;
     if (b == null) {
       AppLog.w('Read', 'getBookRecord: book is null');
       chaptersLoading = false;
       return;
+    }
+    // Ensure a loading page exists (in case prepareOpen was skipped).
+    if (curPage == null || curPage!.chapterName != '加载中') {
+      curPage = await _messagePage('加载中', loadingHint);
+      notifyListeners();
     }
 
     AppLog.i(
@@ -154,8 +184,7 @@ class ReadModel with ChangeNotifier {
       return;
     }
 
-    loadingHint = '正在准备书源…';
-    notifyListeners();
+    await _showTextLoading('正在准备书源…');
     await _ensureSource();
     if (_activeSource == null) {
       AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
@@ -171,8 +200,7 @@ class ReadModel with ChangeNotifier {
       return;
     }
 
-    loadingHint = '正在读取本地目录…';
-    notifyListeners();
+    await _showTextLoading('正在读取本地目录…');
     chapters = await DbHelper.instance.getChapters(b.Id);
     AppLog.i('Read', 'local chapters=${chapters.length}');
 
@@ -184,9 +212,7 @@ class ReadModel with ChangeNotifier {
         AppLog.w('Read', 'clamp cur ${b.cur} -> 0 (len=${chapters.length})');
         b.cur = 0;
       }
-      loadingHint = '正在加载正文…';
-      notifyListeners();
-      await initPageContent(b.cur, false);
+      await initPageContent(b.cur, false, showLoading: true);
 
       if (b.index < 0 || b.index >= (curPage?.pageOffsets ?? 1)) {
         AppLog.w(
@@ -206,8 +232,7 @@ class ReadModel with ChangeNotifier {
       notifyListeners();
     } else {
       b.cur = 0;
-      loadingHint = '正在获取章节目录…';
-      notifyListeners();
+      await _showTextLoading('正在获取章节目录…');
       await getChapters(init: true);
       AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
       if (chapters.isEmpty) {
@@ -218,9 +243,7 @@ class ReadModel with ChangeNotifier {
         );
         b.index = 0;
       } else {
-        loadingHint = '正在加载正文…';
-        notifyListeners();
-        await initPageContent(b.cur, false);
+        await initPageContent(b.cur, false, showLoading: true);
         b.index = 0;
       }
       loadOk = true;
@@ -269,51 +292,31 @@ class ReadModel with ChangeNotifier {
     _activeSource = await SourceModel().findByUrl(b.sourceUrl);
   }
 
-  /// 阅读页加载提示：纯文字，无转圈。
-  CancelFunc? _loadingCancel;
+  /// In-page loading (drawn as a normal ReadPage). No BotToast overlay.
+  int _loadingToken = 0;
 
-  void _showTextLoading(String text) {
-    _hideTextLoading();
-    final dark = isDark();
-    _loadingCancel = BotToast.showCustomLoading(
-      clickClose: true,
-      allowClick: false,
-      backgroundColor: Colors.transparent,
-      toastBuilder: (_) => Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          decoration: BoxDecoration(
-            color: (dark ? Colors.black : Colors.white).withValues(alpha: 0.88),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x22000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              color: dark ? Colors.white : Colors.black87,
-              height: 1.3,
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<void> _showTextLoading(String text) async {
+    loadingHint = text;
+    final token = ++_loadingToken;
+    final page = await _messagePage('加载中', text);
+    if (token != _loadingToken) return; // superseded
+    curPage = page;
+    book?.index = 0;
+    widgets.clear();
+    final ro = canvasKey?.currentContext?.findRenderObject();
+    ro?.markNeedsPaint();
+    notifyListeners();
   }
 
   void _hideTextLoading() {
-    _loadingCancel?.call();
-    _loadingCancel = null;
+    // Content replacement (initPageContent / chapter load) clears the hint page.
+    // Bump token so any in-flight _showTextLoading paint is ignored.
+    _loadingToken++;
   }
 
   Future initPageContent(int idx, bool jump, {bool showLoading = true}) async {
     if (showLoading) {
-      _showTextLoading('正在加载…');
+      await _showTextLoading('正在加载…');
     }
 
     try {
@@ -750,39 +753,72 @@ class ReadModel with ChangeNotifier {
     await DbHelper.instance.updBookProcess(b.cur, b.index, b.position, b.Id);
   }
 
-  /*页面点击事件 */
+  /*页面点击事件（兼容旧入口） */
   void tapPage(BuildContext context, TapUpDetails details) {
-    var wid = MediaQuery.of(context).size.width;
-    var hSpace = Screen.height / 4;
-    var space = wid / 3;
-    var curWid = details.globalPosition.dx;
-    var curH = details.globalPosition.dy;
-    var location = details.localPosition;
-    if ((curWid > space) && (curWid < 2 * space) && (curH < hSpace * 3)) {
-      toggleShowMenu();
-    } else if ((curWid > space * 2)) {
-      if (leftClickNext) {
-        clickPage(1, location);
-        return;
-      }
-      clickPage(1, location);
-    } else if ((curWid > 0 && curWid < space)) {
-      if (leftClickNext) {
-        clickPage(1, location);
-        return;
-      }
-      clickPage(-1, location);
-    }
+    final size = MediaQuery.of(context).size;
+    tapPageAt(details.localPosition, size);
   }
 
-  void clickPage(int f, Offset detail) {
-    // 静态翻页：直接切页，不再伪造 Cover 动画 touch 序列。
-    changeCoverPage(f);
-    final ro = canvasKey?.currentContext?.findRenderObject();
-    if (ro != null) {
-      ro.markNeedsPaint();
+  /// Zone tap using local coordinates of the reader canvas.
+  /// Middle → menu; left/right → page turn (respects [leftClickNext]).
+  ///
+  /// Returns `true` if a page-turn was started (not for menu-only).
+  bool tapPageAt(Offset localPos, Size size) {
+    if (mPainter?.pageManager?.isBusy == true) {
+      return false;
     }
+    final wid = size.width;
+    final hSpace = size.height / 4;
+    final space = wid / 3;
+    final x = localPos.dx;
+    final y = localPos.dy;
+    if (x > space && x < 2 * space && y < hSpace * 3) {
+      toggleShowMenu();
+      return false;
+    }
+    if (x >= 2 * space) {
+      return clickPage(1, localPos);
+    }
+    if (x <= space) {
+      return clickPage(leftClickNext ? 1 : -1, localPos);
+    }
+    return false;
+  }
+
+  /// Returns true if a turn was started.
+  bool clickPage(int f, Offset detail) {
+    if (mPainter?.pageManager?.isBusy == true) {
+      return false;
+    }
+    final mgr = mPainter?.pageManager;
+    if (mgr != null) {
+      return mgr.triggerTapTurn(f);
+    }
+    changeCoverPage(f);
+    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
     notifyListeners();
+    return true;
+  }
+
+  /// Switch page-turn animation mode. [PageContentReader] rebinds the manager.
+  void setAnimationMode(int mode) {
+    // 0 none / 1 simulation / 2 cover — keep in sync with ReaderPageManager.
+    final m = mode.clamp(0, 2);
+    currentAnimationMode = m;
+    ReadSetting.setPageTurnMode(m);
+    notifyListeners();
+  }
+
+  static String animationModeLabel(int mode) {
+    switch (mode) {
+      case ReaderPageManager.TYPE_ANIMATION_SIMULATION_TURN:
+        return '仿真';
+      case ReaderPageManager.TYPE_ANIMATION_COVER_TURN:
+        return '覆盖';
+      case ReaderPageManager.TYPE_ANIMATION_NONE:
+      default:
+        return '无动画';
+    }
   }
 
   ui.Picture? getPage({bool firstInit = false}) {
@@ -935,6 +971,40 @@ class ReadModel with ChangeNotifier {
     final fontFamily = ReadSetting.getFontFamily();
     final familyOrNull =
         (fontFamily.isEmpty || fontFamily == 'Roboto') ? null : fontFamily;
+    final fontSize = ReadSetting.getFontSize();
+    final TextStyle style = TextStyle(
+        color: ink,
+        locale: Locale('zh_CN'),
+        fontFamily: familyOrNull,
+        fontSize: fontSize,
+        height: ReadSetting.getLineHeight());
+
+    final bodyTop = ReadSetting.contentTopInset();
+    final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
+
+    // Loading / status pages: paint message centered on the canvas.
+    if (readPage.chapterName == '加载中') {
+      final msg = readPage.chapterContent.isNotEmpty
+          ? readPage.chapterContent
+          : '正在加载…';
+      final centerPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          text: msg,
+          style: style.copyWith(
+            color: meta,
+            fontSize: (fontSize * 0.95).clamp(14.0, 18.0),
+          ),
+        ),
+      );
+      centerPainter.layout(maxWidth: maxLineWidth);
+      final dx = (pageW - centerPainter.width) / 2;
+      final dy = (pageH - centerPainter.height) / 2;
+      centerPainter.paint(pageCanvas, Offset(dx, dy));
+      return pageRecorder.endRecording();
+    }
+
     //章节
     textPainter.text = TextSpan(
         text: "${readPage.chapterName}",
@@ -950,16 +1020,6 @@ class ReadModel with ChangeNotifier {
       Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
     );
     //正文
-    final fontSize = ReadSetting.getFontSize();
-    TextStyle style = TextStyle(
-        color: ink,
-        locale: Locale('zh_CN'),
-        fontFamily: familyOrNull,
-        fontSize: fontSize,
-        height: ReadSetting.getLineHeight());
-
-    final bodyTop = ReadSetting.contentTopInset();
-    final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
     // Per-line painter: shared maxLines:1 painter would clip overlong lines.
     final linePainter = TextPainter(textDirection: TextDirection.ltr);
 
@@ -1075,7 +1135,7 @@ class ReadModel with ChangeNotifier {
         mPaint);
     //时间
     textPainter.text = TextSpan(
-      text: '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
+      text: DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m),
       style: TextStyle(
         fontFamily: familyOrNull,
         fontSize: 12 / Screen.textScaleFactor,
@@ -1087,7 +1147,7 @@ class ReadModel with ChangeNotifier {
         pageCanvas, Offset(contentPadding + size.width + 1, bottomTextH));
     //页码
     textPainter.text = TextSpan(
-        text: "第${i + 1}/${readPage.pages.length}页",
+        text: "${i + 1}/${readPage.pages.length}",
         style: TextStyle(
           fontSize: 12 / Screen.textScaleFactor,
           fontFamily: familyOrNull,
@@ -1104,12 +1164,20 @@ class ReadModel with ChangeNotifier {
     chapters = [];
     loadOk = false;
     chaptersLoading = false;
-    loadingHint = '正在加载目录…';
+    loadingHint = '正在加载…';
     widgets.clear();
-    book = null;
-    curPage = null;
+    // Keep a neutral loading page so the next open doesn't paint stale content
+    // if prepareOpen races with a rebuild.
+    final page = ReadPage.kong();
+    page.chapterName = '加载中';
+    page.chapterContent = loadingHint;
+    page.pages = [
+      TextPage([TextLine(loadingHint, 0, 0, 0)], 24),
+    ];
+    curPage = page;
     prePage = null;
     nextPage = null;
+    book = null;
     mPainter = null;
     canvasKey = null;
   }
@@ -1341,6 +1409,8 @@ class ReadModel with ChangeNotifier {
   void changeCoverPage(var offsetDifference) {
     final b = book;
     if (b == null) return;
+    final beforeCur = b.cur;
+    final beforeIdx = b.index;
     int idx = b.index;
 
     int curLen = (curPage?.pageOffsets ?? 0);
@@ -1372,6 +1442,13 @@ class ReadModel with ChangeNotifier {
       }
       b.index = 0;
       nextPage = null;
+      if (kDebugMode) {
+        debugPrint(
+          '[ReadModel] changeCoverPage +chapter '
+          '$beforeCur:$beforeIdx → ${b.cur}:${b.index} '
+          'dir=$offsetDifference pages=$curLen',
+        );
+      }
       Future.delayed(const Duration(milliseconds: 500), () {
         if (book?.Id == b.Id) {
           loadChapter(b.cur + 1).then((value) {
@@ -1418,6 +1495,13 @@ class ReadModel with ChangeNotifier {
       b.index = (curPage?.pageOffsets ?? 1) - 1;
       notifyListeners();
       prePage = null;
+      if (kDebugMode) {
+        debugPrint(
+          '[ReadModel] changeCoverPage -chapter '
+          '$beforeCur:$beforeIdx → ${b.cur}:${b.index} '
+          'dir=$offsetDifference',
+        );
+      }
       Future.delayed(const Duration(milliseconds: 500), () {
         if (book?.Id == b.Id) {
           loadChapter(b.cur - 1).then((value) {
@@ -1432,6 +1516,13 @@ class ReadModel with ChangeNotifier {
     } else {
       b.index -= 1;
     }
+    if (kDebugMode) {
+      debugPrint(
+        '[ReadModel] changeCoverPage page '
+        '$beforeCur:$beforeIdx → ${b.cur}:${b.index} '
+        'dir=$offsetDifference pages=$curLen',
+      );
+    }
     // Within-chapter page change: refresh picture + UI.
     canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
     notifyListeners();
@@ -1440,22 +1531,25 @@ class ReadModel with ChangeNotifier {
   bool isCanGoNext() {
     final b = book;
     if (b == null) return false;
-    if (b.cur >= (chapters.length - 1)) {
-      if (b.index >= ((curPage?.pageOffsets ?? 1) - 1)) {
-        return false;
-      }
+    // Last chapter, last page.
+    if (b.cur >= chapters.length - 1 &&
+        b.index >= ((curPage?.pageOffsets ?? 1) - 1)) {
+      return false;
     }
-
-    return next() != null;
+    // Prefer pre-rendered picture, but allow turn if logical next exists.
+    if (next() != null) return true;
+    // Next page within chapter, or next chapter available.
+    if (b.index + 1 < (curPage?.pageOffsets ?? 0)) return true;
+    return b.cur + 1 < chapters.length;
   }
 
   bool isCanGoPre() {
     final b = book;
     if (b == null) return false;
-    if (b.cur <= 0 && b.index <= 0) {
-      return false;
-    }
-    return pre() != null;
+    if (b.cur <= 0 && b.index <= 0) return false;
+    if (pre() != null) return true;
+    if (b.index > 0) return true;
+    return b.cur > 0;
   }
 
   changeBgUI() async {
