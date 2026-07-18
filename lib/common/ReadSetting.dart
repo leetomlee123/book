@@ -30,6 +30,8 @@ class ReadSetting {
   static String paperKey = "paper_theme";
   static String useSolidPaperKey = "use_solid_paper";
   static String fontMigratedKey = "font_size_migrated_v19";
+  static String fontNameKey = "fontName";
+  static String fontPathKey = "fontPath";
 
   /// Product solid papers (preferred over texture images).
   static const List<PaperTheme> solidPapers = [
@@ -159,6 +161,29 @@ class ReadSetting {
   static double getFontSize() {
     migrateFontDefaultsIfNeeded();
     return SpUtil.getDouble(fontSizeKey, defValue: 19);
+  }
+
+  // ---- Font family / path (reader pagination + paint) ----
+
+  static String getFontFamily() =>
+      SpUtil.getString(fontNameKey, defValue: 'Roboto');
+
+  static void setFontFamily(String name) {
+    SpUtil.putString(fontNameKey, name.isEmpty ? 'Roboto' : name);
+  }
+
+  static String getFontPath() => SpUtil.getString(fontPathKey, defValue: '');
+
+  static void setFontPath(String path) {
+    SpUtil.putString(fontPathKey, path);
+  }
+
+  /// Page-turn mode: see [ReaderPageManager] TYPE_* constants.
+  static int getPageTurnMode() =>
+      SpUtil.getInt(Common.turnPageAnima, defValue: 0);
+
+  static void setPageTurnMode(int mode) {
+    SpUtil.putInt(Common.turnPageAnima, mode);
   }
 
   static double getLineHeight() {

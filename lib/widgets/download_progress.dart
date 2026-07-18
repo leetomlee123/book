@@ -1,5 +1,4 @@
 import 'package:book/event/event.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class DownloadProgressUI extends StatefulWidget {
@@ -30,6 +29,8 @@ class _DownloadProgressState extends State<DownloadProgressUI> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: Text("${NumUtil.multiply(v, 100)}%"));
+    // Keep two fractional digits, e.g. 37.25%
+    final pct = (v.clamp(0.0, 1.0) * 100).toStringAsFixed(2);
+    return Center(child: Text('$pct%'));
   }
 }

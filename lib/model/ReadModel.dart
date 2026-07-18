@@ -932,13 +932,16 @@ class ReadModel with ChangeNotifier {
       }
     }
 
+    final fontFamily = ReadSetting.getFontFamily();
+    final familyOrNull =
+        (fontFamily.isEmpty || fontFamily == 'Roboto') ? null : fontFamily;
     //章节
     textPainter.text = TextSpan(
         text: "${readPage.chapterName}",
         style: TextStyle(
           fontSize: 12 / Screen.textScaleFactor,
           color: meta,
-          fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+          fontFamily: familyOrNull,
         ));
     textPainter.layout();
     //章节高30 画在中间
@@ -951,7 +954,7 @@ class ReadModel with ChangeNotifier {
     TextStyle style = TextStyle(
         color: ink,
         locale: Locale('zh_CN'),
-        fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+        fontFamily: familyOrNull,
         fontSize: fontSize,
         height: ReadSetting.getLineHeight());
 
@@ -1074,7 +1077,7 @@ class ReadModel with ChangeNotifier {
     textPainter.text = TextSpan(
       text: '${DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m)}',
       style: TextStyle(
-        fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+        fontFamily: familyOrNull,
         fontSize: 12 / Screen.textScaleFactor,
         color: meta,
       ),
@@ -1087,7 +1090,7 @@ class ReadModel with ChangeNotifier {
         text: "第${i + 1}/${readPage.pages.length}页",
         style: TextStyle(
           fontSize: 12 / Screen.textScaleFactor,
-          fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
+          fontFamily: familyOrNull,
           color: meta,
         ));
     textPainter.layout();

@@ -13,11 +13,25 @@ void main() => AppInit.init().then(
       (value) => runApp(const ProviderScope(child: MyApp())),
     );
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Cold-start: register the saved reader font with FontLoader + resolve path.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(colorModelProvider).ensureCurrentFontLoaded();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final model = ref.watch(colorModelProvider);
     return MaterialApp(
       title: '即刻追书',

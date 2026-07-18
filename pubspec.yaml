@@ -18,11 +18,10 @@ dependencies:
   event_bus: ^2.0.1
   get_it: ^8.0.3
   sqflite: ^2.4.2
-  path_provider: ^2.1.5
+  path_provider: ^2.1.6
   shared_preferences: ^2.5.3
   permission_handler: ^12.0.0+1
   battery_plus: ^7.1.0
-  package_info_plus: ^10.2.0
   flutter_cache_manager: ^3.4.1
   scrollable_positioned_list: ^0.3.8
   pull_to_refresh: ^2.0.0
@@ -46,6 +45,7 @@ dependencies:
   # Force modern Android embedding (namespace) for AGP 8+/9
   flutter_plugin_android_lifecycle: ^2.0.28
   extended_image: ^10.1.0
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:

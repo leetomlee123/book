@@ -13,7 +13,6 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// 「我的」页（微信读书风格）
@@ -125,11 +124,9 @@ class Me extends ConsumerWidget {
                       icon: Icons.system_update_alt,
                       title: '应用更新',
                       onTap: () async {
-                        final packageInfo =
-                            await PackageInfo.fromPlatform();
                         BotToast.showText(
                           text:
-                              '当前版本 ${packageInfo.version}（已移除云端更新检查）',
+                              '已移除云端更新检查功能，请前往 GitHub 或应用商店下载最新版本。',
                         );
                       },
                     ),

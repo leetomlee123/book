@@ -9,7 +9,6 @@ import 'package:book/common/book_pager.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
-import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 /// * 暂不支持图片
@@ -274,7 +273,8 @@ class TextComposition {
       'padH': ReadSetting.getPageDis().toDouble(),
       'boxW': boxW,
       'boxH': boxH,
-      'fontFamily': SpUtil.getString("fontName", defValue: "Roboto"),
+      'fontFamily': ReadSetting.getFontFamily(),
+      'fontPath': ReadSetting.getFontPath(),
       'shouldJustifyHeight': shouldJustifyHeight,
     };
   }
@@ -298,11 +298,13 @@ class TextComposition {
     final boxW = p['boxW'] as double;
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
+    final fontPath = p['fontPath'] as String? ?? '';
 
     AppLog.i(
       'Pager',
       'layout boxW=$boxW boxH=$boxH fontSize=$fontSize '
           'lineHeight=$lineHeight padH=$padH family=$fontFamily '
+          'fontPath=${fontPath.isEmpty ? "-" : fontPath} '
           'contentLen=${readPage.chapterContent.length} '
           'native=${BookPager.isAvailable}',
     );
@@ -319,6 +321,7 @@ class TextComposition {
           paddingHorizontal: padH,
           paddingVertical: 0,
           shouldJustifyHeight: shouldJustifyHeight,
+          fontPath: fontPath,
           fontFamily: fontFamily,
         );
         final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
@@ -398,6 +401,7 @@ class TextComposition {
     final boxW = p['boxW'] as double;
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
+    final fontPath = p['fontPath'] as String? ?? '';
     final shouldJustifyHeight = p['shouldJustifyHeight'] as bool? ?? true;
 
     if (BookPager.isAvailable) {
@@ -412,6 +416,7 @@ class TextComposition {
           paddingHorizontal: padH,
           paddingVertical: 0,
           shouldJustifyHeight: shouldJustifyHeight,
+          fontPath: fontPath,
           fontFamily: fontFamily,
         );
       } catch (e, st) {
@@ -450,7 +455,9 @@ class TextComposition {
       readPage: readPage,
       style: TextStyle(
           locale: Locale('zh_CN'),
-          fontFamily: fontFamily,
+          fontFamily: (fontFamily.isEmpty || fontFamily == 'Roboto')
+              ? null
+              : fontFamily,
           fontSize: fontSize,
           height: lineHeight),
       paragraph: paragraph,

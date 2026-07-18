@@ -8,7 +8,6 @@ import 'package:book/common/local_store.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AppInit {
@@ -32,9 +31,10 @@ class AppInit {
     Routes.configureRoutes(router);
     Routes.router = router;
     await DirectoryUtil.getInstance();
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    String version = packageInfo.version;
-    SpUtil.putString("version", version);
+    // Version label for「我的」页 (no package_info_plus — keep in sync with pubspec).
+    if (!SpUtil.haveKey('version') || SpUtil.getString('version').isEmpty) {
+      SpUtil.putString('version', '1.0.0');
+    }
     if (Platform.isAndroid) {
       SystemUiOverlayStyle systemUiOverlayStyle =
           SystemUiOverlayStyle(statusBarColor: Colors.transparent);
