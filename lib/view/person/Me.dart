@@ -8,6 +8,7 @@ import 'package:book/service/TelAndSmsService.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
+import 'package:book/view/person/YckceoSourcePage.dart';
 import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
@@ -140,6 +141,18 @@ class Me extends ConsumerWidget {
                   '书源管理',
                   () {
                     Routes.navigateTo(context, Routes.sources);
+                  },
+                  c,
+                ),
+                getItem(
+                  Icon(Icons.storefront_outlined),
+                  '源仓库（一键导入）',
+                  () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const YckceoSourcePage(),
+                      ),
+                    );
                   },
                   c,
                 ),

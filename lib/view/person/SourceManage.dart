@@ -1,5 +1,6 @@
 import 'package:book/model/SourceModel.dart';
 import 'package:book/store/Store.dart';
+import 'package:book/view/person/YckceoSourcePage.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +30,16 @@ class _SourceManagePageState extends ConsumerState<SourceManagePage> {
       appBar: AppBar(
         title: Text('书源管理'),
         actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const YckceoSourcePage()),
+              );
+              if (mounted) ref.read(sourceModelProvider).load();
+            },
+            icon: Icon(Icons.storefront_outlined),
+            label: Text('源仓库'),
+          ),
           IconButton(
             tooltip: '导出',
             icon: Icon(Icons.upload_file),
@@ -129,6 +140,17 @@ class _SourceManagePageState extends ConsumerState<SourceManagePage> {
               icon: Icon(Icons.add),
               label: Text('导入书源'),
             ),
+            SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const YckceoSourcePage()),
+                );
+                if (mounted) ref.read(sourceModelProvider).load();
+              },
+              icon: Icon(Icons.storefront_outlined),
+              label: Text('从源仓库一键导入'),
+            ),
           ],
         ),
       ),
@@ -188,6 +210,22 @@ class _SourceManagePageState extends ConsumerState<SourceManagePage> {
                           label: Text('网络 URL'),
                           selected: tab == 1,
                           onSelected: (_) => setSt(() => tab = 1),
+                        ),
+                        SizedBox(width: 8),
+                        ActionChip(
+                          avatar: Icon(Icons.storefront_outlined, size: 18),
+                          label: Text('源仓库'),
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const YckceoSourcePage(),
+                              ),
+                            );
+                            if (mounted) {
+                              ref.read(sourceModelProvider).load();
+                            }
+                          },
                         ),
                       ],
                     ),

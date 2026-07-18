@@ -48,11 +48,20 @@ class SourceImporter {
     return out;
   }
 
-  static Future<List<BookSource>> fromUrl(String url) async {
+  static Future<List<BookSource>> fromUrl(
+    String url, {
+    Duration receiveTimeout = const Duration(seconds: 60),
+  }) async {
     final dio = Dio(BaseOptions(
       connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 20),
+      receiveTimeout: receiveTimeout,
       responseType: ResponseType.plain,
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 '
+            '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'Accept': 'application/json,text/plain,*/*',
+      },
     ));
     final res = await dio.get<String>(url);
     return parseJson(res.data ?? '');

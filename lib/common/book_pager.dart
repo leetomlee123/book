@@ -14,6 +14,12 @@ typedef _PaginateNative = Pointer<Utf8> Function(Pointer<Utf8> input);
 typedef _PaginateDart = Pointer<Utf8> Function(Pointer<Utf8> input);
 typedef _FreeNative = Void Function(Pointer<Utf8> ptr);
 typedef _FreeDart = void Function(Pointer<Utf8> ptr);
+typedef _AbiVersionNative = Int32 Function();
+typedef _AbiVersionDart = int Function();
+
+/// Minimum native ABI we accept. Older packaged `.so` files (pre-Android font
+/// load) panic with `no default font found` and abort the process — refuse them.
+const int _minAbiVersion = 2;
 
 /// FFI bridge to the Rust `book_pager` library.
 ///
@@ -37,6 +43,28 @@ class BookPager {
     _initAttempted = true;
     try {
       final lib = _open();
+      // Reject pre-v2 libs: they crash the whole process on Android when
+      // cosmic-text has no system fonts loaded (fontdb skips Android).
+      int abi = 0;
+      try {
+        final abiFn = lib.lookupFunction<_AbiVersionNative, _AbiVersionDart>(
+          'book_pager_abi_version',
+        );
+        abi = abiFn();
+      } catch (_) {
+        abi = 0;
+      }
+      if (abi < _minAbiVersion) {
+        lastError =
+            'native book_pager ABI $abi < $_minAbiVersion (rebuild with build_book_pager.bat --android)';
+        AppLog.w(
+          'BookPager',
+          'skipping outdated native lib (abi=$abi); using Dart pager',
+        );
+        _paginate = null;
+        _free = null;
+        return;
+      }
       _paginate = lib
           .lookupFunction<_PaginateNative, _PaginateDart>('book_pager_paginate');
       _free =

@@ -62,6 +62,12 @@ android {
             )
         }
     }
+
+    // AGP 9 + FlutterActivity: Instantiatable is a false positive
+    // (lint can't resolve Kotlin MainActivity → FlutterActivity → Activity).
+    lint {
+        disable += "Instantiatable"
+    }
 }
 
 kotlin {

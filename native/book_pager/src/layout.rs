@@ -8,7 +8,21 @@
 //! - Optionally redistribute vertical space (bottom justify) per page
 
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+/// Shared font system — `FontSystem::new()` scans system fonts and is expensive.
+/// On Android, fontdb's `load_system_fonts` is a no-op, so we also load
+/// `/system/fonts` (and a few product paths) once.
+static FONT_SYSTEM: Lazy<Mutex<FontSystem>> = Lazy::new(|| {
+    let mut fs = FontSystem::new();
+    load_platform_fonts(fs.db_mut());
+    // Prefer a CJK-capable default family when present on Android devices.
+    prefer_cjk_defaults(fs.db_mut());
+    Mutex::new(fs)
+});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayoutInput {
@@ -42,6 +56,72 @@ pub struct TextLineOut {
 pub struct TextPageOut {
     pub lines: Vec<TextLineOut>,
     pub height: f32,
+}
+
+/// fontdb does not load fonts on Android (`target_os = "android"` is excluded
+/// from its unix branch). Without any faces, cosmic-text panics with
+/// `no default font found` — which aborts the whole Flutter process across FFI.
+fn load_platform_fonts(db: &mut fontdb::Database) {
+    #[cfg(target_os = "android")]
+    {
+        const DIRS: &[&str] = &[
+            "/system/fonts",
+            "/system/font",
+            "/system/product/fonts",
+            "/product/fonts",
+            "/system/product/fonts/google",
+            "/data/fonts",
+        ];
+        for dir in DIRS {
+            if Path::new(dir).is_dir() {
+                db.load_fonts_dir(dir);
+            }
+        }
+    }
+
+    // Also try common paths on other Unix targets when system scan found nothing.
+    #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
+    {
+        if db.is_empty() {
+            for dir in ["/usr/share/fonts", "/usr/local/share/fonts"] {
+                if Path::new(dir).is_dir() {
+                    db.load_fonts_dir(dir);
+                }
+            }
+        }
+    }
+
+    let _ = db;
+}
+
+fn prefer_cjk_defaults(db: &mut fontdb::Database) {
+    // Pick the first family that actually exists in the database.
+    const CANDIDATES: &[&str] = &[
+        "Noto Sans CJK SC",
+        "Noto Sans CJK",
+        "Noto Sans SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN",
+        "DroidSansFallback",
+        "Droid Sans Fallback",
+        "Roboto",
+        "Noto Sans",
+        "sans-serif",
+    ];
+    for name in CANDIDATES {
+        let found = db.faces().any(|face| {
+            face.families
+                .iter()
+                .any(|(family, _)| family.eq_ignore_ascii_case(name))
+        });
+        if found {
+            db.set_sans_serif_family(*name);
+            return;
+        }
+    }
+    // Fallbacks often used as file-name-based families on Android.
+    // Even if family match fails, having faces loaded is enough for cosmic-text
+    // to pick *some* default; panic only happens when db is empty.
 }
 
 /// Measure how many UTF-8 bytes of `text` fit in `max_width` at the given style.
@@ -127,14 +207,20 @@ fn measure_width(
     width
 }
 
-pub fn paginate(input: &LayoutInput) -> Vec<TextPageOut> {
-    let mut font_system = FontSystem::new();
+pub fn paginate(input: &LayoutInput) -> Result<Vec<TextPageOut>, String> {
+    let mut font_system = FONT_SYSTEM.lock();
 
-    // Load optional custom font
+    // Load optional custom font (reader download path).
     if !input.font_path.is_empty() {
         if let Err(e) = font_system.db_mut().load_font_file(&input.font_path) {
             eprintln!("book_pager: failed to load font {}: {e}", input.font_path);
         }
+    }
+
+    if font_system.db().is_empty() {
+        return Err(
+            "no fonts available (Android: /system/fonts missing or empty)".into(),
+        );
     }
 
     let family_owned = input.font_family.clone();
@@ -279,7 +365,7 @@ pub fn paginate(input: &LayoutInput) -> Vec<TextPageOut> {
             height: 0.0,
         });
     }
-    pages
+    Ok(pages)
 }
 
 #[cfg(test)]
@@ -300,7 +386,8 @@ mod tests {
             should_justify_height: true,
             font_path: String::new(),
             font_family: "Roboto".into(),
-        });
+        })
+        .expect("paginate");
         assert_eq!(pages.len(), 1);
         assert!(pages[0].lines.is_empty());
     }
@@ -320,7 +407,8 @@ mod tests {
             should_justify_height: true,
             font_path: String::new(),
             font_family: "Roboto".into(),
-        });
+        })
+        .expect("paginate");
         assert!(pages.len() >= 1);
         assert!(!pages[0].lines.is_empty());
     }
