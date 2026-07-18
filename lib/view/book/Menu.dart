@@ -9,7 +9,6 @@ import 'package:book/model/ReadModel.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/book/SourceSwitchSheet.dart';
-import 'package:book/view/system/MenuConfig.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,15 +18,12 @@ class Menu extends ConsumerStatefulWidget {
   ConsumerState<Menu> createState() => _MenuState();
 }
 
-enum Type { SLIDE, MORE_SETTING, DOWNLOAD }
+enum Type { SLIDE, MORE_SETTING, DOWNLOAD, LAYOUT }
 
 class _MenuState extends ConsumerState<Menu> {
   Type type = Type.SLIDE;
   late ReadModel _readModel;
   late ColorModel _colorModel;
-
-  /// Settings panel height budget (content scrolls if taller).
-  double settingH = 320;
 
   @override
   void initState() {
@@ -42,6 +38,18 @@ class _MenuState extends ConsumerState<Menu> {
   Color get _fg =>
       _colorModel.dark ? AppColors.textOnDark : AppColors.textPrimary;
 
+  Color get _muted => AppColors.textSecondary;
+
+  Color get _divider =>
+      _colorModel.dark ? AppColors.dividerDark : AppColors.divider;
+
+  Color get _chipBg =>
+      _colorModel.dark ? const Color(0xFF2A2A2A) : const Color(0xFFF2F2F2);
+
+  // ---------------------------------------------------------------------------
+  // Top bar
+  // ---------------------------------------------------------------------------
+
   Widget head() {
     return SafeArea(
       bottom: false,
@@ -50,7 +58,7 @@ class _MenuState extends ConsumerState<Menu> {
           color: _panelBg,
           boxShadow: AppShadows.softBar,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
           children: [
             IconButton(
@@ -71,23 +79,24 @@ class _MenuState extends ConsumerState<Menu> {
             ),
             IconButton(
               tooltip: '刷新',
-              icon: Icon(Icons.refresh, color: _fg),
+              icon: Icon(Icons.refresh, size: 22, color: _fg),
               onPressed: () => _readModel.reloadCurrentPage(),
             ),
-            IconButton(
-              tooltip: '换源',
-              icon: Icon(Icons.swap_horiz, color: _fg),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => SourceSwitchSheet(readModel: _readModel),
-                );
-              },
-            ),
+            // IconButton(
+            //   tooltip: '换源',
+            //   icon: Icon(Icons.swap_horiz, size: 22, color: _fg),
+            //   onPressed: () {
+            //     showModalBottomSheet(
+            //       context: context,
+            //       isScrollControlled: true,
+            //       backgroundColor: Colors.transparent,
+            //       builder: (_) => SourceSwitchSheet(readModel: _readModel),
+            //     );
+            //   },
+            // ),
             IconButton(
               tooltip: '详情',
-              icon: Icon(Icons.info_outline, color: _fg),
+              icon: Icon(Icons.info_outline, size: 22, color: _fg),
               onPressed: () async {
                 final b = _readModel.book;
                 if (b == null) return;
@@ -115,7 +124,7 @@ class _MenuState extends ConsumerState<Menu> {
                 Routes.navigateTo(context, Routes.detail,
                     params: {"detail": jsonEncode(info)}, replace: true);
               },
-            )
+            ),
           ],
         ),
       ),
@@ -126,277 +135,443 @@ class _MenuState extends ConsumerState<Menu> {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        child: Container(color: Colors.transparent),
-        onTap: () {
-          type = Type.SLIDE;
-          _readModel.toggleShowMenu();
-        },
+        child: const ColoredBox(color: Colors.transparent),
+        onTap: _dismissMenu,
       ),
     );
   }
+
+  void _dismissMenu() {
+    type = Type.SLIDE;
+    if (_readModel.showMenu) {
+      _readModel.toggleShowMenu();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chapter slider panel
+  // ---------------------------------------------------------------------------
 
   Widget chapterSlide() {
     final max = (_readModel.chapters.isEmpty)
         ? 0.0
         : (_readModel.chapters.length - 1).toDouble();
     final cur = (_readModel.book?.cur ?? 0).toDouble().clamp(0.0, max);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: Row(
-        children: <Widget>[
-          TextButton(
-              onPressed: () async {
+    final chapterName = (_readModel.book?.cur != null &&
+            _readModel.book!.cur >= 0 &&
+            _readModel.book!.cur < _readModel.chapters.length)
+        ? _readModel.chapters[_readModel.book!.cur].chapterName
+        : '';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (chapterName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                chapterName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: _muted),
+              ),
+            ),
+          Row(
+              children: <Widget>[
+              _miniTextBtn('上一章', () async {
                 if ((_readModel.book!.cur - 1) < 0) {
                   BotToast.showText(text: '已经是第一章');
                   return;
                 }
                 _readModel.book!.cur -= 1;
                 await _readModel.initPageContent(_readModel.book!.cur, true);
-              },
-              child: const Text('上一章', style: TextStyle(fontSize: 13))),
-          Expanded(
-            child: Slider(
-              value: cur,
-              max: max <= 0 ? 1 : max,
-              min: 0.0,
-              onChanged: max <= 0
-                  ? null
-                  : (newValue) {
-                      _readModel.book!.cur = newValue.round();
-                      setState(() {});
-                    },
-              onChangeEnd: max <= 0
-                  ? null
-                  : (newValue) {
-                      _readModel.initPageContent(newValue.round(), true);
-                    },
-            ),
-          ),
-          TextButton(
-              onPressed: () async {
+                setState(() {});
+              }),
+              Expanded(
+                child: SliderTheme(
+                  data: _sliderTheme(),
+                  child: Slider(
+                    value: cur,
+                    max: max <= 0 ? 1 : max,
+                    min: 0.0,
+                    onChanged: max <= 0
+                        ? null
+                        : (newValue) {
+                            _readModel.book!.cur = newValue.round();
+                            setState(() {});
+                          },
+                    onChangeEnd: max <= 0
+                        ? null
+                        : (newValue) {
+                            _readModel.initPageContent(newValue.round(), true);
+                          },
+                  ),
+                ),
+              ),
+              _miniTextBtn('下一章', () async {
                 if ((_readModel.book!.cur + 1) >= _readModel.chapters.length) {
-                  BotToast.showText(text: "已经是最后一章");
+                  BotToast.showText(text: '已经是最后一章');
                   return;
                 }
                 _readModel.book!.cur += 1;
                 await _readModel.initPageContent(_readModel.book!.cur, true);
-              },
-              child: const Text('下一章', style: TextStyle(fontSize: 13))),
+                setState(() {});
+              }),
+            ],
+          ),
         ],
       ),
     );
   }
+
+  Widget _miniTextBtn(String label, VoidCallback onTap) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        foregroundColor: _fg,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: const Size(0, 36),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 13)),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Download panel
+  // ---------------------------------------------------------------------------
 
   Widget downloadWidget() {
-    return Container(
-      height: 70,
-      padding: const EdgeInsets.symmetric(horizontal: 15),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
       child: Row(
         children: [
-          Expanded(child: _cacheBtn('从当前章节缓存', () {
-            BotToast.showText(text: '从当前章节开始下载...');
-            _readModel.downloadAll(_readModel.book!.cur);
-          })),
+          Expanded(
+            child: _filledOutlineBtn('从当前缓存', () {
+              BotToast.showText(text: '从当前章节开始下载…');
+              _readModel.downloadAll(_readModel.book!.cur);
+            }),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _cacheBtn('全本缓存', () {
-            BotToast.showText(text: '开始全本下载...');
-            _readModel.downloadAll(0);
-          })),
+          Expanded(
+            child: _filledOutlineBtn('全本缓存', () {
+              BotToast.showText(text: '开始全本下载…');
+              _readModel.downloadAll(0);
+            }),
+          ),
         ],
       ),
     );
   }
 
-  Widget _cacheBtn(String label, VoidCallback onTap) {
+  Widget _filledOutlineBtn(String label, VoidCallback onTap) {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: _fg.withValues(alpha: 0.35)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        foregroundColor: _fg,
+        side: BorderSide(color: _divider),
+        backgroundColor: _chipBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        padding: const EdgeInsets.symmetric(vertical: 12),
       ),
-      child: Text(label, style: TextStyle(color: _fg, fontSize: 13)),
+      child: Text(label, style: const TextStyle(fontSize: 13)),
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Settings L1: 字号 + 入口；L2: 行距/段距/边距
+  // ---------------------------------------------------------------------------
+
+  /// 设置一级：字号、背景、更多入口（含排版二级）
   Widget moreSetting() {
-    return SizedBox(
-      height: settingH,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(15, 12, 15, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            MenuConfig(
-              () {
-                ReadSetting.calcFontSize(-1);
-                _readModel.updPage();
-              },
-              () {
-                ReadSetting.calcFontSize(1);
-                _readModel.updPage();
-              },
-              (v) {
-                ReadSetting.setFontSize(v);
-                _readModel.updPage();
-              },
-              ReadSetting.getFontSize(),
-              "字号",
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _sectionLabel('字号'),
+          const SizedBox(height: 8),
+          _stepperRow(
+            label: '字号',
+            valueText: ReadSetting.getFontSize().round().toString(),
+            onMinus: () {
+              ReadSetting.calcFontSize(-1);
+              _readModel.updPage();
+              setState(() {});
+            },
+            onPlus: () {
+              ReadSetting.calcFontSize(1);
+              _readModel.updPage();
+              setState(() {});
+            },
+            child: _buildSlider(
+              value: ReadSetting.getFontSize(),
               min: 10,
               max: 60,
-            ),
-            _sliderRow(
-              '行距',
-              ReadSetting.getLineHeight(),
-              0.1,
-              4.0,
-              (v) {
-                ReadSetting.setLineHeight(v);
+              onChanged: (v) {
+                ReadSetting.setFontSize(v);
                 _readModel.updPage();
-              },
-              () {
-                ReadSetting.subLineHeight();
-                _readModel.updPage();
-              },
-              () {
-                ReadSetting.addLineHeight();
-                _readModel.updPage();
+                setState(() {});
               },
             ),
-            _sliderRow(
-              '段距',
-              ReadSetting.getParagraph(),
-              0.1,
-              2.0,
-              (v) {
-                ReadSetting.setParagraph(v);
-                _readModel.updPage();
-              },
-              () {
-                ReadSetting.subParagraph();
-                _readModel.updPage();
-              },
-              () {
-                ReadSetting.addParagraph();
-                _readModel.updPage();
-              },
-            ),
-            _sliderRow(
-              '页距',
-              ReadSetting.getPageDis().toDouble(),
-              0,
-              50,
-              (v) {
-                ReadSetting.setPageDis(v.toInt());
-                _readModel.updPage();
-              },
-              () {
-                ReadSetting.calcPageDis(-1);
-                _readModel.updPage();
-              },
-              () {
-                ReadSetting.calcPageDis(1);
-                _readModel.updPage();
-              },
-            ),
-            const SizedBox(height: 8),
-            Text('背景', style: TextStyle(fontSize: 13, color: _fg)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: solidPaperSwatches(),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18.0),
-                      ),
-                      side: BorderSide(
-                        width: 1.5,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    onPressed: () {
-                      Routes.navigateTo(context, Routes.fontSet);
-                    },
-                    child: const Text('字体'),
-                  ),
+          ),
+          const SizedBox(height: 14),
+          _sectionLabel('背景'),
+          const SizedBox(height: 10),
+          _paperSwatchRow(),
+          const SizedBox(height: 16),
+          _sectionLabel('更多'),
+          const SizedBox(height: 10),
+          _settingTile(
+            icon: Icons.format_line_spacing,
+            title: '行距 · 段距 · 边距',
+            onTap: () => setState(() => type = Type.LAYOUT),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _settingTile(
+                  icon: Icons.font_download_outlined,
+                  title: '字体',
+                  onTap: () => Routes.navigateTo(context, Routes.fontSet),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: Material(
-                    type: MaterialType.transparency,
-                    child: SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _settingTile(
+                  icon: Icons.touch_app_outlined,
+                  title: '单手模式',
+                  trailing: SizedBox(
+                    height: 24,
+                    child: Switch.adaptive(
                       value: _readModel.leftClickNext,
-                      onChanged: (value) {
+                      activeTrackColor: AppColors.brand,
+                      onChanged: (_) {
                         _readModel.switchClickNextPage();
+                        setState(() {});
                       },
-                      title: Text(
-                        '单手模式',
-                        style: TextStyle(fontSize: 13, color: _fg),
-                      ),
-                      selected: _readModel.leftClickNext,
-                      selectedTileColor: Colors.transparent,
                     ),
                   ),
+                  onTap: () {
+                    _readModel.switchClickNextPage();
+                    setState(() {});
+                  },
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _sliderRow(
-    String label,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged,
-    VoidCallback onMinus,
-    VoidCallback onPlus,
-  ) {
+  /// 设置二级：行距 / 段距 / 边距
+  Widget layoutSetting() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: '返回',
+                icon: Icon(Icons.arrow_back_ios_new, size: 16, color: _fg),
+                onPressed: () => setState(() => type = Type.MORE_SETTING),
+              ),
+              Text(
+                '排版',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: _fg,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          _stepperRow(
+            label: '行距',
+            valueText: ReadSetting.getLineHeight().toStringAsFixed(1),
+            onMinus: () {
+              ReadSetting.subLineHeight();
+              _readModel.updPage();
+              setState(() {});
+            },
+            onPlus: () {
+              ReadSetting.addLineHeight();
+              _readModel.updPage();
+              setState(() {});
+            },
+            child: _buildSlider(
+              value: ReadSetting.getLineHeight(),
+              min: 0.1,
+              max: 4.0,
+              onChanged: (v) {
+                ReadSetting.setLineHeight(v);
+                _readModel.updPage();
+                setState(() {});
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+          _stepperRow(
+            label: '段距',
+            valueText: ReadSetting.getParagraph().toStringAsFixed(1),
+            onMinus: () {
+              ReadSetting.subParagraph();
+              _readModel.updPage();
+              setState(() {});
+            },
+            onPlus: () {
+              ReadSetting.addParagraph();
+              _readModel.updPage();
+              setState(() {});
+            },
+            child: _buildSlider(
+              value: ReadSetting.getParagraph(),
+              min: 0.1,
+              max: 2.0,
+              onChanged: (v) {
+                ReadSetting.setParagraph(v);
+                _readModel.updPage();
+                setState(() {});
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+          _stepperRow(
+            label: '边距',
+            valueText: '${ReadSetting.getPageDis()}',
+            onMinus: () {
+              ReadSetting.calcPageDis(-1);
+              _readModel.updPage();
+              setState(() {});
+            },
+            onPlus: () {
+              ReadSetting.calcPageDis(1);
+              _readModel.updPage();
+              setState(() {});
+            },
+            child: _buildSlider(
+              value: ReadSetting.getPageDis().toDouble(),
+              min: 0,
+              max: 50,
+              onChanged: (v) {
+                ReadSetting.setPageDis(v.toInt());
+                _readModel.updPage();
+                setState(() {});
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: _muted,
+        letterSpacing: 0.4,
+      ),
+    );
+  }
+
+  /// Label | − | slider | + | value
+  Widget _stepperRow({
+    required String label,
+    required String valueText,
+    required VoidCallback onMinus,
+    required VoidCallback onPlus,
+    required Widget child,
+  }) {
     return Row(
       children: [
-        Text(label, style: TextStyle(fontSize: 13.0, color: _fg)),
-        IconButton(
-            onPressed: onMinus, icon: const Icon(Icons.remove, size: 18)),
-        Expanded(
-          child: SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 1,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: SliderComponentShape.noOverlay,
-            ),
-            child: Slider(
-              value: value.clamp(min, max),
-              onChanged: onChanged,
-              min: min,
-              max: max,
+        SizedBox(
+          width: 36,
+          child: Text(label, style: TextStyle(fontSize: 13, color: _fg)),
+        ),
+        _roundIconBtn(Icons.remove, onMinus),
+        Expanded(child: child),
+        _roundIconBtn(Icons.add, onPlus),
+        SizedBox(
+          width: 32,
+          child: Text(
+            valueText,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 12,
+              color: _muted,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),
-        IconButton(onPressed: onPlus, icon: const Icon(Icons.add, size: 18)),
       ],
     );
   }
 
-  List<Widget> solidPaperSwatches() {
+  Widget _roundIconBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 30,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: _chipBg,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 16, color: _fg),
+      ),
+    );
+  }
+
+  SliderThemeData _sliderTheme() {
+    return SliderTheme.of(context).copyWith(
+      trackHeight: 3,
+      activeTrackColor: AppColors.brand,
+      inactiveTrackColor: _divider,
+      thumbColor: AppColors.brand,
+      overlayColor: AppColors.brandSoft,
+      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+    );
+  }
+
+  Widget _buildSlider({
+    required double value,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+  }) {
+    return SliderTheme(
+      data: _sliderTheme(),
+      child: Slider(
+        value: value.clamp(min, max),
+        min: min,
+        max: max,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _paperSwatchRow() {
     final current = ReadSetting.getPaperTheme();
-    return ReadSetting.solidPapers.map((t) {
-      final selected = current == t;
-      return Padding(
-        padding: const EdgeInsets.only(right: 12),
-        child: GestureDetector(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: ReadSetting.solidPapers.map((t) {
+        final selected = current == t;
+        return GestureDetector(
           onTap: () async {
             final wasDark = _colorModel.dark;
             await _readModel.switchPaperTheme(t);
@@ -408,36 +583,96 @@ class _MenuState extends ConsumerState<Menu> {
           },
           child: Column(
             children: [
-              Container(
-                width: 36,
-                height: 36,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: ReadSetting.paperColor(t),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    width: selected ? 2 : 1,
-                    color: selected
-                        ? Theme.of(context).primaryColor
-                        : AppColors.divider,
+                    width: selected ? 2.5 : 1,
+                    color: selected ? AppColors.brand : _divider,
                   ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.brand.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
+                child: selected
+                    ? Icon(
+                        Icons.check,
+                        size: 18,
+                        color: t == PaperTheme.night
+                            ? Colors.white70
+                            : AppColors.brand,
+                      )
+                    : null,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 ReadSetting.paperLabel(t),
-                style: TextStyle(fontSize: 11, color: _fg),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: selected ? AppColors.brand : _muted,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
               ),
             ],
           ),
-        ),
-      );
-    }).toList();
+        );
+      }).toList(),
+    );
   }
+
+  Widget _settingTile({
+    required IconData icon,
+    required String title,
+    Widget? trailing,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: _chipBg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: _fg),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 13, color: _fg),
+                ),
+              ),
+              trailing ??
+                  Icon(Icons.chevron_right, size: 18, color: _muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Panel switcher + bottom tabs
+  // ---------------------------------------------------------------------------
 
   Widget bottomHead() {
     switch (type) {
       case Type.MORE_SETTING:
         return moreSetting();
+      case Type.LAYOUT:
+        return layoutSetting();
       case Type.DOWNLOAD:
         return downloadWidget();
       default:
@@ -447,29 +682,76 @@ class _MenuState extends ConsumerState<Menu> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep local refs in sync with provider updates (theme / left-click).
+    _readModel = ref.watch(readModelProvider);
+    _colorModel = ref.watch(colorModelProvider);
+
+    // Full-screen stack: dimmed/tap-to-dismiss layer under chrome, so the
+    // blank reading area always closes the menu (including when settings is open).
     return Material(
-      color: Colors.transparent,
-      child: Column(
-        children: <Widget>[
-          head(),
-          midTransparent(),
-          Container(
-            decoration: BoxDecoration(
-              color: _panelBg,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
-              boxShadow: AppShadows.softBar,
+      type: MaterialType.transparency,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Catch taps on the reading area.
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _dismissMenu,
+              child: const ColoredBox(color: Colors.transparent),
             ),
-            child: Material(
-              color: Colors.transparent,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
-              clipBehavior: Clip.antiAlias,
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[bottomHead(), buildBottomMenus()],
+          ),
+          // Top chrome
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: head(),
+          ),
+          // Bottom panel (settings / chapter / download)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: _panelBg,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0x1A000000),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+                clipBehavior: Clip.antiAlias,
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 2),
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: _divider,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      bottomHead(),
+                      Divider(height: 1, color: _divider),
+                      buildBottomMenus(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -480,74 +762,89 @@ class _MenuState extends ConsumerState<Menu> {
   }
 
   Widget buildBottomMenus() {
+    final isNight = _colorModel.dark;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4, top: 2),
+      padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
-          buildBottomItem('目录', Icons.menu),
-          TextButton(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    _colorModel.dark ? Icons.light_mode : Icons.dark_mode,
-                    color: _fg,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(_colorModel.dark ? '日间' : '夜间',
-                      style: TextStyle(fontSize: 11, color: _fg)),
-                ],
-              ),
-              onPressed: () async {
-                ref.read(colorModelProvider).switchModel();
-                final night = ref.read(colorModelProvider).dark;
-                await _readModel.switchPaperTheme(
-                    night ? PaperTheme.night : PaperTheme.cream);
-                setState(() {});
-              }),
-          buildBottomItem('缓存', Icons.cloud_download),
-          buildBottomItem('设置', Icons.settings),
+          _bottomTab(
+            label: '目录',
+            icon: Icons.menu,
+            active: false,
+            onTap: () {
+              eventBus.fire(OpenChapters('dd'));
+              _readModel.toggleShowMenu();
+            },
+          ),
+          _bottomTab(
+            label: isNight ? '日间' : '夜间',
+            icon: isNight ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            active: false,
+            onTap: () async {
+              ref.read(colorModelProvider).switchModel();
+              final night = ref.read(colorModelProvider).dark;
+              await _readModel.switchPaperTheme(
+                night ? PaperTheme.night : PaperTheme.cream,
+              );
+              setState(() {});
+            },
+          ),
+          _bottomTab(
+            label: '缓存',
+            icon: Icons.cloud_download_outlined,
+            active: type == Type.DOWNLOAD,
+            onTap: () {
+              setState(() {
+                type = type == Type.DOWNLOAD ? Type.SLIDE : Type.DOWNLOAD;
+              });
+            },
+          ),
+          _bottomTab(
+            label: '设置',
+            icon: Icons.tune,
+            active: type == Type.MORE_SETTING,
+            onTap: () {
+              setState(() {
+                type =
+                    type == Type.MORE_SETTING ? Type.SLIDE : Type.MORE_SETTING;
+              });
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget buildBottomItem(String title, IconData iconData) {
-    return TextButton(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(iconData, color: _fg),
-          const SizedBox(height: 4),
-          Text(title, style: TextStyle(fontSize: 11, color: _fg)),
-        ],
+  Widget _bottomTab({
+    required String label,
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    final color = active ? AppColors.brand : _fg;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 22, color: color),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      onPressed: () {
-        switch (title) {
-          case '目录':
-            {
-              eventBus.fire(OpenChapters("dd"));
-              _readModel.toggleShowMenu();
-            }
-            break;
-          case '缓存':
-            {
-              setState(() {
-                type = type == Type.DOWNLOAD ? Type.SLIDE : Type.DOWNLOAD;
-              });
-            }
-            break;
-          case '设置':
-            {
-              setState(() {
-                type =
-                    type == Type.MORE_SETTING ? Type.SLIDE : Type.MORE_SETTING;
-              });
-            }
-            break;
-        }
-      },
     );
   }
 }

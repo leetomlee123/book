@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/animation/BaseAnimationPage.dart';
-import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:book/view/newBook/touch_event.dart';
 import 'package:vector_math/vector_math_64.dart' as v;
 
 import 'package:flutter/material.dart';

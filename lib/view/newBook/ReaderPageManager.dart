@@ -1,32 +1,44 @@
-import 'dart:ui';
-
 import 'package:book/animation/BaseAnimationPage.dart';
 import 'package:book/animation/SimulationTurePageAnimation.dart';
+import 'package:book/animation/static_page_turn.dart';
 import 'package:book/animation/turn_page_animation.dart';
-import 'package:book/common/Screen.dart';
 import 'package:book/model/ReadModel.dart';
-import 'package:book/view/newBook/NovelPagePainter.dart';
-import 'package:flutter/animation.dart';
+import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/material.dart';
 
+/// 翻页编排：默认 [TYPE_ANIMATION_NONE] 静态切页。
+/// Cover / Simulation 仍可挂接，但不再作为默认路径。
 class ReaderPageManager {
+  /// 无动画（默认）
+  static const TYPE_ANIMATION_NONE = 0;
+
+  /// 仿真翻页（遗留，确认回调不完整）
   static const TYPE_ANIMATION_SIMULATION_TURN = 1;
+
+  /// 覆盖翻页（遗留）
   static const TYPE_ANIMATION_COVER_TURN = 2;
+
+  /// 未实现
   static const TYPE_ANIMATION_SLIDE_TURN = 3;
 
   late BaseAnimationPage currentAnimationPage;
   TouchEvent currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
-  int currentAnimationType = 0;
+  int currentAnimationType = TYPE_ANIMATION_NONE;
 
-  STATE currentState = STATE.STATE_IDE;
+  PageTurnState currentState = PageTurnState.idle;
 
   late GlobalKey canvasKey;
 
-  late AnimationController animationController;
+  /// 仅 Cover/Simulation 等需要；Static 可为空。
+  AnimationController? animationController;
+
+  bool get _needsController =>
+      currentAnimationType == TYPE_ANIMATION_COVER_TURN ||
+      currentAnimationType == TYPE_ANIMATION_SIMULATION_TURN ||
+      currentAnimationType == TYPE_ANIMATION_SLIDE_TURN;
 
   void setCurrentTouchEvent(TouchEvent event) {
-    /// 如果正在执行动画，判断是否需要中止动画
-    if (currentState == STATE.STATE_ANIMATING) {
+    if (currentState == PageTurnState.animating) {
       if (currentAnimationPage.isShouldAnimatingInterrupt()) {
         if (event.action == TouchEvent.ACTION_DOWN) {
           interruptCancelAnimation();
@@ -36,7 +48,13 @@ class ReaderPageManager {
       }
     }
 
-    /// 用户抬起手指后，是否需要执行动画
+    if (currentAnimationType == TYPE_ANIMATION_NONE) {
+      currentTouchData = event;
+      currentAnimationPage.onTouchEvent(event);
+      canvasKey.currentContext?.findRenderObject()?.markNeedsPaint();
+      return;
+    }
+
     if (event.action == TouchEvent.ACTION_UP ||
         event.action == TouchEvent.ACTION_CANCEL) {
       switch (currentAnimationType) {
@@ -49,14 +67,15 @@ class ReaderPageManager {
           }
           break;
         case TYPE_ANIMATION_SLIDE_TURN:
-          startFlingAnimation(event.touchDetail as DragEndDetails);
+          if (event.touchDetail is DragEndDetails) {
+            startFlingAnimation(event.touchDetail as DragEndDetails);
+          }
           break;
         default:
           break;
       }
     } else {
       currentTouchData = event;
-
       currentAnimationPage.onTouchEvent(currentTouchData);
     }
   }
@@ -73,7 +92,7 @@ class ReaderPageManager {
     currentAnimationPage.onDraw(canvas);
   }
 
-  setCurrentAnimation(int animationType) {
+  void setCurrentAnimation(int animationType) {
     currentAnimationType = animationType;
     switch (animationType) {
       case TYPE_ANIMATION_SIMULATION_TURN:
@@ -83,51 +102,50 @@ class ReaderPageManager {
         currentAnimationPage = CoverPageAnimation();
         break;
       case TYPE_ANIMATION_SLIDE_TURN:
-        // currentAnimationPage = SlidePageAnimation();
+        currentAnimationPage = StaticPageTurn();
+        currentAnimationType = TYPE_ANIMATION_NONE;
         break;
+      case TYPE_ANIMATION_NONE:
       default:
+        currentAnimationPage = StaticPageTurn();
+        currentAnimationType = TYPE_ANIMATION_NONE;
         break;
     }
   }
 
-  int getCurrentAnimation() {
-    return currentAnimationType;
-  }
+  int getCurrentAnimation() => currentAnimationType;
 
   void setCurrentCanvasContainerContext(GlobalKey canvasKey) {
     this.canvasKey = canvasKey;
   }
 
   void startConfirmAnimation() {
-    Animation<Offset>? animation = currentAnimationPage.getConfirmAnimation(
-        animationController, canvasKey);
-
-    if (animation == null) {
-      return;
-    }
+    final c = animationController;
+    if (c == null) return;
+    final animation =
+        currentAnimationPage.getConfirmAnimation(c, canvasKey);
+    if (animation == null) return;
     setAnimation(animation);
-
-    animationController.forward();
+    c.forward();
   }
 
   void startCancelAnimation() {
-    Animation<Offset>? animation =
-        currentAnimationPage.getCancelAnimation(animationController, canvasKey);
-
-    if (animation == null) {
-      return;
-    }
-
+    final c = animationController;
+    if (c == null) return;
+    final animation =
+        currentAnimationPage.getCancelAnimation(c, canvasKey);
+    if (animation == null) return;
     setAnimation(animation);
-
-    animationController.forward();
+    c.forward();
   }
 
   void setAnimation(Animation<Offset> animation) {
-    if (!animationController.isCompleted) {
+    final c = animationController;
+    if (c == null) return;
+    if (!c.isCompleted) {
       animation
         ..addListener(() {
-          currentState = STATE.STATE_ANIMATING;
+          currentState = PageTurnState.animating;
           canvasKey.currentContext?.findRenderObject()?.markNeedsPaint();
           currentAnimationPage.onTouchEvent(
               TouchEvent(TouchEvent.ACTION_MOVE, animation.value));
@@ -137,121 +155,58 @@ class ReaderPageManager {
             case AnimationStatus.dismissed:
               break;
             case AnimationStatus.completed:
-              currentState = STATE.STATE_IDE;
+              currentState = PageTurnState.idle;
               currentAnimationPage
-                  .onTouchEvent(TouchEvent(TouchEvent.ACTION_UP, Offset(0, 0)));
-              currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset(0, 0));
-              animationController.stop();
-
+                  .onTouchEvent(TouchEvent(TouchEvent.ACTION_UP, Offset.zero));
+              currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
+              c.stop();
               break;
             case AnimationStatus.forward:
             case AnimationStatus.reverse:
-              currentState = STATE.STATE_ANIMATING;
+              currentState = PageTurnState.animating;
               break;
           }
         });
     }
-
-    if (animationController.isCompleted) {
-      animationController.reset();
+    if (c.isCompleted) {
+      c.reset();
     }
   }
 
   void startFlingAnimation(DragEndDetails details) {
-    Simulation? simulation = currentAnimationPage.getFlingAnimationSimulation(
-        animationController, details);
-
-    if (simulation == null) {
-      return;
-    }
-
-    if (animationController.isCompleted) {
-      animationController.reset();
-    }
-
-    animationController.animateWith(simulation);
+    final c = animationController;
+    if (c == null) return;
+    final simulation =
+        currentAnimationPage.getFlingAnimationSimulation(c, details);
+    if (simulation == null) return;
+    if (c.isCompleted) c.reset();
+    c.animateWith(simulation);
   }
 
   void interruptCancelAnimation() {
-    if (!animationController.isCompleted) {
-      animationController.stop();
-      currentState = STATE.STATE_IDE;
+    final c = animationController;
+    if (c == null) return;
+    if (!c.isCompleted) {
+      c.stop();
+      currentState = PageTurnState.idle;
       currentAnimationPage
-          .onTouchEvent(TouchEvent(TouchEvent.ACTION_UP, Offset(0, 0)));
-      currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset(0, 0));
+          .onTouchEvent(TouchEvent(TouchEvent.ACTION_UP, Offset.zero));
+      currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
     }
   }
 
-  bool shouldRepaint(
-      CustomPainter oldDelegate, NovelPagePainter currentDelegate) {
-    if (STATE.STATE_ANIMATING == currentState) {
-      return true;
-    }
-    if (TouchEvent.ACTION_DOWN == currentTouchData.action) {
-      return true;
-    }
-    NovelPagePainter oldPainter = (oldDelegate as NovelPagePainter);
-    return oldPainter.currentTouchData != currentDelegate.currentTouchData;
+  bool shouldRepaintTouch(TouchEvent? oldTouch, TouchEvent newTouch) {
+    if (PageTurnState.animating == currentState) return true;
+    if (TouchEvent.ACTION_DOWN == newTouch.action) return true;
+    return oldTouch != newTouch;
   }
 
-  void setAnimationController(AnimationController animationController) {
-    animationController.duration = const Duration(milliseconds: 200);
-    this.animationController = animationController;
-
-    if (TYPE_ANIMATION_SLIDE_TURN == currentAnimationType) {
-      animationController
-        ..addListener(() {
-          currentState = STATE.STATE_ANIMATING;
-          canvasKey.currentContext?.findRenderObject()?.markNeedsPaint();
-          if (!animationController.value.isInfinite &&
-              !animationController.value.isNaN) {
-            currentAnimationPage.onTouchEvent(TouchEvent(
-                TouchEvent.ACTION_MOVE, Offset(0, animationController.value)));
-          }
-        })
-        ..addStatusListener((status) {
-          switch (status) {
-            case AnimationStatus.dismissed:
-              break;
-            case AnimationStatus.completed:
-              currentState = STATE.STATE_IDE;
-              currentAnimationPage
-                  .onTouchEvent(TouchEvent(TouchEvent.ACTION_UP, Offset(0, 0)));
-              currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset(0, 0));
-              break;
-            case AnimationStatus.forward:
-            case AnimationStatus.reverse:
-              currentState = STATE.STATE_ANIMATING;
-              break;
-          }
-        });
+  void setAnimationController(AnimationController controller) {
+    if (!_needsController) {
+      animationController = null;
+      return;
     }
+    controller.duration = const Duration(milliseconds: 200);
+    animationController = controller;
   }
-}
-
-enum STATE { STATE_ANIMATING, STATE_IDE }
-
-class TouchEvent<T> {
-  static const int ACTION_DOWN = 0;
-  static const int ACTION_MOVE = 1;
-  static const int ACTION_UP = 2;
-  static const int ACTION_CANCEL = 3;
-
-  int action;
-  T? touchDetail;
-  Offset touchPos = Offset(Screen.width, Screen.height);
-
-  TouchEvent(this.action, this.touchPos);
-
-  @override
-  bool operator ==(other) {
-    if (!(other is TouchEvent)) {
-      return false;
-    }
-
-    return (this.action == other.action) && (this.touchPos == other.touchPos);
-  }
-
-  @override
-  int get hashCode => super.hashCode;
 }

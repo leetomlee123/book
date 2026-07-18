@@ -161,7 +161,7 @@ class ShelfModel with ChangeNotifier {
     }
   }
 
-  modifyShelf(Book book) async {
+  Future<void> modifyShelf(Book book) async {
     var action =
         shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {

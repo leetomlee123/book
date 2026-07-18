@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_colors.dart';
-import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/model/ShelfModel.dart';
@@ -24,7 +23,6 @@ class BooksWidget extends ConsumerStatefulWidget {
 }
 
 class _BooksWidgetState extends ConsumerState<BooksWidget> {
-  Widget? body;
   late RefreshController _refreshController;
   late ShelfModel _shelfModel;
   late bool isShelf;
@@ -38,14 +36,19 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
     isShelf = widget.type == '';
     _shelfModel = ref.read(shelfModelProvider);
     _refreshController = RefreshController();
-    var widgetsBinding = WidgetsBinding.instance;
-    widgetsBinding.addPostFrameCallback((callback) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _shelfModel.context = context;
       if (isShelf) {
         _shelfModel.freshToken();
+        _refreshController.requestRefresh();
       }
-      if (isShelf) _refreshController.requestRefresh();
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   double get _coverWidth {
@@ -56,90 +59,132 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
 
   double get _coverHeight => _coverWidth / aspectRatioCover;
 
+  bool get _dark => Theme.of(context).brightness == Brightness.dark;
+
+  Color get _primary =>
+      _dark ? AppColors.textOnDark : AppColors.textPrimary;
+
   @override
   Widget build(BuildContext context) {
-    // Rebuild when shelf model notifies.
     _shelfModel = ref.watch(shelfModelProvider);
     return SmartRefresher(
-        enablePullDown: true,
-        footer: CustomFooter(
-          builder: (BuildContext context, LoadStatus? mode) {
-            if (mode == LoadStatus.idle) {
-            } else if (mode == LoadStatus.loading) {
-              body = CupertinoActivityIndicator();
-            } else if (mode == LoadStatus.failed) {
-              body = Text("加载失败！点击重试！");
-            } else if (mode == LoadStatus.canLoading) {
-              body = Text("松手,加载更多!");
-            } else {
-              body = Text(DateUtil.formatDate(DateTime.now(),
-                  format: DateFormats.full));
-            }
-            return Center(
-              child: body,
-            );
-          },
-        ),
-        controller: _refreshController,
-        onRefresh: freshShelf,
-        child: _shelfModel.shelf.isEmpty
-            ? _emptyShelf()
-            : Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppDimens.pagePadding),
-                child: _shelfModel.cover ? coverModel() : listModel(),
-              ));
+      enablePullDown: true,
+      header: ClassicHeader(
+        refreshingText: '刷新中…',
+        completeText: '刷新完成',
+        idleText: '下拉刷新',
+        releaseText: '松开刷新',
+        textStyle: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        refreshingIcon: const CupertinoActivityIndicator(radius: 8),
+      ),
+      controller: _refreshController,
+      onRefresh: freshShelf,
+      child: _shelfModel.shelf.isEmpty
+          ? _emptyShelf()
+          : Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.pagePadding,
+              ),
+              child: _shelfModel.cover ? coverModel() : listModel(),
+            ),
+    );
   }
 
   Widget _emptyShelf() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.menu_book_outlined,
-              size: 56, color: AppColors.textTertiary),
-          const SizedBox(height: 12),
-          Text(
-            '书架空空如也',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '去搜索添加喜欢的书吧',
-            style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.brandSoft,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.menu_book_outlined,
+                size: 36,
+                color: AppColors.brand,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '书架空空如也',
+              style: TextStyle(
+                color: _primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '去发现页或搜索添加喜欢的书吧',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.tonal(
+              onPressed: () {
+                Routes.navigateTo(context, Routes.search, params: {
+                  'type': 'book',
+                  'name': '',
+                });
+              },
+              style: FilledButton.styleFrom(
+                foregroundColor: AppColors.brand,
+                backgroundColor: AppColors.brandSoft,
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text('去搜索'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  //刷新书架
-  freshShelf() async {
+  Future<void> freshShelf() async {
     if (_shelfModel.shelf.isEmpty) {
       await _shelfModel.initShelf();
     }
     if (SpUtil.haveKey('auth')) {
       try {
         await _shelfModel.refreshShelf();
-      } catch (e) {
-        _refreshController.refreshCompleted();
+      } catch (_) {
+        // ignore network refresh errors
       }
+    } else {
+      await _shelfModel.refreshShelf();
     }
-    _refreshController.refreshCompleted();
+    if (mounted) _refreshController.refreshCompleted();
   }
 
-  //书架封面模式 — 3 列网格 + 软阴影 + 进度文案
+  // ---------------------------------------------------------------------------
+  // Cover grid
+  // ---------------------------------------------------------------------------
+
   Widget coverModel() {
     final w = _coverWidth;
     final h = _coverHeight;
     return GridView.builder(
-      padding: const EdgeInsets.only(top: 12, bottom: 24),
+      padding: const EdgeInsets.only(top: 14, bottom: 28),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: AppDimens.shelfColumns,
         crossAxisSpacing: AppDimens.shelfSpacing,
         mainAxisSpacing: AppDimens.shelfRunSpacing,
         // cover + title + progress
-        childAspectRatio: w / (h + 48),
+        childAspectRatio: w / (h + 52),
       ),
       itemCount: _shelfModel.shelf.length,
       itemBuilder: (context, i) {
@@ -155,22 +200,22 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppDimens.coverRadius),
-                  child: HasUpdateIconImg(w, h, this.widget.type, i),
+                  child: HasUpdateIconImg(w, h, widget.type, i),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                book.Name,
+                _titleLabel(book),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
-                  color: AppColors.textPrimary,
+                  color: _primary,
                   height: 1.2,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 _progressLabel(book),
                 maxLines: 1,
@@ -189,120 +234,152 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
   }
 
   String _progressLabel(Book book) {
-    final name = book.ChapterName.isNotEmpty
-        ? book.ChapterName
-        : (book.LastChapter.isNotEmpty ? book.LastChapter : '');
-    if (name.isEmpty) return '未开始阅读';
+    final chapter = book.ChapterName.trim();
+    final last = book.LastChapter.trim();
+    final name = chapter.isNotEmpty
+        ? chapter
+        : (last.isNotEmpty ? last : '');
+    if (name.isEmpty || name == 'null') return '未开始阅读';
     return '读到 · $name';
   }
 
-  Widget bookAction(Widget widget, int i) {
+  String _authorLabel(Book book) {
+    final a = book.Author.trim();
+    if (a.isEmpty || a == 'null') return '佚名';
+    return a;
+  }
+
+  String _titleLabel(Book book) {
+    final n = book.Name.trim();
+    if (n.isEmpty || n == 'null') return '未知书名';
+    return n;
+  }
+
+  Widget bookAction(Widget child, int i) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () async {
-        this.widget.type == "sort"
-            ? _shelfModel.changePick(i)
-            : await readBook(i);
+        widget.type == 'sort' ? _shelfModel.changePick(i) : await readBook(i);
       },
-      child: widget,
       onLongPress: () {
-        Routes.navigateTo(
-          context,
-          Routes.sortShelf,
-        );
+        Routes.navigateTo(context, Routes.sortShelf);
       },
+      child: child,
     );
   }
 
-  //书架列表模式
+  // ---------------------------------------------------------------------------
+  // List mode
+  // ---------------------------------------------------------------------------
+
   Widget listModel() {
-    final w = _coverWidth * 0.85;
+    final w = _coverWidth * 0.9;
     final h = w / aspectRatioList;
     return ListView.separated(
-      padding: const EdgeInsets.only(top: 8, bottom: 24),
+      padding: const EdgeInsets.only(top: 8, bottom: 28),
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
       itemCount: _shelfModel.shelf.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, indent: 12),
+      separatorBuilder: (_, __) => Divider(
+        height: 1,
+        indent: w + 16,
+        color: _dark ? AppColors.dividerDark : AppColors.divider,
+      ),
       itemBuilder: (c, i) => bookAction(getBookItemView(i, w, h), i),
     );
   }
 
-  Future readBook(int i) async {
-    var b = _shelfModel.shelf[i];
+  Future<void> readBook(int i) async {
+    final b = _shelfModel.shelf[i];
     Routes.navigateTo(
       context,
       Routes.read,
-      params: {
-        'read': jsonEncode(b),
-      },
+      params: {'read': jsonEncode(b)},
     );
     _shelfModel.sort(i);
   }
 
-  getBookItemView(int i, double coverW, double coverH) {
-    Book item = _shelfModel.shelf[i];
+  Widget getBookItemView(int i, double coverW, double coverH) {
+    final item = _shelfModel.shelf[i];
     return Dismissible(
       key: Key(item.Id.toString()),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => _shelfModel.modifyShelf(item),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: AppColors.danger,
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
       child: Container(
-        height: coverH + 16,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        height: coverH + 20,
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: <Widget>[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppDimens.coverRadius),
-              child: HasUpdateIconImg(
-                  coverW, coverH, this.widget.type, i),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+                boxShadow: AppShadows.cover,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppDimens.coverRadius),
+                child: HasUpdateIconImg(coverW, coverH, widget.type, i),
+              ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.only(left: 12, right: 4),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      item.Name,
-                      style: const TextStyle(
-                          fontSize: 16.0,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary),
+                      _titleLabel(item),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _primary,
+                      ),
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 6),
                     Text(
-                      item.Author,
+                      _authorLabel(item),
                       style: const TextStyle(
-                        fontSize: 12.0,
+                        fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       _progressLabel(item),
                       style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSecondary),
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    if (item.UTime.isNotEmpty)
+                    if (item.UTime.isNotEmpty && item.UTime != 'null') ...[
+                      const SizedBox(height: 4),
                       Text(
                         item.UTime,
                         style: const TextStyle(
-                            color: AppColors.textTertiary, fontSize: 11),
+                          color: AppColors.textTertiary,
+                          fontSize: 11,
+                        ),
                         maxLines: 1,
                       ),
+                    ],
                   ],
                 ),
               ),
             ),
           ],
-        ),
-      ),
-      onDismissed: (direction) {
-        _shelfModel.modifyShelf(item);
-      },
-      background: Container(
-        color: AppColors.danger.withValues(alpha: 0.15),
-        child: const ListTile(
-          leading: Icon(Icons.delete, color: AppColors.danger),
         ),
       ),
     );

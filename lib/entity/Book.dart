@@ -106,7 +106,9 @@ class Book {
       this.originName = '',
       this.tocUrl = ''})
       : ChapterId = '',
-        ChapterName = '',
+        // Shelf progress label uses ChapterName first; fall back to LastChapter
+        // when reading progress hasn't written ChapterName yet.
+        ChapterName = LastChapter,
         CId = '',
         LastChapterId = '';
 

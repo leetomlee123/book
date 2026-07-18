@@ -1,12 +1,15 @@
 import 'package:book/common/Screen.dart';
 import 'package:book/model/ReadModel.dart';
-import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/material.dart';
 
+/// 翻页效果抽象。默认实现为 [StaticPageTurn]；
+/// Cover / Simulation 等遗留动画可继续实现本接口。
 abstract class BaseAnimationPage {
-  Offset mTouch = Offset(0, 0);
+  Offset mTouch = Offset.zero;
 
-  late AnimationController mAnimationController;
+  /// Optional — only required by animated (Cover/Simulation) implementations.
+  AnimationController? mAnimationController;
 
   Size currentSize = Size(Screen.width, Screen.height);
 
@@ -26,17 +29,11 @@ abstract class BaseAnimationPage {
     mAnimationController = controller;
   }
 
-  bool isShouldAnimatingInterrupt() {
-    return false;
-  }
+  bool isShouldAnimatingInterrupt() => false;
 
-  bool isCanGoNext() {
-    return readerViewModel.isCanGoNext();
-  }
+  bool isCanGoNext() => readerViewModel.isCanGoNext();
 
-  bool isCanGoPre() {
-    return readerViewModel.isCanGoPre();
-  }
+  bool isCanGoPre() => readerViewModel.isCanGoPre();
 
   bool isCancelArea();
   bool isConfirmArea();

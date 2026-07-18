@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/animation/BaseAnimationPage.dart';
-import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:book/view/newBook/touch_event.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 

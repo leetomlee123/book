@@ -55,7 +55,7 @@ class AnalyzeUrl {
           if (opt['body'] != null) body = opt['body'];
           if (opt['headers'] is Map) {
             (opt['headers'] as Map).forEach((k, v) {
-              headers[k.toString()] = v.toString();
+              _putHeader(headers, k.toString(), v.toString());
             });
           }
           if (opt['charset'] != null) {
@@ -115,18 +115,64 @@ class AnalyzeUrl {
     try {
       final obj = jsonDecode(header);
       if (obj is Map) {
-        obj.forEach((k, v) => map[k.toString()] = v.toString());
+        obj.forEach((k, v) => _putHeader(map, k.toString(), v.toString()));
       }
     } catch (_) {
       // plain "Key: Value" lines
       for (final line in header.split(RegExp(r'[\r\n]+'))) {
         final i = line.indexOf(':');
         if (i > 0) {
-          map[line.substring(0, i).trim()] = line.substring(i + 1).trim();
+          _putHeader(
+            map,
+            line.substring(0, i).trim(),
+            line.substring(i + 1).trim(),
+          );
         }
       }
     }
     return map;
+  }
+
+  /// Keep only valid HTTP header field names.
+  ///
+  /// Legado sources often put `@js` / `@Header:` style keys in `header` JSON;
+  /// Dio rejects those names (`FormatException: Invalid HTTP header field name`).
+  static void _putHeader(Map<String, String> map, String key, String value) {
+    final k = key.trim();
+    if (k.isEmpty) return;
+    // Skip Legado rule markers and other non-token names.
+    if (k.startsWith('@')) return;
+    if (!_isValidHeaderName(k)) return;
+    map[k] = value;
+  }
+
+  /// RFC 7230 token: tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*" /
+  ///   "+" / "-" / "." / "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
+  static bool _isValidHeaderName(String name) {
+    if (name.isEmpty) return false;
+    for (var i = 0; i < name.length; i++) {
+      final c = name.codeUnitAt(i);
+      final ok = (c >= 0x30 && c <= 0x39) || // 0-9
+          (c >= 0x41 && c <= 0x5a) || // A-Z
+          (c >= 0x61 && c <= 0x7a) || // a-z
+          c == 0x21 || // !
+          c == 0x23 || // #
+          c == 0x24 || // $
+          c == 0x25 || // %
+          c == 0x26 || // &
+          c == 0x27 || // '
+          c == 0x2a || // *
+          c == 0x2b || // +
+          c == 0x2d || // -
+          c == 0x2e || // .
+          c == 0x5e || // ^
+          c == 0x5f || // _
+          c == 0x60 || // `
+          c == 0x7c || // |
+          c == 0x7e; // ~
+      if (!ok) return false;
+    }
+    return true;
   }
 
   static int _findOptionsComma(String raw) {

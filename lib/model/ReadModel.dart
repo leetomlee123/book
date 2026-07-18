@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/DbHelper.dart';
-import 'package:book/common/LoadDialog.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_log.dart';
@@ -16,6 +15,7 @@ import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/model/SourceModel.dart';
+import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/engine/progress_mapper.dart';
 import 'package:book/source/model/book_source.dart';
@@ -25,11 +25,9 @@ import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 
 enum Load { Loading, Done }
 enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
@@ -46,12 +44,13 @@ class ReadModel with ChangeNotifier {
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
-  /// 翻页动画类型
-  int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_COVER_TURN;
+  /// 翻页动画类型（默认静态切页，动画实现仍可通过 setCurrentAnimation 挂接）
+  int currentAnimationMode = ReaderPageManager.TYPE_ANIMATION_NONE;
 
   Book? book;
   List<LocalChapter> chapters = [];
   final BookSourceEngine _engine = BookSourceEngine();
+  final TextPaginator _paginator = const TextPaginator();
   BookSource? _activeSource;
 
   var currentPageValue = 0.0;
@@ -245,7 +244,7 @@ class ReadModel with ChangeNotifier {
     page.chapterName = title;
     page.chapterContent = message;
     try {
-      page.pages = await TextComposition.parseContentAsync(page);
+      page.pages = await _paginator.paginate(page);
     } catch (_) {
       page.pages = const [];
     }
@@ -270,11 +269,52 @@ class ReadModel with ChangeNotifier {
     _activeSource = await SourceModel().findByUrl(b.sourceUrl);
   }
 
-  Future initPageContent(int idx, bool jump) async {
-    BotToast.showCustomLoading(
-        toastBuilder: (_) => LoadingDialog(),
-        clickClose: true,
-        backgroundColor: isDark() ? Colors.black : Colors.white);
+  /// 阅读页加载提示：纯文字，无转圈。
+  CancelFunc? _loadingCancel;
+
+  void _showTextLoading(String text) {
+    _hideTextLoading();
+    final dark = isDark();
+    _loadingCancel = BotToast.showCustomLoading(
+      clickClose: true,
+      allowClick: false,
+      backgroundColor: Colors.transparent,
+      toastBuilder: (_) => Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: (dark ? Colors.black : Colors.white).withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x22000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: dark ? Colors.white : Colors.black87,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _hideTextLoading() {
+    _loadingCancel?.call();
+    _loadingCancel = null;
+  }
+
+  Future initPageContent(int idx, bool jump, {bool showLoading = true}) async {
+    if (showLoading) {
+      _showTextLoading('正在加载…');
+    }
 
     try {
       final b = book;
@@ -310,9 +350,11 @@ class ReadModel with ChangeNotifier {
       AppLog.e('Read', 'initPageContent failed idx=$idx', error: e, stackTrace: st);
       curPage ??= await _messagePage('加载失败', '章节加载异常：$e');
       notifyListeners();
+    } finally {
+      if (showLoading) {
+        _hideTextLoading();
+      }
     }
-
-    BotToast.closeAllLoading();
   }
 
   colorModelSwitch() async {
@@ -389,11 +431,12 @@ class ReadModel with ChangeNotifier {
 
     if (init || chapters.isEmpty) {
       chapters = list;
-      if (SpUtil.containsKey(b.Id)) {
-        await DbHelper.instance.clearChapters(b.Id);
-        await DbHelper.instance
-            .addChapters(list, b.Id, sourceUrl: b.sourceUrl);
-      }
+      // Always persist TOC — previously only saved when book was already on
+      // the shelf (SpUtil key), so first-open from detail lost the catalog.
+      await DbHelper.instance.clearChapters(b.Id);
+      await DbHelper.instance
+          .addChapters(list, b.Id, sourceUrl: b.sourceUrl);
+      AppLog.i('Read', 'toc saved init=${list.length} id=${b.Id}');
     } else {
       // append only new urls
       final existing = chapters.map((e) => e.url).toSet();
@@ -403,16 +446,34 @@ class ReadModel with ChangeNotifier {
           c.index = chapters.length;
           chapters.add(c);
         }
-        if (SpUtil.containsKey(b.Id)) {
-          await DbHelper.instance
-              .addChapters(fresh, b.Id, sourceUrl: b.sourceUrl);
-        }
+        await DbHelper.instance
+            .addChapters(fresh, b.Id, sourceUrl: b.sourceUrl);
+        AppLog.i('Read', 'toc append ${fresh.length} id=${b.Id}');
       }
     }
     if (list.isNotEmpty) {
       b.LastChapter = list.last.chapterName;
     }
+    // Mark local reading history so "继续阅读" works even if not on shelf.
+    if (!SpUtil.containsKey(b.Id)) {
+      SpUtil.putString(b.Id, '');
+    }
+    // Ensure a books-row exists so progress can be updated.
+    await _ensureBookRow(b);
     notifyListeners();
+  }
+
+  /// Insert book row if missing. Concurrent callers may race; insert ignores PK conflict.
+  Future<void> _ensureBookRow(Book b) async {
+    try {
+      final existing = await DbHelper.instance.getBook(b.Id);
+      if (existing != null) return;
+      await DbHelper.instance.addBooks([b]);
+      AppLog.i('Read', 'book row created id=${b.Id}');
+    } catch (e) {
+      // UNIQUE race is benign (ConflictAlgorithm.ignore should swallow it).
+      AppLog.w('Read', 'ensure book row failed', error: e);
+    }
   }
 
   Future<ReadPage?> loadChapter(int idx) async {
@@ -442,8 +503,10 @@ class ReadModel with ChangeNotifier {
     String chapterId = chapter.chapterId;
 
     //本地内容是否存在
+    var contentSource = 'empty';
     try {
       r.chapterContent = await DbHelper.instance.getContent(chapterId);
+      if (r.chapterContent.isNotEmpty) contentSource = 'db';
     } catch (e) {
       r.chapterContent = "";
     }
@@ -464,6 +527,7 @@ class ReadModel with ChangeNotifier {
           !fresh.startsWith('章节地址为空') &&
           fresh.length > cached.length) {
         r.chapterContent = fresh;
+        contentSource = 'network';
         var temp = [ChapterNode(r.chapterContent, chapterId)];
         await DbHelper.instance.udpChapter(temp);
         chapters[idx].hasContent = "2";
@@ -471,32 +535,33 @@ class ReadModel with ChangeNotifier {
         r.chapterContent = fresh.isNotEmpty
             ? fresh
             : "章节内容加载失败，请检查书源或换源后重试";
+        contentSource = fresh.isNotEmpty ? 'network-error-text' : 'fail';
       }
     }
 
-    //本地是否有分页的缓存
+    // --- CONTENT DIAG (区分「正文本身一行」vs「分页坏了」) ---
+    _logContentDiag(idx, r.chapterName, r.chapterContent, contentSource);
+
+    // Drop legacy un-fingerprinted page cache (could restore one-line layouts).
     final b = book;
-    var k = '${b?.Id ?? ''}pages${r.chapterName}';
-    if (SpUtil.haveKey(k)) {
-      final objs = SpUtil.getObjectList(k);
-      List<TextPage> list =
-          (objs ?? []).map((e) => TextPage.fromJson(e)).toList();
-      r.pages = list;
-      SpUtil.remove(k);
-    } else {
-      // Rust pagination runs in a background isolate; Dart fallback yields once.
-      try {
-        r.pages = await TextComposition.parseContentAsync(r);
-      } catch (e, st) {
-        AppLog.e('Read', 'parseContentAsync failed idx=$idx', error: e, stackTrace: st);
-        r.pages = const [];
-      }
+    final legacyKey = '${b?.Id ?? ''}pages${r.chapterName}';
+    if (SpUtil.haveKey(legacyKey)) {
+      SpUtil.remove(legacyKey);
+    }
+
+    // Always re-paginate with current layout metrics (Rust / Dart).
+    try {
+      r.pages = await _paginator.paginate(r);
+    } catch (e, st) {
+      AppLog.e('Read', 'parseContentAsync failed idx=$idx',
+          error: e, stackTrace: st);
+      r.pages = const [];
     }
 
     if (r.pages.isEmpty) {
       // Ensure something is always drawable (and actually paginated/wrapped).
       try {
-        r.pages = await TextComposition.parseContentAsync(r);
+        r.pages = await _paginator.paginate(r);
       } catch (e, st) {
         AppLog.e('Read', 'parseContentAsync retry failed idx=$idx',
             error: e, stackTrace: st);
@@ -507,14 +572,80 @@ class ReadModel with ChangeNotifier {
       }
     }
 
-    AppLog.i(
-      'Read',
-      'loadChapter idx=$idx name=${r.chapterName} '
-          'contentLen=${r.chapterContent.length} pages=${r.pages.length} '
-          'lines0=${r.pages.isEmpty ? 0 : r.pages.first.lines.length}',
-    );
+    // --- PAGE DIAG ---
+    _logPageDiag(idx, r);
 
     return r;
+  }
+
+  /// 打印正文形态：长度 / 换行数 / 最长一行 / 预览。
+  void _logContentDiag(
+    int idx,
+    String name,
+    String content,
+    String source,
+  ) {
+    final text = content;
+    final len = text.length;
+    final nl = '\n'.allMatches(text).length;
+    final crlf = '\r\n'.allMatches(text).length;
+    final br = RegExp(r'<br\s*/?>', caseSensitive: false).allMatches(text).length;
+    final pTag = RegExp(r'</p>', caseSensitive: false).allMatches(text).length;
+    final lines = text.split('\n');
+    var maxLine = 0;
+    for (final l in lines) {
+      if (l.length > maxLine) maxLine = l.length;
+    }
+    final preview = text.length <= 120
+        ? text.replaceAll('\n', r'\n')
+        : '${text.substring(0, 120).replaceAll('\n', r'\n')}…';
+    final verdict = (len > 80 && nl == 0 && br == 0 && pTag == 0)
+        ? 'CONTENT_ONE_BLOB' // 正文几乎无换行 → 源/清洗问题或需强制按字宽切
+        : (len <= 40 ? 'CONTENT_SHORT' : 'CONTENT_HAS_BREAKS');
+    AppLog.i(
+      'ReadDiag',
+      'CONTENT idx=$idx name=$name src=$source '
+          'len=$len newlines=$nl crlf=$crlf br=$br pTag=$pTag '
+          'splitLines=${lines.length} maxLineLen=$maxLine '
+          'verdict=$verdict preview="$preview"',
+    );
+  }
+
+  /// 打印分页结果：页数 / 首页行数 / 单行是否过长。
+  void _logPageDiag(int idx, ReadPage r) {
+    final pages = r.pages;
+    final totalLines =
+        pages.fold<int>(0, (n, p) => n + p.lines.length);
+    final lines0 = pages.isEmpty ? 0 : pages.first.lines.length;
+    final firstLine = (pages.isEmpty || pages.first.lines.isEmpty)
+        ? ''
+        : pages.first.lines.first.text;
+    final firstLineLen = firstLine.characters.length;
+    var maxLineChars = 0;
+    for (final p in pages) {
+      for (final l in p.lines) {
+        final c = l.text.characters.length;
+        if (c > maxLineChars) maxLineChars = c;
+      }
+    }
+    final contentLen = r.chapterContent.length;
+    String verdict;
+    if (contentLen > 80 && totalLines <= 1) {
+      verdict = 'PAGE_BROKEN_ONE_LINE'; // 正文不短但分页只 1 行 → 分页错误
+    } else if (contentLen > 80 && maxLineChars > 80) {
+      verdict = 'PAGE_OVERLONG_LINE'; // 有行过长 → 软换行失败
+    } else if (contentLen <= 40) {
+      verdict = 'PAGE_OK_SHORT_CONTENT';
+    } else {
+      verdict = 'PAGE_OK';
+    }
+    AppLog.i(
+      'ReadDiag',
+      'PAGE idx=$idx name=${r.chapterName} contentLen=$contentLen '
+          'pages=${pages.length} totalLines=$totalLines lines0=$lines0 '
+          'firstLineLen=$firstLineLen maxLineChars=$maxLineChars '
+          'verdict=$verdict firstLine="${firstLine.length > 60 ? '${firstLine.substring(0, 60)}…' : firstLine}"',
+    );
   }
 
   /// Wrap plain text into simple pages when the normal pager failed.
@@ -524,7 +655,7 @@ class ReadModel with ChangeNotifier {
       return [TextPage([TextLine('内容为空', 16, 0, 0)], 24)];
     }
     try {
-      final pages = TextComposition.parseContent(
+      final pages = _paginator.paginateSync(
         ReadPage(text, '', 0, const []),
       );
       if (pages.isNotEmpty && pages.any((p) => p.lines.isNotEmpty)) {
@@ -557,21 +688,35 @@ class ReadModel with ChangeNotifier {
   }
 
   /*
-   * 页面配置修改
+   * 页面配置修改（字号/行距等）：静默重分页，完成后刷新，不弹 loading。
    */
-  updPage() async {
+  Future<void> updPage() async {
     widgets.clear();
-    var keys = SpUtil.getKeys();
-    for (var key in keys) {
-      if (key.contains("pages")) {
+    final keys = SpUtil.getKeys();
+    for (final key in keys) {
+      if (key.contains('pages')) {
         SpUtil.remove(key);
       }
     }
-    await initPageContent(book?.cur ?? 0, true);
+    // 保留当前章；重分页后尽量夹紧页码，不强制回第 0 页。
+    final b = book;
+    final keepIndex = b?.index ?? 0;
+    await initPageContent(b?.cur ?? 0, false, showLoading: false);
+    if (b != null) {
+      final maxIdx = (curPage?.pageOffsets ?? 1) - 1;
+      if (keepIndex < 0) {
+        b.index = 0;
+      } else if (keepIndex > maxIdx) {
+        b.index = maxIdx < 0 ? 0 : maxIdx;
+      } else {
+        b.index = keepIndex;
+      }
+    }
     final ro = canvasKey?.currentContext?.findRenderObject();
     if (ro != null) {
       ro.markNeedsPaint();
     }
+    notifyListeners();
   }
 
   /*菜单控制 */
@@ -582,23 +727,27 @@ class ReadModel with ChangeNotifier {
 
   /*状态保存 */
   saveData() async {
-    if (sSave == true) {
-      final b = book;
-      if (b == null) return;
-      if (!SpUtil.containsKey(b.Id)) {
-        SpUtil.putString(b.Id, "");
-        DbHelper.instance
-            .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
-      }
-      SpUtil.putObjectList('${b.Id}pages${prePage?.chapterName ?? ' '}',
-          prePage?.pages ?? []);
-      SpUtil.putObjectList(
-          '${b.Id}pages${curPage?.chapterName ?? ''}', curPage?.pages ?? []);
-      SpUtil.putObjectList('${b.Id}pages${nextPage?.chapterName ?? ''}',
-          nextPage?.pages ?? []);
-      await DbHelper.instance
-          .updBookProcess(b.cur, b.index, b.position, b.Id);
+    if (sSave != true) return;
+    final b = book;
+    if (b == null) return;
+    if (!SpUtil.containsKey(b.Id)) {
+      SpUtil.putString(b.Id, '');
     }
+    // Persist TOC if missing (first open may not have flushed yet).
+    if (chapters.isNotEmpty) {
+      try {
+        final len = await DbHelper.instance.getChaptersLen(b.Id);
+        if (len == 0) {
+          await DbHelper.instance
+              .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
+          AppLog.i('Read', 'toc saved on exit count=${chapters.length}');
+        }
+      } catch (e) {
+        AppLog.w('Read', 'toc save on exit failed', error: e);
+      }
+    }
+    await _ensureBookRow(b);
+    await DbHelper.instance.updBookProcess(b.cur, b.index, b.position, b.Id);
   }
 
   /*页面点击事件 */
@@ -627,26 +776,13 @@ class ReadModel with ChangeNotifier {
   }
 
   void clickPage(int f, Offset detail) {
-    TouchEvent currentTouchEvent = TouchEvent(TouchEvent.ACTION_DOWN, detail);
-
-    mPainter?.setCurrentTouchEvent(currentTouchEvent);
-
-    var offset = Offset(
-        f > 0
-            ? (detail.dx - Screen.width / 15 - 5)
-            : (detail.dx + Screen.width / 15 + 5),
-        0);
-    currentTouchEvent = TouchEvent(TouchEvent.ACTION_MOVE, offset);
-
-    mPainter?.setCurrentTouchEvent(currentTouchEvent);
-
-    currentTouchEvent = TouchEvent(TouchEvent.ACTION_CANCEL, offset);
-
-    mPainter?.setCurrentTouchEvent(currentTouchEvent);
+    // 静态翻页：直接切页，不再伪造 Cover 动画 touch 序列。
+    changeCoverPage(f);
     final ro = canvasKey?.currentContext?.findRenderObject();
     if (ro != null) {
       ro.markNeedsPaint();
     }
+    notifyListeners();
   }
 
   ui.Picture? getPage({bool firstInit = false}) {
@@ -811,17 +947,20 @@ class ReadModel with ChangeNotifier {
       Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
     );
     //正文
+    final fontSize = ReadSetting.getFontSize();
     TextStyle style = TextStyle(
         color: ink,
         locale: Locale('zh_CN'),
         fontFamily: SpUtil.getString("fontName", defValue: "Roboto"),
-        fontSize: ReadSetting.getFontSize(),
-        // letterSpacing: ReadSetting.getLatterSpace(),
+        fontSize: fontSize,
         height: ReadSetting.getLineHeight());
 
     final bodyTop = ReadSetting.contentTopInset();
+    final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
+    // Per-line painter: shared maxLines:1 painter would clip overlong lines.
+    final linePainter = TextPainter(textDirection: TextDirection.ltr);
+
     if (readPage.pages.isEmpty) {
-      // Multi-line wrap fallback (textPainter is maxLines:1 by default).
       final fallbackPainter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
@@ -831,7 +970,7 @@ class ReadModel with ChangeNotifier {
           style: style,
         ),
       );
-      fallbackPainter.layout(maxWidth: pageW - contentPadding * 2);
+      fallbackPainter.layout(maxWidth: maxLineWidth);
       fallbackPainter.paint(
         pageCanvas,
         Offset(contentPadding, bodyTop),
@@ -844,17 +983,30 @@ class ReadModel with ChangeNotifier {
     for (var li = 0; li < lineCount; li++) {
       final line = page.lines[li];
       final ls = line.letterSpacing;
-      if (ls != null && (ls < -0.1 || ls > 0.1)) {
-        textPainter.text = TextSpan(
-          text: line.text,
-          style: style.copyWith(letterSpacing: ls),
+      final TextStyle lineStyle =
+          (ls != null && (ls < -0.1 || ls > 0.1) && ls.isFinite)
+              ? style.copyWith(letterSpacing: ls)
+              : style;
+      // Defensive wrap: if a single TextLine is longer than the column (bad
+      // pager output), paint it multi-line instead of maxLines:1 clipping.
+      final charCount = line.text.characters.length;
+      final roughMaxChars = (maxLineWidth / (fontSize * 0.9)).floor().clamp(1, 500);
+      final needsWrap = charCount > roughMaxChars;
+      linePainter.text = TextSpan(text: line.text, style: lineStyle);
+      if (needsWrap) {
+        AppLog.w(
+          'Read',
+          'overlong line li=$li chars=$charCount — wrapping in drawContent',
         );
+        linePainter.layout(maxWidth: maxLineWidth);
       } else {
-        textPainter.text = TextSpan(text: line.text, style: style);
+        linePainter.layout();
+        if (linePainter.width > maxLineWidth * 1.05) {
+          linePainter.layout(maxWidth: maxLineWidth);
+        }
       }
       final offset = Offset(line.dx, line.dy + bodyTop);
-      textPainter.layout();
-      textPainter.paint(pageCanvas, offset);
+      linePainter.paint(pageCanvas, offset);
     }
     //画电池
     double batteryPaddingLeft = contentPadding - 5;
@@ -945,6 +1097,7 @@ class ReadModel with ChangeNotifier {
   }
 
   clear() async {
+    _hideTextLoading();
     chapters = [];
     loadOk = false;
     chaptersLoading = false;
@@ -988,10 +1141,7 @@ class ReadModel with ChangeNotifier {
     if (chapters.isEmpty || b.cur < 0 || b.cur >= chapters.length) return;
     toggleShowMenu();
     var chapter = chapters[b.cur];
-    BotToast.showCustomLoading(
-        toastBuilder: (_) => LoadingDialog(),
-        clickClose: true,
-        backgroundColor: Colors.white);
+    _showTextLoading('正在刷新正文…');
 
     var content = "";
     try {
@@ -1000,7 +1150,7 @@ class ReadModel with ChangeNotifier {
       content = "章节内容加载失败，请检查书源或换源后重试";
     }
 
-    BotToast.closeAllLoading();
+    _hideTextLoading();
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.chapterId)];
       await DbHelper.instance.udpChapter(temp);
@@ -1096,10 +1246,7 @@ class ReadModel with ChangeNotifier {
         (b.cur >= 0 && b.cur < chapters.length) ? chapters[b.cur].chapterName : b.ChapterName;
     final oldIndex = b.cur;
 
-    BotToast.showCustomLoading(
-        toastBuilder: (_) => LoadingDialog(),
-        clickClose: true,
-        backgroundColor: Colors.white);
+    _showTextLoading('正在换源…');
     try {
       final info = await _engine.bookInfo(source, hit.bookUrl, seed: hit);
       final tocUrl = info.tocUrl.isNotEmpty ? info.tocUrl : hit.bookUrl;
@@ -1168,7 +1315,7 @@ class ReadModel with ChangeNotifier {
       BotToast.showText(text: '换源失败：$e');
       return false;
     } finally {
-      BotToast.closeAllLoading();
+      _hideTextLoading();
     }
   }
 
@@ -1207,17 +1354,15 @@ class ReadModel with ChangeNotifier {
       final following = nextPage;
       if (following == null || following.chapterName == "-1") {
         // Next chapter not ready yet — load it synchronously path.
-        BotToast.showCustomLoading(
-            toastBuilder: (_) => LoadingDialog(),
-            clickClose: true,
-            backgroundColor: Colors.white);
+        _showTextLoading('正在加载下一章…');
         loadChapter(b.cur).then((value) {
           if (book?.Id == b.Id) {
             curPage = value;
             final ro = canvasKey?.currentContext?.findRenderObject();
             ro?.markNeedsPaint();
+            notifyListeners();
           }
-          BotToast.closeAllLoading();
+          _hideTextLoading();
         });
       } else {
         curPage = following;
@@ -1243,12 +1388,12 @@ class ReadModel with ChangeNotifier {
       final previous = prePage;
       if (previous == null) {
         // Previous chapter not ready — load it.
-        BotToast.showCustomLoading(
-            toastBuilder: (_) => LoadingDialog(),
-            clickClose: true,
-            backgroundColor: Colors.white);
+        _showTextLoading('正在加载上一章…');
         loadChapter(tempCur).then((value) {
-          if (book?.Id != b.Id) return;
+          if (book?.Id != b.Id) {
+            _hideTextLoading();
+            return;
+          }
           nextPage = curPage;
           curPage = value;
           b.cur = tempCur;
@@ -1257,7 +1402,7 @@ class ReadModel with ChangeNotifier {
           final ro = canvasKey?.currentContext?.findRenderObject();
           ro?.markNeedsPaint();
           notifyListeners();
-          BotToast.closeAllLoading();
+          _hideTextLoading();
           loadChapter(b.cur - 1).then((v) {
             if (book?.Id == b.Id) prePage = v;
           });
@@ -1284,6 +1429,9 @@ class ReadModel with ChangeNotifier {
     } else {
       b.index -= 1;
     }
+    // Within-chapter page change: refresh picture + UI.
+    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+    notifyListeners();
   }
 
   bool isCanGoNext() {

@@ -10,7 +10,6 @@ import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:book/common/local_store.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// * 暂不支持图片
@@ -300,9 +299,17 @@ class TextComposition {
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
 
+    AppLog.i(
+      'Pager',
+      'layout boxW=$boxW boxH=$boxH fontSize=$fontSize '
+          'lineHeight=$lineHeight padH=$padH family=$fontFamily '
+          'contentLen=${readPage.chapterContent.length} '
+          'native=${BookPager.isAvailable}',
+    );
+
     if (BookPager.isAvailable) {
       try {
-        return await BookPager.paginateAsync(
+        final pages = await BookPager.paginateAsync(
           text: readPage.chapterContent,
           fontSize: fontSize,
           lineHeight: lineHeight,
@@ -314,6 +321,20 @@ class TextComposition {
           shouldJustifyHeight: shouldJustifyHeight,
           fontFamily: fontFamily,
         );
+        final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
+        AppLog.i(
+          'Pager',
+          'native result pages=${pages.length} totalLines=$totalLines '
+              'lines0=${pages.isEmpty ? 0 : pages.first.lines.length}',
+        );
+        if (!_looksBrokenPagination(
+            pages, readPage.chapterContent, boxW, fontSize)) {
+          return pages;
+        }
+        AppLog.w(
+          'Pager',
+          'BookPager result looks broken (single overlong line); Dart fallback',
+        );
       } catch (e, st) {
         AppLog.w('Pager', 'BookPager async failed, Dart fallback', error: e);
         debugPrint('BookPager async failed, falling back to Dart: $e\n$st');
@@ -322,7 +343,7 @@ class TextComposition {
 
     // Yield once so loading UI can paint before heavy TextPainter work.
     await Future<void>.delayed(Duration.zero);
-    return _dartParse(
+    final dartPages = _dartParse(
       readPage,
       fontSize: fontSize,
       lineHeight: lineHeight,
@@ -334,6 +355,35 @@ class TextComposition {
       shouldJustifyHeight: shouldJustifyHeight,
       justRender: justRender,
     );
+    final dartLines = dartPages.fold<int>(0, (n, p) => n + p.lines.length);
+    AppLog.i(
+      'Pager',
+      'dart result pages=${dartPages.length} totalLines=$dartLines '
+          'lines0=${dartPages.isEmpty ? 0 : dartPages.first.lines.length}',
+    );
+    return dartPages;
+  }
+
+  /// Detect "whole chapter as one TextLine" failure mode from native pager.
+  static bool _looksBrokenPagination(
+    List<TextPage> pages,
+    String content,
+    double boxW,
+    double fontSize,
+  ) {
+    if (content.trim().length < 40) return false;
+    if (pages.isEmpty) return true;
+    final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
+    if (totalLines == 0) return true;
+    // One visual line for a long chapter is always wrong.
+    if (totalLines == 1 && content.trim().length > 60) return true;
+    final maxChars = (boxW / (fontSize * 0.85)).floor().clamp(8, 200);
+    for (final p in pages) {
+      for (final line in p.lines) {
+        if (line.text.characters.length > maxChars * 2) return true;
+      }
+    }
+    return false;
   }
 
   static List<TextPage> _parseWithParams(

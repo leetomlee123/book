@@ -1,8 +1,8 @@
-import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/store/Store.dart';
 import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,40 +21,38 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
   NovelPagePainter? mPainter;
   GlobalKey canvasKey = GlobalKey();
   ReaderPageManager? pageManager;
+  Offset _lastPos = Offset.zero;
 
   @override
   void initState() {
     super.initState();
     final viewModel = ref.read(readModelProvider);
     viewModel.canvasKey = canvasKey;
-    switch (viewModel.currentAnimationMode) {
-      case ReaderPageManager.TYPE_ANIMATION_SIMULATION_TURN:
-      case ReaderPageManager.TYPE_ANIMATION_COVER_TURN:
-        animationController = AnimationControllerWithListenerNumber(
-          vsync: this,
-        );
-        break;
-      case ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN:
-        animationController = AnimationControllerWithListenerNumber.unbounded(
-          vsync: this,
-        );
-        break;
+
+    pageManager = ReaderPageManager();
+    pageManager!.setCurrentAnimation(viewModel.currentAnimationMode);
+    pageManager!.setCurrentCanvasContainerContext(canvasKey);
+    pageManager!.setContentViewModel(viewModel);
+
+    // Only allocate a controller for legacy animated modes.
+    final mode = viewModel.currentAnimationMode;
+    if (mode == ReaderPageManager.TYPE_ANIMATION_COVER_TURN ||
+        mode == ReaderPageManager.TYPE_ANIMATION_SIMULATION_TURN) {
+      animationController = AnimationController(vsync: this);
+      pageManager!.setAnimationController(animationController!);
+    } else if (mode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN) {
+      animationController = AnimationController.unbounded(vsync: this);
+      pageManager!.setAnimationController(animationController!);
     }
 
-    if (animationController != null) {
-      pageManager = ReaderPageManager();
-      pageManager!.setCurrentAnimation(viewModel.currentAnimationMode);
-      pageManager!.setCurrentCanvasContainerContext(canvasKey);
-      pageManager!.setAnimationController(animationController!);
-      pageManager!.setContentViewModel(viewModel);
-      mPainter = NovelPagePainter(pageManager: pageManager);
-    }
+    mPainter = NovelPagePainter(pageManager: pageManager);
     viewModel.mPainter = mPainter;
   }
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = ref.watch(readModelProvider);
+    // Watch so chapter/index changes rebuild paint path when needed.
+    ref.watch(readModelProvider);
     return RawGestureDetector(
       gestures: <Type, GestureRecognizerFactory>{
         NovelPagePanGestureRecognizer:
@@ -62,48 +60,32 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
           () => NovelPagePanGestureRecognizer(false),
           (NovelPagePanGestureRecognizer instance) {
             instance.setMenuOpen(false);
-
             instance
               ..onDown = (detail) {
-                if (currentTouchEvent.action != TouchEvent.ACTION_DOWN ||
-                    currentTouchEvent.touchPos != detail.localPosition) {
-                  currentTouchEvent =
-                      TouchEvent(TouchEvent.ACTION_DOWN, detail.localPosition);
-                  mPainter?.setCurrentTouchEvent(currentTouchEvent);
-                  canvasKey.currentContext
-                      ?.findRenderObject()
-                      ?.markNeedsPaint();
-                }
-              };
-            instance
+                _lastPos = detail.localPosition;
+                currentTouchEvent =
+                    TouchEvent(TouchEvent.ACTION_DOWN, detail.localPosition);
+                mPainter?.setCurrentTouchEvent(currentTouchEvent);
+                _repaint();
+              }
               ..onUpdate = (detail) {
-                if (!viewModel.showMenu) {
-                  if (currentTouchEvent.action != TouchEvent.ACTION_MOVE ||
-                      currentTouchEvent.touchPos != detail.localPosition) {
-                    currentTouchEvent = TouchEvent(
-                        TouchEvent.ACTION_MOVE, detail.localPosition);
-                    mPainter?.setCurrentTouchEvent(currentTouchEvent);
-                    canvasKey.currentContext
-                        ?.findRenderObject()
-                        ?.markNeedsPaint();
-                  }
-                }
-              };
-            instance
+                final viewModel = ref.read(readModelProvider);
+                if (viewModel.showMenu) return;
+                _lastPos = detail.localPosition;
+                currentTouchEvent =
+                    TouchEvent(TouchEvent.ACTION_MOVE, detail.localPosition);
+                mPainter?.setCurrentTouchEvent(currentTouchEvent);
+                _repaint();
+              }
               ..onEnd = (detail) {
-                if (!viewModel.showMenu) {
-                  if (currentTouchEvent.action != TouchEvent.ACTION_UP ||
-                      currentTouchEvent.touchPos != Offset(0, 0)) {
-                    currentTouchEvent = TouchEvent<DragEndDetails>(
-                        TouchEvent.ACTION_UP, Offset(0, 0));
-                    currentTouchEvent.touchDetail = detail;
-
-                    mPainter?.setCurrentTouchEvent(currentTouchEvent);
-                    canvasKey.currentContext
-                        ?.findRenderObject()
-                        ?.markNeedsPaint();
-                  }
-                }
+                final viewModel = ref.read(readModelProvider);
+                if (viewModel.showMenu) return;
+                // Use last move position so static turn can compute dx.
+                currentTouchEvent =
+                    TouchEvent(TouchEvent.ACTION_UP, _lastPos);
+                currentTouchEvent.touchDetail = detail;
+                mPainter?.setCurrentTouchEvent(currentTouchEvent);
+                _repaint();
               };
           },
         ),
@@ -115,6 +97,10 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
         painter: mPainter,
       ),
     );
+  }
+
+  void _repaint() {
+    canvasKey.currentContext?.findRenderObject()?.markNeedsPaint();
   }
 
   @override
@@ -134,7 +120,7 @@ class NovelPagePanGestureRecognizer extends PanGestureRecognizer {
   }
 
   @override
-  String get debugDescription => "novel page pan gesture recognizer";
+  String get debugDescription => 'novel page pan gesture recognizer';
 
   @override
   void addPointer(PointerDownEvent event) {

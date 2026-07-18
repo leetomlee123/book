@@ -17,14 +17,14 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
       ItemPositionsListener.create();
 
   bool showToTopBtn = false;
+  bool _centeredOnce = false;
 
   @override
   void initState() {
     super.initState();
     _itemPositionsListener.itemPositions.addListener(_onPositionsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final cur = ref.read(readModelProvider).book?.cur ?? 0;
-      _jumpTo(cur);
+      _centerCurrentChapter();
     });
   }
 
@@ -45,16 +45,18 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
     }
   }
 
-  void _jumpTo(int index) {
+  /// [alignment] 0=顶 0.5=中 1=底（scrollable_positioned_list 约定）。
+  void _jumpTo(int index, {double alignment = 0}) {
     if (!_itemScrollController.isAttached) return;
     final chapters = ref.read(readModelProvider).chapters;
     if (chapters.isEmpty) return;
     _itemScrollController.jumpTo(
       index: index.clamp(0, chapters.length - 1),
+      alignment: alignment,
     );
   }
 
-  Future<void> _scrollTo(int index) async {
+  Future<void> _scrollTo(int index, {double alignment = 0}) async {
     if (!_itemScrollController.isAttached) return;
     final chapters = ref.read(readModelProvider).chapters;
     if (chapters.isEmpty) return;
@@ -62,7 +64,18 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
       index: index.clamp(0, chapters.length - 1),
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOut,
+      alignment: alignment,
     );
+  }
+
+  /// 打开目录时把当前章节滚到可视区域中间。
+  void _centerCurrentChapter() {
+    final model = ref.read(readModelProvider);
+    final chapters = model.chapters;
+    if (chapters.isEmpty || !_itemScrollController.isAttached) return;
+    final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
+    _jumpTo(cur, alignment: 0.5);
+    _centeredOnce = true;
   }
 
   @override
@@ -71,6 +84,14 @@ class _ChapterViewItem extends ConsumerState<ChapterView> {
     final data = ref.watch(readModelProvider);
     final chapters = data.chapters;
     final cur = data.book?.cur ?? 0;
+
+    // 目录异步到位后，再居中一次当前章（首帧可能还是空列表）。
+    if (!_centeredOnce && chapters.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _centeredOnce) return;
+        _centerCurrentChapter();
+      });
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

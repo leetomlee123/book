@@ -24,7 +24,6 @@ dependencies:
   battery_plus: ^7.1.0
   package_info_plus: ^10.2.0
   flutter_cache_manager: ^3.4.1
-  cached_network_image: ^3.4.1
   scrollable_positioned_list: ^0.3.8
   pull_to_refresh: ^2.0.0
   flex_color_scheme: ^8.2.0
@@ -46,6 +45,7 @@ dependencies:
     path: third_party/flutter_js
   # Force modern Android embedding (namespace) for AGP 8+/9
   flutter_plugin_android_lifecycle: ^2.0.28
+  extended_image: ^10.1.0
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 
 class PicWidget extends StatelessWidget {
@@ -69,16 +69,27 @@ class PicWidget extends StatelessWidget {
     if (src.isEmpty) {
       child = _placeholder;
     } else {
-      child = CachedNetworkImage(
-        imageUrl: src,
+      final cacheW =
+          (width * MediaQuery.devicePixelRatioOf(context)).round();
+      child = ExtendedImage.network(
+        src,
         width: width,
         height: height,
         fit: fit,
-        httpHeaders: _headersFor(src),
-        fadeInDuration: const Duration(milliseconds: 150),
-        memCacheWidth: (width * MediaQuery.devicePixelRatioOf(context)).round(),
-        placeholder: (context, _) => _placeholder,
-        errorWidget: (context, url, error) => _placeholder,
+        cache: true,
+        clearMemoryCacheWhenDispose: false,
+        headers: _headersFor(src),
+        cacheWidth: cacheW,
+        loadStateChanged: (state) {
+          switch (state.extendedImageLoadState) {
+            case LoadState.loading:
+              return _placeholder;
+            case LoadState.failed:
+              return _placeholder;
+            case LoadState.completed:
+              return null; // use default decoded image
+          }
+        },
       );
     }
 

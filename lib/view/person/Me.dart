@@ -9,249 +9,399 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/person/InfoPage.dart';
 import 'package:book/view/person/Skin.dart';
 import 'package:book/view/person/YckceoSourcePage.dart';
-import 'package:book/view/system/white_area.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// 「我的」页（微信读书风格）
 class Me extends ConsumerWidget {
   /// Hosted inside MainShell bottom tab.
   final bool embedded;
 
   const Me({this.embedded = false, super.key});
 
-  Widget getItem(imageIcon, text, func, Color c) {
-    return ListTile(
-      onTap: func,
-      leading: imageIcon,
-      title: Text(text),
-    );
-  }
+  bool get _dark => SpUtil.getBool('dark');
 
-  Widget _headImg() {
-    return Container(
-      width: 60,
-      height: 60,
-      child: CircleAvatar(
-        backgroundImage: AssetImage("images/fu.png"),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    bool login = LocalAccount.isLoggedIn;
-
-    return Visibility(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _headImg(),
-          Text(
-            LocalAccount.username,
-            style: TextStyle(fontSize: 20),
-          ),
-          SizedBox(height: 5),
-          Text(
-            LocalAccount.email.isEmpty ? '本地账号' : LocalAccount.email,
-          ),
-        ],
-      ),
-      visible: login,
-      replacement: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            _headImg(),
-            SizedBox(width: 10),
-            Text(
-              "登陆/注册",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-          ],
-        ),
-        onTap: () {
-          if (!login) {
-            Routes.navigateTo(context, Routes.login);
-          }
-        },
-      ),
-    );
-  }
+  Color get _scaffold => _dark ? AppColors.scaffoldDark : AppColors.scaffold;
+  Color get _surface => _dark ? AppColors.surfaceDark : AppColors.surface;
+  Color get _primary => _dark ? AppColors.textOnDark : AppColors.textPrimary;
+  Color get _secondary => AppColors.textSecondary;
+  Color get _divider => _dark ? AppColors.dividerDark : AppColors.divider;
+  Color get _iconBg =>
+      _dark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    bool dark = SpUtil.getBool("dark");
-    Color c = Color(dark ? 0x4D000000 : 0xFBFFFFFF);
-    final topPad = embedded ? MediaQuery.of(context).padding.top + 12 : kToolbarHeight;
+    final topPad = embedded
+        ? MediaQuery.of(context).padding.top + 8
+        : MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: dark ? AppColors.scaffoldDark : AppColors.scaffold,
-      body: Padding(
-      padding:
-          EdgeInsets.symmetric(horizontal: 10, vertical: topPad),
-      child: ConstrainedBox(
-        constraints: BoxConstraints.expand(),
-        child: Stack(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: _scaffold,
+        body: Column(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: _buildHeader(context),
-                ),
-                Divider(),
-                getItem(
-                  ImageIcon(AssetImage("images/info.png")),
-                  '公告',
-                  () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext context) => InfoPage()));
-                  },
-                  c,
-                ),
-                getItem(
-                  ImageIcon(AssetImage("images/re.png")),
-                  '免责声明',
-                  () {
-                    showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                              title: Text('免责声明'),
-                              content: SingleChildScrollView(
-                                child: Text(ReadSetting.lawWarn),
-                              ),
-                              actions: <Widget>[
-                                TextButton(
-                                  child: Text("确定"),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            ));
-                  },
-                  c,
-                ),
-                getItem(
-                  Icon(Icons.library_books_outlined),
-                  '书源管理',
-                  () {
-                    Routes.navigateTo(context, Routes.sources);
-                  },
-                  c,
-                ),
-                getItem(
-                  Icon(Icons.storefront_outlined),
-                  '源仓库（一键导入）',
-                  () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const YckceoSourcePage(),
+            SizedBox(height: topPad),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                children: [
+                  _profileCard(context),
+                  const SizedBox(height: 16),
+                  _sectionCard([
+                    _tile(
+                      icon: Icons.campaign_outlined,
+                      title: '公告',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => InfoPage()),
+                        );
+                      },
+                    ),
+                    _tile(
+                      icon: Icons.gavel_outlined,
+                      title: '免责声明',
+                      onTap: () => _showLaw(context),
+                    ),
+                  ]),
+                  const SizedBox(height: 12),
+                  _sectionCard([
+                    _tile(
+                      icon: Icons.library_books_outlined,
+                      title: '书源管理',
+                      onTap: () =>
+                          Routes.navigateTo(context, Routes.sources),
+                    ),
+                    _tile(
+                      icon: Icons.storefront_outlined,
+                      title: '源仓库',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const YckceoSourcePage(),
+                          ),
+                        );
+                      },
+                    ),
+                    _tile(
+                      icon: Icons.palette_outlined,
+                      title: '主题',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => Skin()),
+                        );
+                      },
+                    ),
+                    _tile(
+                      icon: Icons.article_outlined,
+                      title: '运行日志',
+                      onTap: () => Routes.navigateTo(context, Routes.logs),
+                    ),
+                  ]),
+                  const SizedBox(height: 12),
+                  _sectionCard([
+                    _tile(
+                      icon: Icons.mail_outline,
+                      title: '意见反馈',
+                      onTap: () {
+                        locator<TelAndSmsService>()
+                            .sendEmail('leetomlee123@gmail.com');
+                      },
+                    ),
+                    _tile(
+                      icon: Icons.code,
+                      title: '开源地址',
+                      onTap: () {
+                        launchUrl(
+                          Uri.parse('https://github.com/leetomlee123/book'),
+                        );
+                      },
+                    ),
+                    _tile(
+                      icon: Icons.system_update_alt,
+                      title: '应用更新',
+                      onTap: () async {
+                        final packageInfo =
+                            await PackageInfo.fromPlatform();
+                        BotToast.showText(
+                          text:
+                              '当前版本 ${packageInfo.version}（已移除云端更新检查）',
+                        );
+                      },
+                    ),
+                    _tile(
+                      icon: Icons.info_outline,
+                      title: '关于',
+                      onTap: () => _showAbout(context),
+                      showDivider: false,
+                    ),
+                  ]),
+                  if (LocalAccount.isLoggedIn) ...[
+                    const SizedBox(height: 20),
+                    _logoutButton(ref),
+                  ],
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      '清阅揽胜  ·  ${SpUtil.getString("version", defValue: "")}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textTertiary,
                       ),
-                    );
-                  },
-                  c,
-                ),
-                getItem(
-                  Icon(Icons.bug_report_outlined),
-                  '运行日志',
-                  () {
-                    Routes.navigateTo(context, Routes.logs);
-                  },
-                  c,
-                ),
-                getItem(
-                  ImageIcon(AssetImage("images/skin.png")),
-                  '主题',
-                  () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext context) => Skin()));
-                  },
-                  c,
-                ),
-                getItem(
-                  ImageIcon(AssetImage("images/fe.png")),
-                  '意见反馈',
-                  () {
-                    locator<TelAndSmsService>()
-                        .sendEmail('leetomlee123@gmail.com');
-                  },
-                  c,
-                ),
-                getItem(
-                  ImageIcon(AssetImage("images/github.png")),
-                  '开源地址',
-                  () {
-                    launchUrl(
-                        Uri.parse('https://github.com/leetomlee123/book'));
-                  },
-                  c,
-                ),
-                getItem(
-                  ImageIcon(AssetImage("images/upgrade.png")),
-                  '应用更新',
-                  () async {
-                    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-                    BotToast.showText(
-                        text: "当前版本 ${packageInfo.version}（已移除云端更新检查）");
-                  },
-                  c,
-                ),
-                getItem(
-                  ImageIcon(AssetImage("images/ab.png")),
-                  '关于',
-                  () {
-                    showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                              title: Text(
-                                  ('清阅揽胜 V${SpUtil.getString("version")}')),
-                              content: Text(
-                                ReadSetting.poet,
-                                style: TextStyle(fontSize: 15, height: 2.1),
-                              ),
-                              actions: <Widget>[
-                                TextButton(
-                                  child: Text("确定"),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            ));
-                  },
-                  c,
-                ),
-              ],
-            ),
-            Positioned(
-              bottom: 1,
-              left: 10,
-              right: 10,
-              child: Offstage(
-                offstage: !LocalAccount.isLoggedIn,
-                child: GestureDetector(
-                  child: WhiteArea(
-                      Text(
-                        "退出登录",
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                      45),
-                  onTap: () async {
-                    LocalAccount.logout();
-                    await ref.read(shelfModelProvider).dropAccountOut();
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-    ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Profile
+  // ---------------------------------------------------------------------------
+
+  Widget _profileCard(BuildContext context) {
+    final login = LocalAccount.isLoggedIn;
+    return Material(
+      color: _surface,
+      borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        onTap: login
+            ? null
+            : () => Routes.navigateTo(context, Routes.login),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: AppShadows.softBar,
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundImage: const AssetImage('images/fu.png'),
+                  backgroundColor: _iconBg,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: login
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            LocalAccount.username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: _primary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            LocalAccount.email.isEmpty
+                                ? '本地账号'
+                                : LocalAccount.email,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _secondary,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '登录 / 注册',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: _primary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '登录后可同步书架与阅读进度',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: _secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+              if (!login)
+                Icon(Icons.chevron_right, color: _secondary, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Section / tile
+  // ---------------------------------------------------------------------------
+
+  Widget _sectionCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
+    );
+  }
+
+  Widget _tile({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    required VoidCallback onTap,
+    bool showDivider = true,
+  }) {
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: _iconBg,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(icon, size: 18, color: AppColors.brand),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: _primary,
+                          ),
+                        ),
+                        if (subtitle != null && subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _secondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, size: 20, color: _secondary),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            indent: 60,
+            color: _divider,
+          ),
+      ],
+    );
+  }
+
+  Widget _logoutButton(WidgetRef ref) {
+    return Material(
+      color: _surface,
+      borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppDimens.cardRadius),
+        onTap: () async {
+          LocalAccount.logout();
+          await ref.read(shelfModelProvider).dropAccountOut();
+        },
+        child: Container(
+          height: 48,
+          alignment: Alignment.center,
+          child: const Text(
+            '退出登录',
+            style: TextStyle(
+              color: AppColors.danger,
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dialogs
+  // ---------------------------------------------------------------------------
+
+  void _showLaw(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('免责声明'),
+        content: SingleChildScrollView(
+          child: Text(ReadSetting.lawWarn),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAbout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('清阅揽胜 V${SpUtil.getString("version")}'),
+        content: Text(
+          ReadSetting.poet,
+          style: const TextStyle(fontSize: 15, height: 2.1),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
     );
   }
 }

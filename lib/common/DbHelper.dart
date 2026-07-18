@@ -315,24 +315,31 @@ class DbHelper {
   }
 
   Book _bookFromRow(Map<String, Object?> i) {
+    String s(Object? v) {
+      if (v == null) return '';
+      final t = v.toString();
+      return t == 'null' ? '' : t;
+    }
+
+    final lastChapter = s(i['lastChapter']);
     return Book.fromSql(
-      i['book_id'] as String,
-      i['name'] as String? ?? '',
-      i['cname'] as String? ?? '',
-      i['author'] as String? ?? '',
-      i['utime'] as String? ?? '',
-      i['img'] as String? ?? '',
-      i['intro'] as String? ?? '',
+      s(i['book_id']),
+      s(i['name']),
+      s(i['cname']),
+      s(i['author']),
+      s(i['utime']),
+      s(i['img']),
+      s(i['intro']),
       i['cur'] as int? ?? 0,
       i['sortTime'] as int? ?? 0,
       i['idx'] as int? ?? 0,
       (i['position'] as num?)?.toDouble() ?? 0.0,
       i['newChapter'] as int? ?? 0,
-      i['lastChapter'] as String? ?? '',
-      sourceUrl: i['source_url'] as String? ?? '',
-      bookUrl: i['book_url'] as String? ?? '',
-      originName: i['origin_name'] as String? ?? '',
-      tocUrl: i['toc_url'] as String? ?? '',
+      lastChapter,
+      sourceUrl: s(i['source_url']),
+      bookUrl: s(i['book_url']),
+      originName: s(i['origin_name']),
+      tocUrl: s(i['toc_url']),
     );
   }
 
@@ -379,25 +386,32 @@ class DbHelper {
     var batch = dbClient.batch();
 
     for (Book book in bks) {
-      batch.insert("$_tableName1", {
-        "book_id": book.Id,
-        "name": book.Name,
-        "cname": book.CName,
-        "author": book.Author,
-        "img": book.Img,
-        "intro": book.Desc,
-        "utime": book.UTime,
-        "cur": book.cur,
-        "sortTime": book.sortTime,
-        "idx": book.index,
-        "position": book.position,
-        "newChapter": 0,
-        "lastChapter": book.LastChapter,
-        "source_url": book.sourceUrl,
-        "book_url": book.bookUrl,
-        "origin_name": book.originName,
-        "toc_url": book.tocUrl,
-      });
+      // Ignore if book_id already exists (first-open / shelf race).
+      batch.insert(
+        "$_tableName1",
+        {
+          "book_id": book.Id,
+          "name": book.Name,
+          "cname": book.CName,
+          "author": book.Author.isEmpty ? '' : book.Author,
+          "img": book.Img,
+          "intro": book.Desc,
+          "utime": book.UTime,
+          "cur": book.cur,
+          "sortTime": book.sortTime,
+          "idx": book.index,
+          "position": book.position,
+          "newChapter": 0,
+          "lastChapter": book.LastChapter.isNotEmpty
+              ? book.LastChapter
+              : book.ChapterName,
+          "source_url": book.sourceUrl,
+          "book_url": book.bookUrl,
+          "origin_name": book.originName,
+          "toc_url": book.tocUrl,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
     }
     await batch.commit(noResult: true);
   }

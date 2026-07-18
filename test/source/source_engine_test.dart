@@ -3,6 +3,7 @@ import 'package:book/source/engine/progress_mapper.dart';
 import 'package:book/source/import/source_importer.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
+import 'package:book/source/net/analyze_url.dart';
 import 'package:book/source/rule/analyze_rule.dart';
 import 'package:book/source/util/book_id.dart';
 import 'package:book/source/util/text_clean.dart';
@@ -44,6 +45,34 @@ void main() {
       final list = SourceImporter.parseJson(json);
       expect(list.length, 2);
       expect(list.map((e) => e.bookSourceName).toList(), ['A', 'B']);
+    });
+  });
+
+  group('AnalyzeUrl headers', () {
+    test('strips Legado @js keys from source header JSON', () {
+      final source = BookSource(
+        bookSourceUrl: 'https://example.com',
+        bookSourceName: 't',
+        header: '{"User-Agent":"UA-TEST","@js":"java.ajax(\'x\')","Referer":"https://example.com/"}',
+        searchUrl: 'https://example.com/s?q={{key}}',
+      );
+      final req = AnalyzeUrl.build(source, source.searchUrl, key: 'hello');
+      expect(req.headers.containsKey('@js'), isFalse);
+      expect(req.headers['User-Agent'], 'UA-TEST');
+      expect(req.headers['Referer'], 'https://example.com/');
+    });
+
+    test('strips invalid header names from url options', () {
+      final source = BookSource(
+        bookSourceUrl: 'https://example.com',
+        bookSourceName: 't',
+        header: '',
+        searchUrl:
+            'https://example.com/s,{"method":"GET","headers":{"@js":"1","X-Ok":"yes"}}',
+      );
+      final req = AnalyzeUrl.build(source, source.searchUrl, key: 'k');
+      expect(req.headers.containsKey('@js'), isFalse);
+      expect(req.headers['X-Ok'], 'yes');
     });
   });
 

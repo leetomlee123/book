@@ -384,31 +384,52 @@ class BookSourceEngine {
               raw = rule.getString(contentRule);
             }
           }
-          // Soft fallbacks when book-source content rule misses / is too narrow.
-          if (_plainLen(raw) < 80) {
-            for (final fb in const [
-              '.chapter_content_box',
-              '#chaptercontent',
-              '#content',
-              '.content',
-              '#BookText',
-              '.book-content',
-              '.read-content',
-              '#chaptercontent p',
-              '.chapter_content_box p',
-              '#content p',
-            ]) {
+          // Always probe common containers and keep the longest plain text.
+          // Many sources return a short partial match (e.g. first <p> only,
+          // ~80–150 chars) which is still "valid" but incomplete — the old
+          // threshold of 80 skipped fallbacks for those chapters.
+          final primaryLen = _plainLen(raw);
+          const fallbacks = [
+            '.chapter_content_box',
+            '#chaptercontent',
+            '#content',
+            '.content',
+            '#BookText',
+            '.book-content',
+            '.read-content',
+            '#chaptercontent p',
+            '.chapter_content_box p',
+            '#content p',
+            'article',
+            '.novel_content',
+            '#novelcontent',
+            '.txtnav',
+            '#txtcontent',
+          ];
+          // Probe when primary is empty/short, or still modest (partial grab).
+          final shouldProbe = primaryLen < 500;
+          if (shouldProbe) {
+            var best = raw;
+            var bestLen = primaryLen;
+            var bestSel = contentRule.isEmpty ? '(empty)' : contentRule;
+            for (final fb in fallbacks) {
+              if (fb == contentRule) continue;
               var cand = rule.getHtmlString(fb);
               if (cand.isEmpty) cand = rule.getString(fb);
-              if (_plainLen(cand) > _plainLen(raw)) {
-                AppLog.w(
-                  'Source',
-                  'content rule weak/miss, fallback="$fb" '
-                      'rawLen=${_plainLen(raw)} fbLen=${_plainLen(cand)}',
-                );
-                raw = cand;
+              final n = _plainLen(cand);
+              if (n > bestLen) {
+                best = cand;
+                bestLen = n;
+                bestSel = fb;
               }
-              if (_plainLen(raw) >= 200) break;
+            }
+            if (bestLen > primaryLen) {
+              AppLog.w(
+                'Source',
+                'content rule weak/miss, fallback="$bestSel" '
+                    'rawLen=$primaryLen fbLen=$bestLen',
+              );
+              raw = best;
             }
           }
         }
