@@ -41,7 +41,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 `build.bat` is the project’s release build script (Windows). CI (`.github/workflows/dart.yml`) runs `flutter pub get` then `flutter build apk` on `repository_dispatch` type `starred`.
 
-There is no separate lint script beyond `flutter analyze`. Prefer fixing **errors** over mass style cleanup; many legacy file names (PascalCase `.dart`) produce info-level `file_names` lints.
+There is no separate lint script beyond `flutter analyze`. `file_names` is enabled (all lib paths are snake_case). Residual SpUtil/API-shaped identifiers still suppress `non_constant_identifier_names` / `constant_identifier_names`.
 
 `pubspec.yaml` uses `dependency_overrides.platform: ^3.1.6` because transitive `sqflite_platform_interface` otherwise pulls `platform 3.0.0`, which references removed `io.Platform.packageRoot` on Dart 3.12.
 

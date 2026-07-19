@@ -32,8 +32,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-enum Load { Loading, Done }
-
 class ReadModel with ChangeNotifier {
   Color darkFont = Color(0x7FFFFFFF);
   NovelPagePainter? mPainter;
@@ -61,6 +59,10 @@ class ReadModel with ChangeNotifier {
   final BookSourceEngine _engine = BookSourceEngine();
   final TextPaginator _paginator = const TextPaginator();
   BookSource? _activeSource;
+
+  /// In-memory warm cache of disk chapter body + page layout (cur±1).
+  final Map<String, ({String body, String? pagesJson, String? layoutFp})>
+      _diskChapterWarm = {};
 
   var currentPageValue = 0.0;
   String poet = "";
@@ -125,7 +127,6 @@ class ReadModel with ChangeNotifier {
 
 //是否修改font
   bool? sSave;
-  Load? load;
 
   /// Sync seed when opening a book from shelf — call before first paint.
   /// Clears previous book state and plants a centered loading page so the
@@ -425,6 +426,9 @@ class ReadModel with ChangeNotifier {
         b.chapterIndex = idx;
       }
 
+      // Warm cur±1 disk rows in one SQLite query before paginating neighbors.
+      await _warmDiskChapterCaches(idx);
+
       curPage = await loadChapter(idx);
       curPage ??= await _messagePage(
           '加载失败',
@@ -571,6 +575,26 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Insert book row if missing. Concurrent callers may race; insert ignores PK conflict.
+  /// Prefetch cur±1 chapter body/layout rows in one SQLite query.
+  Future<void> _warmDiskChapterCaches(int centerIdx) async {
+    if (chapters.isEmpty) return;
+    final ids = <String>[];
+    for (final i in [centerIdx - 1, centerIdx, centerIdx + 1]) {
+      if (i < 0 || i >= chapters.length) continue;
+      final id = chapters[i].id;
+      if (id.isNotEmpty) ids.add(id);
+    }
+    if (ids.isEmpty) return;
+    try {
+      final map = await _chapters.getChapterCaches(ids);
+      _diskChapterWarm
+        ..clear()
+        ..addAll(map);
+    } catch (e) {
+      AppLog.w('Read', 'warm disk chapter cache failed', error: e);
+    }
+  }
+
   Future<void> _ensureBookRow(Book b) async {
     try {
       await _books.ensureExists(b);
@@ -606,12 +630,13 @@ class ReadModel with ChangeNotifier {
     r.chapterName = chapter.title;
     String chapterId = chapter.id;
 
-    // Single SQLite round-trip: body + page layout.
+    // Single SQLite round-trip: body + page layout (prefer warm cache).
     var contentSource = 'empty';
     String? cachedPagesJson;
     String? cachedLayoutFp;
     try {
-      final disk = await _chapters.getChapterCache(chapterId);
+      final disk = _diskChapterWarm.remove(chapterId) ??
+          await _chapters.getChapterCache(chapterId);
       r.chapterContent = disk.body;
       cachedPagesJson = disk.pagesJson;
       cachedLayoutFp = disk.layoutFp;
@@ -1615,6 +1640,7 @@ class ReadModel with ChangeNotifier {
     _progressReady = false;
     _hideTextLoading();
     chapters = [];
+    _diskChapterWarm.clear();
     loadOk = false;
     chaptersLoading = false;
     loadingHint = '正在加载…';
@@ -1803,6 +1829,7 @@ class ReadModel with ChangeNotifier {
 
       // wipe chapter cache + page caches
       await _chapters.clearBook(b.id);
+      _diskChapterWarm.clear();
 
       chapters = toc
           .map((c) => ChapterTocEntry(

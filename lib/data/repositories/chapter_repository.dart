@@ -124,24 +124,36 @@ class ChapterRepository {
   Future<({String body, String? pagesJson, String? layoutFp})> getChapterCache(
     String chapterId,
   ) async {
+    final map = await getChapterCaches([chapterId]);
+    return map[chapterId] ?? (body: '', pagesJson: null, layoutFp: null);
+  }
+
+  /// Batch open path for cur±1 neighbor preload (one SQLite query).
+  Future<Map<String, ({String body, String? pagesJson, String? layoutFp})>>
+      getChapterCaches(List<String> chapterIds) async {
+    final ids = chapterIds.where((e) => e.isNotEmpty).toSet().toList();
+    if (ids.isEmpty) return const {};
     final db = await _database;
-    final rows = await db.query(
-      'chapters',
-      columns: ['body', 'pages_json', 'layout_fp'],
-      where: 'id = ?',
-      whereArgs: [chapterId],
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final rows = await db.rawQuery(
+      'SELECT id, body, pages_json, layout_fp FROM chapters '
+      'WHERE id IN ($placeholders)',
+      ids,
     );
-    if (rows.isEmpty) {
-      return (body: '', pagesJson: null, layoutFp: null);
+    final out =
+        <String, ({String body, String? pagesJson, String? layoutFp})>{};
+    for (final row in rows) {
+      final id = row['id'] as String? ?? '';
+      if (id.isEmpty) continue;
+      final pages = row['pages_json'] as String?;
+      final fp = row['layout_fp'] as String?;
+      out[id] = (
+        body: row['body'] as String? ?? '',
+        pagesJson: (pages == null || pages.isEmpty) ? null : pages,
+        layoutFp: fp,
+      );
     }
-    final row = rows.first;
-    final pages = row['pages_json'] as String?;
-    final fp = row['layout_fp'] as String?;
-    return (
-      body: row['body'] as String? ?? '',
-      pagesJson: (pages == null || pages.isEmpty) ? null : pages,
-      layoutFp: fp,
-    );
+    return out;
   }
 
   Future<bool> hasBody(String chapterId) async {
