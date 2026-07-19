@@ -136,8 +136,6 @@ class ReadModel with ChangeNotifier {
   ReadPage? nextPage;
 
   //缓存批量提交大小
-  int downloadBatchSize = 100;
-
   late final ReadingProgressStore _progress = ReadingProgressStore(
     books: _books,
     chapters: _chapters,
@@ -347,10 +345,7 @@ class ReadModel with ChangeNotifier {
     await reloadBackgroundImage();
     pictureCache.clear();
 
-    final ro = canvasKey?.currentContext?.findRenderObject();
-    if (ro != null) {
-      ro.markNeedsPaint();
-    }
+    _markNeedsPaint();
   }
 
   Future<void> setBackgroundImage(Object? i) async {
@@ -460,33 +455,25 @@ class ReadModel with ChangeNotifier {
 
   Future<void> relayoutPages() async {
     pictureCache.clear();
-    // Drop fingerprinted page layouts that no longer match current metrics.
+    // Font/metrics changed — drop all disk page layouts and re-open current chapter.
     try {
-      final layout = _paginator.layoutParams();
-      // contentLen/sig don't matter for bulk stale clear — wipe all non-matching.
-      final keepFp = _paginator.layoutFingerprint(
-        layoutParams: layout,
-        contentLen: 0,
-        contentSig: '',
-      );
-      // Clear everything: font metrics changed so no old fp is valid.
       await _chapters.clearAllPageLayouts();
-      AppLog.i('Read', 'cleared page cache on layout change keepHint=$keepFp');
+      AppLog.i('Read', 'cleared page cache on layout change');
     } catch (e) {
       AppLog.w('Read', 'clearAllPageLayouts failed', error: e);
     }
-    // 保留当前章；重分页后尽量夹紧页码，不强制回第 0 页。
     final b = book;
     final keepIndex = b?.pageIndex ?? 0;
     await openChapterAt(b?.chapterIndex ?? 0, false, showLoading: false);
     if (b != null) {
       _restorePageIndex(keepIndex);
     }
-    final ro = canvasKey?.currentContext?.findRenderObject();
-    if (ro != null) {
-      ro.markNeedsPaint();
-    }
+    _markNeedsPaint();
     notifyListeners();
+  }
+
+  void _markNeedsPaint() {
+    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
   }
 
   /*菜单控制 */
@@ -510,7 +497,7 @@ class ReadModel with ChangeNotifier {
     return _progress.save(book: book, chapters: chapters);
   }
 
-    /*页面点击事件（兼容旧入口） */
+  /*页面点击事件（兼容旧入口） */
   void tapPage(BuildContext context, TapUpDetails details) {
     final size = MediaQuery.of(context).size;
     tapPageAt(details.localPosition, size);
@@ -721,19 +708,12 @@ class ReadModel with ChangeNotifier {
     chaptersLoading = true;
     loadingHint = '正在重新加载目录…';
     notifyListeners();
-
     try {
-      final list = await fetchRemoteToc() ?? [];
-      if (list.isEmpty) {
+      // init:true re-syncs full remote TOC while preserving bodies for same ids.
+      await loadToc(init: true);
+      if (chapters.isEmpty) {
         BotToast.showText(text: '目录为空，请检查书源或网络');
-        return;
       }
-
-      await _ensureBookRow(b);
-      // Diff-upsert preserves body/page cache for unchanged chapter ids.
-      await _chapters.syncToc(list, b.id, sourceUrl: b.sourceUrl);
-      chapters = await _chapters.getToc(b.id);
-      if (chapters.isEmpty) chapters = list;
     } finally {
       chaptersLoading = false;
       notifyListeners();
@@ -743,30 +723,29 @@ class ReadModel with ChangeNotifier {
   Future<void> reloadCurrentPage() async {
     final b = book;
     if (b == null) return;
-    if (chapters.isEmpty || b.chapterIndex < 0 || b.chapterIndex >= chapters.length) return;
-    toggleShowMenu();
-    var chapter = chapters[b.chapterIndex];
-    _showTextLoading('正在刷新正文…');
-
-    var content = "";
-    try {
-      content = await fetchChapterBody(chapter.id, idx: b.chapterIndex);
-    } catch (e) {
-      content = "章节内容加载失败，请检查书源或换源后重试";
+    if (chapters.isEmpty || b.chapterIndex < 0 || b.chapterIndex >= chapters.length) {
+      return;
     }
-
-    _hideTextLoading();
-    if (content.isNotEmpty) {
-      var temp = [ChapterNode(content, chapter.id)];
-      await _chapters.updateBodies(temp);
-      chapters[b.chapterIndex].hasBody = true;
-
-      curPage = await loadChapter(b.chapterIndex);
-      notifyListeners();
-      final ro = canvasKey?.currentContext?.findRenderObject();
-      if (ro != null) {
-        ro.markNeedsPaint();
+    toggleShowMenu();
+    final chapter = chapters[b.chapterIndex];
+    await _showTextLoading('正在刷新正文…');
+    try {
+      var content = await fetchChapterBody(chapter.id, idx: b.chapterIndex);
+      if (content.isEmpty) {
+        content = '章节内容加载失败，请检查书源或换源后重试';
       }
+      final looksOk = !content.startsWith('章节内容加载失败') &&
+          !content.startsWith('书源不存在') &&
+          !content.startsWith('章节地址为空');
+      if (looksOk) {
+        await _chapters.updateBodies([ChapterNode(content, chapter.id)]);
+        chapter.hasBody = true;
+      }
+      curPage = await loadChapter(b.chapterIndex);
+      _markNeedsPaint();
+      notifyListeners();
+    } finally {
+      _hideTextLoading();
     }
   }
 
@@ -786,7 +765,7 @@ class ReadModel with ChangeNotifier {
       start: start,
       source: _activeSource,
       bookName: book?.name ?? '',
-      batchSize: downloadBatchSize,
+      batchSize: 100,
     );
   }
 
