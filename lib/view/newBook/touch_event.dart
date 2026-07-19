@@ -1,4 +1,4 @@
-import 'package:book/common/Screen.dart';
+import 'package:book/common/screen.dart';
 import 'package:flutter/material.dart';
 
 /// 阅读页触控事件（与翻页实现解耦）。

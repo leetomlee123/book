@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:book/common/Screen.dart';
+import 'package:book/common/screen.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/model/shelf_model.dart';
-import 'package:book/route/Routes.dart';
+import 'package:book/route/routes.dart';
 import 'package:book/store/providers.dart';
 import 'package:book/widgets/has_update_icon_img.dart';
 import 'package:flutter/cupertino.dart';

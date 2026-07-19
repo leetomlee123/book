@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:book/common/AuthInterceptor.dart';
-import 'package:book/common/ErrorInterceptor.dart';
+import 'package:book/common/auth_interceptor.dart';
+import 'package:book/common/error_interceptor.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 

@@ -4,7 +4,7 @@ import 'package:book/common/PicWidget.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/entity/search_item.dart';
 import 'package:book/model/explore_model.dart';
-import 'package:book/route/Routes.dart';
+import 'package:book/route/routes.dart';
 import 'package:book/store/providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

@@ -2,15 +2,15 @@ import 'dart:convert';
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/data/repositories/book_repository.dart';
-import 'package:book/common/Screen.dart';
+import 'package:book/common/screen.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/entity/book_info.dart';
 import 'package:book/event/event.dart';
-import 'package:book/route/Routes.dart';
+import 'package:book/route/routes.dart';
 import 'package:book/store/providers.dart';
-import 'package:book/view/book/SourceSwitchSheet.dart';
+import 'package:book/view/book/source_switch_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

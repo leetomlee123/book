@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:book/common/app_colors.dart';
 import 'package:book/event/event.dart';
-import 'package:book/view/book/BookShelf.dart';
-import 'package:book/view/book/ExplorePage.dart';
+import 'package:book/view/book/book_shelf.dart';
+import 'package:book/view/book/explore_page.dart';
 import 'package:book/view/person/Me.dart';
 import 'package:flutter/material.dart';
 

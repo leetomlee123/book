@@ -3,7 +3,7 @@ import 'dart:isolate';
 import 'dart:ui' as ui;
 
 import 'package:book/common/read_setting.dart';
-import 'package:book/common/Screen.dart';
+import 'package:book/common/screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
 import 'package:book/entity/read_page.dart';

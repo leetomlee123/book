@@ -5,7 +5,7 @@ import 'package:book/common/PicWidget.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/data/db/reader_database.dart';
 import 'package:book/main.dart';
-import 'package:book/route/Routes.dart';
+import 'package:book/route/routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/foundation.dart';

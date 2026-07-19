@@ -6,7 +6,7 @@ import 'package:book/entity/book_info.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/color_model.dart';
 import 'package:book/model/read_model.dart';
-import 'package:book/route/Routes.dart';
+import 'package:book/route/routes.dart';
 import 'package:book/store/providers.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';

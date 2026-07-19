@@ -1,4 +1,4 @@
-import 'package:book/view/newBook/ReaderPageManager.dart';
+import 'package:book/view/newBook/reader_page_manager.dart';
 import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/material.dart';
 

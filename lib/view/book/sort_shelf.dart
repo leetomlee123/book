@@ -1,6 +1,6 @@
 import 'package:book/model/shelf_model.dart';
 import 'package:book/store/providers.dart';
-import 'package:book/widgets/BooksWidget.dart';
+import 'package:book/widgets/books_widget.dart';
 import 'package:book/widgets/ConfirmDialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

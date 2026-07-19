@@ -1,7 +1,7 @@
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 
-import 'RouteHandler.dart';
+import 'route_handler.dart';
 
 class Routes {
   // 路由管理
