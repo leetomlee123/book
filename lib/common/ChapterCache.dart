@@ -1,6 +1,6 @@
-import 'package:book/common/DbHelper.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/data/repositories/chapter_repository.dart';
 
 /// Disk page-layout cache policy (pages_json on reader.db chapters).
 ///
@@ -30,17 +30,18 @@ class ChapterCache {
     }
     _lastEvictAt = now;
     try {
-      final before = await DbHelper.instance.pageCacheBytes();
+      final chapters = ChapterRepository.instance;
+      final before = await chapters.pageCacheBytes();
       final max = maxBytes();
       if (before <= max) return;
-      final n = await DbHelper.instance.evictPageCache(
+      final n = await chapters.evictPageCache(
         maxBytes: max,
         protectBookId: activeBookId,
         protectCenterIdx: activeCur ?? 0,
         protectRadius: protectRadius,
       );
       if (n > 0) {
-        final after = await DbHelper.instance.pageCacheBytes();
+        final after = await chapters.pageCacheBytes();
         AppLog.i(
           'Cache',
           'evict pages n=$n bytesBefore=$before bytesAfter=$after max=$max',

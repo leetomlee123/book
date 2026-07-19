@@ -1,4 +1,4 @@
-import 'package:book/common/DbHelper.dart';
+import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -31,7 +31,7 @@ class ShelfModel with ChangeNotifier {
   }
 
   Future<void> initShelf() async {
-    shelf = await _dbHelper.getBooks();
+    shelf = await _books.getAll();
     notifyListeners();
   }
 
@@ -39,7 +39,7 @@ class ShelfModel with ChangeNotifier {
   // WeChat Reading–like: cover grid is the product default.
   bool cover = SpUtil.getBool("cover", defValue: true);
   bool sortShelf = false;
-  final DbHelper _dbHelper = DbHelper.instance;
+  final BookRepository _books = BookRepository.instance;
   List<bool> _picks = [];
 
   bool pickAllFlag = false;
@@ -120,7 +120,7 @@ class ShelfModel with ChangeNotifier {
 
   /// Local-only shelf refresh (no cloud).
   Future<void> refreshShelf() async {
-    shelf = await _dbHelper.getBooks();
+    shelf = await _books.getAll();
     notifyListeners();
   }
 
@@ -132,7 +132,7 @@ class ShelfModel with ChangeNotifier {
 
     shelf.sort((o1, o2) => o2.sortTime.compareTo(o1.sortTime));
     notifyListeners();
-    await _dbHelper.sortBook(book.Id);
+    await _books.touchSortTime(book.Id);
   }
 
   /// 退出登录（本地账号，不清除书架）
@@ -159,7 +159,7 @@ class ShelfModel with ChangeNotifier {
   Future<void> delLocalCache(List<String> ids) async {
     for (var i = 0; i < ids.length; i++) {
       await SpUtil.remove(ids[i]);
-      await _dbHelper.delBookAndCps(ids[i]);
+      await _books.delete(ids[i]);
     }
   }
 
@@ -168,7 +168,7 @@ class ShelfModel with ChangeNotifier {
         shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
     if (action == "add") {
       shelf.insert(0, book);
-      await _dbHelper.addBooks([book]);
+      await _books.upsertAll([book]);
       SpUtil.putString(book.Id, "");
       notifyListeners();
 

@@ -3,13 +3,13 @@ import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/ChapterCache.dart';
-import 'package:book/common/DbHelper.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/text_composition.dart';
+import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
@@ -57,6 +57,8 @@ class ReadModel with ChangeNotifier {
 
   Book? book;
   List<LocalChapter> chapters = [];
+  final BookRepository _books = BookRepository.instance;
+  final ChapterRepository _chapters = ChapterRepository.instance;
   final BookSourceEngine _engine = BookSourceEngine();
   final TextPaginator _paginator = const TextPaginator();
   BookSource? _activeSource;
@@ -185,7 +187,7 @@ class ReadModel with ChangeNotifier {
     var savedCur = b.cur;
     var savedIndex = b.index;
     try {
-      final dbBook = await DbHelper.instance.getBook(b.Id);
+      final dbBook = await _books.getById(b.Id);
       if (dbBook != null) {
         savedCur = dbBook.cur;
         savedIndex = dbBook.index;
@@ -258,7 +260,7 @@ class ReadModel with ChangeNotifier {
     await _showTextLoading('正在读取本地目录…');
     b.cur = savedCur;
     b.index = savedIndex;
-    chapters = await DbHelper.instance.getChapters(b.Id);
+    chapters = await _chapters.getToc(b.Id);
     AppLog.i('Read', 'local chapters=${chapters.length}');
 
     if (chapters.isNotEmpty) {
@@ -548,10 +550,7 @@ class ReadModel with ChangeNotifier {
       chapters = list;
       // Always persist TOC — previously only saved when book was already on
       // the shelf (SpUtil key), so first-open from detail lost the catalog.
-      await DbHelper.instance.clearChapters(bookId);
-      if (book?.Id != bookId) return;
-      await DbHelper.instance
-          .addChapters(list, bookId, sourceUrl: b.sourceUrl);
+      await _chapters.replaceToc(list, bookId, sourceUrl: b.sourceUrl);
       AppLog.i('Read', 'toc saved init=${list.length} id=$bookId');
     } else {
       // append only new urls
@@ -562,8 +561,7 @@ class ReadModel with ChangeNotifier {
           c.index = chapters.length;
           chapters.add(c);
         }
-        await DbHelper.instance
-            .addChapters(fresh, bookId, sourceUrl: b.sourceUrl);
+        await _chapters.appendToc(fresh, bookId, sourceUrl: b.sourceUrl);
         AppLog.i('Read', 'toc append ${fresh.length} id=$bookId');
       }
     }
@@ -581,10 +579,7 @@ class ReadModel with ChangeNotifier {
   /// Insert book row if missing. Concurrent callers may race; insert ignores PK conflict.
   Future<void> _ensureBookRow(Book b) async {
     try {
-      final existing = await DbHelper.instance.getBook(b.Id);
-      if (existing != null) return;
-      await DbHelper.instance.addBooks([b]);
-      AppLog.i('Read', 'book row created id=${b.Id}');
+      await _books.ensureExists(b);
     } catch (e) {
       // UNIQUE race is benign (ConflictAlgorithm.ignore should swallow it).
       AppLog.w('Read', 'ensure book row failed', error: e);
@@ -620,7 +615,7 @@ class ReadModel with ChangeNotifier {
     //本地内容是否存在
     var contentSource = 'empty';
     try {
-      r.chapterContent = await DbHelper.instance.getContent(chapterId);
+      r.chapterContent = await _chapters.getBody(chapterId);
       if (r.chapterContent.isNotEmpty) contentSource = 'db';
     } catch (e) {
       r.chapterContent = "";
@@ -644,8 +639,8 @@ class ReadModel with ChangeNotifier {
         r.chapterContent = fresh;
         contentSource = 'network';
         var temp = [ChapterNode(r.chapterContent, chapterId)];
-        // udpChapter also clears stale pages_json for this chapter.
-        await DbHelper.instance.udpChapter(temp);
+        // updateBodies also clears stale pages_json for this chapter.
+        await _chapters.updateBodies(temp);
         chapters[idx].hasContent = "2";
       } else if (r.chapterContent.isEmpty) {
         r.chapterContent = fresh.isNotEmpty
@@ -676,7 +671,7 @@ class ReadModel with ChangeNotifier {
 
     List<TextPage>? cachedPages;
     try {
-      final stored = await DbHelper.instance.getChapterPages(chapterId);
+      final stored = await _chapters.getPageLayout(chapterId);
       if (stored.pagesJson != null &&
           stored.pagesJson!.isNotEmpty &&
           stored.layoutFp == fp) {
@@ -755,7 +750,7 @@ class ReadModel with ChangeNotifier {
               );
               return;
             }
-            await DbHelper.instance.saveChapterPages(saveId, json, saveFp);
+            await _chapters.savePageLayout(saveId, json, saveFp);
             await ChapterCache.maybeEvict(
               activeBookId: bookId,
               activeCur: cur,
@@ -778,7 +773,7 @@ class ReadModel with ChangeNotifier {
     if (idx < 0 || idx >= chapters.length) return false;
     final chapterId = chapters[idx].chapterId;
     try {
-      final content = await DbHelper.instance.getContent(chapterId);
+      final content = await _chapters.getBody(chapterId);
       if (content.isEmpty) return false;
       final layout = _paginator.layoutParams();
       final fp = _paginator.layoutFingerprint(
@@ -786,7 +781,7 @@ class ReadModel with ChangeNotifier {
         contentLen: content.length,
         contentSig: _paginator.contentSignature(content),
       );
-      final stored = await DbHelper.instance.getChapterPages(chapterId);
+      final stored = await _chapters.getPageLayout(chapterId);
       return stored.pagesJson != null &&
           stored.pagesJson!.isNotEmpty &&
           stored.layoutFp == fp;
@@ -925,10 +920,10 @@ class ReadModel with ChangeNotifier {
         contentSig: '',
       );
       // Clear everything: font metrics changed so no old fp is valid.
-      await DbHelper.instance.clearStalePageCache();
+      await _chapters.clearAllPageLayouts();
       AppLog.i('Read', 'cleared page cache on layout change keepHint=$keepFp');
     } catch (e) {
-      AppLog.w('Read', 'clearStalePageCache failed', error: e);
+      AppLog.w('Read', 'clearAllPageLayouts failed', error: e);
     }
     // 保留当前章；重分页后尽量夹紧页码，不强制回第 0 页。
     final b = book;
@@ -1012,10 +1007,9 @@ class ReadModel with ChangeNotifier {
     // Persist TOC if missing (first open may not have flushed yet).
     if (tocSnapshot.isNotEmpty) {
       try {
-        final len = await DbHelper.instance.getChaptersLen(id);
+        final len = await _chapters.count(id);
         if (len == 0) {
-          await DbHelper.instance
-              .addChapters(tocSnapshot, id, sourceUrl: sourceUrl);
+          await _chapters.replaceToc(tocSnapshot, id, sourceUrl: sourceUrl);
           AppLog.i('Read', 'toc saved on exit count=${tocSnapshot.length}');
         }
       } catch (e) {
@@ -1023,22 +1017,22 @@ class ReadModel with ChangeNotifier {
       }
     }
     // Upsert progress (UPDATE may hit 0 rows on race).
-    final updated = await DbHelper.instance.updBookProcess(
-      cur,
-      idx,
-      pos,
-      id,
+    final updated = await _books.saveProgress(
+      bookId: id,
+      chapterIndex: cur,
+      pageIndex: idx,
+      scrollOffset: pos,
       readingChapter: chapterName,
     );
     if (updated == 0) {
       // Row missing (first open race) — insert then update.
       try {
-        await DbHelper.instance.addBooks([b]);
-        await DbHelper.instance.updBookProcess(
-          cur,
-          idx,
-          pos,
-          id,
+        await _books.upsertAll([b]);
+        await _books.saveProgress(
+          bookId: id,
+          chapterIndex: cur,
+          pageIndex: idx,
+          scrollOffset: pos,
           readingChapter: chapterName,
         );
       } catch (e) {
@@ -1663,7 +1657,7 @@ class ReadModel with ChangeNotifier {
     loadingHint = '正在重新加载目录…';
     chapters = [];
     notifyListeners();
-    await DbHelper.instance.clearChapters(b.Id);
+    await _chapters.clearBook(b.Id);
 
     try {
       chapters = await reqChapters() ?? [];
@@ -1673,8 +1667,7 @@ class ReadModel with ChangeNotifier {
       }
 
       await _ensureBookRow(b);
-      await DbHelper.instance
-          .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
+      await _chapters.replaceToc(chapters, b.Id, sourceUrl: b.sourceUrl);
     } finally {
       chaptersLoading = false;
       notifyListeners();
@@ -1699,7 +1692,7 @@ class ReadModel with ChangeNotifier {
     _hideTextLoading();
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.chapterId)];
-      await DbHelper.instance.udpChapter(temp);
+      await _chapters.updateBodies(temp);
       chapters[b.cur].hasContent = "2";
 
       curPage = await loadChapter(b.cur);
@@ -1735,12 +1728,12 @@ class ReadModel with ChangeNotifier {
         }
       }
       if (cpNodes.length % batchNum == 0) {
-        await DbHelper.instance.udpChapter(cpNodes);
+        await _chapters.updateBodies(cpNodes);
         cpNodes.clear();
       }
     }
     if (cpNodes.isNotEmpty) {
-      await DbHelper.instance.udpChapter(cpNodes);
+      await _chapters.updateBodies(cpNodes);
       cpNodes.clear();
     }
     BotToast.showText(text: "${book?.Name ?? ""}下载完成");
@@ -1823,7 +1816,7 @@ class ReadModel with ChangeNotifier {
       _activeSource = source;
 
       // wipe chapter cache + page caches
-      await DbHelper.instance.clearChapters(b.Id);
+      await _chapters.clearBook(b.Id);
       final keys = SpUtil.getKeys().toList();
       for (final key in keys) {
         if (key.startsWith('${b.Id}pages')) {
@@ -1842,19 +1835,23 @@ class ReadModel with ChangeNotifier {
           .toList();
       // Always keep books/chapters in sync after source switch (FK-safe).
       await _ensureBookRow(b);
-      await DbHelper.instance
-          .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
-      await DbHelper.instance.updBookSource(
-          b.sourceUrl, b.bookUrl, b.originName, b.tocUrl, b.Id);
+      await _chapters.replaceToc(chapters, b.Id, sourceUrl: b.sourceUrl);
+      await _books.updateSource(
+        bookId: b.Id,
+        sourceUrl: b.sourceUrl,
+        bookUrl: b.bookUrl,
+        originName: b.originName,
+        tocUrl: b.tocUrl,
+      );
       final readName = (b.cur >= 0 && b.cur < chapters.length)
           ? chapters[b.cur].chapterName
           : b.ChapterName;
       b.ChapterName = readName;
-      await DbHelper.instance.updBookProcess(
-        b.cur,
-        b.index,
-        b.position,
-        b.Id,
+      await _books.saveProgress(
+        bookId: b.Id,
+        chapterIndex: b.cur,
+        pageIndex: b.index,
+        scrollOffset: b.position,
         readingChapter: readName,
       );
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:book/common/DbHelper.dart';
 import 'package:book/common/PicWidget.dart';
+import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
@@ -596,7 +596,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
   // ---------------------------------------------------------------------------
 
   Future<void> _openRead() async {
-    Book? b = await DbHelper.instance.getBook(book.Id);
+    Book? b = await BookRepository.instance.getById(book.Id);
     if (!mounted) return;
     Routes.navigateTo(
       context,

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Screen.dart';
+import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/entity/Book.dart';
@@ -296,7 +296,7 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
     // Prefer durable DB progress over possibly-stale in-memory shelf object.
     Book openBook = b;
     try {
-      final dbBook = await DbHelper.instance.getBook(b.Id);
+      final dbBook = await BookRepository.instance.getById(b.Id);
       if (dbBook != null) {
         openBook = dbBook;
         // Keep shelf row in sync for labels / next open.
