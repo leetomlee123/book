@@ -47,7 +47,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
     _refreshSub = eventBus.on<ReadRefresh>().listen((event) {
       final b = readModel.book;
       if (b == null) return;
-      readModel.reSetPages();
+      readModel.resetPages();
       readModel.initPageContent(b.chapterIndex, true);
     });
 

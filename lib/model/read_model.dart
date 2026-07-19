@@ -108,7 +108,7 @@ class ReadModel with ChangeNotifier {
   String loadingHint = '正在加载目录…';
 
   //点击上下页方式
-  bool leftClickNext = SpUtil.getBool("leftClickNext", defValue: false);
+  bool tapLeftToAdvance = SpUtil.getBool("leftClickNext", defValue: false);
 
   //页面上下文
 
@@ -763,7 +763,7 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Zone tap using local coordinates of the reader canvas.
-  /// Middle → menu; left/right → page turn (respects [leftClickNext]).
+  /// Middle → menu; left/right → page turn (respects [tapLeftToAdvance]).
   ///
   /// Returns `true` if a page-turn was started (not for menu-only).
   bool tapPageAt(Offset localPos, Size size) {
@@ -783,7 +783,7 @@ class ReadModel with ChangeNotifier {
       return clickPage(1, localPos);
     }
     if (x <= space) {
-      return clickPage(leftClickNext ? 1 : -1, localPos);
+      return clickPage(tapLeftToAdvance ? 1 : -1, localPos);
     }
     return false;
   }
@@ -1112,7 +1112,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  void reSetPages() {
+  void resetPages() {
     prePage = null;
     curPage = null;
     nextPage = null;
@@ -1259,7 +1259,7 @@ class ReadModel with ChangeNotifier {
         readingChapter: readName,
       );
 
-      reSetPages();
+      resetPages();
       widgets.clear();
       await initPageContent(b.chapterIndex, true);
       final name =
@@ -1276,8 +1276,8 @@ class ReadModel with ChangeNotifier {
   }
 
   void switchClickNextPage() {
-    leftClickNext = !leftClickNext;
-    SpUtil.putBool("leftClickNext", leftClickNext);
+    tapLeftToAdvance = !tapLeftToAdvance;
+    SpUtil.putBool("leftClickNext", tapLeftToAdvance);
     notifyListeners();
   }
 

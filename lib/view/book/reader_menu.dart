@@ -350,7 +350,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                   trailing: SizedBox(
                     height: 24,
                     child: Switch.adaptive(
-                      value: _readModel.leftClickNext,
+                      value: _readModel.tapLeftToAdvance,
                       activeTrackColor: AppColors.brand,
                       onChanged: (_) {
                         _readModel.switchClickNextPage();
@@ -742,7 +742,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
     ref.watch(readModelProvider.select((m) => (
           m.book?.chapterIndex,
           m.book?.name,
-          m.leftClickNext,
+          m.tapLeftToAdvance,
           m.paperTheme,
           m.currentAnimationMode,
           m.chapters.length,
