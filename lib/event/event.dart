@@ -1,4 +1,4 @@
-import 'package:book/entity/Book.dart';
+import 'package:book/entity/book.dart';
 import 'package:event_bus/event_bus.dart';
 import 'package:flutter/gestures.dart';
 

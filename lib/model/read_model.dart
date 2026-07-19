@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
-import 'package:book/common/ChapterCache.dart';
-import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/chapter_cache.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
@@ -11,13 +11,13 @@ import 'package:book/common/common.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
-import 'package:book/entity/Book.dart';
-import 'package:book/entity/ChapterNode.dart';
+import 'package:book/entity/book.dart';
+import 'package:book/entity/chapter_node.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
-import 'package:book/entity/ReadPage.dart';
-import 'package:book/entity/TextLine.dart';
-import 'package:book/entity/TextPage.dart';
-import 'package:book/model/SourceModel.dart';
+import 'package:book/entity/read_page.dart';
+import 'package:book/entity/text_line.dart';
+import 'package:book/entity/text_page.dart';
+import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/engine/progress_mapper.dart';
@@ -33,7 +33,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 enum Load { Loading, Done }
-enum FlipType { LIST_VIEW, PAGE_VIEW_SMOOTH }
 
 class ReadModel with ChangeNotifier {
   Color darkFont = Color(0x7FFFFFFF);
@@ -88,7 +87,7 @@ class ReadModel with ChangeNotifier {
   /// Soft cap for in-memory page pictures (disk holds TextPage JSON).
   static const int _maxPictureCache = 24;
 
-  /// False until [getBookRecord] finishes hydrating progress from DB.
+  /// False until [hydrateReadingSession] finishes hydrating progress from DB.
   /// Prevents lifecycle/dispose from writing route-stale zeros over durable progress.
   bool _progressReady = false;
 
@@ -161,7 +160,7 @@ class ReadModel with ChangeNotifier {
   }
 
   //获取本书记录
-  Future<void> getBookRecord() async {
+  Future<void> hydrateReadingSession() async {
     try {
       electricQuantity = (await Battery().batteryLevel) / 100;
     } catch (e) {
@@ -176,7 +175,7 @@ class ReadModel with ChangeNotifier {
     book ??= null;
     final b = book;
     if (b == null) {
-      AppLog.w('Read', 'getBookRecord: book is null');
+      AppLog.w('Read', 'hydrateReadingSession: book is null');
       chaptersLoading = false;
       return;
     }
@@ -1082,7 +1081,7 @@ class ReadModel with ChangeNotifier {
   bool get isScrollMode =>
       currentAnimationMode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
 
-  /// True after [getBookRecord] finished hydrating and current chapter is ready.
+  /// True after [hydrateReadingSession] finished hydrating and current chapter is ready.
   /// Scroll surface must wait for this — [loadOk] alone is true during prepareOpen.
   bool get contentReady =>
       _progressReady &&

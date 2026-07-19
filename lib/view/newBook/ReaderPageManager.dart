@@ -2,7 +2,7 @@ import 'package:book/animation/BaseAnimationPage.dart';
 import 'package:book/animation/SimulationTurePageAnimation.dart';
 import 'package:book/animation/static_page_turn.dart';
 import 'package:book/animation/turn_page_animation.dart';
-import 'package:book/model/ReadModel.dart';
+import 'package:book/model/read_model.dart';
 import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

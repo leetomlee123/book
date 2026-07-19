@@ -1,7 +1,7 @@
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/store/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

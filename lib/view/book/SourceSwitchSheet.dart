@@ -1,8 +1,8 @@
-import 'package:book/model/ReadModel.dart';
+import 'package:book/model/read_model.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/store/providers.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

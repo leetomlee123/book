@@ -1,5 +1,5 @@
-import 'package:book/model/ShelfModel.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/model/shelf_model.dart';
+import 'package:book/store/providers.dart';
 import 'package:book/widgets/BooksWidget.dart';
 import 'package:book/widgets/ConfirmDialog.dart';
 import 'package:flutter/material.dart';

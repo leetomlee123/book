@@ -1,5 +1,5 @@
 import 'package:book/data/repositories/book_repository.dart';
-import 'package:book/entity/Book.dart';
+import 'package:book/entity/book.dart';
 import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';

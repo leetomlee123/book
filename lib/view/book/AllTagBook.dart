@@ -1,7 +1,7 @@
 import 'package:book/common/PicWidget.dart';
-import 'package:book/entity/GBook.dart';
+import 'package:book/entity/g_book.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/store/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

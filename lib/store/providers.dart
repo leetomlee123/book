@@ -1,9 +1,9 @@
-import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ExploreModel.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/model/SearchModel.dart';
-import 'package:book/model/ShelfModel.dart';
-import 'package:book/model/SourceModel.dart';
+import 'package:book/model/color_model.dart';
+import 'package:book/model/explore_model.dart';
+import 'package:book/model/read_model.dart';
+import 'package:book/model/search_model.dart';
+import 'package:book/model/shelf_model.dart';
+import 'package:book/model/source_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Global ChangeNotifier-backed providers (Riverpod).

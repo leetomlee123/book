@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui' as ui;
 
-import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
-import 'package:book/entity/ReadPage.dart';
-import 'package:book/entity/TextLine.dart';
-import 'package:book/entity/TextPage.dart';
+import 'package:book/entity/read_page.dart';
+import 'package:book/entity/text_line.dart';
+import 'package:book/entity/text_page.dart';
 import 'package:flutter/material.dart';
 
 /// * 暂不支持图片

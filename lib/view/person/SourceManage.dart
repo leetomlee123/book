@@ -1,5 +1,5 @@
-import 'package:book/model/SourceModel.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/model/source_model.dart';
+import 'package:book/store/providers.dart';
 import 'package:book/view/person/YckceoSourcePage.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';

@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/entity/Book.dart';
+import 'package:book/entity/book.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/model/ShelfModel.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/model/read_model.dart';
+import 'package:book/model/shelf_model.dart';
+import 'package:book/store/providers.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/PageContentRender.dart';
@@ -62,10 +62,10 @@ class _ReadBookState extends ConsumerState<ReadBook>
     await Future<void>.delayed(const Duration(milliseconds: 16));
     if (!mounted) return;
     try {
-      await readModel.getBookRecord();
+      await readModel.hydrateReadingSession();
     } catch (e, st) {
       // ignore: avoid_print
-      print('getBookRecord failed: $e\n$st');
+      print('hydrateReadingSession failed: $e\n$st');
       if (!readModel.loadOk) {
         await readModel.failOpen(e);
       }

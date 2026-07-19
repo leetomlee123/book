@@ -1,7 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // Hand-maintained camelCase fields (no legacy key compat).
 
-part of 'SearchItem.dart';
+part of 'search_item.dart';
 
 SearchItem _$SearchItemFromJson(Map<String, dynamic> json) {
   return SearchItem(

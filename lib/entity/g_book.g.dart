@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'GBook.dart';
+part of 'g_book.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

@@ -1,5 +1,5 @@
 import 'package:book/common/app_log.dart';
-import 'package:book/entity/BookInfo.dart';
+import 'package:book/entity/book_info.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/source/net/analyze_url.dart';

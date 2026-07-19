@@ -1,7 +1,7 @@
-import 'package:book/entity/BookInfo.dart';
-import 'package:book/entity/GBook.dart';
-import 'package:book/entity/SearchItem.dart';
-import 'package:book/model/SourceModel.dart';
+import 'package:book/entity/book_info.dart';
+import 'package:book/entity/g_book.dart';
+import 'package:book/entity/search_item.dart';
+import 'package:book/model/source_model.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';

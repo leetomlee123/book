@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/entity/ReadPage.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/entity/read_page.dart';
+import 'package:book/store/providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -2,7 +2,7 @@ import 'package:book/common/app_colors.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
-import 'package:book/entity/Book.dart';
+import 'package:book/entity/book.dart';
 import 'package:flutter/material.dart';
 
 /// Cache management against [reader.db] chapter bodies + page layouts.

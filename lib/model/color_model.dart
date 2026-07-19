@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/font_catalog.dart';
 import 'package:book/common/local_store.dart';

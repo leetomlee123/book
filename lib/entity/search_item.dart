@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'SearchItem.g.dart';
+part 'search_item.g.dart';
 
 /// Search / explore list row (local book-source hit).
 @JsonSerializable()

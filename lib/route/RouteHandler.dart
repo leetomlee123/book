@@ -1,8 +1,8 @@
 import 'dart:convert' as convert;
 
-import 'package:book/entity/Book.dart';
-import 'package:book/entity/BookInfo.dart';
-import 'package:book/entity/GBook.dart';
+import 'package:book/entity/book.dart';
+import 'package:book/entity/book_info.dart';
+import 'package:book/entity/g_book.dart';
 import 'package:book/view/book/AllTagBook.dart';
 import 'package:book/view/book/BookDetail.dart';
 import 'package:book/view/book/BookShelf.dart';

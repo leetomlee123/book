@@ -1,7 +1,7 @@
-import 'package:book/entity/TextPage.dart';
+import 'package:book/entity/text_page.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-part 'ReadPage.g.dart';
+part 'read_page.g.dart';
 
 @JsonSerializable()
 class ReadPage {

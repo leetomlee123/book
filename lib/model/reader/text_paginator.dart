@@ -1,6 +1,6 @@
 import 'package:book/common/text_composition.dart';
-import 'package:book/entity/ReadPage.dart';
-import 'package:book/entity/TextPage.dart';
+import 'package:book/entity/read_page.dart';
+import 'package:book/entity/text_page.dart';
 
 /// 统一分页入口：metrics 采集 + Rust/Dart 分页。
 ///

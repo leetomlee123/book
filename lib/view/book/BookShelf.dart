@@ -3,7 +3,7 @@ import 'package:book/common/app_colors.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/store/providers.dart';
 import 'package:book/widgets/BooksWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

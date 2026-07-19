@@ -1,8 +1,8 @@
 import 'package:json_annotation/json_annotation.dart';
 
-import 'Book.dart';
+import 'book.dart';
 
-part 'BookInfo.g.dart';
+part 'book_info.g.dart';
 
 /// Detail-page / search-hit book metadata.
 @JsonSerializable()

@@ -1,5 +1,5 @@
 import 'package:book/common/Screen.dart';
-import 'package:book/model/ReadModel.dart';
+import 'package:book/model/read_model.dart';
 import 'package:book/view/newBook/touch_event.dart';
 import 'package:flutter/material.dart';
 

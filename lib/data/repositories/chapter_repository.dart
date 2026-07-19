@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:book/data/db/reader_database.dart';
-import 'package:book/entity/ChapterNode.dart';
+import 'package:book/entity/chapter_node.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
-import 'package:book/entity/TextPage.dart';
+import 'package:book/entity/text_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 

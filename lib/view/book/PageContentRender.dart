@@ -1,6 +1,6 @@
 import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
-import 'package:book/model/ReadModel.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/model/read_model.dart';
+import 'package:book/store/providers.dart';
 import 'package:book/view/newBook/NovelPagePainter.dart';
 import 'package:book/view/newBook/ReaderPageManager.dart';
 import 'package:book/view/newBook/touch_event.dart';

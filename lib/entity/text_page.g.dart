@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'TextPage.dart';
+part of 'text_page.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator

@@ -1,6 +1,6 @@
 import 'package:book/common/local_store.dart';
 import 'package:book/data/db/reader_database.dart';
-import 'package:book/entity/Book.dart';
+import 'package:book/entity/book.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Shelf + reading progress persistence.

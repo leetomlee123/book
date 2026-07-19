@@ -4,8 +4,8 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:book/common/app_log.dart';
-import 'package:book/entity/TextLine.dart';
-import 'package:book/entity/TextPage.dart';
+import 'package:book/entity/text_line.dart';
+import 'package:book/entity/text_page.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;

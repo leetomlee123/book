@@ -1,13 +1,13 @@
 import 'dart:convert';
 
-import 'package:book/common/ReadSetting.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/common/app_colors.dart';
-import 'package:book/entity/BookInfo.dart';
+import 'package:book/entity/book_info.dart';
 import 'package:book/event/event.dart';
-import 'package:book/model/ColorModel.dart';
-import 'package:book/model/ReadModel.dart';
+import 'package:book/model/color_model.dart';
+import 'package:book/model/read_model.dart';
 import 'package:book/route/Routes.dart';
-import 'package:book/store/Store.dart';
+import 'package:book/store/providers.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

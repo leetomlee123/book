@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'Book.g.dart';
+part 'book.g.dart';
 
 /// Local shelf / reading-session book row.
 @JsonSerializable()

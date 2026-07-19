@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'GBook.g.dart';
+part 'g_book.g.dart';
 
 @JsonSerializable()
 class GBook {

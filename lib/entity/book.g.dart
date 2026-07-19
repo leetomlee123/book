@@ -1,25 +1,24 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // Hand-maintained camelCase fields (no legacy key compat).
 
-part of 'BookInfo.dart';
+part of 'book.dart';
 
-BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
-  return BookInfo(
+Book _$BookFromJson(Map<String, dynamic> json) {
+  return Book(
     id: json['id'] as String? ?? '',
     name: json['name'] as String? ?? '',
     author: json['author'] as String? ?? '',
     coverUrl: json['coverUrl'] as String? ?? '',
     category: json['category'] as String? ?? '',
     description: json['description'] as String? ?? '',
-    status: json['status'] as String? ?? '',
+    readingChapter: json['readingChapter'] as String? ?? '',
     latestChapter: json['latestChapter'] as String? ?? '',
+    chapterIndex: json['chapterIndex'] as int? ?? 0,
+    pageIndex: json['pageIndex'] as int? ?? 0,
+    scrollOffset: (json['scrollOffset'] as num?)?.toDouble() ?? 0,
+    sortTime: json['sortTime'] as int? ?? 0,
+    hasUpdate: json['hasUpdate'] as int? ?? 0,
     updatedAt: json['updatedAt'] as String? ?? '',
-    rating: (json['rating'] as num?)?.toDouble() ?? 0,
-    ratingCount: json['ratingCount'] as int? ?? 0,
-    relatedBooks: (json['relatedBooks'] as List<dynamic>?)
-            ?.map((e) => Book.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        <Book>[],
     sourceUrl: json['sourceUrl'] as String? ?? '',
     bookUrl: json['bookUrl'] as String? ?? '',
     originName: json['originName'] as String? ?? '',
@@ -27,19 +26,21 @@ BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
   );
 }
 
-Map<String, dynamic> _$BookInfoToJson(BookInfo instance) => <String, dynamic>{
+Map<String, dynamic> _$BookToJson(Book instance) => <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
       'author': instance.author,
       'coverUrl': instance.coverUrl,
       'category': instance.category,
       'description': instance.description,
-      'status': instance.status,
+      'readingChapter': instance.readingChapter,
       'latestChapter': instance.latestChapter,
+      'chapterIndex': instance.chapterIndex,
+      'pageIndex': instance.pageIndex,
+      'scrollOffset': instance.scrollOffset,
+      'sortTime': instance.sortTime,
+      'hasUpdate': instance.hasUpdate,
       'updatedAt': instance.updatedAt,
-      'rating': instance.rating,
-      'ratingCount': instance.ratingCount,
-      'relatedBooks': instance.relatedBooks,
       'sourceUrl': instance.sourceUrl,
       'bookUrl': instance.bookUrl,
       'originName': instance.originName,

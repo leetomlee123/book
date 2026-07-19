@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
-part 'TextLine.g.dart';
+part 'text_line.g.dart';
 
 @JsonSerializable()
 class TextLine {

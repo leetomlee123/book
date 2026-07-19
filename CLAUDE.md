@@ -50,15 +50,15 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 ### Boot sequence
 
 1. `main()` → `AppInit.init()` then `runApp(const ProviderScope(child: MyApp()))`.
-2. `AppInit` requests media/storage permission (mobile), initializes local `SpUtil` (`lib/common/local_store.dart`), registers `TelAndSmsService` on global `GetIt` (`locator` in `lib/main.dart`), configures Fluro (`Routes`), loads package version, and fetches remote parse/font config from `Common.config`.
+2. `AppInit` (`lib/app_init.dart`) requests media/storage permission (mobile), initializes local `SpUtil` (`lib/common/local_store.dart`), registers `TelAndSmsService` on global `GetIt` (`locator` in `lib/main.dart`), configures Fluro (`Routes`), loads package version, and fetches remote parse/font config from `Common.config`.
 3. `MyApp` is a `ConsumerWidget` watching `colorModelProvider` for theming; home is `MainShell` (书架 / 发现 / 我); routes via `Routes.router.generator`; toasts via BotToast.
 
 ### State management
 
-- **Riverpod** via `lib/store/Store.dart` (providers only; no `Store` facade class):
+- **Riverpod** via `lib/store/providers.dart` (providers only; no `Store` facade class):
   - Root: `ProviderScope` in `main.dart`
   - Providers: `searchModelProvider`, `exploreModelProvider`, `colorModelProvider`, `shelfModelProvider`, `readModelProvider`, `sourceModelProvider` (`ChangeNotifierProvider`)
-  - Models remain `ChangeNotifier` subclasses (`SearchModel`, `ExploreModel`, `ColorModel`, `ShelfModel`, `ReadModel`, `SourceModel`)
+  - Models remain `ChangeNotifier` subclasses under snake_case files (`search_model.dart`, `explore_model.dart`, `color_model.dart`, `shelf_model.dart`, `read_model.dart`, `source_model.dart`)
   - UI uses `ConsumerWidget` / `ConsumerStatefulWidget` with `ref.watch` / `ref.read` directly.
 - **event_bus** (`lib/event/event.dart`) for cross-widget signals (reading progress, shelf sync, page controller, download progress, etc.). Global: `eventBus`.
 - **GetIt** for a few services (`locator`), not for the main UI models.
@@ -141,6 +141,6 @@ Fluro paths are constants on `Routes` (e.g. `/read`, `/search`, `/detail`, `/log
 
 - Follow existing patterns: Riverpod providers (`ref.watch`/`ref.read`) for models, `HttpUtil.instance.dio` for HTTP, `Common.*` for URLs/keys, `eventBus.fire/on` for loose coupling. Do not reintroduce a `Store` facade.
 - Prefer `package:book/common/local_store.dart` for prefs/date/num helpers — do not reintroduce flustars.
-- Entity JSON: models use `fromJson`/`toJson` with sibling `*.g.dart`. Keep JSON key names stable (server contract). Protobuf chapter types are generated; treat `chapter.pb*.dart` as generated.
+- Entity JSON: models use `fromJson`/`toJson` with sibling `*.g.dart`. Core entity/model files use **snake_case** paths and **camelCase** fields (no legacy JSON key compat).
 - Prefer Chinese UI strings consistent with the rest of the app.
 - Release obfuscation dumps go under `HLQ_Struggle/` (gitignored).
