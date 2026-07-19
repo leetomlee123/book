@@ -116,15 +116,32 @@ class ChapterRepository {
   }
 
   Future<String> getBody(String chapterId) async {
+    final cached = await getChapterCache(chapterId);
+    return cached.body;
+  }
+
+  /// Single-query open path: body + page layout in one round-trip.
+  Future<({String body, String? pagesJson, String? layoutFp})> getChapterCache(
+    String chapterId,
+  ) async {
     final db = await _database;
     final rows = await db.query(
       'chapters',
-      columns: ['body'],
+      columns: ['body', 'pages_json', 'layout_fp'],
       where: 'id = ?',
       whereArgs: [chapterId],
     );
-    if (rows.isEmpty) return '';
-    return rows.first['body'] as String? ?? '';
+    if (rows.isEmpty) {
+      return (body: '', pagesJson: null, layoutFp: null);
+    }
+    final row = rows.first;
+    final pages = row['pages_json'] as String?;
+    final fp = row['layout_fp'] as String?;
+    return (
+      body: row['body'] as String? ?? '',
+      pagesJson: (pages == null || pages.isEmpty) ? null : pages,
+      layoutFp: fp,
+    );
   }
 
   Future<bool> hasBody(String chapterId) async {
@@ -137,6 +154,27 @@ class ChapterRepository {
     );
     if (rows.isEmpty) return false;
     return (rows.first['has_body'] as int? ?? 0) == 1;
+  }
+
+  /// Cached chapter body counts for shelf/cache UI.
+  Future<({int total, int withBody})> bodyStats(String bookId) async {
+    final db = await _database;
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) AS total, '
+      'SUM(CASE WHEN has_body = 1 THEN 1 ELSE 0 END) AS with_body '
+      'FROM chapters WHERE book_id = ?',
+      [bookId],
+    );
+    if (rows.isEmpty) return (total: 0, withBody: 0);
+    final total = rows.first['total'];
+    final withBody = rows.first['with_body'];
+    int asInt(Object? v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v?.toString() ?? '') ?? 0;
+    }
+
+    return (total: asInt(total), withBody: asInt(withBody));
   }
 
   Future<void> updateBodies(List<ChapterNode> nodes) async {

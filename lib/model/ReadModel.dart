@@ -71,7 +71,6 @@ class ReadModel with ChangeNotifier {
   var electricQuantity = 1.0;
 
   //本书记录
-  // BookTag bookTag;
   ReadPage? prePage;
   ReadPage? curPage;
   ReadPage? nextPage;
@@ -569,10 +568,6 @@ class ReadModel with ChangeNotifier {
     if (list.isNotEmpty) {
       book!.LastChapter = list.last.chapterName;
     }
-    // Mark local reading history so "继续阅读" works even if not on shelf.
-    if (!SpUtil.containsKey(bookId)) {
-      SpUtil.putString(bookId, '');
-    }
     notifyListeners();
   }
 
@@ -612,13 +607,18 @@ class ReadModel with ChangeNotifier {
     r.chapterName = chapter.chapterName;
     String chapterId = chapter.chapterId;
 
-    //本地内容是否存在
+    // Single SQLite round-trip: body + page layout.
     var contentSource = 'empty';
+    String? cachedPagesJson;
+    String? cachedLayoutFp;
     try {
-      r.chapterContent = await _chapters.getBody(chapterId);
+      final disk = await _chapters.getChapterCache(chapterId);
+      r.chapterContent = disk.body;
+      cachedPagesJson = disk.pagesJson;
+      cachedLayoutFp = disk.layoutFp;
       if (r.chapterContent.isNotEmpty) contentSource = 'db';
     } catch (e) {
-      r.chapterContent = "";
+      r.chapterContent = '';
     }
 
     // Re-fetch if cache is empty or looks truncated (common after a bad source rule).
@@ -638,14 +638,16 @@ class ReadModel with ChangeNotifier {
           fresh.length > cached.length) {
         r.chapterContent = fresh;
         contentSource = 'network';
+        cachedPagesJson = null;
+        cachedLayoutFp = null;
         var temp = [ChapterNode(r.chapterContent, chapterId)];
         // updateBodies also clears stale pages_json for this chapter.
         await _chapters.updateBodies(temp);
-        chapters[idx].hasContent = "2";
+        chapters[idx].hasContent = '2';
       } else if (r.chapterContent.isEmpty) {
         r.chapterContent = fresh.isNotEmpty
             ? fresh
-            : "章节内容加载失败，请检查书源或换源后重试";
+            : '章节内容加载失败，请检查书源或换源后重试';
         contentSource = fresh.isNotEmpty ? 'network-error-text' : 'fail';
       }
     }
@@ -653,12 +655,7 @@ class ReadModel with ChangeNotifier {
     // --- CONTENT DIAG (区分「正文本身一行」vs「分页坏了」) ---
     _logContentDiag(idx, r.chapterName, r.chapterContent, contentSource);
 
-    // Drop legacy un-fingerprinted page cache (could restore one-line layouts).
     final b = book;
-    final legacyKey = '${b?.Id ?? ''}pages${r.chapterName}';
-    if (SpUtil.haveKey(legacyKey)) {
-      SpUtil.remove(legacyKey);
-    }
 
     // Try disk page-layout cache before re-paginating.
     final layout = _paginator.layoutParams();
@@ -671,22 +668,21 @@ class ReadModel with ChangeNotifier {
 
     List<TextPage>? cachedPages;
     try {
-      final stored = await _chapters.getPageLayout(chapterId);
-      if (stored.pagesJson != null &&
-          stored.pagesJson!.isNotEmpty &&
-          stored.layoutFp == fp) {
+      if (cachedPagesJson != null &&
+          cachedPagesJson.isNotEmpty &&
+          cachedLayoutFp == fp) {
         cachedPages =
-            await ChapterRepository.decodePagesJson(stored.pagesJson);
+            await ChapterRepository.decodePagesJson(cachedPagesJson);
         if (cachedPages != null && cachedPages.isNotEmpty) {
           AppLog.i(
             'Read',
             'page cache HIT idx=$idx id=$chapterId pages=${cachedPages.length}',
           );
         }
-      } else if (stored.pagesJson != null && stored.pagesJson!.isNotEmpty) {
+      } else if (cachedPagesJson != null && cachedPagesJson.isNotEmpty) {
         AppLog.i(
           'Read',
-          'page cache STALE idx=$idx fp=${stored.layoutFp} want=$fp',
+          'page cache STALE idx=$idx fp=$cachedLayoutFp want=$fp',
         );
       }
     } catch (e) {
@@ -773,18 +769,17 @@ class ReadModel with ChangeNotifier {
     if (idx < 0 || idx >= chapters.length) return false;
     final chapterId = chapters[idx].chapterId;
     try {
-      final content = await _chapters.getBody(chapterId);
-      if (content.isEmpty) return false;
+      final disk = await _chapters.getChapterCache(chapterId);
+      if (disk.body.isEmpty) return false;
       final layout = _paginator.layoutParams();
       final fp = _paginator.layoutFingerprint(
         layoutParams: layout,
-        contentLen: content.length,
-        contentSig: _paginator.contentSignature(content),
+        contentLen: disk.body.length,
+        contentSig: _paginator.contentSignature(disk.body),
       );
-      final stored = await _chapters.getPageLayout(chapterId);
-      return stored.pagesJson != null &&
-          stored.pagesJson!.isNotEmpty &&
-          stored.layoutFp == fp;
+      return disk.pagesJson != null &&
+          disk.pagesJson!.isNotEmpty &&
+          disk.layoutFp == fp;
     } catch (_) {
       return false;
     }
@@ -904,12 +899,6 @@ class ReadModel with ChangeNotifier {
    */
   Future<void> updPage() async {
     widgets.clear();
-    final keys = SpUtil.getKeys();
-    for (final key in keys) {
-      if (key.contains('pages')) {
-        SpUtil.remove(key);
-      }
-    }
     // Drop fingerprinted page layouts that no longer match current metrics.
     try {
       final layout = _paginator.layoutParams();
@@ -999,9 +988,6 @@ class ReadModel with ChangeNotifier {
         ? b.ChapterName
         : name;
 
-    if (!SpUtil.containsKey(id)) {
-      SpUtil.putString(id, '');
-    }
     // Ensure book row first — reader.db FK requires books.id before chapters.
     await _ensureBookRow(b);
     // Persist TOC if missing (first open may not have flushed yet).
@@ -1817,12 +1803,6 @@ class ReadModel with ChangeNotifier {
 
       // wipe chapter cache + page caches
       await _chapters.clearBook(b.Id);
-      final keys = SpUtil.getKeys().toList();
-      for (final key in keys) {
-        if (key.startsWith('${b.Id}pages')) {
-          SpUtil.remove(key);
-        }
-      }
 
       chapters = toc
           .map((c) => LocalChapter(

@@ -90,9 +90,9 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 
 ### Local data
 
-- **sqflite** single-file **`reader.db`** (`lib/data/db/reader_database.dart`): tables `books` + `chapters` (FK cascade, page-layout cache on chapter rows).
-  - Access via `BookRepository` / `ChapterRepository` under `lib/data/repositories/` (`ShelfModel`, `ReadModel`, shelf UI).
-  - Boot (`AppInit`) calls `ReaderDatabase.wipeLegacyDatabases()` — deletes old `books.db` / `chapters.db` (and dead video/voice DBs). **No data migration.** Book sources stay in separate `sources.db` via `SourceDao`.
+- **sqflite** single-file **`reader.db`** (`lib/data/db/reader_database.dart`): tables `books` + `chapters` + `sources` (FK cascade on chapters, page-layout cache on chapter rows).
+  - Access via `BookRepository` / `ChapterRepository` / `SourceRepository` under `lib/data/repositories/` (`ShelfModel`, `ReadModel`, `SourceModel`, shelf UI).
+  - Boot (`AppInit`) calls `ReaderDatabase.wipeLegacyDatabases()` — deletes old `books.db` / `chapters.db` / `sources.db` (and dead video/voice DBs). **No data migration.** Also scrubs legacy SpUtil `*pages*` keys.
 - **SpUtil** is a **local facade** over `shared_preferences` in `lib/common/local_store.dart` (not flustars). Same key strings as before (`auth`, theme, fonts, reading style, remote config). Login: `SpUtil.haveKey("token")` / `"auth"`. Also provides `DateUtil` / `NumUtil` / `DirectoryUtil` used by call sites.
 
 ### Reader pipeline (high level)

@@ -6,16 +6,15 @@ import 'package:sqflite/sqflite.dart';
 
 /// Single SQLite database for the novel reader.
 ///
-/// Single SQLite database for the novel reader (shelf + chapters + page cache).
-///
-/// No forward migration from books.db / chapters.db — those files are deleted
-/// on first launch (see [wipeLegacyDatabases]). Book sources stay in
-/// `sources.db` via [SourceDao] and are intentionally not wiped.
+/// Holds shelf (`books`), chapter cache (`chapters`), and book sources
+/// (`sources`). No forward migration from legacy multi-file DBs — those are
+/// deleted on boot (see [wipeLegacyDatabases]).
 class ReaderDatabase {
   ReaderDatabase._();
   static final ReaderDatabase instance = ReaderDatabase._();
 
-  static const int version = 1;
+  /// Schema version. Bumped when tables change; no upgrade path — wipe+recreate.
+  static const int version = 2;
   static const String fileName = 'reader.db';
 
   Database? _db;
@@ -34,6 +33,7 @@ class ReaderDatabase {
       path,
       version: version,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -41,6 +41,20 @@ class ReaderDatabase {
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    await _createBooks(db);
+    await _createChapters(db);
+    await _createSources(db);
+  }
+
+  /// No data migration — rebuild tables when schema version jumps.
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    await db.execute('DROP TABLE IF EXISTS chapters');
+    await db.execute('DROP TABLE IF EXISTS books');
+    await db.execute('DROP TABLE IF EXISTS sources');
+    await _onCreate(db, newVersion);
+  }
+
+  Future<void> _createBooks(Database db) async {
     await db.execute('''
 CREATE TABLE books (
   id TEXT PRIMARY KEY NOT NULL,
@@ -65,7 +79,9 @@ CREATE TABLE books (
     await db.execute(
       'CREATE INDEX idx_books_sort ON books (sort_time DESC)',
     );
+  }
 
+  Future<void> _createChapters(Database db) async {
     await db.execute('''
 CREATE TABLE chapters (
   id TEXT PRIMARY KEY NOT NULL,
@@ -93,6 +109,29 @@ CREATE TABLE chapters (
     );
   }
 
+  Future<void> _createSources(Database db) async {
+    await db.execute('''
+CREATE TABLE sources (
+  book_source_url TEXT PRIMARY KEY NOT NULL,
+  book_source_name TEXT NOT NULL DEFAULT '',
+  book_source_group TEXT NOT NULL DEFAULT '',
+  book_source_type INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  custom_order INTEGER NOT NULL DEFAULT 0,
+  weight INTEGER NOT NULL DEFAULT 0,
+  search_url TEXT NOT NULL DEFAULT '',
+  explore_url TEXT NOT NULL DEFAULT '',
+  header TEXT NOT NULL DEFAULT '',
+  raw_json TEXT NOT NULL DEFAULT '',
+  last_update_time INTEGER NOT NULL DEFAULT 0,
+  respond_time INTEGER NOT NULL DEFAULT 0,
+  last_check_time INTEGER NOT NULL DEFAULT 0
+)''');
+    await db.execute(
+      'CREATE INDEX idx_sources_order ON sources (custom_order ASC)',
+    );
+  }
+
   Future<void> close() async {
     await _db?.close();
     _db = null;
@@ -100,21 +139,25 @@ CREATE TABLE chapters (
 
   /// Delete legacy multi-file DBs (no data migration).
   ///
-  /// Keeps `sources.db` — still owned by [SourceDao].
+  /// Also drops standalone `sources.db` — sources now live in [fileName].
   static Future<void> wipeLegacyDatabases() async {
     final dir = await getApplicationDocumentsDirectory();
     for (final name in [
       'books.db',
       'chapters.db',
+      'sources.db',
       'movies.db',
       'cord.db',
       'voice.db',
       'books.db-journal',
       'chapters.db-journal',
+      'sources.db-journal',
       'books.db-wal',
       'chapters.db-wal',
+      'sources.db-wal',
       'books.db-shm',
       'chapters.db-shm',
+      'sources.db-shm',
     ]) {
       final f = File(p.join(dir.path, name));
       if (await f.exists()) {

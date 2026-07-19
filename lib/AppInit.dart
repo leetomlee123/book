@@ -93,6 +93,12 @@ class AppInit {
     await SpUtil.getInstance();
     // Single-file reader.db — drop legacy multi-DB files (no migration).
     await ReaderDatabase.wipeLegacyDatabases();
+    // Drop pre-reader.db SpUtil page-layout keys (`*pages*`).
+    for (final key in SpUtil.getKeys().toList()) {
+      if (key.contains('pages')) {
+        SpUtil.remove(key);
+      }
+    }
     locator.registerSingleton(TelAndSmsService());
     final router = FluroRouter();
     Routes.configureRoutes(router);

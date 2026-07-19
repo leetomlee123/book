@@ -137,12 +137,6 @@ class ShelfModel with ChangeNotifier {
 
   /// 退出登录（本地账号，不清除书架）
   Future<void> dropAccountOut() async {
-    final keys = SpUtil.getKeys();
-    for (var key in keys) {
-      if (key.contains("pages")) {
-        // keep reading caches
-      }
-    }
     SpUtil.remove("username");
     SpUtil.remove("auth");
     SpUtil.remove("email");
@@ -158,7 +152,6 @@ class ShelfModel with ChangeNotifier {
   //删除本地记录
   Future<void> delLocalCache(List<String> ids) async {
     for (var i = 0; i < ids.length; i++) {
-      await SpUtil.remove(ids[i]);
       await _books.delete(ids[i]);
     }
   }
@@ -169,7 +162,6 @@ class ShelfModel with ChangeNotifier {
     if (action == "add") {
       shelf.insert(0, book);
       await _books.upsertAll([book]);
-      SpUtil.putString(book.Id, "");
       notifyListeners();
 
       BotToast.showText(text: "已添加到书架");
@@ -181,12 +173,6 @@ class ShelfModel with ChangeNotifier {
         }
       }
       delLocalCache([book.Id]);
-      SpUtil.remove(book.Id);
-      SpUtil.getKeys().forEach((element) {
-        if (element.startsWith("${book.Id}pages")) {
-          SpUtil.remove(element);
-        }
-      });
       BotToast.showText(text: "已移除出书架");
     }
   }

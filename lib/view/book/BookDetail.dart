@@ -489,7 +489,6 @@ class _BookDetailState extends ConsumerState<BookDetail> {
   Widget _buildBottomBar() {
     final model = ref.watch(shelfModelProvider);
     final inShelf = model.inShelf(info.Id);
-    final hasRead = SpUtil.haveKey(book.Id);
 
     return Align(
       alignment: Alignment.bottomCenter,
@@ -518,7 +517,6 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                   : Icons.bookmark_add_outlined,
               label: inShelf ? '移出' : '书架',
               onTap: () {
-                SpUtil.putString(book.Id, '');
                 model.modifyShelf(book);
               },
             ),
@@ -540,23 +538,29 @@ class _BookDetailState extends ConsumerState<BookDetail> {
             Expanded(
               child: SizedBox(
                 height: AppDimens.ctaHeight,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.brand,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                  ),
-                  onPressed: _openRead,
-                  child: Text(
-                    hasRead ? '继续阅读' : '立即阅读',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                child: FutureBuilder<bool>(
+                  future: BookRepository.instance.exists(book.Id),
+                  builder: (context, snap) {
+                    final hasRead = snap.data == true;
+                    return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.brand,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                      ),
+                      onPressed: _openRead,
+                      child: Text(
+                        hasRead ? '继续阅读' : '立即阅读',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

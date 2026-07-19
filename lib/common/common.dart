@@ -13,7 +13,6 @@ class Common {
 
   static String listbookname = "booklist";
   static String toplist = "toplist";
-  static String downloadlist = "downloadlist";
   static String bgIdx = "bgIdx";
   static String turnPageAnima = "turnPageAnima";
 
