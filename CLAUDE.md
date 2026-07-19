@@ -79,7 +79,7 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 | `lib/animation/` | Custom page-turn animations used by the reader |
 | `lib/widgets/` | Reusable UI pieces |
 | `lib/service/` | Cache manager, tel/SMS helper |
-| `lib/model/reader/` | Reader collaborators: `text_paginator.dart`, `reader_painter.dart`, `chapter_content_loader.dart` |
+| `lib/model/reader/` | Reader collaborators: `text_paginator.dart`, `reader_painter.dart`, `chapter_content_loader.dart`, `reading_progress_store.dart`, `page_picture_cache.dart` |
 
 ### Networking
 

@@ -16,6 +16,7 @@ import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
+import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
@@ -34,7 +35,7 @@ import 'package:flutter/services.dart';
 
 class ReadModel with ChangeNotifier {
   NovelPagePainter? pagePainter;
-  Map<String, ui.Picture> pictureCache = {};
+  final PagePictureCache pictureCache = PagePictureCache();
   GlobalKey? canvasKey;
   final ReaderPainter _painter = ReaderPainter();
 
@@ -78,9 +79,6 @@ class ReadModel with ChangeNotifier {
 
   //缓存批量提交大小
   int downloadBatchSize = 100;
-
-  /// Soft cap for in-memory page pictures (disk holds TextPage JSON).
-  static const int _maxPictureCache = 24;
 
   late final ReadingProgressStore _progress = ReadingProgressStore(
     books: _books,
@@ -1343,30 +1341,11 @@ class ReadModel with ChangeNotifier {
   /// Drop in-memory pictures outside the nearby chapter window / hard cap.
   void _prunePictureCache() {
     final b = book;
-    if (b == null || pictureCache.isEmpty) return;
-    final id = b.id.toString();
-    final keepCur = {b.chapterIndex - 1, b.chapterIndex, b.chapterIndex + 1};
-    pictureCache.removeWhere((key, _) {
-      if (!key.startsWith(id)) return true;
-      // key = id + cur + pageIndex (concatenated ints, ambiguous but best-effort)
-      final rest = key.substring(id.length);
-      // Prefer keeping anything that starts with nearby cur as prefix digits.
-      for (final c in keepCur) {
-        if (c < 0) continue;
-        if (rest.startsWith('$c')) return false;
-      }
-      return true;
-    });
-    if (pictureCache.length > _maxPictureCache) {
-      final keys = pictureCache.keys.toList();
-      final drop = keys.length - _maxPictureCache;
-      for (var i = 0; i < drop; i++) {
-        pictureCache.remove(keys[i]);
-      }
-    }
+    if (b == null) return;
+    pictureCache.prune(bookId: b.id, centerChapter: b.chapterIndex);
   }
 
-  bool canTurnNext() {
+    bool canTurnNext() {
     final b = book;
     if (b == null) return false;
     // Last chapter, last page.
