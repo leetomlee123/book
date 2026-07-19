@@ -5,7 +5,7 @@
 # 听书楼 
 [项目地址](https://github.com/leetomlee123/flutter_voice)
 
-# 小书屋
+# 爱看书
 一款网络小说阅读器📕,采用纯flutter编写，支持追书、看书等功能 
 ## 使用技术 
 dart,provider,eventbus,dio等

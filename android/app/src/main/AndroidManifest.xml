@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
-        android:label="即刻追书"
+        android:label="爱看书"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

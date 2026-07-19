@@ -34,7 +34,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget build(BuildContext context) {
     final model = ref.watch(colorModelProvider);
     return MaterialApp(
-      title: '即刻追书',
+      title: '爱看书',
       home: const MainShell(),
       builder: BotToastInit(),
       navigatorObservers: [

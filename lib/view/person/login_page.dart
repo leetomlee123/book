@@ -53,7 +53,7 @@ class _LoginState extends ConsumerState<Login> {
                   backgroundColor: Colors.white,
                 ),
                 SizedBox(height: 10),
-                Center(child: Text('即刻追书')),
+                Center(child: Text('爱看书')),
                 SizedBox(height: 6),
                 Text(
                   '本地账号 · 无需服务器',

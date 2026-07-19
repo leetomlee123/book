@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 rem ============================================================
-rem  即刻追书 - Android arm64-v8a only release APK
+rem  爱看书 - Android arm64-v8a only release APK
 rem  Usage:
 rem    build_arm64.bat
 rem    build_arm64.bat 4.2.3 3
