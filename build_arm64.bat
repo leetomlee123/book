@@ -75,15 +75,31 @@ if errorlevel 1 (
 )
 
 set "OUT_DIR=build\app\outputs\flutter-apk"
+set "SRC_APK=%OUT_DIR%\app-release.apk"
+set "OUT_APK=%OUT_DIR%\ikanshu_%BUILD_NAME%.apk"
+
 echo.
+if not exist "%SRC_APK%" (
+  echo [build_arm64] BUILD OK but APK not found: %SRC_APK%
+  if exist "%OUT_DIR%" dir /b "%OUT_DIR%\*.apk"
+  exit /b 1
+)
+
+rem Rename product to ikanshu_versionName (e.g. ikanshu_1.0.0.apk)
+copy /Y "%SRC_APK%" "%OUT_APK%" >nul
+if errorlevel 1 (
+  echo [build_arm64] failed to write %OUT_APK%
+  exit /b 1
+)
+
 echo [build_arm64] BUILD OK
-echo [build_arm64] Output directory: %CD%\%OUT_DIR%
+echo [build_arm64] Output: %CD%\%OUT_APK%
 if exist "%OUT_DIR%" (
   dir /b "%OUT_DIR%\*.apk"
 )
 echo.
 echo Tip: install with:
-echo   adb install -r %OUT_DIR%\app-release.apk
+echo   adb install -r %OUT_APK%
 echo.
 endlocal
 exit /b 0
