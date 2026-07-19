@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Menu extends ConsumerStatefulWidget {
+  const Menu({super.key});
+
   @override
   ConsumerState<Menu> createState() => _MenuState();
 }
@@ -134,8 +136,8 @@ class _MenuState extends ConsumerState<Menu> {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        child: const ColoredBox(color: Colors.transparent),
         onTap: _dismissMenu,
+        child: const ColoredBox(color: Colors.transparent),
       ),
     );
   }

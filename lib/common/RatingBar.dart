@@ -25,7 +25,7 @@ class _HalfRatingWidget extends StatelessWidget {
   final bool rtlMode;
   final Color? unratedColor;
 
-  _HalfRatingWidget({
+  const _HalfRatingWidget({
     required this.size,
     required this.child,
     required this.enableMask,
@@ -45,10 +45,10 @@ class _HalfRatingWidget extends StatelessWidget {
           FittedBox(
             fit: BoxFit.contain,
             child: _NoRatingWidget(
-              child: child,
               size: size,
               unratedColor: unratedColor,
               enableMask: enableMask,
+              child: child,
             ),
           ),
           FittedBox(
@@ -63,8 +63,8 @@ class _HalfRatingWidget extends StatelessWidget {
         ],
       )
           : FittedBox(
-        child: child,
         fit: BoxFit.contain,
+        child: child,
       ),
     );
   }
@@ -102,7 +102,7 @@ class _NoRatingWidget extends StatelessWidget {
   final bool enableMask;
   final Color? unratedColor;
 
-  _NoRatingWidget({
+  const _NoRatingWidget({
     required this.size,
     required this.child,
     required this.enableMask,
@@ -131,7 +131,7 @@ class _ColorFilter extends StatelessWidget {
   final Widget child;
   final Color color;
 
-  _ColorFilter({
+  const _ColorFilter({
     required this.child,
     required this.color,
   });
@@ -218,7 +218,7 @@ class RatingBarIndicator extends StatefulWidget {
   /// {@macro flutterRatingBar.unratedColor}
   final Color? unratedColor;
 
-  RatingBarIndicator({
+  const RatingBarIndicator({super.key, 
     required this.itemBuilder,
     this.rating = 0.0,
     this.itemCount = 5,
@@ -231,7 +231,7 @@ class RatingBarIndicator extends StatefulWidget {
   });
 
   @override
-  _RatingBarIndicatorState createState() => _RatingBarIndicatorState();
+  State<RatingBarIndicator> createState() => _RatingBarIndicatorState();
 }
 
 class _RatingBarIndicatorState extends State<RatingBarIndicator> {
@@ -277,7 +277,7 @@ class _RatingBarIndicatorState extends State<RatingBarIndicator> {
           if (widget.textDirection == TextDirection.rtl &&
               Directionality.of(context) != TextDirection.rtl) {
             return Transform(
-              transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+              transform: Matrix4.identity()..scaleByDouble(-1.0, 1.0, 1.0, 1.0),
               alignment: Alignment.center,
               transformHitTests: false,
               child: _buildItems(index),
@@ -430,7 +430,7 @@ class RatingBar extends StatefulWidget {
   /// Default = [itemCount]
   final double? maxRating;
 
-  RatingBar({
+  const RatingBar({super.key, 
     this.itemCount = 5,
     this.initialRating = 0.0,
     required this.onRatingUpdate,
@@ -457,7 +457,7 @@ class RatingBar extends StatefulWidget {
   );
 
   @override
-  _RatingBarState createState() => _RatingBarState();
+  State<RatingBar> createState() => _RatingBarState();
 }
 
 class _RatingBarState extends State<RatingBar> {
@@ -467,7 +467,7 @@ class _RatingBarState extends State<RatingBar> {
   double iconRating = 0.0;
   double _minRating = 0, _maxrating = 0;
   bool _isRTL = false;
-  ValueNotifier<bool> _glow = ValueNotifier(false);
+  final ValueNotifier<bool> _glow = ValueNotifier(false);
 
   @override
   void initState() {
@@ -517,9 +517,9 @@ class _RatingBarState extends State<RatingBar> {
     if (index >= _rating) {
       ratingWidget = _NoRatingWidget(
         size: widget.itemSize,
-        child: widget.ratingWidget?.empty ?? widget.itemBuilder!(context, index),
         enableMask: widget.ratingWidget == null,
         unratedColor: widget.unratedColor ?? Colors.grey.shade200,
+        child: widget.ratingWidget?.empty ?? widget.itemBuilder!(context, index),
       );
     } else if (index >= _rating - (widget.allowHalfRating ? 0.5 : 1.0) &&
         index < _rating &&
@@ -527,10 +527,10 @@ class _RatingBarState extends State<RatingBar> {
       if (widget.ratingWidget?.half == null) {
         ratingWidget = _HalfRatingWidget(
           size: widget.itemSize,
-          child: widget.itemBuilder!(context, index),
           enableMask: widget.ratingWidget == null,
           rtlMode: _isRTL,
           unratedColor: widget.unratedColor ?? Colors.grey.shade200,
+          child: widget.itemBuilder!(context, index),
         );
       } else {
         ratingWidget = SizedBox(
@@ -540,7 +540,7 @@ class _RatingBarState extends State<RatingBar> {
             fit: BoxFit.contain,
             child: _isRTL
                 ? Transform(
-              transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+              transform: Matrix4.identity()..scaleByDouble(-1.0, 1.0, 1.0, 1.0),
               alignment: Alignment.center,
               transformHitTests: false,
               child: widget.ratingWidget!.half,
@@ -635,12 +635,12 @@ class _RatingBarState extends State<RatingBar> {
   void _dragOperation(DragUpdateDetails dragDetails, Axis direction) {
     if (!widget.tapOnlyMode) {
       RenderBox box = context.findRenderObject() as RenderBox;
-      var _pos = box.globalToLocal(dragDetails.globalPosition);
+      var pos = box.globalToLocal(dragDetails.globalPosition);
       double i;
       if (direction == Axis.horizontal) {
-        i = _pos.dx / (widget.itemSize + widget.itemPadding.horizontal);
+        i = pos.dx / (widget.itemSize + widget.itemPadding.horizontal);
       } else {
-        i = _pos.dy / (widget.itemSize + widget.itemPadding.vertical);
+        i = pos.dy / (widget.itemSize + widget.itemPadding.vertical);
       }
       var currentRating = widget.allowHalfRating ? i : i.round().toDouble();
       if (currentRating > widget.itemCount) {

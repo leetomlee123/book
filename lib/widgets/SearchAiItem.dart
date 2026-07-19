@@ -7,8 +7,7 @@ class SearchAiItem extends ConsumerWidget {
   final Function function;
 
   const SearchAiItem(
-      {Key? key, required this.height, required this.function})
-      : super(key: key);
+      {super.key, required this.height, required this.function});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,7 +15,6 @@ class SearchAiItem extends ConsumerWidget {
     return Material(
       child: ListView.builder(
           padding: EdgeInsets.zero,
-          cacheExtent: height,
           itemBuilder: (context, index) {
             return ListTile(
               leading: Icon(Icons.search),

@@ -115,28 +115,28 @@ class TextComposition {
                         : const Size(360, 640)))
                 .width -
             (padding?.horizontal ?? 0)) {
-    // [_width2] [_height2] 用于调整判断
+    // [width2] [height2] 用于调整判断
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
     final offset = Offset(columnWidth, 1);
     final size = style?.fontSize ?? 14;
-    final _dx = padding?.left ?? 0;
-    final _dy = padding?.top ?? 0;
-    final _width = columnWidth;
-    final _width2 = _width - size;
-    final _height = this.boxSize.height - (padding?.vertical ?? 0);
-    final _height2 = _height - size * (style?.height ?? 1.0);
+    final originDx = padding?.left ?? 0;
+    final originDy = padding?.top ?? 0;
+    final width = columnWidth;
+    final width2 = width - size;
+    final height = this.boxSize.height - (padding?.vertical ?? 0);
+    final height2 = height - size * (style?.height ?? 1.0);
 
     var lines = <TextLine>[];
     var columnNum = 1;
-    var dx = _dx;
-    var dy = _dy;
+    var dx = originDx;
+    var dy = originDy;
     var startLine = 0;
 
-    /// 下一页 判断分页 依据: `_boxHeight` `_boxHeight2`是否可以容纳下一行
+    /// 下一页 判断分页 依据: height / height2 是否可以容纳下一行
     void newPage([bool shouldJustifyHeight = true, bool lastPage = false]) {
       if (shouldJustifyHeight && this.shouldJustifyHeight) {
         final len = lines.length - startLine;
-        double justify = (_height - dy) / (len - 1);
+        double justify = (height - dy) / (len - 1);
         for (var i = 0; i < len; i++) {
           lines[i + startLine].justifyDy(justify * i);
         }
@@ -145,18 +145,18 @@ class TextComposition {
         this.pages.add(TextPage(lines, dy));
         lines = <TextLine>[];
         columnNum = 1;
-        dx = _dx;
+        dx = originDx;
       } else {
         columnNum++;
         dx += columnWidth + 40;
       }
-      dy = _dy;
+      dy = originDy;
       startLine = lines.length;
     }
 
     /// 新段落
     void newParagraph() {
-      if (dy > _height2) {
+      if (dy > height2) {
         newPage();
       } else {
         dy += paragraph;
@@ -170,10 +170,10 @@ class TextComposition {
         final textCount = tp.getPositionForOffset(offset).offset;
         double? spacing;
         final text = p.substring(0, textCount);
-        if (tp.width > _width2) {
+        if (tp.width > width2) {
           // tp.text = TextSpan(text: text, style: style);
           // tp.layout();
-          spacing = (_width - tp.width) / (textCount + 1);
+          spacing = (width - tp.width) / (textCount + 1);
         }
         // if (tp.width > _width2) {
         //   tp.text = TextSpan(text: text, style: style);
@@ -187,7 +187,7 @@ class TextComposition {
           break;
         } else {
           p = p.substring(textCount);
-          if (dy > _height2) {
+          if (dy > height2) {
             newPage();
           }
         }
@@ -196,13 +196,9 @@ class TextComposition {
     if (lines.isNotEmpty) {
       newPage(false, true);
     }
-    if (this.pages.length == 0) {
+    if (this.pages.isEmpty) {
       this.pages.add(TextPage([], 0));
     }
-    print("_height $_height _height2 $_height2");
-    this.pages.forEach((element) {
-      print(element.height);
-    });
   }
 
   /// 调试模式 输出布局信息
@@ -545,7 +541,7 @@ class TextComposition {
 //     }
 //   }
 class SelfForePainter extends CustomPainter {
-  ui.Image _imageFrame;
+  final ui.Image _imageFrame;
 
   SelfForePainter(this._imageFrame) : super();
 
@@ -574,7 +570,7 @@ class MyPagePainter extends CustomPaint {
   final TextPage page;
 
   MyPagePainter(this.pageIndex, this.readPage, this.style, this.forePainter,
-      [this.debug = false])
+      {super.key, this.debug = false})
       : page = readPage.pages[pageIndex],
         super(foregroundPainter: forePainter);
 }

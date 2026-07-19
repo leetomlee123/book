@@ -20,7 +20,7 @@ import 'package:readmore/readmore.dart';
 class BookDetail extends ConsumerStatefulWidget {
   final BookInfo _bookInfo;
 
-  BookDetail(this._bookInfo);
+  const BookDetail(this._bookInfo, {super.key});
 
   @override
   ConsumerState<BookDetail> createState() => _BookDetailState();

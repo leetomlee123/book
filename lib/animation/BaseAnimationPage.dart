@@ -48,4 +48,4 @@ abstract class BaseAnimationPage {
       AnimationController controller, DragEndDetails details);
 }
 
-enum ANIMATION_TYPE { TYPE_CONFIRM, TYPE_CANCEL, TYPE_FILING }
+enum AnimationType { confirm, cancel, filing }

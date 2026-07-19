@@ -3,6 +3,8 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 
 class ForgetPass extends StatefulWidget {
+  const ForgetPass({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return _ForgetPassState();

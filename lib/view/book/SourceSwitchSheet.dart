@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Bottom sheet: search enabled sources for the current book and switch.
 class SourceSwitchSheet extends ConsumerStatefulWidget {
   final ReadModel readModel;
-  SourceSwitchSheet({required this.readModel});
+  const SourceSwitchSheet({super.key, required this.readModel});
 
   @override
   ConsumerState<SourceSwitchSheet> createState() => _SourceSwitchSheetState();
@@ -124,7 +124,7 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
                       ? Center(child: Text('未找到其它可用书源'))
                       : ListView.separated(
                           itemCount: candidates.length,
-                          separatorBuilder: (_, __) => Divider(height: 1),
+                          separatorBuilder: (_, _) => Divider(height: 1),
                           itemBuilder: (ctx, i) {
                             final c = candidates[i];
                             final current = c.source.bookSourceUrl ==
@@ -150,9 +150,10 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
                                   : () async {
                                       final ok = await widget.readModel
                                           .switchSource(c.source, c.hit);
-                                      if (ok && mounted) {
+                                      if (!context.mounted) return;
+                                      if (ok) {
                                         Navigator.pop(context);
-                                      } else if (!ok) {
+                                      } else {
                                         BotToast.showText(text: '换源失败');
                                       }
                                     },

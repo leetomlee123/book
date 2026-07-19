@@ -70,8 +70,7 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 | `lib/view/book/` | Core UI: shelf, search, detail, reader (`ReadBook`), chapters, sort shelf |
 | `lib/view/newBook/` | Canvas reader: `NovelPagePainter`, `ReaderPageManager` (page-turn modes) |
 | `lib/view/person/` | Account: login, register, me, skin, cache |
-| `lib/view/system/` | Reader chrome: font, menu, battery, ads |
-| `lib/view/video/` | Deprioritized / placeholder (not part of core path) |
+| `lib/view/system/` | Reader chrome: font, menu, battery, log viewer |
 | `lib/model/` | `ChangeNotifier` business logic (shelf, search, reading, theme) |
 | `lib/entity/` | DTOs: `json_annotation` + checked-in `*.g.dart`; chapters also use protobuf (`chapter.pb.dart`) |
 | `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`Http.dart`), SQLite (`DbHelper.dart`), text layout (`text_composition.dart`), interceptors, `Screen`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
@@ -90,7 +89,7 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 
 ### Local data
 
-- **sqflite** via `DbHelper`: separate DB files for chapters, books, movies, records, voice. Bookshelf and chapter cache go through here; `ShelfModel` / `ReadModel` call it.
+- **sqflite** via `DbHelper`: separate DB files for **chapters** and **books** only. Bookshelf and chapter cache go through here; `ShelfModel` / `ReadModel` call it.
 - **SpUtil** is a **local facade** over `shared_preferences` in `lib/common/local_store.dart` (not flustars). Same key strings as before (`auth`, theme, fonts, reading style, remote config). Login: `SpUtil.haveKey("token")` / `"auth"`. Also provides `DateUtil` / `NumUtil` / `DirectoryUtil` used by call sites.
 
 ### Reader pipeline (high level)

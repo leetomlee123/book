@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class WhiteArea extends ConsumerWidget {
   final Widget _widget;
   final double height;
-  WhiteArea(this._widget, this.height);
+  const WhiteArea(this._widget, this.height, {super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,8 +18,8 @@ class WhiteArea extends ConsumerWidget {
       margin: EdgeInsets.symmetric(vertical: 50),
       padding: EdgeInsets.symmetric(horizontal: 30),
       height: height,
-      child: _widget,
       alignment: Alignment.center,
+      child: _widget,
     );
   }
 }

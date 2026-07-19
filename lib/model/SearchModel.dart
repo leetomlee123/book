@@ -3,13 +3,11 @@ import 'package:book/entity/GBook.dart';
 import 'package:book/entity/SearchItem.dart';
 import 'package:book/entity/book_ai.dart';
 import 'package:book/model/SourceModel.dart';
-import 'package:book/route/Routes.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/source/util/book_id.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/common/common.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -46,14 +44,14 @@ class SearchModel with ChangeNotifier {
   /// Concurrent source search pool size.
   static const int poolSize = 5;
 
-  clear1() {
+  void clear1() {
     searchHistory = [];
     page = 1;
     size = 10;
     notifyListeners();
   }
 
-  clear() {
+  void clear() {
     searchHistory = [];
     isBookSearch = false;
     idx = 0;
@@ -70,7 +68,7 @@ class SearchModel with ChangeNotifier {
     temp = "";
   }
 
-  searchAi(var word) async {
+  Future<void> searchAi(Object? word) async {
     // AI suggest removed with backend; keep empty for UI compatibility.
     bksAi.clear();
     notifyListeners();
@@ -83,7 +81,7 @@ class SearchModel with ChangeNotifier {
     return SourceModel().enabledSources();
   }
 
-  getSearchData() async {
+  Future<void> getSearchData() async {
     if (!loading) {
       return;
     }
@@ -218,7 +216,7 @@ class SearchModel with ChangeNotifier {
     notifyListeners();
   }
 
-  deleteHistoryItem(String source) {
+  void deleteHistoryItem(String source) {
     for (var i = 0; i < searchHistory.length; i++) {
       if (source == searchHistory[i]) {
         searchHistory.removeAt(i);
@@ -228,7 +226,7 @@ class SearchModel with ChangeNotifier {
     notifyListeners();
   }
 
-  toggleShowResult() {
+  void toggleShowResult() {
     showResult = !showResult;
     notifyListeners();
   }
@@ -253,7 +251,7 @@ class SearchModel with ChangeNotifier {
     return wds;
   }
 
-  setHistory(String value) {
+  void setHistory(String value) {
     if (value.isEmpty) {
       return;
     }
@@ -269,20 +267,20 @@ class SearchModel with ChangeNotifier {
     SpUtil.putStringList(store_word, searchHistory);
   }
 
-  initHistory() {
+  void initHistory() {
     if (SpUtil.haveKey(store_word)) {
       searchHistory = SpUtil.getStringList(store_word);
     }
     notifyListeners();
   }
 
-  clearHistory() {
+  void clearHistory() {
     SpUtil.remove(store_word);
     searchHistory = [];
     notifyListeners();
   }
 
-  reset() {
+  void reset() {
     if (word.isEmpty) {
       return;
     }
@@ -329,7 +327,7 @@ class SearchModel with ChangeNotifier {
     notifyListeners();
   }
 
-  getHot() {
+  void getHot() {
     showHot = hot;
     notifyListeners();
   }

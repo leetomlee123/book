@@ -8,8 +8,10 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 
 class NoMorePage extends StatefulWidget {
+  const NoMorePage({super.key});
+
   @override
-  _NoMorePageState createState() => _NoMorePageState();
+  State<NoMorePage> createState() => _NoMorePageState();
 }
 
 class _NoMorePageState extends State<NoMorePage> {
@@ -42,7 +44,7 @@ class _NoMorePageState extends State<NoMorePage> {
     );
   }
 
-  getEveryNote() async {
+  Future<void> getEveryNote() async {
     if (_everyPoet != null) {
       return;
     }

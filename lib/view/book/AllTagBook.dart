@@ -9,33 +9,31 @@ class AllTagBook extends ConsumerWidget {
   final String title;
   final List<GBook> bks;
 
-  AllTagBook(this.title, this.bks);
+  const AllTagBook(this.title, this.bks, {super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final data = ref.watch(colorModelProvider);
     Widget img(GBook gbk) {
-      return Container(
-        child: Column(
-          children: <Widget>[
-            GestureDetector(
-              child: PicWidget(
-                gbk.cover,
-              ),
-              onTap: () async {
-                Routes.navigateTo(context, Routes.search, params: {
-                  "type": "book",
-                  "name": gbk.name,
-                });
-              },
+      return Column(
+        children: <Widget>[
+          GestureDetector(
+            child: PicWidget(
+              gbk.cover,
             ),
-            Text(
-              gbk.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            )
-          ],
-        ),
+            onTap: () async {
+              Routes.navigateTo(context, Routes.search, params: {
+                "type": "book",
+                "name": gbk.name,
+              });
+            },
+          ),
+          Text(
+            gbk.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          )
+        ],
       );
     }
 
@@ -55,7 +53,7 @@ class AllTagBook extends ConsumerWidget {
         children: <Widget>[
           GridView(
             shrinkWrap: true,
-            physics: new NeverScrollableScrollPhysics(),
+            physics: NeverScrollableScrollPhysics(),
             padding: EdgeInsets.all(5.0),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,

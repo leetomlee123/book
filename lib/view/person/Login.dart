@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class Login extends ConsumerStatefulWidget {
+  const Login({super.key});
+
   @override
   ConsumerState<Login> createState() => _LoginState();
 }
@@ -16,7 +18,7 @@ class _LoginState extends ConsumerState<Login> {
   String username = '';
   String pwd = "";
 
-  login(BuildContext context) async {
+  Future<void> login(BuildContext context) async {
     FocusScope.of(context).requestFocus(FocusNode());
     final err = LocalAccount.login(name: username, password: pwd);
     if (err != null) {
@@ -39,6 +41,7 @@ class _LoginState extends ConsumerState<Login> {
         ),
         body: SingleChildScrollView(
           child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: <Widget>[
                 SizedBox(
@@ -65,7 +68,7 @@ class _LoginState extends ConsumerState<Login> {
                           EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                       prefixIcon: Icon(Icons.person)),
                   onChanged: (String value) {
-                    this.username = value;
+                    username = value;
                   },
                 ),
                 SizedBox(height: 15),
@@ -78,7 +81,7 @@ class _LoginState extends ConsumerState<Login> {
                     contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                   ),
                   onChanged: (String value) {
-                    this.pwd = value;
+                    pwd = value;
                   },
                 ),
                 SizedBox(height: 30),
@@ -130,7 +133,6 @@ class _LoginState extends ConsumerState<Login> {
                 ),
               ],
             ),
-            padding: EdgeInsets.symmetric(horizontal: 20),
           ),
         ));
   }

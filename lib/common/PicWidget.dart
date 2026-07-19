@@ -10,8 +10,8 @@ class PicWidget extends StatelessWidget {
   final bool roll;
   final double radius;
 
-  PicWidget(
-    this.url, {
+  const PicWidget(
+    this.url, {super.key, 
     this.height = 115,
     this.width = 97,
     this.fit = BoxFit.cover,

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 class AnimationControllerWithListenerNumber extends AnimationController {
   final ObserverList<AnimationStatusListener> statusListeners =
@@ -8,37 +7,25 @@ class AnimationControllerWithListenerNumber extends AnimationController {
 
   /// Creates an animation controller.
   AnimationControllerWithListenerNumber({
-    double? value,
-    Duration? duration,
-    Duration? reverseDuration,
-    String? debugLabel,
-    AnimationBehavior animationBehavior = AnimationBehavior.normal,
-    required TickerProvider vsync,
+    super.value,
+    super.duration,
+    super.reverseDuration,
+    super.debugLabel,
+    super.animationBehavior,
+    required super.vsync,
   }) : super(
-          value: value,
-          duration: duration,
-          reverseDuration: reverseDuration,
-          debugLabel: debugLabel,
           lowerBound: 0.0,
-          upperBound: 1.0,
-          animationBehavior: animationBehavior,
-          vsync: vsync);
+          upperBound: 1.0);
 
   /// Creates an animation controller with no upper or lower bound for its value.
   AnimationControllerWithListenerNumber.unbounded({
-    double value = 0.0,
-    Duration? duration,
-    Duration? reverseDuration,
-    String? debugLabel,
-    required TickerProvider vsync,
-    AnimationBehavior animationBehavior = AnimationBehavior.preserve,
-  }) : super.unbounded(
-          value: value,
-          duration: duration,
-          reverseDuration: reverseDuration,
-          debugLabel: debugLabel,
-          animationBehavior: animationBehavior,
-          vsync: vsync);
+    super.value,
+    super.duration,
+    super.reverseDuration,
+    super.debugLabel,
+    required super.vsync,
+    super.animationBehavior,
+  }) : super.unbounded();
 
   @override
   void addStatusListener(AnimationStatusListener listener) {

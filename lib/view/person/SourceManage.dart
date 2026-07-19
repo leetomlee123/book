@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 书源管理：导入 / 启用 / 删除 / 导出
 class SourceManagePage extends ConsumerStatefulWidget {
+  const SourceManagePage({super.key});
+
   @override
   ConsumerState<SourceManagePage> createState() => _SourceManagePageState();
 }
@@ -62,7 +64,7 @@ class _SourceManagePageState extends ConsumerState<SourceManagePage> {
               ? _empty(context, model)
               : ListView.separated(
                   itemCount: model.sources.length,
-                  separatorBuilder: (_, __) => Divider(height: 1),
+                  separatorBuilder: (_, _) => Divider(height: 1),
                   itemBuilder: (ctx, i) {
                     final s = model.sources[i];
                     return ListTile(

@@ -8,7 +8,7 @@ import 'package:flutter/cupertino.dart';
 class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
 
-  bool inShelf(var id) {
+  bool inShelf(Object? id) {
     return shelf.map((f) => f.Id).toList().contains(id);
   }
 
@@ -39,12 +39,12 @@ class ShelfModel with ChangeNotifier {
   // WeChat Reading–like: cover grid is the product default.
   bool cover = SpUtil.getBool("cover", defValue: true);
   bool sortShelf = false;
-  DbHelper _dbHelper = DbHelper.instance;
+  final DbHelper _dbHelper = DbHelper.instance;
   List<bool> _picks = [];
 
   bool pickAllFlag = false;
 
-  initPicks() {
+  void initPicks() {
     pickAllFlag = false;
     _picks = [];
     for (var i = 0; i < shelf.length; i++) {
@@ -52,7 +52,7 @@ class ShelfModel with ChangeNotifier {
     }
   }
 
-  removePicks() async {
+  Future<void> removePicks() async {
     List<Book> bks = [];
     List<String> ids = [];
     List<bool> pics = [];
@@ -73,7 +73,7 @@ class ShelfModel with ChangeNotifier {
     notifyListeners();
   }
 
-  pickAll() {
+  void pickAll() {
     _picks = [];
     for (var i = 0; i < shelf.length; i++) {
       _picks.add(!pickAllFlag);
@@ -97,7 +97,7 @@ class ShelfModel with ChangeNotifier {
     return _picks[i];
   }
 
-  changePick(int i) {
+  void changePick(int i) {
     _picks[i] = !_picks[i];
     notifyListeners();
   }
@@ -106,20 +106,20 @@ class ShelfModel with ChangeNotifier {
     return _picks.contains(true);
   }
 
-  toggleModel() {
+  void toggleModel() {
     cover = !cover;
     SpUtil.putBool("cover", cover);
     notifyListeners();
   }
 
-  sortShelfModel() {
+  void sortShelfModel() {
     initPicks();
     sortShelf = !sortShelf;
     notifyListeners();
   }
 
   /// Local-only shelf refresh (no cloud).
-  refreshShelf() async {
+  Future<void> refreshShelf() async {
     shelf = await _dbHelper.getBooks();
     notifyListeners();
   }
@@ -183,7 +183,7 @@ class ShelfModel with ChangeNotifier {
       delLocalCache([book.Id]);
       SpUtil.remove(book.Id);
       SpUtil.getKeys().forEach((element) {
-        if (element.startsWith(book.Id + "pages")) {
+        if (element.startsWith("${book.Id}pages")) {
           SpUtil.remove(element);
         }
       });
@@ -192,5 +192,5 @@ class ShelfModel with ChangeNotifier {
   }
 
   /// No-op: token refresh removed with book backend.
-  freshToken() async {}
+  Future<void> freshToken() async {}
 }

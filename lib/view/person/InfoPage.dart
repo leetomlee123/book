@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 /// Local static notices (no network).
 class InfoPage extends StatefulWidget {
+  const InfoPage({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return InfoState();

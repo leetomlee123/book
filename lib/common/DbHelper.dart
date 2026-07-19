@@ -8,19 +8,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 class DbHelper {
-  static DbHelper _dbHelper = DbHelper();
+  static final DbHelper _dbHelper = DbHelper();
   static DbHelper instance = _dbHelper;
   final String _tableName = "chapters";
   final String _tableName1 = "books";
-  final String _tableName2 = "movies";
-  final String _tableName3 = "cord";
-  final String _tableName4 = "voice";
 
   static Database? _db;
   static Database? _db1;
-  static Database? _db2;
-  static Database? _db3;
-  static Database? _db4;
   int version = 5;
 
   Future<Database> get db async {
@@ -38,61 +32,19 @@ class DbHelper {
     return _db1!;
   }
 
-  Future<Database> get db2 async {
-    if (_db2 != null) return _db2!;
-    _db2 = await _initDb2();
-    return _db2!;
-  }
-
-  Future<Database> get db3 async {
-    if (_db3 != null) return _db3!;
-    _db3 = await _initDb3();
-    return _db3!;
-  }
-
-  Future<Database> get db4 async {
-    if (_db4 != null) return _db4!;
-    _db4 = await _initDb4();
-    return _db4!;
-  }
-
-  _initDb1() async {
+  Future<Database> _initDb1() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
-    String path = documentsDirectory.path + "/books.db";
+    String path = "${documentsDirectory.path}/books.db";
     var db = await openDatabase(path,
         version: version, onCreate: _onCreate1, onUpgrade: _onUpgradeBooks);
     return db;
   }
 
-  _initDb2() async {
+  Future<Database> _initDb() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
 
-    String path = documentsDirectory.path + "/movies.db";
-    var db = await openDatabase(path, version: version, onCreate: _onCreate2);
-    return db;
-  }
-
-  _initDb3() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-
-    String path = documentsDirectory.path + "/cord.db";
-    var db = await openDatabase(path, version: version, onCreate: _onCreate3);
-    return db;
-  }
-
-  _initDb4() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-
-    String path = documentsDirectory.path + "/voice.db";
-    var db = await openDatabase(path, version: version, onCreate: _onCreate4);
-    return db;
-  }
-
-  _initDb() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-
-    String path = documentsDirectory.path + "/chapters.db";
+    String path = "${documentsDirectory.path}/chapters.db";
     var db = await openDatabase(path,
         version: version, onCreate: _onCreate, onUpgrade: _onUpgradeChapters);
     return db;
@@ -188,120 +140,6 @@ class DbHelper {
     } catch (_) {
       // column may already exist
     }
-  }
-
-  void _onCreate2(Database db, int version) async {
-    if (!SpUtil.haveKey(_tableName2)) {
-      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName2("
-          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-          "cover TEXT,"
-          "name TEXT,"
-          "cid TEXT,"
-          "mcids TEXT,"
-          "cname TEXT)");
-      SpUtil.putString(_tableName2, "");
-    }
-  }
-
-  void _onCreate3(Database db, int version) async {
-    if (!SpUtil.haveKey(_tableName3)) {
-      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName3("
-          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-          "key TEXT,"
-          "content TEXT)");
-      await db.execute("CREATE INDEX key_idx ON $_tableName3 (key);");
-      SpUtil.putString(_tableName3, "");
-    }
-  }
-
-  void _onCreate4(Database db, int version) async {
-    if (!SpUtil.haveKey(_tableName4)) {
-      await db.execute("CREATE TABLE IF NOT EXISTS $_tableName4("
-          "id INTEGER   PRIMARY KEY AUTOINCREMENT,"
-          "title TEXT,"
-          "cover TEXT,"
-          "author TEXT,"
-          "chapter TEXT,"
-          "position INTEGER,"
-          "idx INTEGER,"
-          "tm INTEGER,"
-          "key TEXT)");
-      await db.execute("CREATE INDEX key_idx ON $_tableName4 (key);");
-      SpUtil.putString(_tableName4, "");
-    }
-  }
-
-  Future<Map<String, int>> getVoiceRecord(String key, int idx) async {
-    var dbClient = await db4;
-    List list = await dbClient.rawQuery(
-        "select * from $_tableName4 where key=? and idx=?", [key, idx]);
-    if (list.isEmpty) {
-      return {'idx': -1, 'position': 1};
-    } else {
-      return {
-        'idx': list[0]['idx'] as int? ?? 0,
-        'position': list[0]['position'] as int? ?? 0
-      };
-    }
-  }
-
-  Future<int> saveVoiceRecord(String key, String cover, String title,
-      String author, int position, int idx, String chapter) async {
-    var dbClient = await db4;
-    var list = await dbClient.rawQuery(
-        "select count(*) as cnt from $_tableName4 where key=?", [key]);
-    int cnt = list[0]['cnt'] as int;
-    if (cnt > 0) {
-      return await dbClient.rawUpdate(
-          "update $_tableName4 set position=? , tm=? ,chapter=? ,idx=? where key=?",
-          [position, DateUtil.getNowDateMs(), chapter, idx, key]);
-    } else {
-      return await dbClient.rawInsert(
-          "insert into $_tableName4(title,key,cover,author,position,idx,tm,chapter) values(?,?,?,?,?,?,?,?)",
-          [
-            title,
-            key,
-            cover,
-            author,
-            position,
-            idx,
-            DateUtil.getNowDateMs(),
-            chapter
-          ]);
-    }
-  }
-
-  Future<void> addCords(String key, List<String> contents) async {
-    var dbClient = await db3;
-    var batch = dbClient.batch();
-    for (String content in contents) {
-      batch.rawInsert("insert into  $_tableName3 (key,content) values(?,?)",
-          [key, content]);
-    }
-    await batch.commit(noResult: true);
-  }
-
-  Future<List<String>> getContents(String key) async {
-    var dbClient = await db3;
-    List<String> contents = [];
-    var list = await dbClient
-        .rawQuery("select content from $_tableName3 where key=?", [key]);
-    for (var i in list) {
-      contents.add(i['content'].toString());
-    }
-    return contents;
-  }
-
-  Future<bool> hasContents(String key) async {
-    var dbClient = await db3;
-    List list = await dbClient
-        .rawQuery("select id from $_tableName3 where key=?", [key]);
-    return list.length > 0;
-  }
-
-  Future<void> delContents(String key) async {
-    var dbClient = await db3;
-    await dbClient.rawDelete("delete from $_tableName3 where key=?", [key]);
   }
 
   Future<void> updBookStatus(String bookId, int s) async {
@@ -411,7 +249,7 @@ class DbHelper {
     for (Book book in bks) {
       // Ignore if book_id already exists (first-open / shelf race).
       batch.insert(
-        "$_tableName1",
+        _tableName1,
         {
           "book_id": book.Id,
           "name": book.Name,
@@ -676,8 +514,4 @@ class DbHelper {
     _db1 = null;
   }
 
-  Future closeMovie() async {
-    await _db2?.close();
-    _db2 = null;
-  }
 }

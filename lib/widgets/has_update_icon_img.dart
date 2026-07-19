@@ -11,7 +11,7 @@ class HasUpdateIconImg extends ConsumerWidget {
   final String type;
   final int idx;
 
-  const HasUpdateIconImg(this.width, this.height, this.type, this.idx);
+  const HasUpdateIconImg(this.width, this.height, this.type, this.idx, {super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

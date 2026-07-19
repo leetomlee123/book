@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 class NovelRoteView extends StatelessWidget {
-  const NovelRoteView({Key? key}) : super(key: key);
+  const NovelRoteView({super.key});
 
   @override
   Widget build(BuildContext context) {

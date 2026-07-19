@@ -17,7 +17,7 @@ class TextLine {
 
   Map<String, dynamic> toJson() => _$TextLineToJson(this);
 
-  justifyDy(double offsetDy) {
+  void justifyDy(double offsetDy) {
     dy += offsetDy;
   }
 }

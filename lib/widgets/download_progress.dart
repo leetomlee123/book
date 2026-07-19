@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 class DownloadProgressUI extends StatefulWidget {
   final dynamic url;
 
-  DownloadProgressUI(this.url, {Key? key}) : super(key: key);
+  const DownloadProgressUI(this.url, {super.key});
 
   @override
-  _DownloadProgressState createState() => _DownloadProgressState();
+  State<DownloadProgressUI> createState() => _DownloadProgressState();
 }
 
 class _DownloadProgressState extends State<DownloadProgressUI> {

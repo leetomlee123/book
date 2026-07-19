@@ -8,6 +8,8 @@ class TextLineHeightPage extends StatelessWidget {
   /// 文本间距
   final double fontSize = 16;
 
+  const TextLineHeightPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

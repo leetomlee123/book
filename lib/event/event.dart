@@ -98,7 +98,7 @@ class BooksEvent {
 }
 
 class ReadRefresh {
-  var em;
+  final Object? em;
 
   ReadRefresh(this.em);
 }

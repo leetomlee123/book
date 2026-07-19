@@ -17,7 +17,7 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 class BooksWidget extends ConsumerStatefulWidget {
   final String type;
 
-  BooksWidget(this.type);
+  const BooksWidget(this.type, {super.key});
 
   @override
   ConsumerState<BooksWidget> createState() => _BooksWidgetState();
@@ -282,7 +282,7 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
         parent: BouncingScrollPhysics(),
       ),
       itemCount: _shelfModel.shelf.length,
-      separatorBuilder: (_, __) => Divider(
+      separatorBuilder: (_, _) => Divider(
         height: 1,
         indent: w + 16,
         color: _dark ? AppColors.dividerDark : AppColors.divider,

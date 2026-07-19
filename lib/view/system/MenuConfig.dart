@@ -9,11 +9,11 @@ class MenuConfig extends StatefulWidget {
   final double min;
   final double max;
 
-  MenuConfig(this.sub, this.add, this.change, this.value, this.title,
-      {this.min = .1, this.max = 4.0});
+  const MenuConfig(this.sub, this.add, this.change, this.value, this.title,
+      {super.key, this.min = .1, this.max = 4.0});
 
   @override
-  _MenuConfigState createState() => _MenuConfigState();
+  State<MenuConfig> createState() => _MenuConfigState();
 }
 
 class _MenuConfigState extends State<MenuConfig> {
@@ -27,7 +27,7 @@ class _MenuConfigState extends State<MenuConfig> {
           icon: Icon(Icons.remove),
         ),
         Expanded(
-          child: Container(
+          child: SizedBox(
             height: 12,
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(

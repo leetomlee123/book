@@ -20,7 +20,7 @@ class Search extends ConsumerStatefulWidget {
   /// When true, hosted inside [MainShell] — no back button, keep state.
   final bool embedded;
 
-  Search(this.type, this.name, {this.embedded = false});
+  const Search(this.type, this.name, {super.key, this.embedded = false});
 
   @override
   ConsumerState<Search> createState() {

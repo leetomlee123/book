@@ -7,7 +7,7 @@ class TextTwo extends ConsumerWidget {
   final int? maxLines;
   final double? fontSize;
 
-  TextTwo(this.text, {this.maxLines, this.fontSize});
+  const TextTwo(this.text, {super.key, this.maxLines, this.fontSize});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

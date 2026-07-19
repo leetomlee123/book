@@ -7,6 +7,8 @@ import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
 class CacheManager extends StatelessWidget {
+  const CacheManager({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,23 +28,24 @@ class CacheManager extends StatelessWidget {
     List<Widget> wds = [];
     if (SpUtil.haveKey(Common.downloadlist)) {
       List<String> ids = SpUtil.getStringList(Common.downloadlist);
-      ids.forEach((f) {
+      for (var f in ids) {
         wds.add(item(f, color));
-      });
+      }
     }
     return wds;
   }
 
-  Widget item(id, Color color) {
-    List list = jsonDecode(SpUtil.getString('${id}chapters'));
+  Widget item(Object? id, Color color) {
+    final key = id?.toString() ?? '';
+    List list = jsonDecode(SpUtil.getString('${key}chapters'));
     List all = list.map((e) => Chapter.fromJson(e)).toList();
-    BookTag bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(id)));
+    BookTag bookTag = BookTag.fromJson(jsonDecode(SpUtil.getString(key)));
     int sub = 0;
-    all.forEach((f) {
+    for (var f in all) {
       if (f.hasContent == 2) {
         sub += 1;
       }
-    });
+    }
     return Card(
       child: Column(
         children: <Widget>[
@@ -50,15 +53,13 @@ class CacheManager extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                child: Container(
-                  child: Slider(
-                    activeColor: Colors.white,
-                    inactiveColor: Colors.white70,
-                    value: sub.toDouble(),
-                    max: all.length.toDouble(),
-                    min: 0.0,
-                    onChanged: (v) {},
-                  ),
+                child: Slider(
+                  activeColor: Colors.white,
+                  inactiveColor: Colors.white70,
+                  value: sub.toDouble(),
+                  max: all.length.toDouble(),
+                  min: 0.0,
+                  onChanged: (v) {},
                 ),
               ),
               IconButton(

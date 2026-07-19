@@ -429,7 +429,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       left = 0;
       right = mTouchToCornerDis / 4;
 
-      shadowGradient = new LinearGradient(
+      shadowGradient = LinearGradient(
         colors: [
           Color(0xAA000000),
           Colors.transparent,
@@ -439,7 +439,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       left = -mTouchToCornerDis / 4;
       right = 0;
 
-      shadowGradient = new LinearGradient(
+      shadowGradient = LinearGradient(
         colors: [
           Colors.transparent,
           Color(0xAA000000),
@@ -573,7 +573,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     canvas.rotate(math.atan2(
         mBezierControl1.dx - mCornerX, mBezierControl2.dy - mCornerY));
 
-    Gradient shadowGradient = new LinearGradient(
+    Gradient shadowGradient = LinearGradient(
       colors: [
         Colors.transparent,
         Color(0xAA000000),

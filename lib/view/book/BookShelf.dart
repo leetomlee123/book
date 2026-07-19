@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 书架（微信读书风格）
 class BookShelf extends ConsumerStatefulWidget {
+  const BookShelf({super.key});
+
   @override
   ConsumerState<BookShelf> createState() => _BookShelfState();
 }

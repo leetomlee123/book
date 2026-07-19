@@ -33,7 +33,7 @@ class Screen {
     return _mediaQuery.padding.bottom;
   }
 
-  static updateStatusBarStyle(SystemUiOverlayStyle style) {
+  static void updateStatusBarStyle(SystemUiOverlayStyle style) {
     SystemChrome.setSystemUIOverlayStyle(style);
   }
 }

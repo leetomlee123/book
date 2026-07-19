@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SortShelf extends ConsumerStatefulWidget {
+  const SortShelf({super.key});
+
   @override
   ConsumerState<SortShelf> createState() => _SortShelfState();
 }
@@ -48,21 +50,13 @@ class _SortShelfState extends ConsumerState<SortShelf> {
           ],
         ),
         body: BooksWidget("sort"),
-        bottomNavigationBar: ButtonBar(
+        bottomNavigationBar: OverflowBar(
           alignment: MainAxisAlignment.spaceAround,
           children: [
             TextButton(
-              child: Container(
-                child: Text(
-                  '删除',
-                  style: TextStyle(
-                      color: shelfModel.hasPick() ? Colors.red : Colors.grey),
-                ),
-                // width: (Screen.width - 10) / 2,
-              ),
               onPressed: shelfModel.hasPick()
                   ? () async {
-                      var _alertDialog = ConfirmDialog(
+                      var alertDialog = ConfirmDialog(
                         "确定要删除所选书籍吗?",
                         () {
                           // 展示 SnackBar
@@ -75,13 +69,18 @@ class _SortShelfState extends ConsumerState<SortShelf> {
                       var isDismiss = await showDialog(
                           context: context,
                           builder: (context) {
-                            return _alertDialog;
+                            return alertDialog;
                           });
-                      if (isDismiss) {
+                      if (isDismiss == true) {
                         shelfModel.removePicks();
                       }
                     }
                   : null,
+              child: Text(
+                '删除',
+                style: TextStyle(
+                    color: shelfModel.hasPick() ? Colors.red : Colors.grey),
+              ),
             ),
           ],
         ));

@@ -33,10 +33,10 @@ class HttpUtil {
 }
 
 // 必须是顶层函数
-_parseAndDecode(String response) {
+dynamic _parseAndDecode(String response) {
   return jsonDecode(response);
 }
 
-parseJson(String text) {
+Future<dynamic> parseJson(String text) {
   return compute(_parseAndDecode, text);
 }

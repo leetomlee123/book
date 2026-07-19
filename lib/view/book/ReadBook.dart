@@ -19,7 +19,7 @@ class ReadBook extends ConsumerStatefulWidget {
   final Book book;
   final bool reading;
 
-  ReadBook(this.book, {this.reading = false});
+  const ReadBook(this.book, {super.key, this.reading = false});
 
   @override
   ConsumerState<ReadBook> createState() => _ReadBookState();
@@ -209,7 +209,9 @@ class _ReadBookState extends ConsumerState<ReadBook>
               await ref
                   .read(shelfModelProvider)
                   .delLocalCache([widget.book.Id]);
-              Navigator.pop(dialogContext);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
             },
             child: Text('取消'),
           ),

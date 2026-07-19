@@ -16,15 +16,8 @@ class Routes {
   static String detail = '/detail';
   static String chapters = '/chapters';
   static String allTagBook = '/allTagBook';
-  static String vDetail = '/vDetail';
-  static String lookVideo = '/lookVideo';
-  static String tagVideo = '/tagVideo';
   static String fontSet = '/fontSet';
   static String sortShelf = '/sortShelf';
-  static String voiceDetail = '/voiceDetail';
-  static String voices = '/voices';
-  static String voiceList = '/voiceList';
-  static String videoTest = '/videoTest';
   static String update = '/update';
   static String sources = '/sources';
   static String logs = '/logs';
@@ -62,7 +55,7 @@ class Routes {
         if (index == 0) {
           query = "?";
         } else {
-          query = query + "\&";
+          query = "$query&";
         }
         query += "$key=$value";
         index++;

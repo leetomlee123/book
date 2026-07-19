@@ -1,14 +1,14 @@
-﻿import 'package:book/common/local_store.dart';
+import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 import 'package:readmore/readmore.dart';
 
 class TextEllipsis extends StatefulWidget {
   final String msg;
 
-  TextEllipsis(this.msg);
+  const TextEllipsis(this.msg, {super.key});
 
   @override
-  _TextEllipsisState createState() => _TextEllipsisState();
+  State<TextEllipsis> createState() => _TextEllipsisState();
 }
 
 class _TextEllipsisState extends State<TextEllipsis> {
@@ -34,7 +34,7 @@ class _TextEllipsisState extends State<TextEllipsis> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 15, vertical: 2),
           child: ReadMoreText(
-            this.widget.msg,
+            widget.msg,
             trimLines: 3,
             colorClickableText: Colors.blue,
             trimMode: TrimMode.Line,

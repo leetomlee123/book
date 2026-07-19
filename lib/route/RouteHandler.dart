@@ -79,8 +79,8 @@ var sortShelfHandler =
 // 示例：传多个model参数
 var readHandler =
     Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
-  Book _bookInfo = Book.fromJson(convert.jsonDecode(params['read']![0]));
-  return ReadBook(_bookInfo);
+  Book bookInfo = Book.fromJson(convert.jsonDecode(params['read']![0]));
+  return ReadBook(bookInfo);
 });
 var chaptersHandler =
     Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
@@ -89,10 +89,10 @@ var chaptersHandler =
 
 var detailHandler =
     Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
-  BookInfo _bookInfo =
+  BookInfo bookInfo =
       BookInfo.fromJson(convert.jsonDecode(params['detail']![0]));
 
-  return BookDetail(_bookInfo);
+  return BookDetail(bookInfo);
 });
 
 var sourcesHandler =

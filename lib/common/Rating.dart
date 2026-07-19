@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class Rating extends StatefulWidget {
@@ -7,26 +6,26 @@ class Rating extends StatefulWidget {
   final double size;
   final Color color;
 
-  Rating(
-      {this.initialRating = 0,
+  const Rating(
+      {super.key, this.initialRating = 0,
       this.onRated,
       this.size = 18.0,
       this.color = Colors.amber});
 
   @override
-  _RatingState createState() => _RatingState();
+  State<Rating> createState() => _RatingState();
 }
 
 class _RatingState extends State<Rating> {
   int _rating = 0;
-  GlobalKey _starOneKey = GlobalKey();
-  GlobalKey _starTwoKey = GlobalKey();
-  GlobalKey _starThreeKey = GlobalKey();
-  GlobalKey _starFourKey = GlobalKey();
-  GlobalKey _starFiveKey = GlobalKey();
+  final GlobalKey _starOneKey = GlobalKey();
+  final GlobalKey _starTwoKey = GlobalKey();
+  final GlobalKey _starThreeKey = GlobalKey();
+  final GlobalKey _starFourKey = GlobalKey();
+  final GlobalKey _starFiveKey = GlobalKey();
   bool _isDragging = false;
 
-  _updateRating(int newRating) {
+  void _updateRating(int newRating) {
     if (_rating == 1 && newRating == 1 && _isDragging != true) {
       setState(() {
         _rating = 0;

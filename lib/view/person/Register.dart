@@ -4,6 +4,8 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 
 class Register extends StatefulWidget {
+  const Register({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return _RegisterState();
@@ -64,7 +66,7 @@ class _RegisterState extends State<Register> {
                     contentPadding: EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
                     prefixIcon: Icon(Icons.person)),
                 onChanged: (String value) {
-                  this.name = value;
+                  name = value;
                 },
               ),
               SizedBox(height: 8.0),

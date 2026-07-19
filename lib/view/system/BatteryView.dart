@@ -1,5 +1,4 @@
 import 'package:book/common/local_store.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class BatteryView extends StatelessWidget {
@@ -7,19 +6,17 @@ class BatteryView extends StatelessWidget {
   final double width;
   final double height;
 
-  BatteryView(
-      {Key? key,
+  const BatteryView(
+      {super.key,
       required this.electricQuantity,
       this.width = 22,
-      this.height = 10})
-      : super(key: key);
+      this.height = 10});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: CustomPaint(
-          size: Size(width, height),
-          painter: BatteryViewPainter(electricQuantity)),
+    return CustomPaint(
+      size: Size(width, height),
+      painter: BatteryViewPainter(electricQuantity),
     );
   }
 }

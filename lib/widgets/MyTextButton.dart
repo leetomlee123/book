@@ -6,8 +6,7 @@ class MyTextButton extends StatelessWidget {
   final Widget child;
   final Size? size;
   const MyTextButton(
-      {Key? key, this.call, required this.child, this.size})
-      : super(key: key);
+      {super.key, this.call, required this.child, this.size});
 
   @override
   Widget build(BuildContext context) {

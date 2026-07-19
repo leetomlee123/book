@@ -397,9 +397,7 @@ class ReaderPageManager {
   }
 
   void setAnimationController(AnimationController controller) {
-    if (controller.duration == null) {
-      controller.duration = const Duration(milliseconds: 280);
-    }
+    controller.duration ??= const Duration(milliseconds: 280);
     animationController = controller;
     if (_needsController) {
       currentAnimationPage.setAnimationController(controller);

@@ -15,7 +15,7 @@ class CoverPageAnimation extends BaseAnimationPage {
   Tween<Offset>? currentAnimationTween;
   Animation<Offset>? currentAnimation;
 
-  ANIMATION_TYPE? animationType;
+  AnimationType? animationType;
 
   void _ensureAnimation(AnimationController controller) {
     if (currentAnimation != null) return;
@@ -39,7 +39,7 @@ class CoverPageAnimation extends BaseAnimationPage {
     _ensureAnimation(controller);
     currentAnimationTween!.begin = Offset(mTouch.dx, 0);
     currentAnimationTween!.end = Offset(mStartPoint.dx, 0);
-    animationType = ANIMATION_TYPE.TYPE_CANCEL;
+    animationType = AnimationType.cancel;
     return currentAnimation;
   }
 
@@ -62,7 +62,7 @@ class CoverPageAnimation extends BaseAnimationPage {
           : currentSize.width + mStartPoint.dx,
       0,
     );
-    animationType = ANIMATION_TYPE.TYPE_CONFIRM;
+    animationType = AnimationType.confirm;
     return currentAnimation;
   }
 

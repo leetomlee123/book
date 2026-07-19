@@ -160,7 +160,7 @@ class ReadModel with ChangeNotifier {
   }
 
   //获取本书记录
-  getBookRecord() async {
+  Future<void> getBookRecord() async {
     try {
       electricQuantity = (await Battery().batteryLevel) / 100;
     } catch (e) {
@@ -426,12 +426,10 @@ class ReadModel with ChangeNotifier {
       }
 
       curPage = await loadChapter(idx);
-      if (curPage == null) {
-        curPage = await _messagePage(
+      curPage ??= await _messagePage(
           '加载失败',
           '当前章节内容为空，请检查书源或点击菜单刷新。',
         );
-      }
 
       // Drop stale page-picture cache for this book so new layout is painted.
       widgets.clear();
@@ -461,7 +459,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  colorModelSwitch() async {
+  Future<void> colorModelSwitch() async {
     await changeBgUI();
     widgets.clear();
 
@@ -471,10 +469,11 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  switchBgColor(i) async {
+  Future<void> switchBgColor(Object? i) async {
     // Legacy texture path.
-    bgPath = i;
-    SpUtil.putString(Common.bgIdx, i);
+    final path = i?.toString() ?? bgPath;
+    bgPath = path;
+    SpUtil.putString(Common.bgIdx, path);
     ReadSetting.setUseSolidPaper(false);
     await colorModelSwitch();
     notifyListeners();
@@ -945,7 +944,7 @@ class ReadModel with ChangeNotifier {
   }
 
   /*菜单控制 */
-  toggleShowMenu() {
+  void toggleShowMenu() {
     showMenu = !showMenu;
     notifyListeners();
   }
@@ -1159,7 +1158,7 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return null;
     if (pageIdx < 0 || pageIdx >= readPage.pages.length) return null;
-    final key = '${b.Id}${chapterIdx}${pageIdx}sc';
+    final key = '${b.Id}$chapterIdx${pageIdx}sc';
     if (widgets.containsKey(key)) return widgets[key];
     final pic = drawScrollContent(readPage, pageIdx);
     return widgets.putIfAbsent(key, () => pic);
@@ -1627,7 +1626,7 @@ class ReadModel with ChangeNotifier {
     return pageRecorder.endRecording();
   }
 
-  clear() async {
+  Future<void> clear() async {
     // Caller must flush progress first (ReadBook.dispose / lifecycle).
     // Cancel only the timer so a late debounce cannot write after clear.
     _progressSaveTimer?.cancel();
@@ -1709,13 +1708,13 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  reSetPages() {
+  void reSetPages() {
     prePage = null;
     curPage = null;
     nextPage = null;
   }
 
-  downloadAll(int start) async {
+  Future<void> downloadAll(int start) async {
     List<LocalChapter> temp = chapters;
     if (temp.isEmpty) {
       await getChapters(init: true);
@@ -1872,7 +1871,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  switchClickNextPage() {
+  void switchClickNextPage() {
     leftClickNext = !leftClickNext;
     SpUtil.putBool("leftClickNext", leftClickNext);
     notifyListeners();
@@ -1888,15 +1887,18 @@ class ReadModel with ChangeNotifier {
     });
   }
 
-  void changeCoverPage(var offsetDifference) {
+  void changeCoverPage(Object? offsetDifference) {
     final b = book;
     if (b == null) return;
+    final dir = (offsetDifference is num)
+        ? offsetDifference.toDouble()
+        : double.tryParse(offsetDifference?.toString() ?? '') ?? 0;
     final beforeCur = b.cur;
     final beforeIdx = b.index;
     int idx = b.index;
 
     int curLen = (curPage?.pageOffsets ?? 0);
-    if (idx == curLen - 1 && offsetDifference > 0) {
+    if (idx == curLen - 1 && dir > 0) {
       _refreshBattery();
       int tempCur = b.cur + 1;
       if (tempCur >= chapters.length) {
@@ -1942,7 +1944,7 @@ class ReadModel with ChangeNotifier {
       });
       return;
     }
-    if (idx == 0 && offsetDifference < 0) {
+    if (idx == 0 && dir < 0) {
       _refreshBattery();
       int tempCur = b.cur - 1;
       if (tempCur < 0) {
@@ -1999,7 +2001,7 @@ class ReadModel with ChangeNotifier {
       });
       return;
     }
-    if (offsetDifference > 0) {
+    if (dir > 0) {
       b.index += 1;
     } else {
       b.index -= 1;
@@ -2067,7 +2069,7 @@ class ReadModel with ChangeNotifier {
     return b.cur > 0;
   }
 
-  changeBgUI() async {
+  Future<void> changeBgUI() async {
     paperTheme = ReadSetting.getPaperTheme();
     // Solid paper mode: no texture image.
     if (ReadSetting.useSolidPaper()) {
