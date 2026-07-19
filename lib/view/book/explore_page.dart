@@ -42,9 +42,21 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
     return Scaffold(
       backgroundColor: dark ? AppColors.scaffoldDark : AppColors.scaffold,
       appBar: AppBar(
-        title: const Text('发现'),
+        title: Text(
+          '发现',
+          style: TextStyle(
+            color: dark ? AppColors.textOnDark : AppColors.textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: dark ? AppColors.scaffoldDark : AppColors.scaffold,
+        foregroundColor: dark ? AppColors.textOnDark : AppColors.textPrimary,
+        iconTheme: IconThemeData(
+          color: dark ? AppColors.textOnDark : AppColors.textPrimary,
+        ),
         actions: [
           IconButton(
             tooltip: '搜索',
@@ -66,13 +78,13 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SourceBar(model: model),
-          if (model.kinds.length > 1) _KindBar(model: model),
+          _SourceBar(model: model, dark: dark),
+          if (model.kinds.length > 1) _KindBar(model: model, dark: dark),
           Divider(
             height: 1,
             color: dark ? AppColors.dividerDark : AppColors.divider,
           ),
-          Expanded(child: _BookList(model: model)),
+          Expanded(child: _BookList(model: model, dark: dark)),
         ],
       ),
     );
@@ -81,13 +93,15 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
 
 class _SourceBar extends StatelessWidget {
   final ExploreModel model;
-  const _SourceBar({required this.model});
+  final bool dark;
+  const _SourceBar({required this.model, required this.dark});
 
   @override
   Widget build(BuildContext context) {
     if (model.exploreSources.isEmpty) {
       return const SizedBox.shrink();
     }
+    final unselected = dark ? AppColors.textOnDark : AppColors.textSecondary;
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -104,9 +118,12 @@ class _SourceBar extends StatelessWidget {
             selected: selected,
             onSelected: (_) => model.selectSource(s),
             selectedColor: AppColors.brandSoft,
+            backgroundColor:
+                dark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3),
+            side: BorderSide.none,
             labelStyle: TextStyle(
               fontSize: 12,
-              color: selected ? AppColors.brand : AppColors.textSecondary,
+              color: selected ? AppColors.brand : unselected,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             ),
             visualDensity: VisualDensity.compact,
@@ -120,10 +137,12 @@ class _SourceBar extends StatelessWidget {
 
 class _KindBar extends StatelessWidget {
   final ExploreModel model;
-  const _KindBar({required this.model});
+  final bool dark;
+  const _KindBar({required this.model, required this.dark});
 
   @override
   Widget build(BuildContext context) {
+    final unselected = dark ? AppColors.textOnDark : AppColors.textSecondary;
     return SizedBox(
       height: 40,
       child: ListView.separated(
@@ -140,10 +159,13 @@ class _KindBar extends StatelessWidget {
             selected: selected,
             onSelected: (_) => model.selectKind(k),
             selectedColor: AppColors.brandSoft,
+            backgroundColor:
+                dark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3),
             checkmarkColor: AppColors.brand,
+            side: BorderSide.none,
             labelStyle: TextStyle(
               fontSize: 12,
-              color: selected ? AppColors.brand : AppColors.textSecondary,
+              color: selected ? AppColors.brand : unselected,
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -156,20 +178,25 @@ class _KindBar extends StatelessWidget {
 
 class _BookList extends StatelessWidget {
   final ExploreModel model;
-  const _BookList({required this.model});
+  final bool dark;
+  const _BookList({required this.model, required this.dark});
 
   @override
   Widget build(BuildContext context) {
+    final primary = dark ? AppColors.textOnDark : AppColors.textPrimary;
+    final secondary = AppColors.textSecondary;
+    final tertiary = AppColors.textTertiary;
+
     if (model.loading && model.books.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CupertinoActivityIndicator(radius: 14),
-            SizedBox(height: 12),
+            const CupertinoActivityIndicator(radius: 14),
+            const SizedBox(height: 12),
             Text(
               '加载发现…',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 13, color: secondary),
             ),
           ],
         ),
@@ -187,9 +214,9 @@ class _BookList extends StatelessWidget {
               child: Text(
                 model.error ?? '暂无内容',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: secondary,
                 ),
               ),
             ),
@@ -228,11 +255,11 @@ class _BookList extends StatelessWidget {
               child: Center(
                 child: model.loading
                     ? const CupertinoActivityIndicator()
-                    : const Text(
+                    : Text(
                         '没有更多了',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textTertiary,
+                          color: tertiary,
                         ),
                       ),
               ),
@@ -244,6 +271,9 @@ class _BookList extends StatelessWidget {
             picW: picW,
             picH: picH,
             rowH: rowH,
+            primary: primary,
+            secondary: secondary,
+            tertiary: tertiary,
             onTap: () async {
               final b = await model.openDetail(item);
               if (b == null || !context.mounted) return;
@@ -265,6 +295,9 @@ class _BookRow extends StatelessWidget {
   final double picW;
   final double picH;
   final double rowH;
+  final Color primary;
+  final Color secondary;
+  final Color tertiary;
   final VoidCallback onTap;
 
   const _BookRow({
@@ -272,6 +305,9 @@ class _BookRow extends StatelessWidget {
     required this.picW,
     required this.picH,
     required this.rowH,
+    required this.primary,
+    required this.secondary,
+    required this.tertiary,
     required this.onTap,
   });
 
@@ -300,27 +336,27 @@ class _BookRow extends StatelessWidget {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: primary,
                       ),
                     ),
                     Text(
                       item.author.isEmpty ? '未知作者' : item.author,
                       maxLines: 1,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: secondary,
                       ),
                     ),
                     Text(
                       item.description.isEmpty ? '暂无简介' : item.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: secondary,
                       ),
                     ),
                     Row(
@@ -349,9 +385,9 @@ class _BookRow extends StatelessWidget {
                             item.latestChapter,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.textTertiary,
+                              color: tertiary,
                             ),
                           ),
                         ),
