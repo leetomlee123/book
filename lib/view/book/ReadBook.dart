@@ -72,7 +72,8 @@ class _ReadBookState extends ConsumerState<ReadBook>
     _refreshSub?.cancel();
     _chaptersSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    saveState();
+    // Flush progress (cancels debounce, snapshots cur/index) before clear().
+    saveState(flush: true);
     readModel.clear();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -80,16 +81,32 @@ class _ReadBookState extends ConsumerState<ReadBook>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    saveState();
+    // Avoid writing on every resumed tick; persist when leaving foreground.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      saveState(flush: true);
+    }
   }
 
-  void saveState() {
+  void saveState({bool flush = false}) {
     final b = readModel.book;
     if (b == null) return;
-    readModel.saveData();
-    if (readModel.sSave == true) {
-      shelfModel.updReadBookProcess(UpdateBookProcess(b.cur, b.index));
-    }
+    final id = b.Id;
+    final cur = b.cur;
+    final idx = b.index;
+    final name = (cur >= 0 && cur < readModel.chapters.length)
+        ? readModel.chapters[cur].chapterName
+        : b.ChapterName;
+    final sSave = readModel.sSave == true;
+    final Future<void> done =
+        flush ? readModel.flushProgressSave() : readModel.saveData();
+    unawaited(done.then((_) {
+      if (!sSave) return;
+      shelfModel.updReadBookProcess(
+        UpdateBookProcess(id, cur, idx, chapterName: name),
+      );
+    }));
   }
 
   bool popWithMenuAndChapterView() {

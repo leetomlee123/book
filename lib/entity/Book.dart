@@ -104,11 +104,12 @@ class Book {
       {this.sourceUrl = '',
       this.bookUrl = '',
       this.originName = '',
-      this.tocUrl = ''})
+      this.tocUrl = '',
+      String readingChapter = ''})
       : ChapterId = '',
-        // Shelf progress label uses ChapterName first; fall back to LastChapter
-        // when reading progress hasn't written ChapterName yet.
-        ChapterName = LastChapter,
+        // Prefer the chapter the user was reading; fall back to newest chapter.
+        ChapterName =
+            readingChapter.isNotEmpty ? readingChapter : LastChapter,
         CId = '',
         LastChapterId = '';
 

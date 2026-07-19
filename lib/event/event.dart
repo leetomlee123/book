@@ -13,9 +13,11 @@ class PageControllerGo {
 }
 
 class UpdateBookProcess {
+  final String bookId;
   final int cur;
   final int index;
-  UpdateBookProcess(this.cur, this.index);
+  final String chapterName;
+  UpdateBookProcess(this.bookId, this.cur, this.index, {this.chapterName = ''});
 }
 
 class DownLoadNotify {

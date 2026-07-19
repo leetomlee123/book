@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:book/common/DbHelper.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
@@ -292,10 +293,26 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
 
   Future<void> readBook(int i) async {
     final b = _shelfModel.shelf[i];
+    // Prefer durable DB progress over possibly-stale in-memory shelf object.
+    Book openBook = b;
+    try {
+      final dbBook = await DbHelper.instance.getBook(b.Id);
+      if (dbBook != null) {
+        openBook = dbBook;
+        // Keep shelf row in sync for labels / next open.
+        b.cur = dbBook.cur;
+        b.index = dbBook.index;
+        b.position = dbBook.position;
+        if (dbBook.ChapterName.isNotEmpty) {
+          b.ChapterName = dbBook.ChapterName;
+        }
+      }
+    } catch (_) {}
+    if (!mounted) return;
     Routes.navigateTo(
       context,
       Routes.read,
-      params: {'read': jsonEncode(b)},
+      params: {'read': jsonEncode(openBook)},
     );
     _shelfModel.sort(i);
   }

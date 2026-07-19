@@ -122,9 +122,11 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     if (index < 0 || index >= data.chapters.length) return;
     Navigator.of(context).pop();
     book.cur = index;
+    book.index = 0;
     // Small delay so drawer/page pop animation doesn't fight repaint.
     await Future<void>.delayed(const Duration(milliseconds: 200));
     await data.initPageContent(index, true);
+    data.scheduleProgressSave(delay: Duration.zero);
   }
 
   Future<void> _showJumpDialog() async {

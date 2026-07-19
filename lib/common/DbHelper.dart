@@ -21,7 +21,7 @@ class DbHelper {
   static Database? _db2;
   static Database? _db3;
   static Database? _db4;
-  int version = 4;
+  int version = 5;
 
   Future<Database> get db async {
     if (_db != null) {
@@ -109,7 +109,11 @@ class DbHelper {
         "url TEXT,"
         "source_url TEXT,"
         "idx INTEGER,"
-        "book_key TEXT)");
+        "book_key TEXT,"
+        "pages_json TEXT,"
+        "layout_fp TEXT,"
+        "pages_cached_at INTEGER,"
+        "content_len INTEGER)");
     await db.execute("CREATE INDEX IF NOT EXISTS book_id_idx ON $_tableName (book_id);");
     await db
         .execute("CREATE INDEX IF NOT EXISTS chapter_id_idx ON $_tableName (chapter_id);");
@@ -125,6 +129,20 @@ class DbHelper {
       await _tryAddColumn(db, _tableName, 'book_key', 'TEXT');
       await db.execute(
           "CREATE INDEX IF NOT EXISTS chapters_url_idx ON $_tableName (url)");
+    }
+    if (oldV < 5) {
+      await _tryAddColumn(db, _tableName, 'pages_json', 'TEXT');
+      await _tryAddColumn(db, _tableName, 'layout_fp', 'TEXT');
+      await _tryAddColumn(db, _tableName, 'pages_cached_at', 'INTEGER');
+      await _tryAddColumn(db, _tableName, 'content_len', 'INTEGER');
+      // Best-effort size backfill for existing bodies (no pages yet).
+      try {
+        await db.execute(
+          "UPDATE $_tableName SET content_len=LENGTH(content) "
+          "WHERE content IS NOT NULL AND content!='' "
+          "AND (content_len IS NULL OR content_len=0)",
+        );
+      } catch (_) {}
     }
   }
 
@@ -146,7 +164,8 @@ class DbHelper {
         "source_url TEXT,"
         "book_url TEXT,"
         "origin_name TEXT,"
-        "toc_url TEXT)");
+        "toc_url TEXT,"
+        "reading_chapter TEXT)");
     SpUtil.putString(_tableName1, "");
   }
 
@@ -156,6 +175,9 @@ class DbHelper {
       await _tryAddColumn(db, _tableName1, 'book_url', 'TEXT');
       await _tryAddColumn(db, _tableName1, 'origin_name', 'TEXT');
       await _tryAddColumn(db, _tableName1, 'toc_url', 'TEXT');
+    }
+    if (oldV < 5) {
+      await _tryAddColumn(db, _tableName1, 'reading_chapter', 'TEXT');
     }
   }
 
@@ -340,6 +362,7 @@ class DbHelper {
       bookUrl: s(i['book_url']),
       originName: s(i['origin_name']),
       tocUrl: s(i['toc_url']),
+      readingChapter: s(i['reading_chapter']),
     );
   }
 
@@ -409,6 +432,7 @@ class DbHelper {
           "book_url": book.bookUrl,
           "origin_name": book.originName,
           "toc_url": book.tocUrl,
+          "reading_chapter": book.ChapterName,
         },
         conflictAlgorithm: ConflictAlgorithm.ignore,
       );
@@ -416,17 +440,20 @@ class DbHelper {
     await batch.commit(noResult: true);
   }
 
-  Future<void> updBookProcess(
-      int cur, int idx, double position, String bookId) async {
+  /// Returns number of rows updated (0 if book row is missing).
+  Future<int> updBookProcess(
+      int cur, int idx, double position, String bookId,
+      {String? readingChapter}) async {
     var dbClient = await db1;
 
-    await dbClient.rawUpdate(
-        "update $_tableName1 set cur=?,idx=?,position=? where book_id=?", [
-      cur,
-      idx,
-      position,
-      bookId,
-    ]);
+    if (readingChapter != null) {
+      return await dbClient.rawUpdate(
+          "update $_tableName1 set cur=?,idx=?,position=?,reading_chapter=? where book_id=?",
+          [cur, idx, position, readingChapter, bookId]);
+    }
+    return await dbClient.rawUpdate(
+        "update $_tableName1 set cur=?,idx=?,position=? where book_id=?",
+        [cur, idx, position, bookId]);
   }
 
   Future<void> addChapters(List<LocalChapter> cps, String bookId,
@@ -505,13 +532,138 @@ class DbHelper {
   Future<void> udpChapter(List<ChapterNode> cpnodes) async {
     var dbClient = await db;
     var batch = dbClient.batch();
-    cpnodes.forEach((cpnode) {
+    for (final cpnode in cpnodes) {
+      // Content rewrite invalidates page layout for this chapter.
       batch.rawUpdate(
-          "update $_tableName set content=?,hasContent=? where chapter_id=?",
-          [cpnode.content, '2', cpnode.id]);
-    });
+          "update $_tableName set content=?,hasContent=?,content_len=?,"
+          "pages_json=NULL,layout_fp=NULL,pages_cached_at=0 "
+          "where chapter_id=?",
+          [cpnode.content, '2', cpnode.content.length, cpnode.id]);
+    }
 
     await batch.commit();
+  }
+
+  /// Read cached pagination JSON + layout fingerprint for [chapterId].
+  Future<({String? pagesJson, String? layoutFp})> getChapterPages(
+      String chapterId) async {
+    var dbClient = await db;
+    final list = await dbClient.rawQuery(
+        "select pages_json,layout_fp from $_tableName where chapter_id=?",
+        [chapterId]);
+    if (list.isEmpty) {
+      return (pagesJson: null, layoutFp: null);
+    }
+    final row = list.first;
+    final pages = row['pages_json'] as String?;
+    final fp = row['layout_fp'] as String?;
+    if (pages == null || pages.isEmpty) {
+      return (pagesJson: null, layoutFp: fp);
+    }
+    return (pagesJson: pages, layoutFp: fp);
+  }
+
+  /// Persist pagination result (body stays in [content]).
+  Future<void> saveChapterPages(
+      String chapterId, String pagesJson, String layoutFp) async {
+    var dbClient = await db;
+    await dbClient.rawUpdate(
+        "update $_tableName set pages_json=?,layout_fp=?,pages_cached_at=? "
+        "where chapter_id=?",
+        [pagesJson, layoutFp, DateUtil.getNowDateMs(), chapterId]);
+  }
+
+  /// Clear page layout for one chapter (e.g. after forced re-fetch).
+  Future<void> clearChapterPages(String chapterId) async {
+    var dbClient = await db;
+    await dbClient.rawUpdate(
+        "update $_tableName set pages_json=NULL,layout_fp=NULL,pages_cached_at=0 "
+        "where chapter_id=?",
+        [chapterId]);
+  }
+
+  /// Drop page caches whose fingerprint differs from [keepLayoutFp]
+  /// (or all page caches when [keepLayoutFp] is null).
+  Future<int> clearStalePageCache({String? keepLayoutFp}) async {
+    var dbClient = await db;
+    if (keepLayoutFp == null || keepLayoutFp.isEmpty) {
+      return await dbClient.rawUpdate(
+          "update $_tableName set pages_json=NULL,layout_fp=NULL,pages_cached_at=0 "
+          "where pages_json IS NOT NULL AND pages_json!=''");
+    }
+    return await dbClient.rawUpdate(
+        "update $_tableName set pages_json=NULL,layout_fp=NULL,pages_cached_at=0 "
+        "where pages_json IS NOT NULL AND pages_json!='' "
+        "AND (layout_fp IS NULL OR layout_fp!=?)",
+        [keepLayoutFp]);
+  }
+
+  /// Approximate total size of stored page JSON.
+  Future<int> pageCacheBytes() async {
+    var dbClient = await db;
+    final list = await dbClient.rawQuery(
+        "select IFNULL(SUM(LENGTH(pages_json)),0) as bytes from $_tableName "
+        "where pages_json IS NOT NULL AND pages_json!=''");
+    if (list.isEmpty) return 0;
+    final v = list.first['bytes'];
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? '') ?? 0;
+  }
+
+  /// Evict oldest page caches until under [maxBytes], keeping a window around
+  /// the active book/chapter. TOC rows and body content are preserved.
+  Future<int> evictPageCache({
+    required int maxBytes,
+    String? protectBookId,
+    int protectCenterIdx = 0,
+    int protectRadius = 30,
+  }) async {
+    final used = await pageCacheBytes();
+    if (used <= maxBytes) return 0;
+
+    var dbClient = await db;
+    final rows = await dbClient.rawQuery(
+        "select chapter_id,book_id,idx,IFNULL(pages_cached_at,0) as ts,"
+        "LENGTH(pages_json) as sz from $_tableName "
+        "where pages_json IS NOT NULL AND pages_json!='' "
+        "order by ts ASC, sz DESC");
+
+    final target = (maxBytes * 0.85).floor();
+    var remaining = used;
+    final toClear = <String>[];
+    final lo = protectCenterIdx - protectRadius;
+    final hi = protectCenterIdx + protectRadius;
+
+    for (final row in rows) {
+      if (remaining <= target) break;
+      final bookId = row['book_id']?.toString() ?? '';
+      final idx = row['idx'] as int? ?? -1;
+      if (protectBookId != null &&
+          protectBookId.isNotEmpty &&
+          bookId == protectBookId &&
+          idx >= lo &&
+          idx <= hi) {
+        continue;
+      }
+      final id = row['chapter_id']?.toString() ?? '';
+      if (id.isEmpty) continue;
+      final sz = row['sz'];
+      final size = sz is int ? sz : (sz is num ? sz.toInt() : 0);
+      toClear.add(id);
+      remaining -= size;
+    }
+
+    if (toClear.isEmpty) return 0;
+    final batch = dbClient.batch();
+    for (final id in toClear) {
+      batch.rawUpdate(
+          "update $_tableName set pages_json=NULL,layout_fp=NULL,pages_cached_at=0 "
+          "where chapter_id=?",
+          [id]);
+    }
+    await batch.commit(noResult: true);
+    return toClear.length;
   }
 
   Future closeChapter() async {

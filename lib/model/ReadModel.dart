@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
+import 'package:book/common/ChapterCache.dart';
 import 'package:book/common/DbHelper.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
@@ -73,6 +75,17 @@ class ReadModel with ChangeNotifier {
   int batchNum = 100;
   bool refresh = true;
 
+  /// Debounced progress persist after page turns.
+  Timer? _progressSaveTimer;
+  static const _progressSaveDebounce = Duration(milliseconds: 800);
+
+  /// Soft cap for in-memory page pictures (disk holds TextPage JSON).
+  static const int _maxPictureCache = 24;
+
+  /// False until [getBookRecord] finishes hydrating progress from DB.
+  /// Prevents lifecycle/dispose from writing route-stale zeros over durable progress.
+  bool _progressReady = false;
+
   //显示上层 设置
   bool showMenu = false;
 
@@ -118,6 +131,9 @@ class ReadModel with ChangeNotifier {
     chaptersLoading = true;
     loadingHint = '正在加载…';
     sSave = true;
+    _progressReady = false;
+    _progressSaveTimer?.cancel();
+    _progressSaveTimer = null;
     widgets.clear();
     prePage = null;
     nextPage = null;
@@ -158,6 +174,32 @@ class ReadModel with ChangeNotifier {
       chaptersLoading = false;
       return;
     }
+
+    // Prefer durable progress from books.db over possibly-stale route JSON.
+    // Snapshot IMMEDIATELY — loading UI must never overwrite these.
+    var savedCur = b.cur;
+    var savedIndex = b.index;
+    try {
+      final dbBook = await DbHelper.instance.getBook(b.Id);
+      if (dbBook != null) {
+        savedCur = dbBook.cur;
+        savedIndex = dbBook.index;
+        b.cur = savedCur;
+        b.index = savedIndex;
+        b.position = dbBook.position;
+        if (dbBook.ChapterName.isNotEmpty) {
+          b.ChapterName = dbBook.ChapterName;
+        }
+        AppLog.i(
+          'Read',
+          'merged db progress cur=$savedCur index=$savedIndex '
+              'name=${b.ChapterName}',
+        );
+      }
+    } catch (e) {
+      AppLog.w('Read', 'merge db progress failed', error: e);
+    }
+
     // Ensure a loading page exists (in case prepareOpen was skipped).
     if (curPage == null || curPage!.chapterName != '加载中') {
       curPage = await _messagePage('加载中', loadingHint);
@@ -166,7 +208,7 @@ class ReadModel with ChangeNotifier {
 
     AppLog.i(
       'Read',
-      'open id=${b.Id} name=${b.Name} cur=${b.cur} index=${b.index} '
+      'open id=${b.Id} name=${b.Name} cur=$savedCur index=$savedIndex '
           'source=${b.originName} sourceUrl=${b.sourceUrl} bookUrl=${b.bookUrl}',
     );
 
@@ -177,14 +219,20 @@ class ReadModel with ChangeNotifier {
         '无法阅读',
         '旧版云端书籍缺少书源信息，请重新搜索添加后再阅读。',
       );
-      b.index = 0;
+      // Restore snapshot; do not mark ready (cannot read / no page turn).
+      b.cur = savedCur < 0 ? 0 : savedCur;
+      b.index = savedIndex < 0 ? 0 : savedIndex;
       loadOk = true;
       chaptersLoading = false;
+      _progressReady = false;
       notifyListeners();
       return;
     }
 
     await _showTextLoading('正在准备书源…');
+    // Loading placeholder must not wipe durable progress.
+    b.cur = savedCur;
+    b.index = savedIndex;
     await _ensureSource();
     if (_activeSource == null) {
       AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
@@ -193,14 +241,18 @@ class ReadModel with ChangeNotifier {
         '书源不可用',
         '未找到书源「${b.originName}」，请在书源管理中导入对应书源，或在阅读菜单中换源。',
       );
-      b.index = 0;
+      b.cur = savedCur < 0 ? 0 : savedCur;
+      b.index = savedIndex < 0 ? 0 : savedIndex;
       loadOk = true;
       chaptersLoading = false;
+      _progressReady = false;
       notifyListeners();
       return;
     }
 
     await _showTextLoading('正在读取本地目录…');
+    b.cur = savedCur;
+    b.index = savedIndex;
     chapters = await DbHelper.instance.getChapters(b.Id);
     AppLog.i('Read', 'local chapters=${chapters.length}');
 
@@ -208,21 +260,23 @@ class ReadModel with ChangeNotifier {
       // refresh toc in background for new chapters
       getChapters();
 
-      if (b.cur < 0 || b.cur >= chapters.length) {
-        AppLog.w('Read', 'clamp cur ${b.cur} -> 0 (len=${chapters.length})');
-        b.cur = 0;
-      }
-      await initPageContent(b.cur, false, showLoading: true);
-
-      if (b.index < 0 || b.index >= (curPage?.pageOffsets ?? 1)) {
+      if (savedCur < 0 || savedCur >= chapters.length) {
         AppLog.w(
           'Read',
-          'clamp index ${b.index} -> 0 (pages=${curPage?.pageOffsets})',
+          'clamp cur $savedCur -> 0 (len=${chapters.length})',
         );
-        b.index = 0;
+        b.cur = 0;
+      } else {
+        b.cur = savedCur;
       }
+      b.index = savedIndex < 0 ? 0 : savedIndex;
+      // Skip loading flash when body + page layout are already cached.
+      final canSkipLoading = await _hasPageCache(b.cur);
+      await initPageContent(b.cur, false, showLoading: !canSkipLoading);
+      _restorePageIndex(savedIndex);
       loadOk = true;
       chaptersLoading = false;
+      _progressReady = true;
       AppLog.i(
         'Read',
         'ready cur=${b.cur} index=${b.index} pages=${curPage?.pageOffsets} '
@@ -231,8 +285,9 @@ class ReadModel with ChangeNotifier {
 
       notifyListeners();
     } else {
-      b.cur = 0;
       await _showTextLoading('正在获取章节目录…');
+      b.cur = savedCur;
+      b.index = savedIndex;
       await getChapters(init: true);
       AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
       if (chapters.isEmpty) {
@@ -241,23 +296,58 @@ class ReadModel with ChangeNotifier {
           '目录为空',
           '未能获取章节目录，请检查书源规则、网络，或尝试换源。',
         );
-        b.index = 0;
+        b.cur = savedCur < 0 ? 0 : savedCur;
+        b.index = savedIndex < 0 ? 0 : savedIndex;
       } else {
+        if (savedCur < 0 || savedCur >= chapters.length) {
+          b.cur = 0;
+        } else {
+          b.cur = savedCur;
+        }
+        b.index = savedIndex < 0 ? 0 : savedIndex;
         await initPageContent(b.cur, false, showLoading: true);
-        b.index = 0;
+        _restorePageIndex(savedIndex);
       }
       loadOk = true;
       chaptersLoading = false;
+      // Allow persist even if toc empty — chapter index is still meaningful.
+      _progressReady = true;
       notifyListeners();
+    }
+  }
+
+  /// Restore in-chapter page index after pagination.
+  /// Prefer last page over page 0 when layout shrank (font/size change).
+  void _restorePageIndex(int savedIndex) {
+    final b = book;
+    if (b == null) return;
+    final pages = curPage?.pageOffsets ?? 0;
+    if (pages <= 0) {
+      // Content not ready — keep saved index so we don't wipe progress.
+      b.index = savedIndex < 0 ? 0 : savedIndex;
+      return;
+    }
+    final maxIdx = pages - 1;
+    if (savedIndex < 0) {
+      b.index = 0;
+    } else if (savedIndex > maxIdx) {
+      AppLog.w(
+        'Read',
+        'clamp index $savedIndex -> $maxIdx (pages=$pages)',
+      );
+      b.index = maxIdx;
+    } else {
+      b.index = savedIndex;
     }
   }
 
   /// Surface a fatal open failure without crashing the reader route.
   Future<void> failOpen(Object error) async {
     curPage = await _messagePage('打开失败', '阅读页初始化异常：$error');
-    book?.index = 0;
+    // Do not zero progress or mark ready — avoid wiping DB on open failure.
     loadOk = true;
     chaptersLoading = false;
+    _progressReady = false;
     notifyListeners();
   }
 
@@ -301,7 +391,8 @@ class ReadModel with ChangeNotifier {
     final page = await _messagePage('加载中', text);
     if (token != _loadingToken) return; // superseded
     curPage = page;
-    book?.index = 0;
+    // Do NOT touch book.index — loading is a 1-page placeholder only.
+    // Mutating index here used to wipe restored progress (DB idx → 0).
     widgets.clear();
     final ro = canvasKey?.currentContext?.findRenderObject();
     ro?.markNeedsPaint();
@@ -315,6 +406,8 @@ class ReadModel with ChangeNotifier {
   }
 
   Future initPageContent(int idx, bool jump, {bool showLoading = true}) async {
+    // Preserve in-chapter page across loading placeholder (jump still resets).
+    final keepIndex = book?.index ?? 0;
     if (showLoading) {
       await _showTextLoading('正在加载…');
     }
@@ -343,6 +436,9 @@ class ReadModel with ChangeNotifier {
 
       if (jump) {
         book?.index = 0;
+      } else {
+        // Re-apply saved page after loading UI; clamp to real page count.
+        _restorePageIndex(keepIndex);
       }
       final ro = canvasKey?.currentContext?.findRenderObject();
       if (ro != null) {
@@ -532,6 +628,7 @@ class ReadModel with ChangeNotifier {
         r.chapterContent = fresh;
         contentSource = 'network';
         var temp = [ChapterNode(r.chapterContent, chapterId)];
+        // udpChapter also clears stale pages_json for this chapter.
         await DbHelper.instance.udpChapter(temp);
         chapters[idx].hasContent = "2";
       } else if (r.chapterContent.isEmpty) {
@@ -552,26 +649,95 @@ class ReadModel with ChangeNotifier {
       SpUtil.remove(legacyKey);
     }
 
-    // Always re-paginate with current layout metrics (Rust / Dart).
+    // Try disk page-layout cache before re-paginating.
+    final layout = _paginator.layoutParams();
+    final contentSig = _paginator.contentSignature(r.chapterContent);
+    final fp = _paginator.layoutFingerprint(
+      layoutParams: layout,
+      contentLen: r.chapterContent.length,
+      contentSig: contentSig,
+    );
+
+    List<TextPage>? cachedPages;
     try {
-      r.pages = await _paginator.paginate(r);
-    } catch (e, st) {
-      AppLog.e('Read', 'parseContentAsync failed idx=$idx',
-          error: e, stackTrace: st);
-      r.pages = const [];
+      final stored = await DbHelper.instance.getChapterPages(chapterId);
+      if (stored.pagesJson != null &&
+          stored.pagesJson!.isNotEmpty &&
+          stored.layoutFp == fp) {
+        final decoded = jsonDecode(stored.pagesJson!);
+        if (decoded is List && decoded.isNotEmpty) {
+          cachedPages = decoded
+              .map((e) => TextPage.fromJson(e as Map<String, dynamic>))
+              .toList();
+          AppLog.i(
+            'Read',
+            'page cache HIT idx=$idx id=$chapterId pages=${cachedPages.length}',
+          );
+        }
+      } else if (stored.pagesJson != null && stored.pagesJson!.isNotEmpty) {
+        AppLog.i(
+          'Read',
+          'page cache STALE idx=$idx fp=${stored.layoutFp} want=$fp',
+        );
+      }
+    } catch (e) {
+      AppLog.w('Read', 'page cache read failed idx=$idx', error: e);
     }
 
-    if (r.pages.isEmpty) {
-      // Ensure something is always drawable (and actually paginated/wrapped).
+    if (cachedPages != null && cachedPages.isNotEmpty) {
+      r.pages = cachedPages;
+    } else {
+      // Always re-paginate with current layout metrics (Rust / Dart).
       try {
         r.pages = await _paginator.paginate(r);
       } catch (e, st) {
-        AppLog.e('Read', 'parseContentAsync retry failed idx=$idx',
+        AppLog.e('Read', 'parseContentAsync failed idx=$idx',
             error: e, stackTrace: st);
+        r.pages = const [];
       }
+
       if (r.pages.isEmpty) {
-        // Last-resort wrap: never dump the whole chapter as a single maxLines:1 line.
-        r.pages = _fallbackPages(r.chapterContent);
+        try {
+          r.pages = await _paginator.paginate(r);
+        } catch (e, st) {
+          AppLog.e('Read', 'parseContentAsync retry failed idx=$idx',
+              error: e, stackTrace: st);
+        }
+        if (r.pages.isEmpty) {
+          r.pages = _fallbackPages(r.chapterContent);
+        }
+      }
+
+      // Persist layout async so UI is not blocked by JSON encode + SQLite.
+      if (r.pages.isNotEmpty &&
+          contentSource != 'fail' &&
+          contentSource != 'network-error-text' &&
+          !r.chapterContent.startsWith('章节内容加载失败')) {
+        final pagesToSave = r.pages;
+        final saveId = chapterId;
+        final saveFp = fp;
+        final bookId = b?.Id;
+        final cur = b?.cur ?? idx;
+        unawaited(() async {
+          try {
+            final json = jsonEncode(pagesToSave.map((p) => p.toJson()).toList());
+            // Skip pathological multi-MB pages for a single chapter.
+            if (json.length > 2 * 1024 * 1024) {
+              AppLog.w(
+                'Read',
+                'skip page cache write idx=$idx size=${json.length}',
+              );
+              return;
+            }
+            await DbHelper.instance.saveChapterPages(saveId, json, saveFp);
+            await ChapterCache.maybeEvict(
+              activeBookId: bookId,
+              activeCur: cur,
+            );
+          } catch (e) {
+            AppLog.w('Read', 'page cache write failed idx=$idx', error: e);
+          }
+        }());
       }
     }
 
@@ -579,6 +745,28 @@ class ReadModel with ChangeNotifier {
     _logPageDiag(idx, r);
 
     return r;
+  }
+
+  /// True when chapter body + fingerprinted page layout are both on disk.
+  Future<bool> _hasPageCache(int idx) async {
+    if (idx < 0 || idx >= chapters.length) return false;
+    final chapterId = chapters[idx].chapterId;
+    try {
+      final content = await DbHelper.instance.getContent(chapterId);
+      if (content.isEmpty) return false;
+      final layout = _paginator.layoutParams();
+      final fp = _paginator.layoutFingerprint(
+        layoutParams: layout,
+        contentLen: content.length,
+        contentSig: _paginator.contentSignature(content),
+      );
+      final stored = await DbHelper.instance.getChapterPages(chapterId);
+      return stored.pagesJson != null &&
+          stored.pagesJson!.isNotEmpty &&
+          stored.layoutFp == fp;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// 打印正文形态：长度 / 换行数 / 最长一行 / 预览。
@@ -701,19 +889,27 @@ class ReadModel with ChangeNotifier {
         SpUtil.remove(key);
       }
     }
+    // Drop fingerprinted page layouts that no longer match current metrics.
+    try {
+      final layout = _paginator.layoutParams();
+      // contentLen/sig don't matter for bulk stale clear — wipe all non-matching.
+      final keepFp = _paginator.layoutFingerprint(
+        layoutParams: layout,
+        contentLen: 0,
+        contentSig: '',
+      );
+      // Clear everything: font metrics changed so no old fp is valid.
+      await DbHelper.instance.clearStalePageCache();
+      AppLog.i('Read', 'cleared page cache on layout change keepHint=$keepFp');
+    } catch (e) {
+      AppLog.w('Read', 'clearStalePageCache failed', error: e);
+    }
     // 保留当前章；重分页后尽量夹紧页码，不强制回第 0 页。
     final b = book;
     final keepIndex = b?.index ?? 0;
     await initPageContent(b?.cur ?? 0, false, showLoading: false);
     if (b != null) {
-      final maxIdx = (curPage?.pageOffsets ?? 1) - 1;
-      if (keepIndex < 0) {
-        b.index = 0;
-      } else if (keepIndex > maxIdx) {
-        b.index = maxIdx < 0 ? 0 : maxIdx;
-      } else {
-        b.index = keepIndex;
-      }
+      _restorePageIndex(keepIndex);
     }
     final ro = canvasKey?.currentContext?.findRenderObject();
     if (ro != null) {
@@ -728,29 +924,104 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Debounced progress save after page turns.
+  void scheduleProgressSave(
+      {Duration delay = _progressSaveDebounce}) {
+    if (sSave != true || book == null || !_progressReady) return;
+    _progressSaveTimer?.cancel();
+    if (delay == Duration.zero) {
+      unawaited(saveData());
+      return;
+    }
+    _progressSaveTimer = Timer(delay, () {
+      unawaited(saveData());
+    });
+  }
+
+  /// Flush any pending debounced save immediately (call on exit / background).
+  Future<void> flushProgressSave() {
+    _progressSaveTimer?.cancel();
+    _progressSaveTimer = null;
+    return saveData();
+  }
+
   /*状态保存 */
-  saveData() async {
+  Future<void> saveData() async {
     if (sSave != true) return;
+    // Skip until open path has merged DB progress + restored page index.
+    // Otherwise lifecycle/dispose can overwrite durable progress with route defaults.
+    if (!_progressReady) {
+      AppLog.i('Read', 'skip progress save (not hydrated yet)');
+      return;
+    }
     final b = book;
     if (b == null) return;
-    if (!SpUtil.containsKey(b.Id)) {
-      SpUtil.putString(b.Id, '');
+    _progressSaveTimer?.cancel();
+    _progressSaveTimer = null;
+
+    // Snapshot before any await so dispose/clear cannot race.
+    final cur = b.cur;
+    final idx = b.index;
+    final pos = b.position;
+    final id = b.Id;
+    final sourceUrl = b.sourceUrl;
+    final tocSnapshot =
+        chapters.isNotEmpty ? List<LocalChapter>.from(chapters) : const <LocalChapter>[];
+    final name = (cur >= 0 && cur < tocSnapshot.length)
+        ? tocSnapshot[cur].chapterName
+        : b.ChapterName;
+    // Avoid wiping a real chapter title with empty/loading placeholder.
+    if (name.isNotEmpty && name != '加载中') {
+      b.ChapterName = name;
+    }
+    final chapterName = (b.ChapterName.isNotEmpty && b.ChapterName != '加载中')
+        ? b.ChapterName
+        : name;
+
+    if (!SpUtil.containsKey(id)) {
+      SpUtil.putString(id, '');
     }
     // Persist TOC if missing (first open may not have flushed yet).
-    if (chapters.isNotEmpty) {
+    if (tocSnapshot.isNotEmpty) {
       try {
-        final len = await DbHelper.instance.getChaptersLen(b.Id);
+        final len = await DbHelper.instance.getChaptersLen(id);
         if (len == 0) {
           await DbHelper.instance
-              .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
-          AppLog.i('Read', 'toc saved on exit count=${chapters.length}');
+              .addChapters(tocSnapshot, id, sourceUrl: sourceUrl);
+          AppLog.i('Read', 'toc saved on exit count=${tocSnapshot.length}');
         }
       } catch (e) {
         AppLog.w('Read', 'toc save on exit failed', error: e);
       }
     }
+    // Ensure row exists, then upsert progress (UPDATE may hit 0 rows on race).
     await _ensureBookRow(b);
-    await DbHelper.instance.updBookProcess(b.cur, b.index, b.position, b.Id);
+    final updated = await DbHelper.instance.updBookProcess(
+      cur,
+      idx,
+      pos,
+      id,
+      readingChapter: chapterName,
+    );
+    if (updated == 0) {
+      // Row missing (first open race) — insert then update.
+      try {
+        await DbHelper.instance.addBooks([b]);
+        await DbHelper.instance.updBookProcess(
+          cur,
+          idx,
+          pos,
+          id,
+          readingChapter: chapterName,
+        );
+      } catch (e) {
+        AppLog.w('Read', 'progress upsert fallback failed', error: e);
+      }
+    }
+    AppLog.i(
+      'Read',
+      'progress save id=$id cur=$cur idx=$idx name=$chapterName rows=$updated',
+    );
   }
 
   /*页面点击事件（兼容旧入口） */
@@ -878,13 +1149,15 @@ class ReadModel with ChangeNotifier {
     final b = book;
     final current = curPage;
     if (b == null || current == null) return null;
-    // Clamp page index so we never index past pages (blank canvas / crash).
+    // Clamp for paint only — never mutate durable progress during draw.
+    // Loading placeholders are 1 page; writing b.index=0 here wiped restores.
     if (current.pages.isEmpty) return null;
-    if (b.index < 0) b.index = 0;
-    if (b.index >= current.pageOffsets) {
-      b.index = current.pageOffsets - 1;
+    var pageIdx = b.index;
+    if (pageIdx < 0) pageIdx = 0;
+    if (pageIdx >= current.pageOffsets) {
+      pageIdx = current.pageOffsets - 1;
     }
-    final key = b.Id.toString() + b.cur.toString() + b.index.toString();
+    final key = b.Id.toString() + b.cur.toString() + pageIdx.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -893,7 +1166,7 @@ class ReadModel with ChangeNotifier {
       // Skip if reader already left this book.
       if (book?.Id == b.Id) preLoadWidget();
     });
-    final pic = drawContent(current, b.index);
+    final pic = drawContent(current, pageIdx);
     return widgets.putIfAbsent(key, () => pic);
   }
 
@@ -1160,6 +1433,11 @@ class ReadModel with ChangeNotifier {
   }
 
   clear() async {
+    // Caller must flush progress first (ReadBook.dispose / lifecycle).
+    // Cancel only the timer so a late debounce cannot write after clear.
+    _progressSaveTimer?.cancel();
+    _progressSaveTimer = null;
+    _progressReady = false;
     _hideTextLoading();
     chapters = [];
     loadOk = false;
@@ -1370,8 +1648,17 @@ class ReadModel with ChangeNotifier {
             .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
         await DbHelper.instance.updBookSource(
             b.sourceUrl, b.bookUrl, b.originName, b.tocUrl, b.Id);
-        await DbHelper.instance
-            .updBookProcess(b.cur, b.index, b.position, b.Id);
+        final readName = (b.cur >= 0 && b.cur < chapters.length)
+            ? chapters[b.cur].chapterName
+            : b.ChapterName;
+        b.ChapterName = readName;
+        await DbHelper.instance.updBookProcess(
+          b.cur,
+          b.index,
+          b.position,
+          b.Id,
+          readingChapter: readName,
+        );
       }
 
       reSetPages();
@@ -1449,6 +1736,8 @@ class ReadModel with ChangeNotifier {
           'dir=$offsetDifference pages=$curLen',
         );
       }
+      _prunePictureCache();
+      scheduleProgressSave();
       Future.delayed(const Duration(milliseconds: 500), () {
         if (book?.Id == b.Id) {
           loadChapter(b.cur + 1).then((value) {
@@ -1483,6 +1772,8 @@ class ReadModel with ChangeNotifier {
           ro?.markNeedsPaint();
           notifyListeners();
           _hideTextLoading();
+          _prunePictureCache();
+          scheduleProgressSave();
           loadChapter(b.cur - 1).then((v) {
             if (book?.Id == b.Id) prePage = v;
           });
@@ -1502,6 +1793,8 @@ class ReadModel with ChangeNotifier {
           'dir=$offsetDifference',
         );
       }
+      _prunePictureCache();
+      scheduleProgressSave();
       Future.delayed(const Duration(milliseconds: 500), () {
         if (book?.Id == b.Id) {
           loadChapter(b.cur - 1).then((value) {
@@ -1526,6 +1819,33 @@ class ReadModel with ChangeNotifier {
     // Within-chapter page change: refresh picture + UI.
     canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
     notifyListeners();
+    scheduleProgressSave();
+  }
+
+  /// Drop in-memory pictures outside the nearby chapter window / hard cap.
+  void _prunePictureCache() {
+    final b = book;
+    if (b == null || widgets.isEmpty) return;
+    final id = b.Id.toString();
+    final keepCur = {b.cur - 1, b.cur, b.cur + 1};
+    widgets.removeWhere((key, _) {
+      if (!key.startsWith(id)) return true;
+      // key = id + cur + pageIndex (concatenated ints, ambiguous but best-effort)
+      final rest = key.substring(id.length);
+      // Prefer keeping anything that starts with nearby cur as prefix digits.
+      for (final c in keepCur) {
+        if (c < 0) continue;
+        if (rest.startsWith('$c')) return false;
+      }
+      return true;
+    });
+    if (widgets.length > _maxPictureCache) {
+      final keys = widgets.keys.toList();
+      final drop = keys.length - _maxPictureCache;
+      for (var i = 0; i < drop; i++) {
+        widgets.remove(keys[i]);
+      }
+    }
   }
 
   bool isCanGoNext() {

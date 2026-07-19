@@ -186,6 +186,7 @@ class _MenuState extends ConsumerState<Menu> {
                 }
                 _readModel.book!.cur -= 1;
                 await _readModel.initPageContent(_readModel.book!.cur, true);
+                _readModel.scheduleProgressSave(delay: Duration.zero);
                 setState(() {});
               }),
               Expanded(
@@ -205,6 +206,8 @@ class _MenuState extends ConsumerState<Menu> {
                         ? null
                         : (newValue) {
                             _readModel.initPageContent(newValue.round(), true);
+                            _readModel.scheduleProgressSave(
+                                delay: Duration.zero);
                           },
                   ),
                 ),
@@ -216,6 +219,7 @@ class _MenuState extends ConsumerState<Menu> {
                 }
                 _readModel.book!.cur += 1;
                 await _readModel.initPageContent(_readModel.book!.cur, true);
+                _readModel.scheduleProgressSave(delay: Duration.zero);
                 setState(() {});
               }),
             ],

@@ -12,20 +12,22 @@ class ShelfModel with ChangeNotifier {
     return shelf.map((f) => f.Id).toList().contains(id);
   }
 
-  updReadBookProcess(UpdateBookProcess up) {
-    // Prefer matching by active book if present in shelf; fallback first.
+  /// Sync in-memory shelf entry only. DB progress is written by ReadModel.saveData.
+  void updReadBookProcess(UpdateBookProcess up) {
     Book? b;
     for (final item in shelf) {
-      // UpdateBookProcess historically only carried cur/index; update first book
-      // that matches progress event target if extended later. For now update head.
-      b = item;
-      break;
+      if (item.Id == up.bookId) {
+        b = item;
+        break;
+      }
     }
-    if (b == null && shelf.isNotEmpty) b = shelf.first;
     if (b == null) return;
     b.cur = up.cur;
     b.index = up.index;
-    DbHelper.instance.updBookProcess(b.cur, b.index, 0, b.Id);
+    if (up.chapterName.isNotEmpty) {
+      b.ChapterName = up.chapterName;
+    }
+    notifyListeners();
   }
 
   Future<void> initShelf() async {
