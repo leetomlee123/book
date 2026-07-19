@@ -23,6 +23,3 @@ class PrefsKeys {
   static const sourceDisclaimerAgreed = 'source_disclaimer_agreed';
 }
 
-/// Backward-compatible alias — prefer [PrefsKeys].
-@Deprecated('Use PrefsKeys')
-typedef Common = PrefsKeys;

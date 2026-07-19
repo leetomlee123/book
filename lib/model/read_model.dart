@@ -20,10 +20,10 @@ import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
+import 'package:book/model/reader/source_switch_service.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
-import 'package:book/source/engine/progress_mapper.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/source/util/book_id.dart';
@@ -114,6 +114,12 @@ class ReadModel with ChangeNotifier {
   int downloadBatchSize = 100;
 
   late final ReadingProgressStore _progress = ReadingProgressStore(
+    books: _books,
+    chapters: _chapters,
+    ensureBookRow: _ensureBookRow,
+  );
+  late final SourceSwitchService _sourceSwitch = SourceSwitchService(
+    engine: _engine,
     books: _books,
     chapters: _chapters,
     ensureBookRow: _ensureBookRow,
@@ -1042,93 +1048,43 @@ class ReadModel with ChangeNotifier {
   Future<bool> switchSource(BookSource source, SearchBook hit) async {
     final b = book;
     if (b == null) return false;
-    final oldName =
-        (b.chapterIndex >= 0 && b.chapterIndex < chapters.length) ? chapters[b.chapterIndex].title : b.readingChapter;
+    final oldName = (b.chapterIndex >= 0 && b.chapterIndex < chapters.length)
+        ? chapters[b.chapterIndex].title
+        : b.readingChapter;
     final oldIndex = b.chapterIndex;
 
-    _showTextLoading('正在换源…');
+    await _showTextLoading('正在换源…');
     try {
-      final info = await _engine.bookInfo(source, hit.bookUrl, seed: hit);
-      final tocUrl = info.tocUrl.isNotEmpty ? info.tocUrl : hit.bookUrl;
-      final toc = await _engine.toc(source, tocUrl);
-      if (toc.isEmpty) {
-        BotToast.showText(text: '目标书源目录为空');
-        return false;
-      }
-      final mapped = ProgressMapper.map(
-        oldName: oldName,
-        oldIndex: oldIndex,
-        newChapters: toc,
+      final result = await _sourceSwitch.switchTo(
+        book: b,
+        source: source,
+        hit: hit,
+        oldChapterName: oldName,
+        oldChapterIndex: oldIndex,
       );
+      if (result == null) return false;
 
-      // Keep stable shelf id; only rebind source urls.
-      b.sourceUrl = source.bookSourceUrl;
-      b.bookUrl = hit.bookUrl;
-      b.originName = source.bookSourceName;
-      b.tocUrl = tocUrl;
-      b.name = info.name.isNotEmpty ? info.name : b.name;
-      b.author = info.author.isNotEmpty ? info.author : b.author;
-      b.coverUrl = info.coverUrl.isNotEmpty ? info.coverUrl : b.coverUrl;
-      b.description =
-          info.description.isNotEmpty ? info.description : b.description;
-      b.latestChapter = toc.last.name;
-      b.chapterIndex = mapped;
-      b.pageIndex = 0;
-      b.scrollOffset = 0;
-      _activeSource = source;
-
-      // wipe chapter cache + page caches
-      await _chapters.clearBook(b.id);
+      _activeSource = result.source;
+      chapters = result.chapters;
       _diskChapterWarm.clear();
-
-      chapters = toc
-          .map((c) => ChapterTocEntry(
-                id: makeChapterId(b.id, c.url),
-                title: c.name,
-                url: c.url,
-                hasBody: false,
-                ord: c.index,
-              ))
-          .toList();
-      // Always keep books/chapters in sync after source switch (FK-safe).
-      await _ensureBookRow(b);
-      await _chapters.replaceToc(chapters, b.id, sourceUrl: b.sourceUrl);
-      await _books.updateSource(
-        bookId: b.id,
-        sourceUrl: b.sourceUrl,
-        bookUrl: b.bookUrl,
-        originName: b.originName,
-        tocUrl: b.tocUrl,
-      );
-      final readName = (b.chapterIndex >= 0 && b.chapterIndex < chapters.length)
-          ? chapters[b.chapterIndex].title
-          : b.readingChapter;
-      b.readingChapter = readName;
-      await _books.saveProgress(
-        bookId: b.id,
-        chapterIndex: b.chapterIndex,
-        pageIndex: b.pageIndex,
-        scrollOffset: b.scrollOffset,
-        readingChapter: readName,
-      );
-
       resetPages();
       pictureCache.clear();
       await openChapterAt(b.chapterIndex, true);
-      final name =
-          (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].title : '';
-      BotToast.showText(text: '已切换至「${source.bookSourceName}」，定位到：$name');
+      final mapped = result.mappedChapterIndex;
+      final name = (mapped >= 0 && mapped < chapters.length)
+          ? chapters[mapped].title
+          : '';
+      BotToast.showText(
+        text: '已切换至「${source.bookSourceName}」，定位到：$name',
+      );
       notifyListeners();
       return true;
-    } catch (e) {
-      BotToast.showText(text: '换源失败：$e');
-      return false;
     } finally {
       _hideTextLoading();
     }
   }
 
-  void toggleTapLeftToAdvance() {
+    void toggleTapLeftToAdvance() {
     tapLeftToAdvance = !tapLeftToAdvance;
     SpUtil.putBool(PrefsKeys.leftClickNext, tapLeftToAdvance);
     notifyListeners();
