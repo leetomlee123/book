@@ -128,7 +128,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
         live.chapterName != '加载中' &&
         live.chapterName != '-1' &&
         cur < model.chapters.length &&
-        live.chapterName == model.chapters[cur].chapterName) {
+        live.chapterName == model.chapters[cur].title) {
       _chapters[cur] = live;
       _log('seeded live cur pages=${live.pages.length}');
     }

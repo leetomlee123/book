@@ -1,6 +1,6 @@
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/entity/LocalChapter.dart';
+import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/store/Store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -94,8 +94,8 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     _centeredOnce = true;
   }
 
-  List<({int index, LocalChapter chapter})> _filtered(
-    List<LocalChapter> chapters,
+  List<({int index, ChapterTocEntry chapter})> _filtered(
+    List<ChapterTocEntry> chapters,
   ) {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) {
@@ -104,9 +104,9 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
           (index: i, chapter: chapters[i]),
       ];
     }
-    final out = <({int index, LocalChapter chapter})>[];
+    final out = <({int index, ChapterTocEntry chapter})>[];
     for (var i = 0; i < chapters.length; i++) {
-      final name = chapters[i].chapterName.toLowerCase();
+      final name = chapters[i].title.toLowerCase();
       final numStr = '${i + 1}';
       if (name.contains(q) || numStr.contains(q)) {
         out.add((index: i, chapter: chapters[i]));
@@ -346,10 +346,10 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
                                   final index = item.index;
                                   final chapter = item.chapter;
                                   final selected = index == cur;
-                                  final cached = chapter.hasContent == '2';
+                                  final cached = chapter.hasBody;
                                   return _ChapterTile(
                                     index: index,
-                                    title: chapter.chapterName,
+                                    title: chapter.title,
                                     selected: selected,
                                     cached: cached,
                                     dark: _dark,

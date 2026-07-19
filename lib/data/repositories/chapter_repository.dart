@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:book/data/db/reader_database.dart';
 import 'package:book/entity/ChapterNode.dart';
-import 'package:book/entity/LocalChapter.dart';
+import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/TextPage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
@@ -16,7 +16,7 @@ class ChapterRepository {
 
   Future<Database> get _database => _db.database;
 
-  Future<List<LocalChapter>> getToc(String bookId) async {
+  Future<List<ChapterTocEntry>> getToc(String bookId) async {
     final db = await _database;
     final rows = await db.query(
       'chapters',
@@ -27,12 +27,12 @@ class ChapterRepository {
     );
     return rows
         .map(
-          (r) => LocalChapter(
-            chapterId: r['id'] as String? ?? '',
-            chapterName: r['title'] as String? ?? '',
+          (r) => ChapterTocEntry(
+            id: r['id'] as String? ?? '',
+            title: r['title'] as String? ?? '',
             url: r['url'] as String? ?? '',
-            hasContent: (r['has_body'] as int? ?? 0) == 1 ? '2' : '0',
-            index: r['ord'] as int? ?? 0,
+            hasBody: (r['has_body'] as int? ?? 0) == 1,
+            ord: r['ord'] as int? ?? 0,
           ),
         )
         .toList();
@@ -51,7 +51,7 @@ class ChapterRepository {
   }
 
   Future<void> replaceToc(
-    List<LocalChapter> chapters,
+    List<ChapterTocEntry> chapters,
     String bookId, {
     String sourceUrl = '',
   }) async {
@@ -62,12 +62,12 @@ class ChapterRepository {
     for (var i = 0; i < chapters.length; i++) {
       final c = chapters[i];
       batch.insert('chapters', {
-        'id': c.chapterId,
+        'id': c.id,
         'book_id': bookId,
-        'title': c.chapterName,
+        'title': c.title,
         'url': c.url,
         'source_url': sourceUrl,
-        'ord': c.index != 0 ? c.index : i,
+        'ord': c.ord != 0 ? c.ord : i,
         'body': '',
         'has_body': 0,
         'content_len': 0,
@@ -80,7 +80,7 @@ class ChapterRepository {
   }
 
   Future<void> appendToc(
-    List<LocalChapter> chapters,
+    List<ChapterTocEntry> chapters,
     String bookId, {
     String sourceUrl = '',
   }) async {
@@ -91,12 +91,12 @@ class ChapterRepository {
       batch.insert(
         'chapters',
         {
-          'id': c.chapterId,
+          'id': c.id,
           'book_id': bookId,
-          'title': c.chapterName,
+          'title': c.title,
           'url': c.url,
           'source_url': sourceUrl,
-          'ord': c.index,
+          'ord': c.ord,
           'body': '',
           'has_body': 0,
           'content_len': 0,

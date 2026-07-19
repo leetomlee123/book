@@ -13,7 +13,7 @@ import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
-import 'package:book/entity/LocalChapter.dart';
+import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/ReadPage.dart';
 import 'package:book/entity/TextLine.dart';
 import 'package:book/entity/TextPage.dart';
@@ -56,7 +56,7 @@ class ReadModel with ChangeNotifier {
   }();
 
   Book? book;
-  List<LocalChapter> chapters = [];
+  List<ChapterTocEntry> chapters = [];
   final BookRepository _books = BookRepository.instance;
   final ChapterRepository _chapters = ChapterRepository.instance;
   final BookSourceEngine _engine = BookSourceEngine();
@@ -491,7 +491,7 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<LocalChapter>?> reqChapters() async {
+  Future<List<ChapterTocEntry>?> reqChapters() async {
     final b = book;
     if (b == null) return null;
     await _ensureSource();
@@ -512,12 +512,12 @@ class ReadModel with ChangeNotifier {
       final list = await _engine.toc(source, tocUrl);
       AppLog.i('Read', 'reqChapters got ${list.length} chapters');
       return list
-          .map((c) => LocalChapter(
-                chapterId: makeChapterId(b.Id, c.url),
-                chapterName: c.name,
+          .map((c) => ChapterTocEntry(
+                id: makeChapterId(b.Id, c.url),
+                title: c.name,
                 url: c.url,
-                hasContent: '0',
-                index: c.index,
+                hasBody: false,
+                ord: c.index,
               ))
           .toList();
     } catch (e, st) {
@@ -532,7 +532,7 @@ class ReadModel with ChangeNotifier {
     if (b == null) return;
     // Capture id so a late network return cannot touch a different/closed book.
     final bookId = b.Id;
-    List<LocalChapter>? list = await reqChapters();
+    List<ChapterTocEntry>? list = await reqChapters();
     if (list == null || list.isEmpty) return;
     // Reader may have been closed (clear() sets book=null) while toc was in flight.
     if (book?.Id != bookId) {
@@ -557,7 +557,7 @@ class ReadModel with ChangeNotifier {
       final fresh = list.where((e) => !existing.contains(e.url)).toList();
       if (fresh.isNotEmpty) {
         for (final c in fresh) {
-          c.index = chapters.length;
+          c.ord = chapters.length;
           chapters.add(c);
         }
         await _chapters.appendToc(fresh, bookId, sourceUrl: b.sourceUrl);
@@ -566,7 +566,7 @@ class ReadModel with ChangeNotifier {
     }
     if (book?.Id != bookId) return;
     if (list.isNotEmpty) {
-      book!.LastChapter = list.last.chapterName;
+      book!.LastChapter = list.last.title;
     }
     notifyListeners();
   }
@@ -604,8 +604,8 @@ class ReadModel with ChangeNotifier {
     }
     var chapter = chapters[idx];
     final r = ReadPage.kong();
-    r.chapterName = chapter.chapterName;
-    String chapterId = chapter.chapterId;
+    r.chapterName = chapter.title;
+    String chapterId = chapter.id;
 
     // Single SQLite round-trip: body + page layout.
     var contentSource = 'empty';
@@ -643,7 +643,7 @@ class ReadModel with ChangeNotifier {
         var temp = [ChapterNode(r.chapterContent, chapterId)];
         // updateBodies also clears stale pages_json for this chapter.
         await _chapters.updateBodies(temp);
-        chapters[idx].hasContent = '2';
+        chapters[idx].hasBody = true;
       } else if (r.chapterContent.isEmpty) {
         r.chapterContent = fresh.isNotEmpty
             ? fresh
@@ -767,7 +767,7 @@ class ReadModel with ChangeNotifier {
   /// True when chapter body + fingerprinted page layout are both on disk.
   Future<bool> _hasPageCache(int idx) async {
     if (idx < 0 || idx >= chapters.length) return false;
-    final chapterId = chapters[idx].chapterId;
+    final chapterId = chapters[idx].id;
     try {
       final disk = await _chapters.getChapterCache(chapterId);
       if (disk.body.isEmpty) return false;
@@ -976,9 +976,9 @@ class ReadModel with ChangeNotifier {
     final id = b.Id;
     final sourceUrl = b.sourceUrl;
     final tocSnapshot =
-        chapters.isNotEmpty ? List<LocalChapter>.from(chapters) : const <LocalChapter>[];
+        chapters.isNotEmpty ? List<ChapterTocEntry>.from(chapters) : const <ChapterTocEntry>[];
     final name = (cur >= 0 && cur < tocSnapshot.length)
-        ? tocSnapshot[cur].chapterName
+        ? tocSnapshot[cur].title
         : b.ChapterName;
     // Avoid wiping a real chapter title with empty/loading placeholder.
     if (name.isNotEmpty && name != '加载中') {
@@ -1127,7 +1127,7 @@ class ReadModel with ChangeNotifier {
     if (b.cur == chapterIdx && b.index == idx) return;
     b.cur = chapterIdx;
     b.index = idx;
-    final name = chapters[chapterIdx].chapterName;
+    final name = chapters[chapterIdx].title;
     if (name.isNotEmpty) b.ChapterName = name;
     // Debounced disk write only — do NOT notifyListeners (scroll UI owns state).
     scheduleProgressSave();
@@ -1670,16 +1670,16 @@ class ReadModel with ChangeNotifier {
 
     var content = "";
     try {
-      content = await getChapterContent(chapter.chapterId, idx: b.cur);
+      content = await getChapterContent(chapter.id, idx: b.cur);
     } catch (e) {
       content = "章节内容加载失败，请检查书源或换源后重试";
     }
 
     _hideTextLoading();
     if (content.isNotEmpty) {
-      var temp = [ChapterNode(content, chapter.chapterId)];
+      var temp = [ChapterNode(content, chapter.id)];
       await _chapters.updateBodies(temp);
-      chapters[b.cur].hasContent = "2";
+      chapters[b.cur].hasBody = true;
 
       curPage = await loadChapter(b.cur);
       notifyListeners();
@@ -1697,20 +1697,20 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> downloadAll(int start) async {
-    List<LocalChapter> temp = chapters;
+    List<ChapterTocEntry> temp = chapters;
     if (temp.isEmpty) {
       await getChapters(init: true);
       temp = chapters;
     }
     List<ChapterNode> cpNodes = [];
     for (var i = start; i < temp.length; i++) {
-      LocalChapter chapter = temp[i];
-      var id = chapter.chapterId;
-      if (chapter.hasContent != "2") {
+      ChapterTocEntry chapter = temp[i];
+      var id = chapter.id;
+      if (chapter.hasBody == false) {
         String content = await getChapterContent(id, idx: i);
         if (content.isNotEmpty) {
           cpNodes.add(ChapterNode(content, id));
-          chapter.hasContent = "2";
+          chapter.hasBody = true;
         }
       }
       if (cpNodes.length % batchNum == 0) {
@@ -1738,7 +1738,7 @@ class ReadModel with ChangeNotifier {
       chapterUrl = chapters[idx].url;
     } else {
       for (final c in chapters) {
-        if (c.chapterId == id) {
+        if (c.id == id) {
           chapterUrl = c.url;
           break;
         }
@@ -1768,7 +1768,7 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return false;
     final oldName =
-        (b.cur >= 0 && b.cur < chapters.length) ? chapters[b.cur].chapterName : b.ChapterName;
+        (b.cur >= 0 && b.cur < chapters.length) ? chapters[b.cur].title : b.ChapterName;
     final oldIndex = b.cur;
 
     _showTextLoading('正在换源…');
@@ -1805,12 +1805,12 @@ class ReadModel with ChangeNotifier {
       await _chapters.clearBook(b.Id);
 
       chapters = toc
-          .map((c) => LocalChapter(
-                chapterId: makeChapterId(b.Id, c.url),
-                chapterName: c.name,
+          .map((c) => ChapterTocEntry(
+                id: makeChapterId(b.Id, c.url),
+                title: c.name,
                 url: c.url,
-                hasContent: '0',
-                index: c.index,
+                hasBody: false,
+                ord: c.index,
               ))
           .toList();
       // Always keep books/chapters in sync after source switch (FK-safe).
@@ -1824,7 +1824,7 @@ class ReadModel with ChangeNotifier {
         tocUrl: b.tocUrl,
       );
       final readName = (b.cur >= 0 && b.cur < chapters.length)
-          ? chapters[b.cur].chapterName
+          ? chapters[b.cur].title
           : b.ChapterName;
       b.ChapterName = readName;
       await _books.saveProgress(
@@ -1839,7 +1839,7 @@ class ReadModel with ChangeNotifier {
       widgets.clear();
       await initPageContent(b.cur, true);
       final name =
-          (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].chapterName : '';
+          (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].title : '';
       BotToast.showText(text: '已切换至「${source.bookSourceName}」，定位到：$name');
       notifyListeners();
       return true;

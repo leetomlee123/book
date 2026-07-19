@@ -161,7 +161,7 @@ class _MenuState extends ConsumerState<Menu> {
     final chapterName = (_readModel.book?.cur != null &&
             _readModel.book!.cur >= 0 &&
             _readModel.book!.cur < _readModel.chapters.length)
-        ? _readModel.chapters[_readModel.book!.cur].chapterName
+        ? _readModel.chapters[_readModel.book!.cur].title
         : '';
 
     return Padding(

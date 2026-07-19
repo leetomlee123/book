@@ -104,7 +104,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
     final cur = b.cur;
     final idx = b.index;
     final name = (cur >= 0 && cur < readModel.chapters.length)
-        ? readModel.chapters[cur].chapterName
+        ? readModel.chapters[cur].title
         : b.ChapterName;
     final sSave = readModel.sSave == true;
     final Future<void> done =
