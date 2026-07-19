@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:book/common/common.dart';
 
 /// Reader font picker: built-in CDN fonts + local TTF/OTF import.
 /// WeChat Reading–style layout (preview card + section lists).
@@ -32,7 +33,7 @@ class _FontSetState extends ConsumerState<FontSet> {
   double _downloadProgress = 0;
   bool _importing = false;
 
-  bool get _dark => SpUtil.getBool('dark');
+  bool get _dark => SpUtil.getBool(PrefsKeys.dark);
   Color get _scaffold => _dark ? AppColors.scaffoldDark : AppColors.scaffold;
   Color get _surface => _dark ? AppColors.surfaceDark : AppColors.surface;
   Color get _primary => _dark ? AppColors.textOnDark : AppColors.textPrimary;

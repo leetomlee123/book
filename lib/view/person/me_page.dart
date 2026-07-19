@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:book/common/common.dart';
 
 /// 「我的」页（微信读书风格）
 class Me extends ConsumerWidget {
@@ -22,7 +23,7 @@ class Me extends ConsumerWidget {
 
   const Me({this.embedded = false, super.key});
 
-  bool get _dark => SpUtil.getBool('dark');
+  bool get _dark => SpUtil.getBool(PrefsKeys.dark);
 
   Color get _scaffold => _dark ? AppColors.scaffoldDark : AppColors.scaffold;
   Color get _surface => _dark ? AppColors.surfaceDark : AppColors.surface;
@@ -144,7 +145,7 @@ class Me extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      '清阅揽胜  ·  ${SpUtil.getString("version", defValue: "")}',
+                      '清阅揽胜  ·  ${SpUtil.getString(PrefsKeys.version, defValue: "")}',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textTertiary,
@@ -387,7 +388,7 @@ class Me extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('清阅揽胜 V${SpUtil.getString("version")}'),
+        title: Text('清阅揽胜 V${SpUtil.getString(PrefsKeys.version)}'),
         content: Text(
           ReadSetting.poet,
           style: const TextStyle(fontSize: 15, height: 2.1),

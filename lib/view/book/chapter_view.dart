@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:book/common/common.dart';
 
 /// Full-screen chapter catalog with search + jump-to-index.
 class ChapterView extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
   bool _searching = false;
   String _query = '';
 
-  bool get _dark => SpUtil.getBool('dark', defValue: false);
+  bool get _dark => SpUtil.getBool(PrefsKeys.dark, defValue: false);
   Color get _scaffold => _dark ? AppColors.scaffoldDark : AppColors.scaffold;
   Color get _surface => _dark ? AppColors.surfaceDark : AppColors.surface;
   Color get _primary => _dark ? AppColors.textOnDark : AppColors.textPrimary;

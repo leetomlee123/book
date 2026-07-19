@@ -4,6 +4,7 @@ import 'package:book/event/event.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:book/common/common.dart';
 
 class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
@@ -37,7 +38,7 @@ class ShelfModel with ChangeNotifier {
 
   BuildContext? context;
   // WeChat Reading–like: cover grid is the product default.
-  bool cover = SpUtil.getBool("cover", defValue: true);
+  bool cover = SpUtil.getBool(PrefsKeys.coverGrid, defValue: true);
   bool sortShelf = false;
   final BookRepository _books = BookRepository.instance;
   List<bool> _picks = [];
@@ -108,7 +109,7 @@ class ShelfModel with ChangeNotifier {
 
   void toggleModel() {
     cover = !cover;
-    SpUtil.putBool("cover", cover);
+    SpUtil.putBool(PrefsKeys.coverGrid, cover);
     notifyListeners();
   }
 
@@ -137,9 +138,9 @@ class ShelfModel with ChangeNotifier {
 
   /// 退出登录（本地账号，不清除书架）
   Future<void> dropAccountOut() async {
-    SpUtil.remove("username");
-    SpUtil.remove("auth");
-    SpUtil.remove("email");
+    SpUtil.remove(PrefsKeys.username);
+    SpUtil.remove(PrefsKeys.auth);
+    SpUtil.remove(PrefsKeys.email);
     BotToast.showText(text: "已退出登录");
     notifyListeners();
   }

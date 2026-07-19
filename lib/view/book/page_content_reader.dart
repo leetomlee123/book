@@ -31,7 +31,7 @@ class PageContentReader extends ConsumerStatefulWidget {
 class _PageContentReaderState extends ConsumerState<PageContentReader>
     with TickerProviderStateMixin {
   late final AnimationControllerWithListenerNumber animationController;
-  NovelPagePainter? mPainter;
+  NovelPagePainter? pagePainter;
   final GlobalKey canvasKey = GlobalKey();
   ReaderPageManager? pageManager;
   int? _boundMode;
@@ -57,8 +57,8 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
     pageManager = ReaderPageManager()..onTurnSettled = _onTurnSettled;
 
     _applyMode(viewModel.currentAnimationMode, viewModel);
-    mPainter = NovelPagePainter(pageManager: pageManager);
-    viewModel.mPainter = mPainter;
+    pagePainter = NovelPagePainter(pageManager: pageManager);
+    viewModel.pagePainter = pagePainter;
   }
 
   void _applyMode(int mode, ReadModel viewModel) {
@@ -158,13 +158,13 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
     if (_phase == _PointerPhase.down && dist > _dragSlop) {
       _phase = _PointerPhase.dragging;
       _log('→ DRAGGING dist=${dist.toStringAsFixed(1)}');
-      mPainter?.setCurrentTouchEvent(
+      pagePainter?.setCurrentTouchEvent(
         TouchEvent(TouchEvent.ACTION_DOWN, _downPos),
       );
     }
 
     if (_phase == _PointerPhase.dragging) {
-      mPainter?.setCurrentTouchEvent(
+      pagePainter?.setCurrentTouchEvent(
         TouchEvent(TouchEvent.ACTION_MOVE, e.localPosition),
       );
       _repaint();
@@ -253,7 +253,7 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
         key: canvasKey,
         isComplex: true,
         size: size,
-        painter: mPainter,
+        painter: pagePainter,
       ),
     );
   }

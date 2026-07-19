@@ -32,8 +32,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class ReadModel with ChangeNotifier {
-  NovelPagePainter? mPainter;
-  Map<String, ui.Picture> widgets = {};
+  NovelPagePainter? pagePainter;
+  Map<String, ui.Picture> pictureCache = {};
   GlobalKey? canvasKey;
   final ReaderPainter _painter = ReaderPainter();
 
@@ -65,7 +65,7 @@ class ReadModel with ChangeNotifier {
   final Map<String, ({String body, String? pagesJson, String? layoutFp})>
       _diskChapterWarm = {};
 
-  bool isDark() => SpUtil.getBool("dark");
+  bool isDark() => SpUtil.getBool(PrefsKeys.dark);
 
   double get electricQuantity => _painter.electricQuantity;
   set electricQuantity(double value) => _painter.electricQuantity = value;
@@ -98,17 +98,17 @@ class ReadModel with ChangeNotifier {
   PaperTheme paperTheme = ReadSetting.getPaperTheme();
 
 //章节翻页标志
-  bool loadOk = false;
+  bool sessionReady = false;
 
   /// True while TOC is being fetched (open book / 重新加载目录).
   /// UI should show text hint, not a spinner.
   bool chaptersLoading = false;
 
-  /// Status text while [loadOk] is false or chapters are refreshing.
+  /// Status text while [sessionReady] is false or chapters are refreshing.
   String loadingHint = '正在加载目录…';
 
   //点击上下页方式
-  bool tapLeftToAdvance = SpUtil.getBool("leftClickNext", defValue: false);
+  bool tapLeftToAdvance = SpUtil.getBool(PrefsKeys.leftClickNext, defValue: false);
 
   //页面上下文
 
@@ -127,10 +127,10 @@ class ReadModel with ChangeNotifier {
     _progressReady = false;
     _progressSaveTimer?.cancel();
     _progressSaveTimer = null;
-    widgets.clear();
+    pictureCache.clear();
     prePage = null;
     nextPage = null;
-    mPainter = null;
+    pagePainter = null;
     canvasKey = null;
     chapters = [];
     book = b;
@@ -143,7 +143,7 @@ class ReadModel with ChangeNotifier {
     ];
     curPage = page;
     b.pageIndex = b.pageIndex < 0 ? 0 : b.pageIndex;
-    loadOk = true;
+    sessionReady = true;
     // Do not notifyListeners here: the upcoming ReadBook build will watch us.
   }
 
@@ -215,7 +215,7 @@ class ReadModel with ChangeNotifier {
       // Restore snapshot; do not mark ready (cannot read / no page turn).
       b.chapterIndex = savedCur < 0 ? 0 : savedCur;
       b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      loadOk = true;
+      sessionReady = true;
       chaptersLoading = false;
       _progressReady = false;
       notifyListeners();
@@ -236,7 +236,7 @@ class ReadModel with ChangeNotifier {
       );
       b.chapterIndex = savedCur < 0 ? 0 : savedCur;
       b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      loadOk = true;
+      sessionReady = true;
       chaptersLoading = false;
       _progressReady = false;
       notifyListeners();
@@ -267,7 +267,7 @@ class ReadModel with ChangeNotifier {
       final canSkipLoading = await _hasPageCache(b.chapterIndex);
       await initPageContent(b.chapterIndex, false, showLoading: !canSkipLoading);
       _restorePageIndex(savedIndex);
-      loadOk = true;
+      sessionReady = true;
       chaptersLoading = false;
       _progressReady = true;
       AppLog.i(
@@ -301,7 +301,7 @@ class ReadModel with ChangeNotifier {
         await initPageContent(b.chapterIndex, false, showLoading: true);
         _restorePageIndex(savedIndex);
       }
-      loadOk = true;
+      sessionReady = true;
       chaptersLoading = false;
       // Allow persist even if toc empty — chapter index is still meaningful.
       _progressReady = true;
@@ -338,7 +338,7 @@ class ReadModel with ChangeNotifier {
   Future<void> failOpen(Object error) async {
     curPage = await _messagePage('打开失败', '阅读页初始化异常：$error');
     // Do not zero progress or mark ready — avoid wiping DB on open failure.
-    loadOk = true;
+    sessionReady = true;
     chaptersLoading = false;
     _progressReady = false;
     notifyListeners();
@@ -386,7 +386,7 @@ class ReadModel with ChangeNotifier {
     curPage = page;
     // Do NOT touch book.index — loading is a 1-page placeholder only.
     // Mutating index here used to wipe restored progress (DB idx → 0).
-    widgets.clear();
+    pictureCache.clear();
     final ro = canvasKey?.currentContext?.findRenderObject();
     ro?.markNeedsPaint();
     notifyListeners();
@@ -423,7 +423,7 @@ class ReadModel with ChangeNotifier {
         );
 
       // Drop stale page-picture cache for this book so new layout is painted.
-      widgets.clear();
+      pictureCache.clear();
 
       loadChapter(idx + 1).then((value) => nextPage = value);
       loadChapter(idx - 1).then((value) => prePage = value);
@@ -452,7 +452,7 @@ class ReadModel with ChangeNotifier {
 
   Future<void> refreshThemePaint() async {
     await changeBgUI();
-    widgets.clear();
+    pictureCache.clear();
 
     final ro = canvasKey?.currentContext?.findRenderObject();
     if (ro != null) {
@@ -475,7 +475,7 @@ class ReadModel with ChangeNotifier {
     paperTheme = theme;
     ReadSetting.setPaperTheme(theme);
     ReadSetting.setUseSolidPaper(true);
-    widgets.clear();
+    pictureCache.clear();
     bgUI = null; // solid fill only
     await refreshThemePaint();
     notifyListeners();
@@ -623,7 +623,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> relayoutPages() async {
-    widgets.clear();
+    pictureCache.clear();
     // Drop fingerprinted page layouts that no longer match current metrics.
     try {
       final layout = _paginator.layoutParams();
@@ -767,7 +767,7 @@ class ReadModel with ChangeNotifier {
   ///
   /// Returns `true` if a page-turn was started (not for menu-only).
   bool tapPageAt(Offset localPos, Size size) {
-    if (mPainter?.pageManager?.isBusy == true) {
+    if (pagePainter?.pageManager?.isBusy == true) {
       return false;
     }
     final wid = size.width;
@@ -790,10 +790,10 @@ class ReadModel with ChangeNotifier {
 
   /// Returns true if a turn was started.
   bool turnByDirection(int f, Offset detail) {
-    if (mPainter?.pageManager?.isBusy == true) {
+    if (pagePainter?.pageManager?.isBusy == true) {
       return false;
     }
-    final mgr = mPainter?.pageManager;
+    final mgr = pagePainter?.pageManager;
     if (mgr != null) {
       return mgr.triggerTapTurn(f);
     }
@@ -808,7 +808,7 @@ class ReadModel with ChangeNotifier {
       currentAnimationMode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
 
   /// True after [hydrateReadingSession] finished hydrating and current chapter is ready.
-  /// Scroll surface must wait for this — [loadOk] alone is true during prepareOpen.
+  /// Scroll surface must wait for this — [sessionReady] alone is true during prepareOpen.
   bool get contentReady =>
       _progressReady &&
       book != null &&
@@ -825,7 +825,7 @@ class ReadModel with ChangeNotifier {
     currentAnimationMode = m;
     ReadSetting.setPageTurnMode(m);
     // Drop pictures so chrome / no-chrome caches do not mix.
-    widgets.clear();
+    pictureCache.clear();
     notifyListeners();
   }
 
@@ -866,9 +866,9 @@ class ReadModel with ChangeNotifier {
     if (b == null) return null;
     if (pageIdx < 0 || pageIdx >= readPage.pages.length) return null;
     final key = '${b.id}$chapterIdx${pageIdx}sc';
-    if (widgets.containsKey(key)) return widgets[key];
+    if (pictureCache.containsKey(key)) return pictureCache[key];
     final pic = drawScrollContent(readPage, pageIdx);
-    return widgets.putIfAbsent(key, () => pic);
+    return pictureCache.putIfAbsent(key, () => pic);
   }
 
   /// Natural height of a scroll tile (content only + tiny pad).
@@ -904,12 +904,12 @@ class ReadModel with ChangeNotifier {
     if (b == null) return null;
     var key = b.id.toString() + b.chapterIndex.toString() + b.pageIndex.toString();
 
-    if (widgets.containsKey(key)) {
-      return widgets[key];
+    if (pictureCache.containsKey(key)) {
+      return pictureCache[key];
     }
     var widget = cur();
     if (widget != null) {
-      widgets.putIfAbsent(key, () => widget);
+      pictureCache.putIfAbsent(key, () => widget);
     }
     if (firstInit) {
       Future.delayed(Duration(milliseconds: 200), () => preloadNeighborPictures());
@@ -937,8 +937,8 @@ class ReadModel with ChangeNotifier {
     final i = b.pageIndex - 1;
     final key = b.id.toString() + b.chapterIndex.toString() + i.toString();
 
-    if (widgets.containsKey(key)) {
-      return widgets[key];
+    if (pictureCache.containsKey(key)) {
+      return pictureCache[key];
     }
 
     final ui.Picture pic;
@@ -949,7 +949,7 @@ class ReadModel with ChangeNotifier {
     } else {
       pic = drawContent(current, i);
     }
-    return widgets.putIfAbsent(key, () => pic);
+    return pictureCache.putIfAbsent(key, () => pic);
   }
 
   ui.Picture? cur() {
@@ -966,15 +966,15 @@ class ReadModel with ChangeNotifier {
     }
     final key = b.id.toString() + b.chapterIndex.toString() + pageIdx.toString();
 
-    if (widgets.containsKey(key)) {
-      return widgets[key];
+    if (pictureCache.containsKey(key)) {
+      return pictureCache[key];
     }
     Future.delayed(const Duration(milliseconds: 200), () {
       // Skip if reader already left this book.
       if (book?.id == b.id) preloadNeighborPictures();
     });
     final pic = drawContent(current, pageIdx);
-    return widgets.putIfAbsent(key, () => pic);
+    return pictureCache.putIfAbsent(key, () => pic);
   }
 
   ui.Picture? next() {
@@ -984,8 +984,8 @@ class ReadModel with ChangeNotifier {
     final i = b.pageIndex + 1;
     final key = b.id.toString() + b.chapterIndex.toString() + i.toString();
 
-    if (widgets.containsKey(key)) {
-      return widgets[key];
+    if (pictureCache.containsKey(key)) {
+      return pictureCache[key];
     }
 
     final ui.Picture pic;
@@ -1003,7 +1003,7 @@ class ReadModel with ChangeNotifier {
     } else {
       pic = drawContent(current, i);
     }
-    return widgets.putIfAbsent(key, () => pic);
+    return pictureCache.putIfAbsent(key, () => pic);
   }
 
   Future<ui.Image> getAssetImage(String asset, {int? width, int? height}) async {
@@ -1037,10 +1037,10 @@ class ReadModel with ChangeNotifier {
     _hideTextLoading();
     chapters = [];
     _diskChapterWarm.clear();
-    loadOk = false;
+    sessionReady = false;
     chaptersLoading = false;
     loadingHint = '正在加载…';
-    widgets.clear();
+    pictureCache.clear();
     // Keep a neutral loading page so the next open doesn't paint stale content
     // if prepareOpen races with a rebuild.
     final page = ReadPage.kong();
@@ -1053,7 +1053,7 @@ class ReadModel with ChangeNotifier {
     prePage = null;
     nextPage = null;
     book = null;
-    mPainter = null;
+    pagePainter = null;
     canvasKey = null;
   }
 
@@ -1260,7 +1260,7 @@ class ReadModel with ChangeNotifier {
       );
 
       resetPages();
-      widgets.clear();
+      pictureCache.clear();
       await initPageContent(b.chapterIndex, true);
       final name =
           (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].title : '';
@@ -1277,7 +1277,7 @@ class ReadModel with ChangeNotifier {
 
   void toggleTapLeftToAdvance() {
     tapLeftToAdvance = !tapLeftToAdvance;
-    SpUtil.putBool("leftClickNext", tapLeftToAdvance);
+    SpUtil.putBool(PrefsKeys.leftClickNext, tapLeftToAdvance);
     notifyListeners();
   }
 
@@ -1426,10 +1426,10 @@ class ReadModel with ChangeNotifier {
   /// Drop in-memory pictures outside the nearby chapter window / hard cap.
   void _prunePictureCache() {
     final b = book;
-    if (b == null || widgets.isEmpty) return;
+    if (b == null || pictureCache.isEmpty) return;
     final id = b.id.toString();
     final keepCur = {b.chapterIndex - 1, b.chapterIndex, b.chapterIndex + 1};
-    widgets.removeWhere((key, _) {
+    pictureCache.removeWhere((key, _) {
       if (!key.startsWith(id)) return true;
       // key = id + cur + pageIndex (concatenated ints, ambiguous but best-effort)
       final rest = key.substring(id.length);
@@ -1440,11 +1440,11 @@ class ReadModel with ChangeNotifier {
       }
       return true;
     });
-    if (widgets.length > _maxPictureCache) {
-      final keys = widgets.keys.toList();
+    if (pictureCache.length > _maxPictureCache) {
+      final keys = pictureCache.keys.toList();
       final drop = keys.length - _maxPictureCache;
       for (var i = 0; i < drop; i++) {
-        widgets.remove(keys[i]);
+        pictureCache.remove(keys[i]);
       }
     }
   }
@@ -1480,7 +1480,7 @@ class ReadModel with ChangeNotifier {
       bgUI = null;
       return;
     }
-    if (SpUtil.getBool("dark") || paperTheme == PaperTheme.night) {
+    if (SpUtil.getBool(PrefsKeys.dark) || paperTheme == PaperTheme.night) {
       bgUI = await getAssetImage("images/${ReadSetting.bgImg.last}",
           width: Screen.width.ceil(), height: Screen.height.ceil());
     } else {

@@ -13,6 +13,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+import 'package:book/common/common.dart';
 
 class BooksWidget extends ConsumerStatefulWidget {
   final String type;
@@ -156,7 +157,7 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
     if (_shelfModel.shelf.isEmpty) {
       await _shelfModel.initShelf();
     }
-    if (SpUtil.haveKey('auth')) {
+    if (SpUtil.haveKey(PrefsKeys.auth)) {
       try {
         await _shelfModel.refreshShelf();
       } catch (_) {

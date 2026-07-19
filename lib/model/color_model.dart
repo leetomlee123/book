@@ -8,6 +8,7 @@ import 'package:book/service/custom_cache_manager.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:book/common/common.dart';
 
 class ColorModel with ChangeNotifier {
   BuildContext? buildContext;
@@ -45,7 +46,7 @@ class ColorModel with ChangeNotifier {
 
   ThemeData get theme {
     if (SpUtil.haveKey("dark")) {
-      dark = SpUtil.getBool("dark");
+      dark = SpUtil.getBool(PrefsKeys.dark);
     }
     useWeReadSkin = SpUtil.getBool('use_weread_skin', defValue: true);
     font = ReadSetting.getFontFamily();
@@ -125,7 +126,7 @@ class ColorModel with ChangeNotifier {
 
   void switchModel() {
     dark = !dark;
-    SpUtil.putBool("dark", dark);
+    SpUtil.putBool(PrefsKeys.dark, dark);
     notifyListeners();
   }
 

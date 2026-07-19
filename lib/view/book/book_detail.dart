@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:readmore/readmore.dart';
+import 'package:book/common/common.dart';
 
 /// 书籍详情（微信读书风格）
 class BookDetail extends ConsumerStatefulWidget {
@@ -37,7 +38,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
     book = info.toBook();
   }
 
-  bool get _dark => SpUtil.getBool('dark');
+  bool get _dark => SpUtil.getBool(PrefsKeys.dark);
 
   Color get _scaffold =>
       _dark ? AppColors.scaffoldDark : AppColors.scaffold;

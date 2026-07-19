@@ -8,6 +8,7 @@ import 'package:book/store/providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:book/common/common.dart';
 
 /// One flattened page tile in the vertical scroll window.
 class _ScrollItem {
@@ -101,7 +102,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     if (b == null || !model.contentReady) {
       _log(
         'bootstrap wait contentReady=${model.contentReady} '
-        'loadOk=${model.loadOk} chapters=${model.chapters.length} '
+        'sessionReady=${model.sessionReady} chapters=${model.chapters.length} '
         'curPage=${model.curPage?.chapterName}',
       );
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -425,7 +426,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
       readModelProvider.select((m) => m.contentReady),
     );
     final dark = paperTheme == PaperTheme.night ||
-        SpUtil.getBool('dark', defValue: false);
+        SpUtil.getBool(PrefsKeys.dark, defValue: false);
     final paper = ReadSetting.paperColor(
       dark ? PaperTheme.night : paperTheme,
     );

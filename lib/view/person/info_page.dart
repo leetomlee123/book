@@ -1,5 +1,6 @@
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
+import 'package:book/common/common.dart';
 
 /// Local static notices (no network).
 class InfoPage extends StatefulWidget {
@@ -14,7 +15,7 @@ class InfoPage extends StatefulWidget {
 class InfoState extends State<InfoPage> {
   @override
   Widget build(BuildContext context) {
-    final version = SpUtil.getString('version');
+    final version = SpUtil.getString(PrefsKeys.version);
     return Scaffold(
       appBar: AppBar(
         title: Text("公告"),

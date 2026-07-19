@@ -7,6 +7,7 @@ import 'package:book/common/screen.dart';
 import 'package:book/entity/read_page.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:flutter/material.dart';
+import 'package:book/common/common.dart';
 
 /// Canvas painter for reader pages (page-turn chrome + scroll body tiles).
 ///
@@ -48,7 +49,7 @@ class ReaderPainter {
     required PaperTheme paperTheme,
   }) {
     final bool night =
-        paperTheme == PaperTheme.night || SpUtil.getBool('dark', defValue: false);
+        paperTheme == PaperTheme.night || SpUtil.getBool(PrefsKeys.dark, defValue: false);
     final effectivePaper = night ? PaperTheme.night : paperTheme;
     final paper = ReadSetting.paperColor(effectivePaper);
     final ink = ReadSetting.inkColor(effectivePaper);
@@ -130,7 +131,7 @@ class ReaderPainter {
     final pageRecorder = ui.PictureRecorder();
 
     final bool night =
-        paperTheme == PaperTheme.night || SpUtil.getBool('dark', defValue: false);
+        paperTheme == PaperTheme.night || SpUtil.getBool(PrefsKeys.dark, defValue: false);
     final effectivePaper = night ? PaperTheme.night : paperTheme;
     final paper = ReadSetting.paperColor(effectivePaper);
     final ink = ReadSetting.inkColor(effectivePaper);

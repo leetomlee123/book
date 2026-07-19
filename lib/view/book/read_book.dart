@@ -14,6 +14,7 @@ import 'package:book/view/book/scroll_content_reader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:book/common/common.dart';
 
 class ReadBook extends ConsumerStatefulWidget {
   final Book book;
@@ -66,7 +67,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
     } catch (e, st) {
       // ignore: avoid_print
       print('hydrateReadingSession failed: $e\n$st');
-      if (!readModel.loadOk) {
+      if (!readModel.sessionReady) {
         await readModel.failOpen(e);
       }
     }
@@ -144,12 +145,12 @@ class _ReadBookState extends ConsumerState<ReadBook>
   Widget build(BuildContext context) {
     final isScroll = ref.watch(readModelProvider.select((m) => m.isScrollMode));
     final showMenu = ref.watch(readModelProvider.select((m) => m.showMenu));
-    final loadOk = ref.watch(readModelProvider.select((m) => m.loadOk));
+    final sessionReady = ref.watch(readModelProvider.select((m) => m.sessionReady));
     final paperTheme =
         ref.watch(readModelProvider.select((m) => m.paperTheme));
     final paper = ReadSetting.paperColor(
       paperTheme == PaperTheme.night ||
-              SpUtil.getBool('dark', defValue: false)
+              SpUtil.getBool(PrefsKeys.dark, defValue: false)
           ? PaperTheme.night
           : paperTheme,
     );
@@ -186,7 +187,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
                   ? const ScrollContentReader()
                   : const PageContentReader(),
             ),
-            if (loadOk && showMenu) const ReaderMenu(),
+            if (sessionReady && showMenu) const ReaderMenu(),
           ],
         ),
       ),

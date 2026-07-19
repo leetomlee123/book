@@ -1,5 +1,6 @@
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
+import 'package:book/common/common.dart';
 
 class BatteryView extends StatelessWidget {
   final double electricQuantity;
@@ -26,7 +27,7 @@ class BatteryViewPainter extends CustomPainter {
   late Paint mPaint;
   double mStrokeWidth = 1.0;
   double mPaintStrokeWidth = 1.5;
-  final bool isDark = SpUtil.getBool("dark", defValue: false);
+  final bool isDark = SpUtil.getBool(PrefsKeys.dark, defValue: false);
 
   BatteryViewPainter(this.electricQuantity) {
     mPaint = Paint()..strokeWidth = mPaintStrokeWidth;

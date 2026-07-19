@@ -13,6 +13,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:book/common/common.dart';
 
 class AppInit {
   static FlutterExceptionHandler? _prevFlutterError;
@@ -105,8 +106,8 @@ class AppInit {
     Routes.router = router;
     await DirectoryUtil.getInstance();
     // Version label for「我的」页 (no package_info_plus — keep in sync with pubspec).
-    if (!SpUtil.haveKey('version') || SpUtil.getString('version').isEmpty) {
-      SpUtil.putString('version', '1.0.0');
+    if (!SpUtil.haveKey(PrefsKeys.version) || SpUtil.getString(PrefsKeys.version).isEmpty) {
+      SpUtil.putString(PrefsKeys.version, '1.0.0');
     }
     if (Platform.isAndroid) {
       SystemUiOverlayStyle systemUiOverlayStyle =
@@ -116,6 +117,6 @@ class AppInit {
   }
 
   static bool loginState() {
-    return SpUtil.haveKey("auth") || SpUtil.haveKey("token");
+    return SpUtil.haveKey(PrefsKeys.auth) || SpUtil.haveKey(PrefsKeys.token);
   }
 }

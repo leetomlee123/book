@@ -19,7 +19,7 @@ class ReadSetting {
     "QR_bg_4.jpg",
   ];
 
-  static bool isDark() => SpUtil.getBool("dark");
+  static bool isDark() => SpUtil.getBool(PrefsKeys.dark);
   static String bgsKey = "BGSKEY";
   static String fontSizeKey = "FONT_SIZE";
   static String latterHeight = "LINE_HEIGHT";
@@ -102,10 +102,10 @@ class ReadSetting {
     SpUtil.putString(paperKey, t.name);
     // Keep global dark flag aligned with night paper.
     if (t == PaperTheme.night) {
-      SpUtil.putBool('dark', true);
-    } else if (SpUtil.getBool('dark') && t != PaperTheme.night) {
+      SpUtil.putBool(PrefsKeys.dark, true);
+    } else if (SpUtil.getBool(PrefsKeys.dark) && t != PaperTheme.night) {
       // Leaving night paper turns off global dark for reader consistency.
-      SpUtil.putBool('dark', false);
+      SpUtil.putBool(PrefsKeys.dark, false);
     }
   }
 
@@ -134,7 +134,7 @@ class ReadSetting {
   static String temp_w = "temp_w";
   static String temp_h = "temp_h";
   static Color textLowColor =
-      SpUtil.getBool("dark") ? Colors.white10 : Colors.grey.shade50;
+      SpUtil.getBool(PrefsKeys.dark) ? Colors.white10 : Colors.grey.shade50;
 
   static String poet = '世人为荣利缠缚，动曰尘世苦海，不知云白山青，川行石立，花迎鸟笑，谷答樵讴，世亦不尘、海亦不苦、彼自尘苦其心尔';
   static String lawWarn =
