@@ -31,7 +31,6 @@ import 'package:book/view/page_turn/novel_page_painter.dart';
 import 'package:book/view/page_turn/reader_page_manager.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
