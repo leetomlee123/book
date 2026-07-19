@@ -9,23 +9,23 @@ class ShelfModel with ChangeNotifier {
   List<Book> shelf = [];
 
   bool inShelf(Object? id) {
-    return shelf.map((f) => f.Id).toList().contains(id);
+    return shelf.map((f) => f.id).toList().contains(id);
   }
 
   /// Sync in-memory shelf entry only. DB progress is written by ReadModel.saveData.
   void updReadBookProcess(UpdateBookProcess up) {
     Book? b;
     for (final item in shelf) {
-      if (item.Id == up.bookId) {
+      if (item.id == up.bookId) {
         b = item;
         break;
       }
     }
     if (b == null) return;
-    b.cur = up.cur;
-    b.index = up.index;
+    b.chapterIndex = up.cur;
+    b.pageIndex = up.index;
     if (up.chapterName.isNotEmpty) {
-      b.ChapterName = up.chapterName;
+      b.readingChapter = up.chapterName;
     }
     notifyListeners();
   }
@@ -59,8 +59,8 @@ class ShelfModel with ChangeNotifier {
 
     for (var i = 0; i < _picks.length; i++) {
       if (_picks[i]) {
-        await delLocalCache([shelf[i].Id]);
-        ids.add(shelf[i].Id);
+        await delLocalCache([shelf[i].id]);
+        ids.add(shelf[i].id);
       } else {
         bks.add(shelf[i]);
         pics.add(_picks[i]);
@@ -127,12 +127,12 @@ class ShelfModel with ChangeNotifier {
   /// 书架排序
   Future<void> sort(int i) async {
     var book = shelf[i];
-    book.NewChapterCount = 0;
+    book.hasUpdate = 0;
     book.sortTime = DateUtil.getNowDateMs();
 
     shelf.sort((o1, o2) => o2.sortTime.compareTo(o1.sortTime));
     notifyListeners();
-    await _books.touchSortTime(book.Id);
+    await _books.touchSortTime(book.id);
   }
 
   /// 退出登录（本地账号，不清除书架）
@@ -146,7 +146,7 @@ class ShelfModel with ChangeNotifier {
 
 //根据id判断书架是否存在本书
   bool exitsInBookShelfById(String id) {
-    return shelf.map((f) => f.Id).toList().contains(id);
+    return shelf.map((f) => f.id).toList().contains(id);
   }
 
   //删除本地记录
@@ -158,7 +158,7 @@ class ShelfModel with ChangeNotifier {
 
   Future<void> modifyShelf(Book book) async {
     var action =
-        shelf.map((f) => f.Id).toList().contains(book.Id) ? 'del' : 'add';
+        shelf.map((f) => f.id).toList().contains(book.id) ? 'del' : 'add';
     if (action == "add") {
       shelf.insert(0, book);
       await _books.upsertAll([book]);
@@ -167,12 +167,12 @@ class ShelfModel with ChangeNotifier {
       BotToast.showText(text: "已添加到书架");
     } else if (action == "del") {
       for (var i = 0; i < shelf.length; i++) {
-        if (shelf[i].Id == book.Id) {
+        if (shelf[i].id == book.id) {
           shelf.removeAt(i);
           notifyListeners();
         }
       }
-      delLocalCache([book.Id]);
+      delLocalCache([book.id]);
       BotToast.showText(text: "已移除出书架");
     }
   }

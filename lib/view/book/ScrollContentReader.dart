@@ -111,10 +111,10 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     }
 
     _bootstrapped = true;
-    final bookId = b.Id;
+    final bookId = b.id;
     final cur =
-        b.cur.clamp(0, model.chapters.isEmpty ? 0 : model.chapters.length - 1);
-    final pageIdx = b.index < 0 ? 0 : b.index;
+        b.chapterIndex.clamp(0, model.chapters.isEmpty ? 0 : model.chapters.length - 1);
+    final pageIdx = b.pageIndex < 0 ? 0 : b.pageIndex;
     _lastChapter = cur;
     _lastPage = pageIdx;
     _restoreDone = false;
@@ -135,17 +135,17 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     if (!_chapters.containsKey(cur)) {
       await _ensureChapter(cur);
     }
-    if (_disposed || !mounted || model.book?.Id != bookId) return;
+    if (_disposed || !mounted || model.book?.id != bookId) return;
 
     // Load neighbors BEFORE first paint so initialScrollOffset is absolute
     // against a stable window (no jumpTo / maxScrollExtent race).
     if (cur > 0) {
       await _ensureChapter(cur - 1);
-      if (_disposed || !mounted || model.book?.Id != bookId) return;
+      if (_disposed || !mounted || model.book?.id != bookId) return;
     }
     if (cur + 1 < model.chapters.length) {
       await _ensureChapter(cur + 1);
-      if (_disposed || !mounted || model.book?.Id != bookId) return;
+      if (_disposed || !mounted || model.book?.id != bookId) return;
     }
 
     _rebuildItems();

@@ -20,7 +20,7 @@ class HasUpdateIconImg extends ConsumerWidget {
       return SizedBox(width: width, height: height);
     }
     final Book book = shelf.shelf.elementAt(idx);
-    final hasUpdate = book.NewChapterCount == 1;
+    final hasUpdate = book.hasUpdate == 1;
     final sorting = type == 'sort';
     final picked = sorting && shelf.picks(idx);
 
@@ -30,7 +30,7 @@ class HasUpdateIconImg extends ConsumerWidget {
       child: Stack(
         children: <Widget>[
           Positioned.fill(
-            child: PicWidget(book.Img, height: height, width: width),
+            child: PicWidget(book.coverUrl, height: height, width: width),
           ),
           // 更新角标
           if (hasUpdate)

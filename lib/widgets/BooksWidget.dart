@@ -235,8 +235,8 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
   }
 
   String _progressLabel(Book book) {
-    final chapter = book.ChapterName.trim();
-    final last = book.LastChapter.trim();
+    final chapter = book.readingChapter.trim();
+    final last = book.latestChapter.trim();
     final name = chapter.isNotEmpty
         ? chapter
         : (last.isNotEmpty ? last : '');
@@ -245,13 +245,13 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
   }
 
   String _authorLabel(Book book) {
-    final a = book.Author.trim();
+    final a = book.author.trim();
     if (a.isEmpty || a == 'null') return '佚名';
     return a;
   }
 
   String _titleLabel(Book book) {
-    final n = book.Name.trim();
+    final n = book.name.trim();
     if (n.isEmpty || n == 'null') return '未知书名';
     return n;
   }
@@ -296,15 +296,15 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
     // Prefer durable DB progress over possibly-stale in-memory shelf object.
     Book openBook = b;
     try {
-      final dbBook = await BookRepository.instance.getById(b.Id);
+      final dbBook = await BookRepository.instance.getById(b.id);
       if (dbBook != null) {
         openBook = dbBook;
         // Keep shelf row in sync for labels / next open.
-        b.cur = dbBook.cur;
-        b.index = dbBook.index;
-        b.position = dbBook.position;
-        if (dbBook.ChapterName.isNotEmpty) {
-          b.ChapterName = dbBook.ChapterName;
+        b.chapterIndex = dbBook.chapterIndex;
+        b.pageIndex = dbBook.pageIndex;
+        b.scrollOffset = dbBook.scrollOffset;
+        if (dbBook.readingChapter.isNotEmpty) {
+          b.readingChapter = dbBook.readingChapter;
         }
       }
     } catch (_) {}
@@ -320,7 +320,7 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
   Widget getBookItemView(int i, double coverW, double coverH) {
     final item = _shelfModel.shelf[i];
     return Dismissible(
-      key: Key(item.Id.toString()),
+      key: Key(item.id.toString()),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => _shelfModel.modifyShelf(item),
       background: Container(
@@ -381,10 +381,10 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
-                    if (item.UTime.isNotEmpty && item.UTime != 'null') ...[
+                    if (item.updatedAt.isNotEmpty && item.updatedAt != 'null') ...[
                       const SizedBox(height: 4),
                       Text(
-                        item.UTime,
+                        item.updatedAt,
                         style: const TextStyle(
                           color: AppColors.textTertiary,
                           fontSize: 11,

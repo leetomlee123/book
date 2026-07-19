@@ -33,7 +33,7 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
       setState(() => loading = false);
       return;
     }
-    final key = book.Name.isNotEmpty ? book.Name : book.Author;
+    final key = book.name.isNotEmpty ? book.name : book.author;
     if (key.isEmpty) {
       setState(() => loading = false);
       return;
@@ -50,10 +50,10 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
               .timeout(BookSourceEngine.sourceTimeout);
           return hits
               .where((h) {
-                if (book.Author.isEmpty) return true;
-                return h.author.contains(book.Author) ||
-                    book.Author.contains(h.author) ||
-                    h.name.contains(book.Name);
+                if (book.author.isEmpty) return true;
+                return h.author.contains(book.author) ||
+                    book.author.contains(h.author) ||
+                    h.name.contains(book.name);
               })
               .map((h) => _Candidate(s, h))
               .toList();
@@ -68,8 +68,8 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
     }
     // Prefer exact name matches first
     list.sort((a, b) {
-      final an = a.hit.name == book.Name ? 0 : 1;
-      final bn = b.hit.name == book.Name ? 0 : 1;
+      final an = a.hit.name == book.name ? 0 : 1;
+      final bn = b.hit.name == book.name ? 0 : 1;
       if (an != bn) return an - bn;
       return a.source.bookSourceName.compareTo(b.source.bookSourceName);
     });
@@ -96,7 +96,7 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
                 children: [
                   Expanded(
                     child: Text(
-                      '换源 · ${book?.Name ?? ''}',
+                      '换源 · ${book?.name ?? ''}',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),

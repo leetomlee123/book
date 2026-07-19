@@ -159,7 +159,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppDimens.coverRadius),
-              child: PicWidget(book.Img, height: 128, width: 92),
+              child: PicWidget(book.coverUrl, height: 128, width: 92),
             ),
           ),
           const SizedBox(width: 14),
@@ -168,7 +168,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                _displayText(book.Name, fallback: '未知书名'),
+                _displayText(book.name, fallback: '未知书名'),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -181,11 +181,11 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                 const SizedBox(height: 8),
                 _metaRow(
                   Icons.person_outline,
-                  _displayText(book.Author, fallback: '佚名'),
+                  _displayText(book.author, fallback: '佚名'),
                 ),
-                if (_hasText(book.CName)) ...[
+                if (_hasText(book.category)) ...[
                   const SizedBox(height: 4),
-                  _metaRow(Icons.category_outlined, book.CName.trim()),
+                  _metaRow(Icons.category_outlined, book.category.trim()),
                 ],
                 if (_hasText(book.originName)) ...[
                   const SizedBox(height: 4),
@@ -432,7 +432,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                   borderRadius:
                       BorderRadius.circular(AppDimens.coverRadius),
                   child: PicWidget(
-                    list[i].Img,
+                    list[i].coverUrl,
                     height: 72,
                     width: 52,
                   ),
@@ -443,7 +443,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _displayText(list[i].Name, fallback: '未知书名'),
+                        _displayText(list[i].name, fallback: '未知书名'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -454,15 +454,15 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _displayText(list[i].Author, fallback: '佚名'),
+                        _displayText(list[i].author, fallback: '佚名'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 12, color: _secondary),
                       ),
-                      if (_hasText(list[i].LastChapter)) ...[
+                      if (_hasText(list[i].latestChapter)) ...[
                         const SizedBox(height: 4),
                         Text(
-                          list[i].LastChapter.trim(),
+                          list[i].latestChapter.trim(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -539,7 +539,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
               child: SizedBox(
                 height: AppDimens.ctaHeight,
                 child: FutureBuilder<bool>(
-                  future: BookRepository.instance.exists(book.Id),
+                  future: BookRepository.instance.exists(book.id),
                   builder: (context, snap) {
                     final hasRead = snap.data == true;
                     return ElevatedButton(
@@ -600,7 +600,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
   // ---------------------------------------------------------------------------
 
   Future<void> _openRead() async {
-    Book? b = await BookRepository.instance.getById(book.Id);
+    Book? b = await BookRepository.instance.getById(book.id);
     if (!mounted) return;
     Routes.navigateTo(
       context,

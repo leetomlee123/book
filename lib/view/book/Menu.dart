@@ -68,7 +68,7 @@ class _MenuState extends ConsumerState<Menu> {
             ),
             Expanded(
               child: Text(
-                _readModel.book?.Name ?? '',
+                _readModel.book?.name ?? '',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -103,19 +103,19 @@ class _MenuState extends ConsumerState<Menu> {
                 if (b == null) return;
                 final info = BookInfo(
                   0,
-                  b.Author,
+                  b.author,
                   '',
-                  b.CId,
-                  b.CName,
-                  b.Id,
-                  b.Name,
-                  b.Img,
+                  '',
+                  b.category,
+                  b.id,
+                  b.name,
+                  b.coverUrl,
                   0,
-                  b.Desc,
-                  b.LastChapterId,
-                  b.LastChapter,
+                  b.description,
                   '',
-                  b.UTime,
+                  b.latestChapter,
+                  '',
+                  b.updatedAt,
                   const [],
                   sourceUrl: b.sourceUrl,
                   bookUrl: b.bookUrl,
@@ -157,11 +157,11 @@ class _MenuState extends ConsumerState<Menu> {
     final max = (_readModel.chapters.isEmpty)
         ? 0.0
         : (_readModel.chapters.length - 1).toDouble();
-    final cur = (_readModel.book?.cur ?? 0).toDouble().clamp(0.0, max);
-    final chapterName = (_readModel.book?.cur != null &&
-            _readModel.book!.cur >= 0 &&
-            _readModel.book!.cur < _readModel.chapters.length)
-        ? _readModel.chapters[_readModel.book!.cur].title
+    final cur = (_readModel.book?.chapterIndex ?? 0).toDouble().clamp(0.0, max);
+    final chapterName = (_readModel.book?.chapterIndex != null &&
+            _readModel.book!.chapterIndex >= 0 &&
+            _readModel.book!.chapterIndex < _readModel.chapters.length)
+        ? _readModel.chapters[_readModel.book!.chapterIndex].title
         : '';
 
     return Padding(
@@ -182,12 +182,12 @@ class _MenuState extends ConsumerState<Menu> {
           Row(
               children: <Widget>[
               _miniTextBtn('上一章', () async {
-                if ((_readModel.book!.cur - 1) < 0) {
+                if ((_readModel.book!.chapterIndex - 1) < 0) {
                   BotToast.showText(text: '已经是第一章');
                   return;
                 }
-                _readModel.book!.cur -= 1;
-                await _readModel.initPageContent(_readModel.book!.cur, true);
+                _readModel.book!.chapterIndex -= 1;
+                await _readModel.initPageContent(_readModel.book!.chapterIndex, true);
                 _readModel.scheduleProgressSave(delay: Duration.zero);
                 setState(() {});
               }),
@@ -201,7 +201,7 @@ class _MenuState extends ConsumerState<Menu> {
                     onChanged: max <= 0
                         ? null
                         : (newValue) {
-                            _readModel.book!.cur = newValue.round();
+                            _readModel.book!.chapterIndex = newValue.round();
                             setState(() {});
                           },
                     onChangeEnd: max <= 0
@@ -215,12 +215,12 @@ class _MenuState extends ConsumerState<Menu> {
                 ),
               ),
               _miniTextBtn('下一章', () async {
-                if ((_readModel.book!.cur + 1) >= _readModel.chapters.length) {
+                if ((_readModel.book!.chapterIndex + 1) >= _readModel.chapters.length) {
                   BotToast.showText(text: '已经是最后一章');
                   return;
                 }
-                _readModel.book!.cur += 1;
-                await _readModel.initPageContent(_readModel.book!.cur, true);
+                _readModel.book!.chapterIndex += 1;
+                await _readModel.initPageContent(_readModel.book!.chapterIndex, true);
                 _readModel.scheduleProgressSave(delay: Duration.zero);
                 setState(() {});
               }),
@@ -256,7 +256,7 @@ class _MenuState extends ConsumerState<Menu> {
           Expanded(
             child: _filledOutlineBtn('从当前缓存', () {
               BotToast.showText(text: '从当前章节开始下载…');
-              _readModel.downloadAll(_readModel.book!.cur);
+              _readModel.downloadAll(_readModel.book!.chapterIndex);
             }),
           ),
           const SizedBox(width: 12),

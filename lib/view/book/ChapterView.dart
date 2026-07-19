@@ -89,7 +89,7 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     final model = ref.read(readModelProvider);
     final chapters = model.chapters;
     if (chapters.isEmpty || !_itemScrollController.isAttached) return;
-    final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
+    final cur = (model.book?.chapterIndex ?? 0).clamp(0, chapters.length - 1);
     _jumpTo(cur, alignment: 0.35);
     _centeredOnce = true;
   }
@@ -121,8 +121,8 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     if (book == null) return;
     if (index < 0 || index >= data.chapters.length) return;
     Navigator.of(context).pop();
-    book.cur = index;
-    book.index = 0;
+    book.chapterIndex = index;
+    book.pageIndex = 0;
     // Small delay so drawer/page pop animation doesn't fight repaint.
     await Future<void>.delayed(const Duration(milliseconds: 200));
     await data.initPageContent(index, true);
@@ -133,7 +133,7 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     final model = ref.read(readModelProvider);
     final total = model.chapters.length;
     if (total == 0) return;
-    final cur = ((model.book?.cur ?? 0) + 1).clamp(1, total);
+    final cur = ((model.book?.chapterIndex ?? 0) + 1).clamp(1, total);
     final ctrl = TextEditingController(text: '$cur');
 
     final result = await showDialog<int>(
@@ -212,7 +212,7 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     final model = ref.read(readModelProvider);
     final chapters = model.chapters;
     if (chapters.isEmpty) return;
-    final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
+    final cur = (model.book?.chapterIndex ?? 0).clamp(0, chapters.length - 1);
     if (_query.isNotEmpty) {
       setState(() {
         _query = '';
@@ -240,7 +240,7 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     if (!mounted) return;
     final chapters = model.chapters;
     if (chapters.isEmpty) return;
-    final cur = (model.book?.cur ?? 0).clamp(0, chapters.length - 1);
+    final cur = (model.book?.chapterIndex ?? 0).clamp(0, chapters.length - 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _scrollTo(cur, alignment: 0.35);
@@ -251,8 +251,8 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
   Widget build(BuildContext context) {
     final data = ref.watch(readModelProvider);
     final chapters = data.chapters;
-    final cur = data.book?.cur ?? 0;
-    final bookName = data.book?.Name ?? '目录';
+    final cur = data.book?.chapterIndex ?? 0;
+    final bookName = data.book?.name ?? '目录';
     final filtered = _filtered(chapters);
 
     if (!_centeredOnce && chapters.isNotEmpty && _query.isEmpty) {

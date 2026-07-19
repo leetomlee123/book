@@ -60,7 +60,7 @@ class BookRepository {
 
   /// Insert only if missing (first open / race).
   Future<void> ensureExists(Book book) async {
-    if (await exists(book.Id)) return;
+    if (await exists(book.id)) return;
     final db = await _database;
     await db.insert(
       'books',
@@ -171,23 +171,20 @@ class BookRepository {
     final latest = s(row['latest_chapter']);
     final reading = s(row['reading_chapter']);
     return Book(
-      row['chapter_index'] as int? ?? 0,
-      row['sort_time'] as int? ?? 0,
-      row['page_index'] as int? ?? 0,
-      (row['scroll_offset'] as num?)?.toDouble() ?? 0,
-      '',
-      reading.isNotEmpty ? reading : latest,
-      row['has_update'] as int? ?? 0,
-      s(row['id']),
-      '',
-      s(row['name']),
-      s(row['category']),
-      s(row['author']),
-      s(row['cover_url']),
-      s(row['description']),
-      '',
-      latest,
-      s(row['updated_at']),
+      id: s(row['id']),
+      name: s(row['name']),
+      author: s(row['author']),
+      coverUrl: s(row['cover_url']),
+      category: s(row['category']),
+      description: s(row['description']),
+      readingChapter: reading.isNotEmpty ? reading : latest,
+      latestChapter: latest,
+      chapterIndex: row['chapter_index'] as int? ?? 0,
+      pageIndex: row['page_index'] as int? ?? 0,
+      scrollOffset: (row['scroll_offset'] as num?)?.toDouble() ?? 0,
+      sortTime: row['sort_time'] as int? ?? 0,
+      hasUpdate: row['has_update'] as int? ?? 0,
+      updatedAt: s(row['updated_at']),
       sourceUrl: s(row['source_url']),
       bookUrl: s(row['book_url']),
       originName: s(row['origin_name']),
@@ -197,25 +194,27 @@ class BookRepository {
 
   Map<String, Object?> _toRow(Book book) {
     return {
-      'id': book.Id,
-      'name': book.Name,
-      'author': book.Author,
-      'cover_url': book.Img,
-      'category': book.CName,
-      'description': book.Desc,
+      'id': book.id,
+      'name': book.name,
+      'author': book.author,
+      'cover_url': book.coverUrl,
+      'category': book.category,
+      'description': book.description,
       'source_url': book.sourceUrl,
       'book_url': book.bookUrl,
       'origin_name': book.originName,
       'toc_url': book.tocUrl,
-      'chapter_index': book.cur,
-      'page_index': book.index,
-      'scroll_offset': book.position,
-      'reading_chapter': book.ChapterName,
-      'latest_chapter':
-          book.LastChapter.isNotEmpty ? book.LastChapter : book.ChapterName,
-      'sort_time': book.sortTime == 0 ? DateUtil.getNowDateMs() : book.sortTime,
-      'has_update': book.NewChapterCount,
-      'updated_at': book.UTime,
+      'chapter_index': book.chapterIndex,
+      'page_index': book.pageIndex,
+      'scroll_offset': book.scrollOffset,
+      'reading_chapter': book.readingChapter,
+      'latest_chapter': book.latestChapter.isNotEmpty
+          ? book.latestChapter
+          : book.readingChapter,
+      'sort_time':
+          book.sortTime == 0 ? DateUtil.getNowDateMs() : book.sortTime,
+      'has_update': book.hasUpdate,
+      'updated_at': book.updatedAt,
     };
   }
 }

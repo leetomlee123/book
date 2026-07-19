@@ -155,7 +155,7 @@ class ReadModel with ChangeNotifier {
       TextPage([TextLine(loadingHint, 0, 0, 0)], 24),
     ];
     curPage = page;
-    b.index = b.index < 0 ? 0 : b.index;
+    b.pageIndex = b.pageIndex < 0 ? 0 : b.pageIndex;
     loadOk = true;
     // Do not notifyListeners here: the upcoming ReadBook build will watch us.
   }
@@ -183,23 +183,23 @@ class ReadModel with ChangeNotifier {
 
     // Prefer durable progress from reader.db over possibly-stale route JSON.
     // Snapshot IMMEDIATELY — loading UI must never overwrite these.
-    var savedCur = b.cur;
-    var savedIndex = b.index;
+    var savedCur = b.chapterIndex;
+    var savedIndex = b.pageIndex;
     try {
-      final dbBook = await _books.getById(b.Id);
+      final dbBook = await _books.getById(b.id);
       if (dbBook != null) {
-        savedCur = dbBook.cur;
-        savedIndex = dbBook.index;
-        b.cur = savedCur;
-        b.index = savedIndex;
-        b.position = dbBook.position;
-        if (dbBook.ChapterName.isNotEmpty) {
-          b.ChapterName = dbBook.ChapterName;
+        savedCur = dbBook.chapterIndex;
+        savedIndex = dbBook.pageIndex;
+        b.chapterIndex = savedCur;
+        b.pageIndex = savedIndex;
+        b.scrollOffset = dbBook.scrollOffset;
+        if (dbBook.readingChapter.isNotEmpty) {
+          b.readingChapter = dbBook.readingChapter;
         }
         AppLog.i(
           'Read',
           'merged db progress cur=$savedCur index=$savedIndex '
-              'name=${b.ChapterName}',
+              'name=${b.readingChapter}',
         );
       }
     } catch (e) {
@@ -214,20 +214,20 @@ class ReadModel with ChangeNotifier {
 
     AppLog.i(
       'Read',
-      'open id=${b.Id} name=${b.Name} cur=$savedCur index=$savedIndex '
+      'open id=${b.id} name=${b.name} cur=$savedCur index=$savedIndex '
           'source=${b.originName} sourceUrl=${b.sourceUrl} bookUrl=${b.bookUrl}',
     );
 
     if (b.sourceUrl.isEmpty || b.bookUrl.isEmpty) {
-      AppLog.w('Read', 'missing sourceUrl/bookUrl for ${b.Id}');
+      AppLog.w('Read', 'missing sourceUrl/bookUrl for ${b.id}');
       BotToast.showText(text: '旧版云端书籍无法继续阅读，请重新搜索添加');
       curPage = await _messagePage(
         '无法阅读',
         '旧版云端书籍缺少书源信息，请重新搜索添加后再阅读。',
       );
       // Restore snapshot; do not mark ready (cannot read / no page turn).
-      b.cur = savedCur < 0 ? 0 : savedCur;
-      b.index = savedIndex < 0 ? 0 : savedIndex;
+      b.chapterIndex = savedCur < 0 ? 0 : savedCur;
+      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       loadOk = true;
       chaptersLoading = false;
       _progressReady = false;
@@ -237,8 +237,8 @@ class ReadModel with ChangeNotifier {
 
     await _showTextLoading('正在准备书源…');
     // Loading placeholder must not wipe durable progress.
-    b.cur = savedCur;
-    b.index = savedIndex;
+    b.chapterIndex = savedCur;
+    b.pageIndex = savedIndex;
     await _ensureSource();
     if (_activeSource == null) {
       AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
@@ -247,8 +247,8 @@ class ReadModel with ChangeNotifier {
         '书源不可用',
         '未找到书源「${b.originName}」，请在书源管理中导入对应书源，或在阅读菜单中换源。',
       );
-      b.cur = savedCur < 0 ? 0 : savedCur;
-      b.index = savedIndex < 0 ? 0 : savedIndex;
+      b.chapterIndex = savedCur < 0 ? 0 : savedCur;
+      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       loadOk = true;
       chaptersLoading = false;
       _progressReady = false;
@@ -257,9 +257,9 @@ class ReadModel with ChangeNotifier {
     }
 
     await _showTextLoading('正在读取本地目录…');
-    b.cur = savedCur;
-    b.index = savedIndex;
-    chapters = await _chapters.getToc(b.Id);
+    b.chapterIndex = savedCur;
+    b.pageIndex = savedIndex;
+    chapters = await _chapters.getToc(b.id);
     AppLog.i('Read', 'local chapters=${chapters.length}');
 
     if (chapters.isNotEmpty) {
@@ -271,29 +271,29 @@ class ReadModel with ChangeNotifier {
           'Read',
           'clamp cur $savedCur -> 0 (len=${chapters.length})',
         );
-        b.cur = 0;
+        b.chapterIndex = 0;
       } else {
-        b.cur = savedCur;
+        b.chapterIndex = savedCur;
       }
-      b.index = savedIndex < 0 ? 0 : savedIndex;
+      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       // Skip loading flash when body + page layout are already cached.
-      final canSkipLoading = await _hasPageCache(b.cur);
-      await initPageContent(b.cur, false, showLoading: !canSkipLoading);
+      final canSkipLoading = await _hasPageCache(b.chapterIndex);
+      await initPageContent(b.chapterIndex, false, showLoading: !canSkipLoading);
       _restorePageIndex(savedIndex);
       loadOk = true;
       chaptersLoading = false;
       _progressReady = true;
       AppLog.i(
         'Read',
-        'ready cur=${b.cur} index=${b.index} pages=${curPage?.pageOffsets} '
+        'ready cur=${b.chapterIndex} index=${b.pageIndex} pages=${curPage?.pageOffsets} '
             'contentLen=${curPage?.chapterContent.length}',
       );
 
       notifyListeners();
     } else {
       await _showTextLoading('正在获取章节目录…');
-      b.cur = savedCur;
-      b.index = savedIndex;
+      b.chapterIndex = savedCur;
+      b.pageIndex = savedIndex;
       await getChapters(init: true);
       AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
       if (chapters.isEmpty) {
@@ -302,16 +302,16 @@ class ReadModel with ChangeNotifier {
           '目录为空',
           '未能获取章节目录，请检查书源规则、网络，或尝试换源。',
         );
-        b.cur = savedCur < 0 ? 0 : savedCur;
-        b.index = savedIndex < 0 ? 0 : savedIndex;
+        b.chapterIndex = savedCur < 0 ? 0 : savedCur;
+        b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       } else {
         if (savedCur < 0 || savedCur >= chapters.length) {
-          b.cur = 0;
+          b.chapterIndex = 0;
         } else {
-          b.cur = savedCur;
+          b.chapterIndex = savedCur;
         }
-        b.index = savedIndex < 0 ? 0 : savedIndex;
-        await initPageContent(b.cur, false, showLoading: true);
+        b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
+        await initPageContent(b.chapterIndex, false, showLoading: true);
         _restorePageIndex(savedIndex);
       }
       loadOk = true;
@@ -330,20 +330,20 @@ class ReadModel with ChangeNotifier {
     final pages = curPage?.pageOffsets ?? 0;
     if (pages <= 0) {
       // Content not ready — keep saved index so we don't wipe progress.
-      b.index = savedIndex < 0 ? 0 : savedIndex;
+      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       return;
     }
     final maxIdx = pages - 1;
     if (savedIndex < 0) {
-      b.index = 0;
+      b.pageIndex = 0;
     } else if (savedIndex > maxIdx) {
       AppLog.w(
         'Read',
         'clamp index $savedIndex -> $maxIdx (pages=$pages)',
       );
-      b.index = maxIdx;
+      b.pageIndex = maxIdx;
     } else {
-      b.index = savedIndex;
+      b.pageIndex = savedIndex;
     }
   }
 
@@ -413,7 +413,7 @@ class ReadModel with ChangeNotifier {
 
   Future initPageContent(int idx, bool jump, {bool showLoading = true}) async {
     // Preserve in-chapter page across loading placeholder (jump still resets).
-    final keepIndex = book?.index ?? 0;
+    final keepIndex = book?.pageIndex ?? 0;
     if (showLoading) {
       await _showTextLoading('正在加载…');
     }
@@ -423,7 +423,7 @@ class ReadModel with ChangeNotifier {
       if (b != null && chapters.isNotEmpty) {
         if (idx < 0) idx = 0;
         if (idx >= chapters.length) idx = chapters.length - 1;
-        b.cur = idx;
+        b.chapterIndex = idx;
       }
 
       curPage = await loadChapter(idx);
@@ -439,7 +439,7 @@ class ReadModel with ChangeNotifier {
       loadChapter(idx - 1).then((value) => prePage = value);
 
       if (jump) {
-        book?.index = 0;
+        book?.pageIndex = 0;
       } else {
         // Re-apply saved page after loading UI; clamp to real page count.
         _restorePageIndex(keepIndex);
@@ -513,7 +513,7 @@ class ReadModel with ChangeNotifier {
       AppLog.i('Read', 'reqChapters got ${list.length} chapters');
       return list
           .map((c) => ChapterTocEntry(
-                id: makeChapterId(b.Id, c.url),
+                id: makeChapterId(b.id, c.url),
                 title: c.name,
                 url: c.url,
                 hasBody: false,
@@ -531,11 +531,11 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return;
     // Capture id so a late network return cannot touch a different/closed book.
-    final bookId = b.Id;
+    final bookId = b.id;
     List<ChapterTocEntry>? list = await reqChapters();
     if (list == null || list.isEmpty) return;
     // Reader may have been closed (clear() sets book=null) while toc was in flight.
-    if (book?.Id != bookId) {
+    if (book?.id != bookId) {
       AppLog.i('Read', 'getChapters drop stale toc for $bookId');
       return;
     }
@@ -543,7 +543,7 @@ class ReadModel with ChangeNotifier {
     // reader.db enforces FK: chapters.book_id → books.id. Create the book
     // row first so TOC inserts never fail on first open.
     await _ensureBookRow(book!);
-    if (book?.Id != bookId) return;
+    if (book?.id != bookId) return;
 
     if (init || chapters.isEmpty) {
       chapters = list;
@@ -564,9 +564,9 @@ class ReadModel with ChangeNotifier {
         AppLog.i('Read', 'toc append ${fresh.length} id=$bookId');
       }
     }
-    if (book?.Id != bookId) return;
+    if (book?.id != bookId) return;
     if (list.isNotEmpty) {
-      book!.LastChapter = list.last.title;
+      book!.latestChapter = list.last.title;
     }
     notifyListeners();
   }
@@ -732,8 +732,8 @@ class ReadModel with ChangeNotifier {
         final pagesToSave = r.pages;
         final saveId = chapterId;
         final saveFp = fp;
-        final bookId = b?.Id;
-        final cur = b?.cur ?? idx;
+        final bookId = b?.id;
+        final cur = b?.chapterIndex ?? idx;
         unawaited(() async {
           try {
             final json =
@@ -916,8 +916,8 @@ class ReadModel with ChangeNotifier {
     }
     // 保留当前章；重分页后尽量夹紧页码，不强制回第 0 页。
     final b = book;
-    final keepIndex = b?.index ?? 0;
-    await initPageContent(b?.cur ?? 0, false, showLoading: false);
+    final keepIndex = b?.pageIndex ?? 0;
+    await initPageContent(b?.chapterIndex ?? 0, false, showLoading: false);
     if (b != null) {
       _restorePageIndex(keepIndex);
     }
@@ -970,22 +970,22 @@ class ReadModel with ChangeNotifier {
     _progressSaveTimer = null;
 
     // Snapshot before any await so dispose/clear cannot race.
-    final cur = b.cur;
-    final idx = b.index;
-    final pos = b.position;
-    final id = b.Id;
+    final cur = b.chapterIndex;
+    final idx = b.pageIndex;
+    final pos = b.scrollOffset;
+    final id = b.id;
     final sourceUrl = b.sourceUrl;
     final tocSnapshot =
         chapters.isNotEmpty ? List<ChapterTocEntry>.from(chapters) : const <ChapterTocEntry>[];
     final name = (cur >= 0 && cur < tocSnapshot.length)
         ? tocSnapshot[cur].title
-        : b.ChapterName;
+        : b.readingChapter;
     // Avoid wiping a real chapter title with empty/loading placeholder.
     if (name.isNotEmpty && name != '加载中') {
-      b.ChapterName = name;
+      b.readingChapter = name;
     }
-    final chapterName = (b.ChapterName.isNotEmpty && b.ChapterName != '加载中')
-        ? b.ChapterName
+    final chapterName = (b.readingChapter.isNotEmpty && b.readingChapter != '加载中')
+        ? b.readingChapter
         : name;
 
     // Ensure book row first — reader.db FK requires books.id before chapters.
@@ -1124,11 +1124,11 @@ class ReadModel with ChangeNotifier {
     if (b == null || !_progressReady) return;
     if (chapterIdx < 0 || chapterIdx >= chapters.length) return;
     final idx = pageIdx < 0 ? 0 : pageIdx;
-    if (b.cur == chapterIdx && b.index == idx) return;
-    b.cur = chapterIdx;
-    b.index = idx;
+    if (b.chapterIndex == chapterIdx && b.pageIndex == idx) return;
+    b.chapterIndex = chapterIdx;
+    b.pageIndex = idx;
     final name = chapters[chapterIdx].title;
-    if (name.isNotEmpty) b.ChapterName = name;
+    if (name.isNotEmpty) b.readingChapter = name;
     // Debounced disk write only — do NOT notifyListeners (scroll UI owns state).
     scheduleProgressSave();
     AppLog.i('Read', 'scroll progress cur=$chapterIdx idx=$idx name=$name');
@@ -1140,7 +1140,7 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return null;
     if (pageIdx < 0 || pageIdx >= readPage.pages.length) return null;
-    final key = '${b.Id}$chapterIdx${pageIdx}sc';
+    final key = '${b.id}$chapterIdx${pageIdx}sc';
     if (widgets.containsKey(key)) return widgets[key];
     final pic = drawScrollContent(readPage, pageIdx);
     return widgets.putIfAbsent(key, () => pic);
@@ -1263,7 +1263,7 @@ class ReadModel with ChangeNotifier {
   ui.Picture? getPage({bool firstInit = false}) {
     final b = book;
     if (b == null) return null;
-    var key = b.Id.toString() + b.cur.toString() + b.index.toString();
+    var key = b.id.toString() + b.chapterIndex.toString() + b.pageIndex.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -1283,10 +1283,10 @@ class ReadModel with ChangeNotifier {
     if (b == null || curPage == null) return;
 
     // Previous / next page pictures; null neighbors are handled inside pre/next.
-    if (prePage != null || b.index > 0) {
+    if (prePage != null || b.pageIndex > 0) {
       pre();
     }
-    if (nextPage != null || b.index + 1 < curPage!.pageOffsets) {
+    if (nextPage != null || b.pageIndex + 1 < curPage!.pageOffsets) {
       next();
     }
   }
@@ -1295,8 +1295,8 @@ class ReadModel with ChangeNotifier {
     final b = book;
     final current = curPage;
     if (b == null || current == null) return null;
-    final i = b.index - 1;
-    final key = b.Id.toString() + b.cur.toString() + i.toString();
+    final i = b.pageIndex - 1;
+    final key = b.id.toString() + b.chapterIndex.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -1320,19 +1320,19 @@ class ReadModel with ChangeNotifier {
     // Clamp for paint only — never mutate durable progress during draw.
     // Loading placeholders are 1 page; writing b.index=0 here wiped restores.
     if (current.pages.isEmpty) return null;
-    var pageIdx = b.index;
+    var pageIdx = b.pageIndex;
     if (pageIdx < 0) pageIdx = 0;
     if (pageIdx >= current.pageOffsets) {
       pageIdx = current.pageOffsets - 1;
     }
-    final key = b.Id.toString() + b.cur.toString() + pageIdx.toString();
+    final key = b.id.toString() + b.chapterIndex.toString() + pageIdx.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
     }
     Future.delayed(const Duration(milliseconds: 200), () {
       // Skip if reader already left this book.
-      if (book?.Id == b.Id) preLoadWidget();
+      if (book?.id == b.id) preLoadWidget();
     });
     final pic = drawContent(current, pageIdx);
     return widgets.putIfAbsent(key, () => pic);
@@ -1342,8 +1342,8 @@ class ReadModel with ChangeNotifier {
     final b = book;
     final current = curPage;
     if (b == null || current == null) return null;
-    final i = b.index + 1;
-    final key = b.Id.toString() + b.cur.toString() + i.toString();
+    final i = b.pageIndex + 1;
+    final key = b.id.toString() + b.chapterIndex.toString() + i.toString();
 
     if (widgets.containsKey(key)) {
       return widgets[key];
@@ -1354,8 +1354,8 @@ class ReadModel with ChangeNotifier {
       final following = nextPage;
       if (following == null) {
         // Kick off async load; do not force-unwrap a null next chapter.
-        loadChapter(b.cur + 1).then((value) {
-          if (book?.Id == b.Id) nextPage = value;
+        loadChapter(b.chapterIndex + 1).then((value) {
+          if (book?.id == b.id) nextPage = value;
         });
         return null;
       }
@@ -1643,7 +1643,7 @@ class ReadModel with ChangeNotifier {
     loadingHint = '正在重新加载目录…';
     chapters = [];
     notifyListeners();
-    await _chapters.clearBook(b.Id);
+    await _chapters.clearBook(b.id);
 
     try {
       chapters = await reqChapters() ?? [];
@@ -1653,7 +1653,7 @@ class ReadModel with ChangeNotifier {
       }
 
       await _ensureBookRow(b);
-      await _chapters.replaceToc(chapters, b.Id, sourceUrl: b.sourceUrl);
+      await _chapters.replaceToc(chapters, b.id, sourceUrl: b.sourceUrl);
     } finally {
       chaptersLoading = false;
       notifyListeners();
@@ -1663,14 +1663,14 @@ class ReadModel with ChangeNotifier {
   Future<void> reloadCurrentPage() async {
     final b = book;
     if (b == null) return;
-    if (chapters.isEmpty || b.cur < 0 || b.cur >= chapters.length) return;
+    if (chapters.isEmpty || b.chapterIndex < 0 || b.chapterIndex >= chapters.length) return;
     toggleShowMenu();
-    var chapter = chapters[b.cur];
+    var chapter = chapters[b.chapterIndex];
     _showTextLoading('正在刷新正文…');
 
     var content = "";
     try {
-      content = await getChapterContent(chapter.id, idx: b.cur);
+      content = await getChapterContent(chapter.id, idx: b.chapterIndex);
     } catch (e) {
       content = "章节内容加载失败，请检查书源或换源后重试";
     }
@@ -1679,9 +1679,9 @@ class ReadModel with ChangeNotifier {
     if (content.isNotEmpty) {
       var temp = [ChapterNode(content, chapter.id)];
       await _chapters.updateBodies(temp);
-      chapters[b.cur].hasBody = true;
+      chapters[b.chapterIndex].hasBody = true;
 
-      curPage = await loadChapter(b.cur);
+      curPage = await loadChapter(b.chapterIndex);
       notifyListeners();
       final ro = canvasKey?.currentContext?.findRenderObject();
       if (ro != null) {
@@ -1722,7 +1722,7 @@ class ReadModel with ChangeNotifier {
       await _chapters.updateBodies(cpNodes);
       cpNodes.clear();
     }
-    BotToast.showText(text: "${book?.Name ?? ""}下载完成");
+    BotToast.showText(text: "${book?.name ?? ""}下载完成");
   }
 
   Future<String> getChapterContent(String id, {int? idx}) async {
@@ -1768,8 +1768,8 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return false;
     final oldName =
-        (b.cur >= 0 && b.cur < chapters.length) ? chapters[b.cur].title : b.ChapterName;
-    final oldIndex = b.cur;
+        (b.chapterIndex >= 0 && b.chapterIndex < chapters.length) ? chapters[b.chapterIndex].title : b.readingChapter;
+    final oldIndex = b.chapterIndex;
 
     _showTextLoading('正在换源…');
     try {
@@ -1791,22 +1791,22 @@ class ReadModel with ChangeNotifier {
       b.bookUrl = hit.bookUrl;
       b.originName = source.bookSourceName;
       b.tocUrl = tocUrl;
-      b.Name = info.Name.isNotEmpty ? info.Name : b.Name;
-      b.Author = info.Author.isNotEmpty ? info.Author : b.Author;
-      b.Img = info.Img.isNotEmpty ? info.Img : b.Img;
-      b.Desc = info.Desc.isNotEmpty ? info.Desc : b.Desc;
-      b.LastChapter = toc.last.name;
-      b.cur = mapped;
-      b.index = 0;
-      b.position = 0;
+      b.name = info.Name.isNotEmpty ? info.Name : b.name;
+      b.author = info.Author.isNotEmpty ? info.Author : b.author;
+      b.coverUrl = info.Img.isNotEmpty ? info.Img : b.coverUrl;
+      b.description = info.Desc.isNotEmpty ? info.Desc : b.description;
+      b.latestChapter = toc.last.name;
+      b.chapterIndex = mapped;
+      b.pageIndex = 0;
+      b.scrollOffset = 0;
       _activeSource = source;
 
       // wipe chapter cache + page caches
-      await _chapters.clearBook(b.Id);
+      await _chapters.clearBook(b.id);
 
       chapters = toc
           .map((c) => ChapterTocEntry(
-                id: makeChapterId(b.Id, c.url),
+                id: makeChapterId(b.id, c.url),
                 title: c.name,
                 url: c.url,
                 hasBody: false,
@@ -1815,29 +1815,29 @@ class ReadModel with ChangeNotifier {
           .toList();
       // Always keep books/chapters in sync after source switch (FK-safe).
       await _ensureBookRow(b);
-      await _chapters.replaceToc(chapters, b.Id, sourceUrl: b.sourceUrl);
+      await _chapters.replaceToc(chapters, b.id, sourceUrl: b.sourceUrl);
       await _books.updateSource(
-        bookId: b.Id,
+        bookId: b.id,
         sourceUrl: b.sourceUrl,
         bookUrl: b.bookUrl,
         originName: b.originName,
         tocUrl: b.tocUrl,
       );
-      final readName = (b.cur >= 0 && b.cur < chapters.length)
-          ? chapters[b.cur].title
-          : b.ChapterName;
-      b.ChapterName = readName;
+      final readName = (b.chapterIndex >= 0 && b.chapterIndex < chapters.length)
+          ? chapters[b.chapterIndex].title
+          : b.readingChapter;
+      b.readingChapter = readName;
       await _books.saveProgress(
-        bookId: b.Id,
-        chapterIndex: b.cur,
-        pageIndex: b.index,
-        scrollOffset: b.position,
+        bookId: b.id,
+        chapterIndex: b.chapterIndex,
+        pageIndex: b.pageIndex,
+        scrollOffset: b.scrollOffset,
         readingChapter: readName,
       );
 
       reSetPages();
       widgets.clear();
-      await initPageContent(b.cur, true);
+      await initPageContent(b.chapterIndex, true);
       final name =
           (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].title : '';
       BotToast.showText(text: '已切换至「${source.bookSourceName}」，定位到：$name');
@@ -1873,27 +1873,27 @@ class ReadModel with ChangeNotifier {
     final dir = (offsetDifference is num)
         ? offsetDifference.toDouble()
         : double.tryParse(offsetDifference?.toString() ?? '') ?? 0;
-    final beforeCur = b.cur;
-    final beforeIdx = b.index;
-    int idx = b.index;
+    final beforeCur = b.chapterIndex;
+    final beforeIdx = b.pageIndex;
+    int idx = b.pageIndex;
 
     int curLen = (curPage?.pageOffsets ?? 0);
     if (idx == curLen - 1 && dir > 0) {
       _refreshBattery();
-      int tempCur = b.cur + 1;
+      int tempCur = b.chapterIndex + 1;
       if (tempCur >= chapters.length) {
         BotToast.showText(text: "最后一页");
         return;
       }
 
-      b.cur += 1;
+      b.chapterIndex += 1;
       prePage = curPage;
       final following = nextPage;
       if (following == null || following.chapterName == "-1") {
         // Next chapter not ready yet — load it synchronously path.
         _showTextLoading('正在加载下一章…');
-        loadChapter(b.cur).then((value) {
-          if (book?.Id == b.Id) {
+        loadChapter(b.chapterIndex).then((value) {
+          if (book?.id == b.id) {
             curPage = value;
             final ro = canvasKey?.currentContext?.findRenderObject();
             ro?.markNeedsPaint();
@@ -1904,21 +1904,21 @@ class ReadModel with ChangeNotifier {
       } else {
         curPage = following;
       }
-      b.index = 0;
+      b.pageIndex = 0;
       nextPage = null;
       if (kDebugMode) {
         debugPrint(
           '[ReadModel] changeCoverPage +chapter '
-          '$beforeCur:$beforeIdx → ${b.cur}:${b.index} '
+          '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
           'dir=$offsetDifference pages=$curLen',
         );
       }
       _prunePictureCache();
       scheduleProgressSave();
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (book?.Id == b.Id) {
-          loadChapter(b.cur + 1).then((value) {
-            if (book?.Id == b.Id) nextPage = value;
+        if (book?.id == b.id) {
+          loadChapter(b.chapterIndex + 1).then((value) {
+            if (book?.id == b.id) nextPage = value;
           });
         }
       });
@@ -1926,7 +1926,7 @@ class ReadModel with ChangeNotifier {
     }
     if (idx == 0 && dir < 0) {
       _refreshBattery();
-      int tempCur = b.cur - 1;
+      int tempCur = b.chapterIndex - 1;
       if (tempCur < 0) {
         BotToast.showText(text: "第一页");
         return;
@@ -1936,14 +1936,14 @@ class ReadModel with ChangeNotifier {
         // Previous chapter not ready — load it.
         _showTextLoading('正在加载上一章…');
         loadChapter(tempCur).then((value) {
-          if (book?.Id != b.Id) {
+          if (book?.id != b.id) {
             _hideTextLoading();
             return;
           }
           nextPage = curPage;
           curPage = value;
-          b.cur = tempCur;
-          b.index = (curPage?.pageOffsets ?? 1) - 1;
+          b.chapterIndex = tempCur;
+          b.pageIndex = (curPage?.pageOffsets ?? 1) - 1;
           prePage = null;
           final ro = canvasKey?.currentContext?.findRenderObject();
           ro?.markNeedsPaint();
@@ -1951,45 +1951,45 @@ class ReadModel with ChangeNotifier {
           _hideTextLoading();
           _prunePictureCache();
           scheduleProgressSave();
-          loadChapter(b.cur - 1).then((v) {
-            if (book?.Id == b.Id) prePage = v;
+          loadChapter(b.chapterIndex - 1).then((v) {
+            if (book?.id == b.id) prePage = v;
           });
         });
         return;
       }
       nextPage = curPage;
       curPage = previous;
-      b.cur -= 1;
-      b.index = (curPage?.pageOffsets ?? 1) - 1;
+      b.chapterIndex -= 1;
+      b.pageIndex = (curPage?.pageOffsets ?? 1) - 1;
       notifyListeners();
       prePage = null;
       if (kDebugMode) {
         debugPrint(
           '[ReadModel] changeCoverPage -chapter '
-          '$beforeCur:$beforeIdx → ${b.cur}:${b.index} '
+          '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
           'dir=$offsetDifference',
         );
       }
       _prunePictureCache();
       scheduleProgressSave();
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (book?.Id == b.Id) {
-          loadChapter(b.cur - 1).then((value) {
-            if (book?.Id == b.Id) prePage = value;
+        if (book?.id == b.id) {
+          loadChapter(b.chapterIndex - 1).then((value) {
+            if (book?.id == b.id) prePage = value;
           });
         }
       });
       return;
     }
     if (dir > 0) {
-      b.index += 1;
+      b.pageIndex += 1;
     } else {
-      b.index -= 1;
+      b.pageIndex -= 1;
     }
     if (kDebugMode) {
       debugPrint(
         '[ReadModel] changeCoverPage page '
-        '$beforeCur:$beforeIdx → ${b.cur}:${b.index} '
+        '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
         'dir=$offsetDifference pages=$curLen',
       );
     }
@@ -2003,8 +2003,8 @@ class ReadModel with ChangeNotifier {
   void _prunePictureCache() {
     final b = book;
     if (b == null || widgets.isEmpty) return;
-    final id = b.Id.toString();
-    final keepCur = {b.cur - 1, b.cur, b.cur + 1};
+    final id = b.id.toString();
+    final keepCur = {b.chapterIndex - 1, b.chapterIndex, b.chapterIndex + 1};
     widgets.removeWhere((key, _) {
       if (!key.startsWith(id)) return true;
       // key = id + cur + pageIndex (concatenated ints, ambiguous but best-effort)
@@ -2029,24 +2029,24 @@ class ReadModel with ChangeNotifier {
     final b = book;
     if (b == null) return false;
     // Last chapter, last page.
-    if (b.cur >= chapters.length - 1 &&
-        b.index >= ((curPage?.pageOffsets ?? 1) - 1)) {
+    if (b.chapterIndex >= chapters.length - 1 &&
+        b.pageIndex >= ((curPage?.pageOffsets ?? 1) - 1)) {
       return false;
     }
     // Prefer pre-rendered picture, but allow turn if logical next exists.
     if (next() != null) return true;
     // Next page within chapter, or next chapter available.
-    if (b.index + 1 < (curPage?.pageOffsets ?? 0)) return true;
-    return b.cur + 1 < chapters.length;
+    if (b.pageIndex + 1 < (curPage?.pageOffsets ?? 0)) return true;
+    return b.chapterIndex + 1 < chapters.length;
   }
 
   bool isCanGoPre() {
     final b = book;
     if (b == null) return false;
-    if (b.cur <= 0 && b.index <= 0) return false;
+    if (b.chapterIndex <= 0 && b.pageIndex <= 0) return false;
     if (pre() != null) return true;
-    if (b.index > 0) return true;
-    return b.cur > 0;
+    if (b.pageIndex > 0) return true;
+    return b.chapterIndex > 0;
   }
 
   Future<void> changeBgUI() async {

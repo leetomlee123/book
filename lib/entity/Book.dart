@@ -2,26 +2,31 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'Book.g.dart';
 
+/// Local shelf / reading-session book row.
 @JsonSerializable()
 class Book {
-  String ChapterId;
-  String ChapterName;
-  int NewChapterCount;
-  String Id;
-  String CId;
-  int cur;
-  int sortTime;
-  int index;
-  double position;
-  String CName;
-  String Name;
-  String Author;
-  String Img;
-  String Desc;
+  String id;
+  String name;
+  String author;
+  String coverUrl;
+  String category;
+  String description;
 
-  String LastChapterId;
-  String LastChapter;
-  String UTime;
+  /// Chapter currently being read (display title).
+  String readingChapter;
+
+  /// Newest chapter title known for the book.
+  String latestChapter;
+
+  int chapterIndex;
+  int pageIndex;
+  double scrollOffset;
+  int sortTime;
+
+  /// Non-zero means shelf shows update badge.
+  int hasUpdate;
+
+  String updatedAt;
 
   /// Active book source url (Legado bookSourceUrl).
   @JsonKey(defaultValue: '')
@@ -43,96 +48,62 @@ class Book {
 
   Map<String, dynamic> toJson() => _$BookToJson(this);
 
-  Book.Id(this.Id)
-      : ChapterId = '',
-        ChapterName = '',
-        NewChapterCount = 0,
-        CId = '',
-        cur = 0,
+  Book({
+    this.id = '',
+    this.name = '',
+    this.author = '',
+    this.coverUrl = '',
+    this.category = '',
+    this.description = '',
+    this.readingChapter = '',
+    this.latestChapter = '',
+    this.chapterIndex = 0,
+    this.pageIndex = 0,
+    this.scrollOffset = 0,
+    this.sortTime = 0,
+    this.hasUpdate = 0,
+    this.updatedAt = '',
+    this.sourceUrl = '',
+    this.bookUrl = '',
+    this.originName = '',
+    this.tocUrl = '',
+  });
+
+  Book.id(this.id)
+      : name = '',
+        author = '',
+        coverUrl = '',
+        category = '',
+        description = '',
+        readingChapter = '',
+        latestChapter = '',
+        chapterIndex = 0,
+        pageIndex = 0,
+        scrollOffset = 0,
         sortTime = 0,
-        index = 0,
-        position = 0,
-        CName = '',
-        Name = '',
-        Author = '',
-        Img = '',
-        Desc = '',
-        LastChapterId = '',
-        LastChapter = '',
-        UTime = '',
+        hasUpdate = 0,
+        updatedAt = '',
         sourceUrl = '',
         bookUrl = '',
         originName = '',
         tocUrl = '';
 
-  Book.Image(this.Img)
-      : ChapterId = '',
-        ChapterName = '',
-        NewChapterCount = 0,
-        Id = '',
-        CId = '',
-        cur = 0,
+  Book.cover(this.coverUrl)
+      : id = '',
+        name = '',
+        author = '',
+        category = '',
+        description = '',
+        readingChapter = '',
+        latestChapter = '',
+        chapterIndex = 0,
+        pageIndex = 0,
+        scrollOffset = 0,
         sortTime = 0,
-        index = 0,
-        position = 0,
-        CName = '',
-        Name = '',
-        Author = '',
-        Desc = '',
-        LastChapterId = '',
-        LastChapter = '',
-        UTime = '',
+        hasUpdate = 0,
+        updatedAt = '',
         sourceUrl = '',
         bookUrl = '',
         originName = '',
         tocUrl = '';
-
-  Book.fromSql(
-      this.Id,
-      this.Name,
-      this.CName,
-      this.Author,
-      this.UTime,
-      this.Img,
-      this.Desc,
-      this.cur,
-      this.sortTime,
-      this.index,
-      this.position,
-      this.NewChapterCount,
-      this.LastChapter,
-      {this.sourceUrl = '',
-      this.bookUrl = '',
-      this.originName = '',
-      this.tocUrl = '',
-      String readingChapter = ''})
-      : ChapterId = '',
-        // Prefer the chapter the user was reading; fall back to newest chapter.
-        ChapterName =
-            readingChapter.isNotEmpty ? readingChapter : LastChapter,
-        CId = '',
-        LastChapterId = '';
-
-  Book(
-      this.cur,
-      this.sortTime,
-      this.index,
-      this.position,
-      this.ChapterId,
-      this.ChapterName,
-      this.NewChapterCount,
-      this.Id,
-      this.CId,
-      this.Name,
-      this.CName,
-      this.Author,
-      this.Img,
-      this.Desc,
-      this.LastChapterId,
-      this.LastChapter,
-      this.UTime,
-      {this.sourceUrl = '',
-      this.bookUrl = '',
-      this.originName = '',
-      this.tocUrl = ''});
 }

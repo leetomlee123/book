@@ -34,7 +34,7 @@ class _CacheManagerState extends State<CacheManager> {
       final pageBytes = await _chapters.pageCacheBytes();
       final rows = <_BookCacheRow>[];
       for (final book in books) {
-        final stats = await _chapters.bodyStats(book.Id);
+        final stats = await _chapters.bodyStats(book.id);
         rows.add(_BookCacheRow(book: book, stats: stats));
       }
       if (!mounted) return;
@@ -134,7 +134,7 @@ class _CacheManagerState extends State<CacheManager> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                row.book.Name.isEmpty ? row.book.Id : row.book.Name,
+                                row.book.name.isEmpty ? row.book.id : row.book.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.titleSmall,
@@ -160,7 +160,7 @@ class _CacheManagerState extends State<CacheManager> {
                                   IconButton(
                                     tooltip: '清除章节正文与分页',
                                     icon: const Icon(Icons.delete_outline),
-                                    onPressed: () => _clearBookBodies(row.book.Id),
+                                    onPressed: () => _clearBookBodies(row.book.id),
                                   ),
                                 ],
                               ),

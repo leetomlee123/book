@@ -48,7 +48,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
       final b = readModel.book;
       if (b == null) return;
       readModel.reSetPages();
-      readModel.initPageContent(b.cur, true);
+      readModel.initPageContent(b.chapterIndex, true);
     });
 
     WidgetsBinding.instance.addObserver(this);
@@ -100,12 +100,12 @@ class _ReadBookState extends ConsumerState<ReadBook>
     // Snapshot after child ScrollContentReader.dispose has applied visible page
     // (children dispose first). For lifecycle pause, scroll listener throttle
     // + ScrollEnd should already have written cur/index.
-    final id = b.Id;
-    final cur = b.cur;
-    final idx = b.index;
+    final id = b.id;
+    final cur = b.chapterIndex;
+    final idx = b.pageIndex;
     final name = (cur >= 0 && cur < readModel.chapters.length)
         ? readModel.chapters[cur].title
-        : b.ChapterName;
+        : b.readingChapter;
     final sSave = readModel.sSave == true;
     final Future<void> done =
         flush ? readModel.flushProgressSave() : readModel.saveData();
@@ -155,7 +155,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
       onPopInvokedWithResult: (bool didPop, dynamic result) async {
         if (didPop) return;
         if (!popWithMenuAndChapterView()) return;
-        final bookId = readModel.book?.Id;
+        final bookId = readModel.book?.id;
         if (bookId != null &&
             !ref.read(shelfModelProvider).exitsInBookShelfById(bookId)) {
           await confirmAddToShelf(context);
@@ -208,7 +208,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
               readModel.sSave = false;
               await ref
                   .read(shelfModelProvider)
-                  .delLocalCache([widget.book.Id]);
+                  .delLocalCache([widget.book.id]);
               if (dialogContext.mounted) {
                 Navigator.pop(dialogContext);
               }
