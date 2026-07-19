@@ -550,9 +550,8 @@ class ReadModel with ChangeNotifier {
 
     if (init || chapters.isEmpty) {
       chapters = list;
-      // Always persist TOC — previously only saved when book was already on
-      // the shelf (SpUtil key), so first-open from detail lost the catalog.
-      await _chapters.replaceToc(list, bookId, sourceUrl: b.sourceUrl);
+      // Diff-upsert keeps any already-cached bodies for matching chapter ids.
+      await _chapters.syncToc(list, bookId, sourceUrl: b.sourceUrl);
       AppLog.i('Read', 'toc saved init=${list.length} id=$bookId');
     } else {
       // append only new urls
@@ -1019,7 +1018,7 @@ class ReadModel with ChangeNotifier {
       try {
         final len = await _chapters.count(id);
         if (len == 0) {
-          await _chapters.replaceToc(tocSnapshot, id, sourceUrl: sourceUrl);
+          await _chapters.syncToc(tocSnapshot, id, sourceUrl: sourceUrl);
           AppLog.i('Read', 'toc saved on exit count=${tocSnapshot.length}');
         }
       } catch (e) {
@@ -1666,19 +1665,20 @@ class ReadModel with ChangeNotifier {
     if (b == null) return;
     chaptersLoading = true;
     loadingHint = '正在重新加载目录…';
-    chapters = [];
     notifyListeners();
-    await _chapters.clearBook(b.id);
 
     try {
-      chapters = await reqChapters() ?? [];
-      if (chapters.isEmpty) {
+      final list = await reqChapters() ?? [];
+      if (list.isEmpty) {
         BotToast.showText(text: '目录为空，请检查书源或网络');
         return;
       }
 
       await _ensureBookRow(b);
-      await _chapters.replaceToc(chapters, b.id, sourceUrl: b.sourceUrl);
+      // Diff-upsert preserves body/page cache for unchanged chapter ids.
+      await _chapters.syncToc(list, b.id, sourceUrl: b.sourceUrl);
+      chapters = await _chapters.getToc(b.id);
+      if (chapters.isEmpty) chapters = list;
     } finally {
       chaptersLoading = false;
       notifyListeners();

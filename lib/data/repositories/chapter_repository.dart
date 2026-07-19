@@ -50,6 +50,7 @@ class ChapterRepository {
     return int.tryParse(v?.toString() ?? '') ?? 0;
   }
 
+  /// Full TOC rewrite — **wipes body/page caches**. Prefer [syncToc].
   Future<void> replaceToc(
     List<ChapterTocEntry> chapters,
     String bookId, {
@@ -75,6 +76,68 @@ class ChapterRepository {
         'layout_fp': null,
         'pages_cached_at': 0,
       });
+    }
+    await batch.commit(noResult: true);
+  }
+
+  /// Diff-upsert TOC: keeps body/pages for unchanged chapter ids.
+  ///
+  /// - matching id → update title/url/ord/source only
+  /// - new id → insert empty body row
+  /// - missing id → delete (drops its cache)
+  Future<void> syncToc(
+    List<ChapterTocEntry> chapters,
+    String bookId, {
+    String sourceUrl = '',
+  }) async {
+    final db = await _database;
+    final existing = await db.query(
+      'chapters',
+      columns: ['id'],
+      where: 'book_id = ?',
+      whereArgs: [bookId],
+    );
+    final oldIds = existing.map((r) => r['id'] as String? ?? '').toSet()
+      ..removeWhere((e) => e.isEmpty);
+    final newIds = <String>{};
+    final batch = db.batch();
+
+    for (var i = 0; i < chapters.length; i++) {
+      final c = chapters[i];
+      final ord = c.ord != 0 ? c.ord : i;
+      newIds.add(c.id);
+      if (oldIds.contains(c.id)) {
+        batch.update(
+          'chapters',
+          {
+            'title': c.title,
+            'url': c.url,
+            'source_url': sourceUrl,
+            'ord': ord,
+          },
+          where: 'id = ?',
+          whereArgs: [c.id],
+        );
+      } else {
+        batch.insert('chapters', {
+          'id': c.id,
+          'book_id': bookId,
+          'title': c.title,
+          'url': c.url,
+          'source_url': sourceUrl,
+          'ord': ord,
+          'body': '',
+          'has_body': 0,
+          'content_len': 0,
+          'pages_json': null,
+          'layout_fp': null,
+          'pages_cached_at': 0,
+        });
+      }
+    }
+
+    for (final id in oldIds.difference(newIds)) {
+      batch.delete('chapters', where: 'id = ?', whereArgs: [id]);
     }
     await batch.commit(noResult: true);
   }
