@@ -86,7 +86,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                         onTrailingTap: _openRead,
                         child: _catalogBody(),
                       ),
-                      if (info.SameAuthorBooks.isNotEmpty) ...[
+                      if (info.relatedBooks.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         _sectionCard(
                           title: '作者还写过',
@@ -196,21 +196,21 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    if (info.BookStatus.isNotEmpty)
+                    if (info.status.isNotEmpty)
                       _chip(
-                        info.BookStatus,
+                        info.status,
                         bg: AppColors.brandSoft,
                         fg: AppColors.brand,
                       ),
-                    if (info.Rate > 0)
+                    if (info.rating > 0)
                       _chip(
-                        '${info.Rate.toStringAsFixed(1)} 分',
+                        '${info.rating.toStringAsFixed(1)} 分',
                         bg: const Color(0x1AFA9D3B),
                         fg: const Color(0xFFFA9D3B),
                       ),
-                    if (info.Count > 0)
+                    if (info.ratingCount > 0)
                       _chip(
-                        '${_formatCount(info.Count)} 人气',
+                        '${_formatCount(info.ratingCount)} 人气',
                         bg: _dark
                             ? const Color(0x22FFFFFF)
                             : const Color(0x0F000000),
@@ -318,7 +318,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
   // ---------------------------------------------------------------------------
 
   Widget _descBody() {
-    final desc = info.Desc.trim();
+    final desc = info.description.trim();
     if (desc.isEmpty) {
       return Text(
         '暂无简介',
@@ -355,8 +355,8 @@ class _BookDetailState extends ConsumerState<BookDetail> {
   // ---------------------------------------------------------------------------
 
   Widget _catalogBody() {
-    final latest = info.LastChapter.trim();
-    final time = info.LastTime.trim();
+    final latest = info.latestChapter.trim();
+    final time = info.updatedAt.trim();
     return InkWell(
       onTap: _openRead,
       borderRadius: BorderRadius.circular(8),
@@ -418,7 +418,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
   // ---------------------------------------------------------------------------
 
   Widget _sameAuthorBody() {
-    final list = info.SameAuthorBooks;
+    final list = info.relatedBooks;
     return Column(
       children: [
         for (var i = 0; i < list.length; i++) ...[
@@ -488,7 +488,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
 
   Widget _buildBottomBar() {
     final model = ref.watch(shelfModelProvider);
-    final inShelf = model.inShelf(info.Id);
+    final inShelf = model.inShelf(info.id);
 
     return Align(
       alignment: Alignment.bottomCenter,

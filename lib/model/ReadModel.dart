@@ -1791,10 +1791,11 @@ class ReadModel with ChangeNotifier {
       b.bookUrl = hit.bookUrl;
       b.originName = source.bookSourceName;
       b.tocUrl = tocUrl;
-      b.name = info.Name.isNotEmpty ? info.Name : b.name;
-      b.author = info.Author.isNotEmpty ? info.Author : b.author;
-      b.coverUrl = info.Img.isNotEmpty ? info.Img : b.coverUrl;
-      b.description = info.Desc.isNotEmpty ? info.Desc : b.description;
+      b.name = info.name.isNotEmpty ? info.name : b.name;
+      b.author = info.author.isNotEmpty ? info.author : b.author;
+      b.coverUrl = info.coverUrl.isNotEmpty ? info.coverUrl : b.coverUrl;
+      b.description =
+          info.description.isNotEmpty ? info.description : b.description;
       b.latestChapter = toc.last.name;
       b.chapterIndex = mapped;
       b.pageIndex = 0;

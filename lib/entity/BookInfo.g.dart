@@ -1,25 +1,22 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// Hand-maintained for source fields.
+// Hand-maintained camelCase fields (no legacy key compat).
 
 part of 'BookInfo.dart';
 
 BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
   return BookInfo(
-    json['Count'] as int? ?? 0,
-    json['Author'] as String? ?? '',
-    json['BookStatus'] as String? ?? '',
-    json['CId'] as String? ?? '',
-    json['CName'] as String? ?? '',
-    json['Id'] as String? ?? '',
-    json['Name'] as String? ?? '',
-    json['Img'] as String? ?? '',
-    (json['Rate'] as num?)?.toDouble() ?? 0,
-    json['Desc'] as String? ?? '',
-    json['LastChapterId'] as String? ?? '',
-    json['LastChapter'] as String? ?? '',
-    json['FirstChapterId'] as String? ?? '',
-    json['LastTime'] as String? ?? '',
-    (json['SameAuthorBooks'] as List<dynamic>?)
+    id: json['id'] as String? ?? '',
+    name: json['name'] as String? ?? '',
+    author: json['author'] as String? ?? '',
+    coverUrl: json['coverUrl'] as String? ?? '',
+    category: json['category'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    status: json['status'] as String? ?? '',
+    latestChapter: json['latestChapter'] as String? ?? '',
+    updatedAt: json['updatedAt'] as String? ?? '',
+    rating: (json['rating'] as num?)?.toDouble() ?? 0,
+    ratingCount: json['ratingCount'] as int? ?? 0,
+    relatedBooks: (json['relatedBooks'] as List<dynamic>?)
             ?.map((e) => Book.fromJson(e as Map<String, dynamic>))
             .toList() ??
         <Book>[],
@@ -31,21 +28,18 @@ BookInfo _$BookInfoFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _$BookInfoToJson(BookInfo instance) => <String, dynamic>{
-      'Author': instance.Author,
-      'BookStatus': instance.BookStatus,
-      'CId': instance.CId,
-      'CName': instance.CName,
-      'Id': instance.Id,
-      'Name': instance.Name,
-      'Img': instance.Img,
-      'Rate': instance.Rate,
-      'Count': instance.Count,
-      'Desc': instance.Desc,
-      'LastChapterId': instance.LastChapterId,
-      'LastChapter': instance.LastChapter,
-      'FirstChapterId': instance.FirstChapterId,
-      'LastTime': instance.LastTime,
-      'SameAuthorBooks': instance.SameAuthorBooks,
+      'id': instance.id,
+      'name': instance.name,
+      'author': instance.author,
+      'coverUrl': instance.coverUrl,
+      'category': instance.category,
+      'description': instance.description,
+      'status': instance.status,
+      'latestChapter': instance.latestChapter,
+      'updatedAt': instance.updatedAt,
+      'rating': instance.rating,
+      'ratingCount': instance.ratingCount,
+      'relatedBooks': instance.relatedBooks,
       'sourceUrl': instance.sourceUrl,
       'bookUrl': instance.bookUrl,
       'originName': instance.originName,

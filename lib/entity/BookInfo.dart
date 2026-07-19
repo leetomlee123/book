@@ -4,23 +4,21 @@ import 'Book.dart';
 
 part 'BookInfo.g.dart';
 
+/// Detail-page / search-hit book metadata.
 @JsonSerializable()
 class BookInfo {
-  String Author;
-  String BookStatus;
-  String CId;
-  String CName;
-  String Id;
-  String Name;
-  String Img;
-  double Rate;
-  int Count;
-  String Desc;
-  String LastChapterId;
-  String LastChapter;
-  String FirstChapterId;
-  String LastTime;
-  List<Book> SameAuthorBooks;
+  String id;
+  String name;
+  String author;
+  String coverUrl;
+  String category;
+  String description;
+  String status;
+  String latestChapter;
+  String updatedAt;
+  double rating;
+  int ratingCount;
+  List<Book> relatedBooks;
 
   @JsonKey(defaultValue: '')
   String sourceUrl;
@@ -36,94 +34,50 @@ class BookInfo {
 
   Map<String, dynamic> toJson() => _$BookInfoToJson(this);
 
-  BookInfo.id(this.Id, this.Name, this.Img)
-      : Author = '',
-        BookStatus = '',
-        CId = '',
-        CName = '',
-        Rate = 0,
-        Count = 0,
-        Desc = '',
-        LastChapterId = '',
-        LastChapter = '',
-        FirstChapterId = '',
-        LastTime = '',
-        SameAuthorBooks = const [],
+  BookInfo({
+    this.id = '',
+    this.name = '',
+    this.author = '',
+    this.coverUrl = '',
+    this.category = '',
+    this.description = '',
+    this.status = '',
+    this.latestChapter = '',
+    this.updatedAt = '',
+    this.rating = 0,
+    this.ratingCount = 0,
+    this.relatedBooks = const [],
+    this.sourceUrl = '',
+    this.bookUrl = '',
+    this.originName = '',
+    this.tocUrl = '',
+  });
+
+  BookInfo.id(this.id, this.name, this.coverUrl)
+      : author = '',
+        category = '',
+        description = '',
+        status = '',
+        latestChapter = '',
+        updatedAt = '',
+        rating = 0,
+        ratingCount = 0,
+        relatedBooks = const [],
         sourceUrl = '',
         bookUrl = '',
         originName = '',
         tocUrl = '';
-
-  BookInfo.name(this.CId, this.Name)
-      : Author = '',
-        BookStatus = '',
-        CName = '',
-        Id = '',
-        Img = '',
-        Rate = 0,
-        Count = 0,
-        Desc = '',
-        LastChapterId = '',
-        LastChapter = '',
-        FirstChapterId = '',
-        LastTime = '',
-        SameAuthorBooks = const [],
-        sourceUrl = '',
-        bookUrl = '',
-        originName = '',
-        tocUrl = '';
-
-  BookInfo.x(this.Id)
-      : Author = '',
-        BookStatus = '',
-        CId = '',
-        CName = '',
-        Name = '',
-        Img = '',
-        Rate = 0,
-        Count = 0,
-        Desc = '',
-        LastChapterId = '',
-        LastChapter = '',
-        FirstChapterId = '',
-        LastTime = '',
-        SameAuthorBooks = const [],
-        sourceUrl = '',
-        bookUrl = '',
-        originName = '',
-        tocUrl = '';
-
-  BookInfo(
-      this.Count,
-      this.Author,
-      this.BookStatus,
-      this.CId,
-      this.CName,
-      this.Id,
-      this.Name,
-      this.Img,
-      this.Rate,
-      this.Desc,
-      this.LastChapterId,
-      this.LastChapter,
-      this.FirstChapterId,
-      this.LastTime,
-      this.SameAuthorBooks,
-      {this.sourceUrl = '',
-      this.bookUrl = '',
-      this.originName = '',
-      this.tocUrl = ''});
 
   Book toBook() {
     return Book(
-      id: Id,
-      name: Name,
-      author: Author,
-      coverUrl: Img,
-      category: CName,
-      description: Desc,
-      latestChapter: LastChapter,
-      updatedAt: LastTime,
+      id: id,
+      name: name,
+      author: author,
+      coverUrl: coverUrl,
+      category: category,
+      description: description,
+      latestChapter: latestChapter,
+      updatedAt: updatedAt,
       sourceUrl: sourceUrl,
       bookUrl: bookUrl,
       originName: originName,

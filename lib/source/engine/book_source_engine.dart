@@ -214,28 +214,19 @@ class BookSourceEngine {
     final kind = pick(r.kind, seed?.kind ?? '');
     final id = makeBookKey(source.bookSourceUrl, bookUrl);
 
-    final info = BookInfo(
-      0,
-      author,
-      '',
-      '',
-      kind,
-      id,
-      name,
-      cover,
-      0,
-      intro,
-      '',
-      last,
-      '',
-      '',
-      const [],
+    return BookInfo(
+      id: id,
+      name: name,
+      author: author,
+      coverUrl: cover,
+      category: kind,
+      description: intro,
+      latestChapter: last,
+      sourceUrl: source.bookSourceUrl,
+      bookUrl: bookUrl,
+      originName: source.bookSourceName,
+      tocUrl: tocUrl.isEmpty ? bookUrl : tocUrl,
     );
-    info.sourceUrl = source.bookSourceUrl;
-    info.bookUrl = bookUrl;
-    info.originName = source.bookSourceName;
-    info.tocUrl = tocUrl.isEmpty ? bookUrl : tocUrl;
-    return info;
   }
 
   Future<List<SourceChapter>> toc(BookSource source, String tocUrl) async {
