@@ -86,6 +86,31 @@ build_arm64.bat
 build.bat
 ```
 
+### GitHub Actions
+
+| Workflow | File | Trigger |
+|----------|------|---------|
+| **CI** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | push / PR: `flutter analyze` + `flutter test` |
+| **Build APK** | [`.github/workflows/build.yml`](.github/workflows/build.yml) | push `master`/`main`, tags `v*`, manual `workflow_dispatch`, `repository_dispatch: starred` |
+
+**Release example:**
+
+```bash
+git tag v1.0.0+10
+git push origin v1.0.0+10
+```
+
+**Optional signing secrets** (repo → Settings → Secrets and variables → Actions):
+
+| Secret | Meaning |
+|--------|---------|
+| `ANDROID_KEYSTORE_BASE64` | base64 of the keystore (`base64 -w0 key.jks`) |
+| `ANDROID_KEYSTORE_PASSWORD` | store password |
+| `ANDROID_KEY_ALIAS` | key alias |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+Without secrets, release falls back to debug signing (same as local). Artifacts are uploaded; `v*` tags also attach assets to a GitHub Release.
+
 ### Native pager (optional)
 
 ```bat

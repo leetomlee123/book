@@ -86,6 +86,32 @@ build_arm64.bat
 build.bat
 ```
 
+### GitHub Actions 打包
+
+| Workflow | 文件 | 触发 |
+|----------|------|------|
+| **CI** | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | push / PR：`flutter analyze` + `flutter test` |
+| **Build APK** | [`.github/workflows/build.yml`](.github/workflows/build.yml) | `master`/`main` push、标签 `v*`、手动 `workflow_dispatch`、`repository_dispatch: starred` |
+
+**发布示例：**
+
+```bash
+# 打标签并推送 → 自动构建并创建 GitHub Release
+git tag v1.0.0+10
+git push origin v1.0.0+10
+```
+
+**可选签名 Secrets**（仓库 → Settings → Secrets and variables → Actions）：
+
+| Secret | 说明 |
+|--------|------|
+| `ANDROID_KEYSTORE_BASE64` | keystore 文件 base64（`base64 -w0 key.jks`） |
+| `ANDROID_KEYSTORE_PASSWORD` | store 密码 |
+| `ANDROID_KEY_ALIAS` | key 别名 |
+| `ANDROID_KEY_PASSWORD` | key 密码 |
+
+未配置时与本地一致：release 回退 debug 签名。产物上传为 Artifact；`v*` 标签额外挂到 Release。
+
 ### 原生分页库（可选）
 
 ```bat

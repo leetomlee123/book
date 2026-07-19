@@ -39,7 +39,11 @@ flutter build apk --obfuscate --split-debug-info=HLQ_Struggle --target-platform 
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-`build.bat` is the project’s release build script (Windows). CI (`.github/workflows/dart.yml`) runs `flutter pub get` then `flutter build apk` on `repository_dispatch` type `starred`.
+`build.bat` / `build_arm64.bat` are the project’s release build scripts (Windows).
+
+GitHub Actions:
+- `.github/workflows/ci.yml` — `flutter analyze` + `flutter test` on push/PR
+- `.github/workflows/build.yml` — release APK on `master`/`main`, tags `v*`, `workflow_dispatch`, and `repository_dispatch` type `starred`; optional signing via `ANDROID_KEYSTORE_*` secrets; uploads artifacts and creates a GitHub Release for tags
 
 There is no separate lint script beyond `flutter analyze`. `file_names` is enabled (all lib paths are snake_case). Residual SpUtil/API-shaped identifiers still suppress `non_constant_identifier_names` / `constant_identifier_names`.
 
