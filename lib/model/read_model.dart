@@ -26,13 +26,13 @@ import 'package:book/model/reader/toc_service.dart';
 import 'package:book/model/reader/reader_input_controller.dart';
 import 'package:book/model/reader/reader_loading_presenter.dart';
 import 'package:book/model/reader/reader_painter.dart';
+import 'package:book/model/reader/reader_scroll_controller.dart';
 import 'package:book/model/reader/reader_theme_controller.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/view/page_turn/novel_page_painter.dart';
-import 'package:book/view/page_turn/reader_page_manager.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
@@ -78,13 +78,9 @@ class ReadModel with ChangeNotifier {
   ui.Image? get bgUI => _painter.bgUI;
   set bgUI(ui.Image? value) => _painter.bgUI = value;
 
-  /// 翻页/阅读模式：0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动（见 [ReaderPageManager]）
-  int currentAnimationMode = () {
-    final m = ReadSetting.getPageTurnMode();
-    // Legacy unused slide id mapped to static none.
-    if (m == 3) return ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
-    return m.clamp(0, 3);
-  }();
+  /// 翻页/阅读模式：0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动
+  int get currentAnimationMode => _scroll.currentAnimationMode;
+  set currentAnimationMode(int value) => _scroll.currentAnimationMode = value;
 
   Book? book;
   List<ChapterTocEntry> chapters = [];
@@ -153,6 +149,19 @@ class ReadModel with ChangeNotifier {
     setBgUI: (image) => bgUI = image,
     clearPictures: pictureCache.clear,
     markNeedsPaint: _markNeedsPaint,
+    notify: notifyListeners,
+  );
+  late final ReaderScrollController _scroll = ReaderScrollController(
+    bookOf: () => book,
+    chaptersOf: () => chapters,
+    progressReady: () => _progress.ready,
+    scheduleProgressSave: () => scheduleProgressSave(),
+    pictures: _pictures,
+    painter: _painter,
+    syncPaperTheme: _theme.syncPaperTheme,
+    paperThemeOf: () => paperTheme,
+    loadChapter: loadChapter,
+    clearPictures: pictureCache.clear,
     notify: notifyListeners,
   );
   BookSource? _activeSource;
@@ -438,9 +447,8 @@ class ReadModel with ChangeNotifier {
   /// Returns true if a turn was started.
   bool turnByDirection(int f, Offset detail) => _input.turnByDirection(f);
 
-    /// True when reader uses vertical page-stack scroll (mode 3).
-  bool get isScrollMode =>
-      currentAnimationMode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
+  /// True when reader uses vertical page-stack scroll (mode 3).
+  bool get isScrollMode => _scroll.isScrollMode;
 
   /// True after [hydrateReadingSession] finished hydrating and current chapter is ready.
   /// Scroll surface must wait for this — [sessionReady] alone is true during prepareOpen.
@@ -454,83 +462,31 @@ class ReadModel with ChangeNotifier {
 
   /// Switch page-turn / scroll mode.
   /// 0 none / 1 simulation / 2 cover / 3 vertical scroll.
-  void setAnimationMode(int mode) {
-    final m = mode.clamp(0, 3);
-    if (currentAnimationMode == m) return;
-    currentAnimationMode = m;
-    ReadSetting.setPageTurnMode(m);
-    // Drop pictures so chrome / no-chrome caches do not mix.
-    pictureCache.clear();
-    notifyListeners();
-  }
+  void setAnimationMode(int mode) => _scroll.setAnimationMode(mode);
 
-  static String animationModeLabel(int mode) {
-    switch (mode) {
-      case ReaderPageManager.TYPE_ANIMATION_SIMULATION_TURN:
-        return '仿真';
-      case ReaderPageManager.TYPE_ANIMATION_COVER_TURN:
-        return '覆盖';
-      case ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN:
-        return '滚动';
-      case ReaderPageManager.TYPE_ANIMATION_NONE:
-      default:
-        return '无动画';
-    }
-  }
+  static String animationModeLabel(int mode) =>
+      ReaderScrollController.animationModeLabel(mode);
 
   /// Update progress from scroll list visible page.
-  void applyScrollProgress(int chapterIdx, int pageIdx) {
-    final b = book;
-    if (b == null || !_progress.ready) return;
-    if (chapterIdx < 0 || chapterIdx >= chapters.length) return;
-    final idx = pageIdx < 0 ? 0 : pageIdx;
-    if (b.chapterIndex == chapterIdx && b.pageIndex == idx) return;
-    b.chapterIndex = chapterIdx;
-    b.pageIndex = idx;
-    final name = chapters[chapterIdx].title;
-    if (name.isNotEmpty) b.readingChapter = name;
-    // Debounced disk write only — do NOT notifyListeners (scroll UI owns state).
-    scheduleProgressSave();
-    AppLog.i('Read', 'scroll progress cur=$chapterIdx idx=$idx name=$name');
-  }
+  void applyScrollProgress(int chapterIdx, int pageIdx) =>
+      _scroll.applyScrollProgress(chapterIdx, pageIdx);
 
   /// Content-only picture for vertical scroll (no title/battery/page chrome).
-  ui.Picture? scrollPagePicture(int chapterIdx, int pageIdx, ReadPage readPage) {
-    return _pictures.scrollTile(
-      chapterIdx,
-      pageIdx,
-      readPage,
-      drawScrollContent,
-    );
-  }
+  ui.Picture? scrollPagePicture(
+          int chapterIdx, int pageIdx, ReadPage readPage) =>
+      _scroll.scrollPagePicture(chapterIdx, pageIdx, readPage);
 
   /// Natural height of a scroll tile (content only + tiny pad).
   double scrollPageHeight(ReadPage readPage, int pageIdx) =>
-      _painter.scrollPageHeight(readPage, pageIdx);
+      _scroll.scrollPageHeight(readPage, pageIdx);
 
   /// Paint body lines only into a tight-height picture for continuous scroll.
-  ui.Picture drawScrollContent(ReadPage readPage, int pageIdx) {
-    _theme.syncPaperTheme();
-    return _painter.drawScrollContent(
-      readPage,
-      pageIdx,
-      paperTheme: paperTheme,
-    );
-  }
+  ui.Picture drawScrollContent(ReadPage readPage, int pageIdx) =>
+      _scroll.drawScrollContent(readPage, pageIdx);
 
   /// Load a chapter for the scroll window (skips sentinel empty pages).
-  Future<ReadPage?> loadScrollChapter(int idx) async {
-    if (idx < 0 || idx >= chapters.length) return null;
-    final page = await loadChapter(idx);
-    if (page == null) return null;
-    if (page.chapterName == '加载中' ||
-        page.chapterName == '1' ||
-        page.chapterName == '-1') {
-      return null;
-    }
-    if (page.pages.isEmpty && page.chapterContent.isEmpty) return null;
-    return page;
-  }
+  Future<ReadPage?> loadScrollChapter(int idx) =>
+      _scroll.loadScrollChapter(idx);
 
   ui.Picture? resolveCurrentPicture({bool firstInit = false}) =>
       _pictures.resolveCurrent(firstInit: firstInit);
