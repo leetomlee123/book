@@ -106,11 +106,11 @@ class _ReadBookState extends ConsumerState<ReadBook>
     final name = (cur >= 0 && cur < readModel.chapters.length)
         ? readModel.chapters[cur].title
         : b.readingChapter;
-    final sSave = readModel.sSave == true;
+    final allowProgressSave = readModel.allowProgressSave == true;
     final Future<void> done =
         flush ? readModel.flushProgressSave() : readModel.saveData();
     unawaited(done.then((_) {
-      if (!sSave) return;
+      if (!allowProgressSave) return;
       shelfModel.updReadBookProcess(
         UpdateBookProcess(id, cur, idx, chapterName: name),
       );
@@ -209,7 +209,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
           ),
           TextButton(
             onPressed: () async {
-              readModel.sSave = false;
+              readModel.allowProgressSave = false;
               await ref
                   .read(shelfModelProvider)
                   .delLocalCache([widget.book.id]);

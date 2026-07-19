@@ -113,7 +113,7 @@ class ReadModel with ChangeNotifier {
   //页面上下文
 
 //是否修改font
-  bool? sSave;
+  bool? allowProgressSave;
 
   /// Sync seed when opening a book from shelf — call before first paint.
   /// Clears previous book state and plants a centered loading page so the
@@ -123,7 +123,7 @@ class ReadModel with ChangeNotifier {
     showMenu = false;
     chaptersLoading = true;
     loadingHint = '正在加载…';
-    sSave = true;
+    allowProgressSave = true;
     _progressReady = false;
     _progressSaveTimer?.cancel();
     _progressSaveTimer = null;
@@ -158,7 +158,7 @@ class ReadModel with ChangeNotifier {
     showMenu = false;
     chaptersLoading = true;
     loadingHint = loadingHint.isEmpty ? '正在加载…' : loadingHint;
-    sSave = true;
+    allowProgressSave = true;
     // book already set by prepareOpen when coming from shelf.
     book ??= null;
     final b = book;
@@ -662,7 +662,7 @@ class ReadModel with ChangeNotifier {
   /// Debounced progress save after page turns.
   void scheduleProgressSave(
       {Duration delay = _progressSaveDebounce}) {
-    if (sSave != true || book == null || !_progressReady) return;
+    if (allowProgressSave != true || book == null || !_progressReady) return;
     _progressSaveTimer?.cancel();
     if (delay == Duration.zero) {
       unawaited(saveData());
@@ -682,7 +682,7 @@ class ReadModel with ChangeNotifier {
 
   /*状态保存 */
   Future<void> saveData() async {
-    if (sSave != true) return;
+    if (allowProgressSave != true) return;
     // Skip until open path has merged DB progress + restored page index.
     // Otherwise lifecycle/dispose can overwrite durable progress with route defaults.
     if (!_progressReady) {

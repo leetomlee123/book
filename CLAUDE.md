@@ -73,16 +73,17 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 | `lib/view/system/` | Reader chrome: font, menu, battery, log viewer |
 | `lib/model/` | `ChangeNotifier` business logic (snake_case: `read_model.dart`, `shelf_model.dart`, …) |
 | `lib/entity/` | DTOs: `json_annotation` + checked-in `*.g.dart` (camelCase fields; no legacy JSON key compat) |
-| `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`Http.dart`), text layout (`text_composition.dart`), interceptors, `Screen`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
+| `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`http.dart`), text layout (`text_composition.dart`), interceptors, `screen.dart`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
 | `lib/data/` | Local persistence: `ReaderDatabase` (`reader.db`), `BookRepository`, `ChapterRepository`, `SourceRepository` |
-| `lib/route/` | Fluro route table (`Routes.dart`) and handlers (`RouteHandler.dart`) |
+| `lib/route/` | Fluro route table (`routes.dart`) and handlers (`route_handler.dart`) |
 | `lib/animation/` | Custom page-turn animations used by the reader |
 | `lib/widgets/` | Reusable UI pieces |
 | `lib/service/` | Cache manager, tel/SMS helper |
+| `lib/model/reader/` | Reader collaborators: `text_paginator.dart`, `reader_painter.dart`, `chapter_content_loader.dart` |
 
 ### Networking
 
-- Singleton `HttpUtil` (`lib/common/Http.dart`): Dio 5 + `AuthInterceptor` (adds `auth` header from SpUtil + UA) + `ErrorInterceptor` (`DioException` → BotToast).
+- Singleton `HttpUtil` (`lib/common/http.dart`): Dio 5 + `AuthInterceptor` (adds `auth` header from SpUtil + UA) + `ErrorInterceptor` (`DioException` → BotToast).
 - Timeouts use `Duration` (Dio 5), not raw ints.
 - Base URLs and path constants live in `lib/common/common.dart` (`Common.domain`, shelf/search/chapter endpoints, SpUtil key names). Prefer adding endpoints there rather than hardcoding URLs in views.
 - JSON decode off the UI isolate via top-level `parseJson` + `compute`.
@@ -91,13 +92,13 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 ### Local data
 
 - **sqflite** single-file **`reader.db`** (`lib/data/db/reader_database.dart`): tables `books` + `chapters` + `sources` (FK cascade on chapters, page-layout cache on chapter rows).
-  - Access via `BookRepository` / `ChapterRepository` / `SourceRepository` under `lib/data/repositories/` (`ShelfModel`, `ReadModel`, `SourceModel`, shelf UI).
+  - Access via `BookRepository` / `ChapterRepository` / `SourceRepository` under `lib/data/repositories/` (`shelf_model`, `read_model`, `source_model`, shelf UI).
   - Boot (`AppInit`) calls `ReaderDatabase.wipeLegacyDatabases()` — deletes old `books.db` / `chapters.db` / `sources.db` (and dead video/voice DBs). **No data migration.** Also scrubs legacy SpUtil `*pages*` keys.
 - **SpUtil** is a **local facade** over `shared_preferences` in `lib/common/local_store.dart` (not flustars). Same key strings as before (`auth`, theme, fonts, reading style, remote config). Login: `SpUtil.haveKey("token")` / `"auth"`. Also provides `DateUtil` / `NumUtil` / `DirectoryUtil` used by call sites.
 
 ### Reader pipeline (high level)
 
-`ReadModel` owns the active book, chapter list (`List<ChapterTocEntry>`), pre/cur/next `ReadPage`, background, and menu state. Page paint lives in `ReaderPainter` (`lib/model/reader/reader_painter.dart`). Content is laid out by `TextComposition.parseContentAsync` (preferred) / `parseContent`:
+`ReadModel` owns the active book, chapter list (`List<ChapterTocEntry>`), pre/cur/next `ReadPage`, background, and menu state. Page paint lives in `ReaderPainter` (`lib/model/reader/reader_painter.dart`); chapter body/layout load lives in `ChapterContentLoader`. Content is laid out by `TextComposition.parseContentAsync` (preferred) / `parseContent`:
 
 1. Metrics (`fontSize`, box size, padding…) are read on the **UI isolate** (`SpUtil` / `Screen`).
 2. **Rust** `book_pager` runs via `BookPager.paginateAsync` → `Isolate.run` so long chapters do **not** block frames (each worker isolate loads `libbook_pager` itself).
