@@ -17,6 +17,7 @@ import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/chapter_download_service.dart';
+import 'package:book/model/reader/chapter_window_controller.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
@@ -99,6 +100,24 @@ class ReadModel with ChangeNotifier {
   late final ChapterDownloadService _downloads = ChapterDownloadService(
     engine: _engine,
     chapters: _chapters,
+  );
+  late final ChapterWindowController _window = ChapterWindowController(
+    bookOf: () => book,
+    chaptersLength: () => chapters.length,
+    loadChapter: loadChapter,
+    warmDiskCaches: _warmDiskChapterCaches,
+    messagePage: _messagePage,
+    showLoading: _showTextLoading,
+    hideLoading: _hideTextLoading,
+    setCurPage: (page) => curPage = page,
+    setPrePage: (page) => prePage = page,
+    setNextPage: (page) => nextPage = page,
+    clearPictures: pictureCache.clear,
+    restorePageIndex: _restorePageIndex,
+    markNeedsPaint: () {
+      canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+    },
+    notify: notifyListeners,
   );
   BookSource? _activeSource;
 
@@ -320,59 +339,11 @@ class ReadModel with ChangeNotifier {
     _loadingToken++;
   }
 
-  Future openChapterAt(int idx, bool jump, {bool showLoading = true}) async {
-    // Preserve in-chapter page across loading placeholder (jump still resets).
-    final keepIndex = book?.pageIndex ?? 0;
-    if (showLoading) {
-      await _showTextLoading('正在加载…');
-    }
-
-    try {
-      final b = book;
-      if (b != null && chapters.isNotEmpty) {
-        if (idx < 0) idx = 0;
-        if (idx >= chapters.length) idx = chapters.length - 1;
-        b.chapterIndex = idx;
-      }
-
-      // Warm cur±1 disk rows in one SQLite query before paginating neighbors.
-      await _warmDiskChapterCaches(idx);
-
-      curPage = await loadChapter(idx);
-      curPage ??= await _messagePage(
-          '加载失败',
-          '当前章节内容为空，请检查书源或点击菜单刷新。',
-        );
-
-      // Drop stale page-picture cache for this book so new layout is painted.
-      pictureCache.clear();
-
-      loadChapter(idx + 1).then((value) => nextPage = value);
-      loadChapter(idx - 1).then((value) => prePage = value);
-
-      if (jump) {
-        book?.pageIndex = 0;
-      } else {
-        // Re-apply saved page after loading UI; clamp to real page count.
-        _restorePageIndex(keepIndex);
-      }
-      final ro = canvasKey?.currentContext?.findRenderObject();
-      if (ro != null) {
-        ro.markNeedsPaint();
-      }
-      notifyListeners();
-    } catch (e, st) {
-      AppLog.e('Read', 'openChapterAt failed idx=$idx', error: e, stackTrace: st);
-      curPage ??= await _messagePage('加载失败', '章节加载异常：$e');
-      notifyListeners();
-    } finally {
-      if (showLoading) {
-        _hideTextLoading();
-      }
-    }
+  Future openChapterAt(int idx, bool jump, {bool showLoading = true}) {
+    return _window.openAt(idx, jump, showLoadingUi: showLoading);
   }
 
-  Future<void> refreshThemePaint() async {
+    Future<void> refreshThemePaint() async {
     await reloadBackgroundImage();
     pictureCache.clear();
 
