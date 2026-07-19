@@ -20,6 +20,7 @@ import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
+import 'package:book/model/reader/reading_session_opener.dart';
 import 'package:book/model/reader/source_switch_service.dart';
 import 'package:book/model/reader/toc_service.dart';
 import 'package:book/model/reader/reader_painter.dart';
@@ -134,6 +135,34 @@ class ReadModel with ChangeNotifier {
       return _activeSource;
     },
   );
+  late final ReadingSessionOpener _sessionOpener = ReadingSessionOpener(
+    books: _books,
+    chapters: _chapters,
+    ensureSource: _ensureSource,
+    activeSourceOf: () => _activeSource,
+    loadToc: ({bool init = false}) => loadToc(init: init),
+    openChapterAt: (idx, jump, {bool showLoading = true}) =>
+        openChapterAt(idx, jump, showLoading: showLoading),
+    hasPageCache: _hasPageCache,
+    restorePageIndex: _restorePageIndex,
+    messagePage: _messagePage,
+    showLoading: _showTextLoading,
+    bookOf: () => book,
+    setBook: (b) => book = b,
+    chaptersOf: () => chapters,
+    setChapters: (c) => chapters = c,
+    curPageOf: () => curPage,
+    setCurPage: (page) => curPage = page,
+    setElectricQuantity: (v) => electricQuantity = v,
+    setShowMenu: (v) => showMenu = v,
+    setChaptersLoading: (v) => chaptersLoading = v,
+    setLoadingHint: (v) => loadingHint = v,
+    loadingHintOf: () => loadingHint,
+    setAllowProgressSave: (v) => allowProgressSave = v,
+    setSessionReady: (v) => sessionReady = v,
+    setProgressReady: (v) => _progress.ready = v,
+    notify: notifyListeners,
+  );
 
   //显示上层 设置
   bool showMenu = false;
@@ -195,168 +224,9 @@ class ReadModel with ChangeNotifier {
   }
 
   //获取本书记录
-  Future<void> hydrateReadingSession() async {
-    try {
-      electricQuantity = (await Battery().batteryLevel) / 100;
-    } catch (e) {
-      AppLog.w('Read', 'batteryLevel failed', error: e);
-      electricQuantity = 1.0;
-    }
-    showMenu = false;
-    chaptersLoading = true;
-    loadingHint = loadingHint.isEmpty ? '正在加载…' : loadingHint;
-    allowProgressSave = true;
-    // book already set by prepareOpen when coming from shelf.
-    book ??= null;
-    final b = book;
-    if (b == null) {
-      AppLog.w('Read', 'hydrateReadingSession: book is null');
-      chaptersLoading = false;
-      return;
-    }
+  Future<void> hydrateReadingSession() => _sessionOpener.hydrate();
 
-    // Prefer durable progress from reader.db over possibly-stale route JSON.
-    // Snapshot IMMEDIATELY — loading UI must never overwrite these.
-    var savedCur = b.chapterIndex;
-    var savedIndex = b.pageIndex;
-    try {
-      final dbBook = await _books.getById(b.id);
-      if (dbBook != null) {
-        savedCur = dbBook.chapterIndex;
-        savedIndex = dbBook.pageIndex;
-        b.chapterIndex = savedCur;
-        b.pageIndex = savedIndex;
-        b.scrollOffset = dbBook.scrollOffset;
-        if (dbBook.readingChapter.isNotEmpty) {
-          b.readingChapter = dbBook.readingChapter;
-        }
-        AppLog.i(
-          'Read',
-          'merged db progress cur=$savedCur index=$savedIndex '
-              'name=${b.readingChapter}',
-        );
-      }
-    } catch (e) {
-      AppLog.w('Read', 'merge db progress failed', error: e);
-    }
-
-    // Ensure a loading page exists (in case prepareOpen was skipped).
-    if (curPage == null || curPage!.chapterName != '加载中') {
-      curPage = await _messagePage('加载中', loadingHint);
-      notifyListeners();
-    }
-
-    AppLog.i(
-      'Read',
-      'open id=${b.id} name=${b.name} cur=$savedCur index=$savedIndex '
-          'source=${b.originName} sourceUrl=${b.sourceUrl} bookUrl=${b.bookUrl}',
-    );
-
-    if (b.sourceUrl.isEmpty || b.bookUrl.isEmpty) {
-      AppLog.w('Read', 'missing sourceUrl/bookUrl for ${b.id}');
-      BotToast.showText(text: '旧版云端书籍无法继续阅读，请重新搜索添加');
-      curPage = await _messagePage(
-        '无法阅读',
-        '旧版云端书籍缺少书源信息，请重新搜索添加后再阅读。',
-      );
-      // Restore snapshot; do not mark ready (cannot read / no page turn).
-      b.chapterIndex = savedCur < 0 ? 0 : savedCur;
-      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      sessionReady = true;
-      chaptersLoading = false;
-      _progress.ready = false;
-      notifyListeners();
-      return;
-    }
-
-    await _showTextLoading('正在准备书源…');
-    // Loading placeholder must not wipe durable progress.
-    b.chapterIndex = savedCur;
-    b.pageIndex = savedIndex;
-    await _ensureSource();
-    if (_activeSource == null) {
-      AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
-      BotToast.showText(text: '书源不存在：${b.originName}');
-      curPage = await _messagePage(
-        '书源不可用',
-        '未找到书源「${b.originName}」，请在书源管理中导入对应书源，或在阅读菜单中换源。',
-      );
-      b.chapterIndex = savedCur < 0 ? 0 : savedCur;
-      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      sessionReady = true;
-      chaptersLoading = false;
-      _progress.ready = false;
-      notifyListeners();
-      return;
-    }
-
-    await _showTextLoading('正在读取本地目录…');
-    b.chapterIndex = savedCur;
-    b.pageIndex = savedIndex;
-    chapters = await _chapters.getToc(b.id);
-    AppLog.i('Read', 'local chapters=${chapters.length}');
-
-    if (chapters.isNotEmpty) {
-      // refresh toc in background for new chapters
-      loadToc();
-
-      if (savedCur < 0 || savedCur >= chapters.length) {
-        AppLog.w(
-          'Read',
-          'clamp cur $savedCur -> 0 (len=${chapters.length})',
-        );
-        b.chapterIndex = 0;
-      } else {
-        b.chapterIndex = savedCur;
-      }
-      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      // Skip loading flash when body + page layout are already cached.
-      final canSkipLoading = await _hasPageCache(b.chapterIndex);
-      await openChapterAt(b.chapterIndex, false, showLoading: !canSkipLoading);
-      _restorePageIndex(savedIndex);
-      sessionReady = true;
-      chaptersLoading = false;
-      _progress.ready = true;
-      AppLog.i(
-        'Read',
-        'ready cur=${b.chapterIndex} index=${b.pageIndex} pages=${curPage?.pageOffsets} '
-            'contentLen=${curPage?.chapterContent.length}',
-      );
-
-      notifyListeners();
-    } else {
-      await _showTextLoading('正在获取章节目录…');
-      b.chapterIndex = savedCur;
-      b.pageIndex = savedIndex;
-      await loadToc(init: true);
-      AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
-      if (chapters.isEmpty) {
-        AppLog.e('Read', 'toc empty after fetch for ${b.bookUrl}');
-        curPage = await _messagePage(
-          '目录为空',
-          '未能获取章节目录，请检查书源规则、网络，或尝试换源。',
-        );
-        b.chapterIndex = savedCur < 0 ? 0 : savedCur;
-        b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      } else {
-        if (savedCur < 0 || savedCur >= chapters.length) {
-          b.chapterIndex = 0;
-        } else {
-          b.chapterIndex = savedCur;
-        }
-        b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-        await openChapterAt(b.chapterIndex, false, showLoading: true);
-        _restorePageIndex(savedIndex);
-      }
-      sessionReady = true;
-      chaptersLoading = false;
-      // Allow persist even if toc empty — chapter index is still meaningful.
-      _progress.ready = true;
-      notifyListeners();
-    }
-  }
-
-  /// Restore in-chapter page index after pagination.
+    /// Restore in-chapter page index after pagination.
   /// Prefer last page over page 0 when layout shrank (font/size change).
   void _restorePageIndex(int savedIndex) {
     final b = book;
@@ -552,7 +422,7 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-    Future<void> _warmDiskChapterCaches(int centerIdx) async {
+  Future<void> _warmDiskChapterCaches(int centerIdx) async {
     if (chapters.isEmpty) return;
     final ids = <String>[];
     for (final i in [centerIdx - 1, centerIdx, centerIdx + 1]) {
@@ -1037,7 +907,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-    void toggleTapLeftToAdvance() {
+  void toggleTapLeftToAdvance() {
     tapLeftToAdvance = !tapLeftToAdvance;
     SpUtil.putBool(PrefsKeys.leftClickNext, tapLeftToAdvance);
     notifyListeners();
@@ -1057,7 +927,7 @@ class ReadModel with ChangeNotifier {
     _pageTurn.commit(offsetDifference);
   }
 
-    /// Drop in-memory pictures outside the nearby chapter window / hard cap.
+  /// Drop in-memory pictures outside the nearby chapter window / hard cap.
   void _prunePictureCache() {
     final b = book;
     if (b == null) return;
