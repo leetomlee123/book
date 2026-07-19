@@ -11,7 +11,6 @@ import 'package:book/entity/book.dart';
 import 'package:book/entity/chapter_node.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/read_page.dart';
-import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/chapter_disk_warm_cache.dart';
 import 'package:book/model/reader/chapter_download_service.dart';
@@ -20,6 +19,7 @@ import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
+import 'package:book/model/reader/reading_session_lifecycle.dart';
 import 'package:book/model/reader/reading_session_opener.dart';
 import 'package:book/model/reader/source_switch_service.dart';
 import 'package:book/model/reader/toc_service.dart';
@@ -27,6 +27,7 @@ import 'package:book/model/reader/reader_input_controller.dart';
 import 'package:book/model/reader/reader_loading_presenter.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/reader_scroll_controller.dart';
+import 'package:book/model/reader/reader_source_coordinator.dart';
 import 'package:book/model/reader/reader_theme_controller.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -101,6 +102,28 @@ class ReadModel with ChangeNotifier {
     engine: _engine,
     chapters: _chapters,
   );
+  late final SourceSwitchService _sourceSwitch = SourceSwitchService(
+    engine: _engine,
+    books: _books,
+    chapters: _chapters,
+    ensureBookRow: _ensureBookRow,
+  );
+  late final ReaderSourceCoordinator _source = ReaderSourceCoordinator(
+    downloads: _downloads,
+    sourceSwitch: _sourceSwitch,
+    bookOf: () => book,
+    chaptersOf: () => chapters,
+    setChapters: (c) => chapters = c,
+    clearDiskWarm: _diskWarm.clear,
+    resetPages: resetPages,
+    clearPictures: pictureCache.clear,
+    openChapterAt: (idx, jump, {bool showLoading = true}) =>
+        openChapterAt(idx, jump, showLoading: showLoading),
+    showLoading: _showTextLoading,
+    hideLoading: _hideTextLoading,
+    loadToc: ({bool init = false}) => loadToc(init: init),
+    notify: notifyListeners,
+  );
   late final ChapterWindowController _window = ChapterWindowController(
     bookOf: () => book,
     chaptersLength: () => chapters.length,
@@ -113,10 +136,8 @@ class ReadModel with ChangeNotifier {
     setPrePage: (page) => prePage = page,
     setNextPage: (page) => nextPage = page,
     clearPictures: pictureCache.clear,
-    restorePageIndex: _restorePageIndex,
-    markNeedsPaint: () {
-      canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
-    },
+    restorePageIndex: (idx) => _lifecycle.restorePageIndex(idx),
+    markNeedsPaint: _markNeedsPaint,
     notify: notifyListeners,
   );
   late final ReaderInputController _input = ReaderInputController(
@@ -165,7 +186,6 @@ class ReadModel with ChangeNotifier {
     clearPictures: pictureCache.clear,
     notify: notifyListeners,
   );
-  BookSource? _activeSource;
 
   bool isDark() => SpUtil.getBool(PrefsKeys.dark);
 
@@ -183,11 +203,29 @@ class ReadModel with ChangeNotifier {
     chapters: _chapters,
     ensureBookRow: _ensureBookRow,
   );
-  late final SourceSwitchService _sourceSwitch = SourceSwitchService(
-    engine: _engine,
-    books: _books,
-    chapters: _chapters,
-    ensureBookRow: _ensureBookRow,
+  late final ReadingSessionLifecycle _lifecycle = ReadingSessionLifecycle(
+    bookOf: () => book,
+    setBook: (b) => book = b,
+    setChapters: (c) => chapters = c,
+    curPageOf: () => curPage,
+    setCurPage: (page) => curPage = page,
+    setPrePage: (page) => prePage = page,
+    setNextPage: (page) => nextPage = page,
+    setShowMenu: (v) => showMenu = v,
+    setChaptersLoading: (v) => chaptersLoading = v,
+    setLoadingHint: (v) => loadingHint = v,
+    loadingHintOf: () => loadingHint,
+    setSessionReady: (v) => sessionReady = v,
+    setAllowProgressSave: (v) => allowProgressSave = v,
+    setProgressReady: (v) => _progress.ready = v,
+    cancelProgress: _progress.cancel,
+    hideLoading: _hideTextLoading,
+    clearPictures: pictureCache.clear,
+    clearDiskWarm: _diskWarm.clear,
+    setPagePainter: (p) => pagePainter = p,
+    setCanvasKey: (k) => canvasKey = k,
+    messagePage: _messagePage,
+    notify: notifyListeners,
   );
   late final TocService _toc = TocService(
     engine: _engine,
@@ -195,20 +233,20 @@ class ReadModel with ChangeNotifier {
     ensureBookRow: _ensureBookRow,
     resolveSource: (b) async {
       book = b;
-      await _ensureSource();
-      return _activeSource;
+      await _source.ensureSource();
+      return _source.activeSource;
     },
   );
   late final ReadingSessionOpener _sessionOpener = ReadingSessionOpener(
     books: _books,
     chapters: _chapters,
-    ensureSource: _ensureSource,
-    activeSourceOf: () => _activeSource,
+    ensureSource: _source.ensureSource,
+    activeSourceOf: () => _source.activeSource,
     loadToc: ({bool init = false}) => loadToc(init: init),
     openChapterAt: (idx, jump, {bool showLoading = true}) =>
         openChapterAt(idx, jump, showLoading: showLoading),
     hasPageCache: (idx) => _diskWarm.hasPageCache(chapters, idx),
-    restorePageIndex: _restorePageIndex,
+    restorePageIndex: (idx) => _lifecycle.restorePageIndex(idx),
     messagePage: _messagePage,
     showLoading: _showTextLoading,
     bookOf: () => book,
@@ -258,79 +296,16 @@ class ReadModel with ChangeNotifier {
   set allowProgressSave(bool v) => _progress.enabled = v;
 
   /// Sync seed when opening a book from shelf — call before first paint.
-  /// Clears previous book state and plants a centered loading page so the
-  /// transition does not flash the last book or a blank scaffold.
-  void prepareOpen(Book b) {
-    _hideTextLoading();
-    showMenu = false;
-    chaptersLoading = true;
-    loadingHint = '正在加载…';
-    allowProgressSave = true;
-    _progress.ready = false;
-    _progress.cancel();
-    pictureCache.clear();
-    prePage = null;
-    nextPage = null;
-    pagePainter = null;
-    canvasKey = null;
-    chapters = [];
-    book = b;
-    curPage = ReaderLoadingPresenter.syncPlaceholder(loadingHint);
-    b.pageIndex = b.pageIndex < 0 ? 0 : b.pageIndex;
-    sessionReady = true;
-    // Do not notifyListeners here: the upcoming ReadBook build will watch us.
-  }
+  void prepareOpen(Book b) => _lifecycle.prepareOpen(b);
 
   //获取本书记录
   Future<void> hydrateReadingSession() => _sessionOpener.hydrate();
 
-  /// Restore in-chapter page index after pagination.
-  /// Prefer last page over page 0 when layout shrank (font/size change).
-  void _restorePageIndex(int savedIndex) {
-    final b = book;
-    if (b == null) return;
-    final pages = curPage?.pageOffsets ?? 0;
-    if (pages <= 0) {
-      // Content not ready — keep saved index so we don't wipe progress.
-      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      return;
-    }
-    final maxIdx = pages - 1;
-    if (savedIndex < 0) {
-      b.pageIndex = 0;
-    } else if (savedIndex > maxIdx) {
-      AppLog.w(
-        'Read',
-        'clamp index $savedIndex -> $maxIdx (pages=$pages)',
-      );
-      b.pageIndex = maxIdx;
-    } else {
-      b.pageIndex = savedIndex;
-    }
-  }
-
   /// Surface a fatal open failure without crashing the reader route.
-  Future<void> failOpen(Object error) async {
-    curPage = await _messagePage('打开失败', '阅读页初始化异常：$error');
-    // Do not zero progress or mark ready — avoid wiping DB on open failure.
-    sessionReady = true;
-    chaptersLoading = false;
-    _progress.ready = false;
-    notifyListeners();
-  }
+  Future<void> failOpen(Object error) => _lifecycle.failOpen(error);
 
   Future<ReadPage> _messagePage(String title, String message) =>
       _loading.messagePage(title, message);
-
-  Future<void> _ensureSource() async {
-    final b = book;
-    if (b == null) return;
-    if (_activeSource != null &&
-        _activeSource!.bookSourceUrl == b.sourceUrl) {
-      return;
-    }
-    _activeSource = await SourceModel().findByUrl(b.sourceUrl);
-  }
 
   Future<void> _showTextLoading(String text) => _loading.show(text);
 
@@ -406,7 +381,7 @@ class ReadModel with ChangeNotifier {
     final keepIndex = b?.pageIndex ?? 0;
     await openChapterAt(b?.chapterIndex ?? 0, false, showLoading: false);
     if (b != null) {
-      _restorePageIndex(keepIndex);
+      _lifecycle.restorePageIndex(keepIndex);
     }
     _markNeedsPaint();
     notifyListeners();
@@ -519,27 +494,8 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-  Future<void> clear() async {
-    // Caller must flush progress first (ReadBook.dispose / lifecycle).
-    // Cancel only the timer so a late debounce cannot write after clear.
-    _progress.cancel();
-    _progress.ready = false;
-    _hideTextLoading();
-    chapters = [];
-    _diskWarm.clear();
-    sessionReady = false;
-    chaptersLoading = false;
-    loadingHint = '正在加载…';
-    pictureCache.clear();
-    // Keep a neutral loading page so the next open doesn't paint stale content
-    // if prepareOpen races with a rebuild.
-    curPage = ReaderLoadingPresenter.syncPlaceholder(loadingHint);
-    prePage = null;
-    nextPage = null;
-    book = null;
-    pagePainter = null;
-    canvasKey = null;
-  }
+  /// Caller must flush progress first (ReadBook.dispose / lifecycle).
+  Future<void> clear() => _lifecycle.clear();
 
   Future<void> reloadChapters() async {
     final b = book;
@@ -596,70 +552,14 @@ class ReadModel with ChangeNotifier {
     nextPage = null;
   }
 
-  Future<void> downloadAll(int start) async {
-    if (chapters.isEmpty) {
-      await loadToc(init: true);
-    }
-    await _ensureSource();
-    await _downloads.downloadFrom(
-      toc: chapters,
-      start: start,
-      source: _activeSource,
-      bookName: book?.name ?? '',
-      batchSize: 100,
-    );
-  }
+  Future<void> downloadAll(int start) => _source.downloadAll(start);
 
-  Future<String> fetchChapterBody(String id, {int? idx}) async {
-    if (book == null) return '';
-    await _ensureSource();
-    return _downloads.fetchBody(
-      source: _activeSource,
-      toc: chapters,
-      chapterId: id,
-      idx: idx,
-    );
-  }
+  Future<String> fetchChapterBody(String id, {int? idx}) =>
+      _source.fetchChapterBody(id, idx: idx);
 
   /// Switch active source for the current book, remap progress, reload toc.
-  Future<bool> switchSource(BookSource source, SearchBook hit) async {
-    final b = book;
-    if (b == null) return false;
-    final oldName = (b.chapterIndex >= 0 && b.chapterIndex < chapters.length)
-        ? chapters[b.chapterIndex].title
-        : b.readingChapter;
-    final oldIndex = b.chapterIndex;
-
-    await _showTextLoading('正在换源…');
-    try {
-      final result = await _sourceSwitch.switchTo(
-        book: b,
-        source: source,
-        hit: hit,
-        oldChapterName: oldName,
-        oldChapterIndex: oldIndex,
-      );
-      if (result == null) return false;
-
-      _activeSource = result.source;
-      chapters = result.chapters;
-      _diskWarm.clear();
-      resetPages();
-      pictureCache.clear();
-      await openChapterAt(b.chapterIndex, true);
-      final mapped = result.mappedChapterIndex;
-      final name = (mapped >= 0 && mapped < chapters.length)
-          ? chapters[mapped].title
-          : '';
-      BotToast.showText(
-        text: '已切换至「${source.bookSourceName}」，定位到：$name',
-      );
-      notifyListeners();
-      return true;
-    } finally {
-      _hideTextLoading();
-    }
-  }
+  Future<bool> switchSource(BookSource source, SearchBook hit) =>
+      _source.switchSource(source, hit);
 
   void toggleTapLeftToAdvance() {
     tapLeftToAdvance = !tapLeftToAdvance;
