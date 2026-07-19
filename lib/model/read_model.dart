@@ -6,7 +6,6 @@ import 'package:book/common/read_setting.dart';
 import 'package:book/common/screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/common.dart';
-import 'package:book/common/text_composition.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
 import 'package:book/entity/book.dart';
@@ -33,12 +32,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class ReadModel with ChangeNotifier {
-  Color darkFont = Color(0x7FFFFFFF);
   NovelPagePainter? mPainter;
-  TextComposition? textComposition;
   Map<String, ui.Picture> widgets = {};
-  Stack? stackContent;
-  Paint bgPaint = Paint();
   GlobalKey? canvasKey;
   final ReaderPainter _painter = ReaderPainter();
 
@@ -70,8 +65,6 @@ class ReadModel with ChangeNotifier {
   final Map<String, ({String body, String? pagesJson, String? layoutFp})>
       _diskChapterWarm = {};
 
-  var currentPageValue = 0.0;
-
   bool isDark() => SpUtil.getBool("dark");
 
   double get electricQuantity => _painter.electricQuantity;
@@ -82,12 +75,8 @@ class ReadModel with ChangeNotifier {
   ReadPage? curPage;
   ReadPage? nextPage;
 
-  double percent = 0;
-
   //缓存批量提交大小
   int batchNum = 100;
-  bool refresh = true;
-
   /// Debounced progress persist after page turns.
   Timer? _progressSaveTimer;
   static const _progressSaveDebounce = Duration(milliseconds: 800);
@@ -117,14 +106,6 @@ class ReadModel with ChangeNotifier {
 
   /// Status text while [loadOk] is false or chapters are refreshing.
   String loadingHint = '正在加载目录…';
-
-  //页面宽高
-
-  bool jump = true;
-
-  //阅读方式
-  // bool isPage = false;
-  // bool isPage = SpUtil.getBool("isPage", defValue: true);
 
   //点击上下页方式
   bool leftClickNext = SpUtil.getBool("leftClickNext", defValue: false);

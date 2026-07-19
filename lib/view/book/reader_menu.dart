@@ -12,16 +12,16 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class Menu extends ConsumerStatefulWidget {
-  const Menu({super.key});
+class ReaderMenu extends ConsumerStatefulWidget {
+  const ReaderMenu({super.key});
 
   @override
-  ConsumerState<Menu> createState() => _MenuState();
+  ConsumerState<ReaderMenu> createState() => _MenuState();
 }
 
 enum Type { SLIDE, MORE_SETTING, DOWNLOAD, LAYOUT }
 
-class _MenuState extends ConsumerState<Menu> {
+class _MenuState extends ConsumerState<ReaderMenu> {
   Type type = Type.SLIDE;
   late ReadModel _readModel;
   late ColorModel _colorModel;
@@ -737,9 +737,17 @@ class _MenuState extends ConsumerState<Menu> {
 
   @override
   Widget build(BuildContext context) {
-    // Keep local refs in sync with provider updates (theme / left-click).
-    _readModel = ref.watch(readModelProvider);
+    // Rebuild when theme or reader chrome-relevant fields change.
     _colorModel = ref.watch(colorModelProvider);
+    ref.watch(readModelProvider.select((m) => (
+          m.book?.chapterIndex,
+          m.book?.name,
+          m.leftClickNext,
+          m.paperTheme,
+          m.currentAnimationMode,
+          m.chapters.length,
+        )));
+    _readModel = ref.read(readModelProvider);
 
     // Full-screen stack: dimmed/tap-to-dismiss layer under chrome, so the
     // blank reading area always closes the menu (including when settings is open).

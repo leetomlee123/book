@@ -186,7 +186,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
                   ? const ScrollContentReader()
                   : const PageContentReader(),
             ),
-            if (loadOk && showMenu) Menu(),
+            if (loadOk && showMenu) const ReaderMenu(),
           ],
         ),
       ),
