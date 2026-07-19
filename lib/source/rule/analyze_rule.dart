@@ -165,7 +165,10 @@ class AnalyzeRule {
     } else if (scope is Element) {
       result = CssAnalyzer.getString(scope, parsed.selector, parsed.attr);
       // Bare attr on current element already handled (empty selector).
-      // If child selector missed, fall back to element itself for text/href.
+      // If a *child* selector missed:
+      // - recover href/src from nested <a>/<img> (common toc/list rules)
+      // - do NOT fall back to scope.text for text/ownText — that dumps the
+      //   whole list-item (title+author+intro) and poisons author/name fields.
       if (result.isEmpty && parsed.selector.isNotEmpty) {
         if (parsed.attr == 'href' || parsed.attr == 'src') {
           final a = scope.localName == 'a'
@@ -174,11 +177,6 @@ class AnalyzeRule {
           if (a != null) {
             result = a.attributes[parsed.attr] ?? '';
           }
-        } else if (parsed.attr.isEmpty ||
-            parsed.attr == 'text' ||
-            parsed.attr == 'textNodes' ||
-            parsed.attr == 'ownText') {
-          result = scope.text;
         }
       }
     } else if (scope is Map || scope is List || (isJson && scope == null)) {
@@ -300,10 +298,9 @@ class AnalyzeRule {
     // Bare attribute on current element: text / href / @text / @href / data-xxx
     final bare = r.startsWith('@') ? r.substring(1) : r;
     if (_knownAttrs.contains(bare) || bare.startsWith('data-')) {
-      final attr = (bare == 'text' || bare == 'textNodes' || bare == 'ownText')
-          ? 'text'
-          : bare;
-      return _ParsedRule(isJson ? _RuleKind.json : _RuleKind.css, '', attr);
+      // Keep textNodes / ownText distinct — CssAnalyzer implements them
+      // differently from full descendant text.
+      return _ParsedRule(isJson ? _RuleKind.json : _RuleKind.css, '', bare);
     }
     // Default CSS; allow trailing @text / @href / @src / @html / @data-xxx
     return _splitAttr(r, isJson ? _RuleKind.json : _RuleKind.css);

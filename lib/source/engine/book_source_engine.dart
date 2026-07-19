@@ -5,6 +5,7 @@ import 'package:book/source/model/search_book.dart';
 import 'package:book/source/net/analyze_url.dart';
 import 'package:book/source/rule/analyze_rule.dart';
 import 'package:book/source/util/book_id.dart';
+import 'package:book/source/util/text_clean.dart';
 import 'package:book/source/util/url_join.dart';
 import 'package:html/dom.dart';
 
@@ -144,7 +145,7 @@ class BookSourceEngine {
       if (_isPlaceholderCover(cover)) cover = '';
       out.add(SearchBook(
         name: name,
-        author: rule.getString(authorRule, scope: item),
+        author: cleanAuthor(rule.getString(authorRule, scope: item)),
         kind: rule.getString(kindRule, scope: item),
         wordCount: rule.getString(wordCountRule, scope: item),
         lastChapter: rule.getString(lastChapterRule, scope: item),
@@ -208,7 +209,7 @@ class BookSourceEngine {
     if (tocUrl.isNotEmpty) tocUrl = urlJoin(resp.url, tocUrl);
 
     final name = pick(r.name, seed?.name ?? '');
-    final author = pick(r.author, seed?.author ?? '');
+    final author = cleanAuthor(pick(r.author, seed?.author ?? ''));
     final intro = pick(r.intro, seed?.intro ?? '');
     final last = pick(r.lastChapter, seed?.lastChapter ?? '');
     final kind = pick(r.kind, seed?.kind ?? '');

@@ -524,15 +524,52 @@ class _BookDetailState extends ConsumerState<BookDetail> {
             _barIconBtn(
               icon: Icons.swap_horiz,
               label: '换源',
-              onTap: () {
+              onTap: () async {
                 final readModel = ref.read(readModelProvider);
-                readModel.book = book;
-                showModalBottomSheet(
+                // Seed only when idle — don't clobber an active reading session.
+                if (!readModel.sessionReady ||
+                    readModel.book?.id != book.id) {
+                  readModel.book = book;
+                }
+                final ok = await showModalBottomSheet<bool>(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (_) => SourceSwitchSheet(readModel: readModel),
+                  builder: (_) => SourceSwitchSheet(
+                    readModel: readModel,
+                    onSwitched: (b) {
+                      // Keep detail page fields in sync with the new source.
+                      book
+                        ..sourceUrl = b.sourceUrl
+                        ..bookUrl = b.bookUrl
+                        ..originName = b.originName
+                        ..tocUrl = b.tocUrl
+                        ..name = b.name.isNotEmpty ? b.name : book.name
+                        ..author =
+                            b.author.isNotEmpty ? b.author : book.author
+                        ..coverUrl =
+                            b.coverUrl.isNotEmpty ? b.coverUrl : book.coverUrl
+                        ..description = b.description.isNotEmpty
+                            ? b.description
+                            : book.description
+                        ..latestChapter = b.latestChapter.isNotEmpty
+                            ? b.latestChapter
+                            : book.latestChapter;
+                      info
+                        ..sourceUrl = book.sourceUrl
+                        ..bookUrl = book.bookUrl
+                        ..originName = book.originName
+                        ..tocUrl = book.tocUrl
+                        ..name = book.name
+                        ..author = book.author
+                        ..coverUrl = book.coverUrl
+                        ..description = book.description
+                        ..latestChapter = book.latestChapter;
+                      if (mounted) setState(() {});
+                    },
+                  ),
                 );
+                if (ok == true && mounted) setState(() {});
               },
             ),
             const SizedBox(width: 8),

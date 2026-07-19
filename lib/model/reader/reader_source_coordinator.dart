@@ -77,6 +77,9 @@ class ReaderSourceCoordinator {
   }
 
   /// Switch active source for the current book, remap progress, reload toc.
+  ///
+  /// When there is no active reading session (e.g. book detail page), only
+  /// rewrites book metadata / TOC in DB — does not open a chapter window.
   Future<bool> switchSource(BookSource source, SearchBook hit) async {
     final b = bookOf();
     if (b == null) return false;
@@ -85,6 +88,8 @@ class ReaderSourceCoordinator {
         ? chapters[b.chapterIndex].title
         : b.readingChapter;
     final oldIndex = b.chapterIndex;
+    // Detail page sets book without hydrating a session — skip chapter open.
+    final hasSession = chapters.isNotEmpty;
 
     await showLoading('正在换源…');
     try {
@@ -102,15 +107,21 @@ class ReaderSourceCoordinator {
       clearDiskWarm();
       resetPages();
       clearPictures();
-      await openChapterAt(b.chapterIndex, true);
-      final mapped = result.mappedChapterIndex;
-      final updated = chaptersOf();
-      final name = (mapped >= 0 && mapped < updated.length)
-          ? updated[mapped].title
-          : '';
-      BotToast.showText(
-        text: '已切换至「${source.bookSourceName}」，定位到：$name',
-      );
+      if (hasSession) {
+        await openChapterAt(b.chapterIndex, true);
+        final mapped = result.mappedChapterIndex;
+        final updated = chaptersOf();
+        final name = (mapped >= 0 && mapped < updated.length)
+            ? updated[mapped].title
+            : '';
+        BotToast.showText(
+          text: '已切换至「${source.bookSourceName}」，定位到：$name',
+        );
+      } else {
+        BotToast.showText(
+          text: '已切换至「${source.bookSourceName}」',
+        );
+      }
       notify();
       return true;
     } finally {

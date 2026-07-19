@@ -95,6 +95,40 @@ void main() {
       expect(author, '张三');
     });
 
+    test('missed author child selector does not dump whole card text', () {
+      const html = '''
+<html><body>
+<div class="item">
+  <a href="/book/1">书名一</a>
+  <p class="meta">作者：张三 分类：玄幻</p>
+  <p class="intro">一段简介</p>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final list = rule.getList('.item');
+      final missed = rule.getString('.author@text', scope: list.first);
+      expect(missed, isEmpty);
+      final ok = rule.getString('.meta@text', scope: list.first);
+      expect(ok, contains('张三'));
+      expect(cleanAuthor(ok), '张三');
+    });
+
+    test('ownText excludes descendant elements', () {
+      const html = '''
+<html><body>
+<div class="author">作者：<span>王五</span> 连载</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final el = rule.getList('.author').first;
+      final own = rule.getString('ownText', scope: el);
+      expect(own.contains('王五'), isFalse);
+      expect(own, contains('作者'));
+      final full = rule.getString('text', scope: el);
+      expect(full, contains('王五'));
+    });
+
     test('normalizes Jsoup class./tag. and || fallbacks', () {
       const html = '''
 <html><body>
@@ -217,6 +251,19 @@ void main() {
   });
 
   group('utils', () {
+    test('cleanAuthor strips labels and metadata', () {
+      expect(cleanAuthor('作者：张三'), '张三');
+      expect(cleanAuthor('作者 李四'), '李四');
+      expect(cleanAuthor('原著：王五'), '王五');
+      expect(cleanAuthor('张三 分类：玄幻 状态：连载'), '张三');
+      expect(
+        cleanAuthor('书名一\n作者：赵六 分类：都市\n简介xxx'),
+        '赵六',
+      );
+      expect(cleanAuthor(''), '');
+      expect(cleanAuthor('123'), '');
+    });
+
     test('urlJoin', () {
       expect(urlJoin('https://a.com/x/', 'y'), 'https://a.com/x/y');
       expect(urlJoin('https://a.com/x', '/y'), 'https://a.com/y');

@@ -140,9 +140,17 @@ class CssAnalyzer {
     switch (attr) {
       case '':
       case 'text':
-      case 'textNodes':
-      case 'ownText':
         return el.text;
+      case 'textNodes':
+        // Legado: direct text-node children joined by newlines.
+        return el.nodes
+            .whereType<Text>()
+            .map((n) => n.text.trim())
+            .where((s) => s.isNotEmpty)
+            .join('\n');
+      case 'ownText':
+        // Direct text only — exclude descendant element text.
+        return el.nodes.whereType<Text>().map((n) => n.text).join().trim();
       case 'html':
         return el.innerHtml;
       case 'href':
