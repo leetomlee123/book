@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
-import 'package:book/common/chapter_cache.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:book/common/screen.dart';
 import 'package:book/common/app_log.dart';
-import 'package:book/common/book_pager.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/data/repositories/book_repository.dart';
@@ -18,6 +16,7 @@ import 'package:book/entity/read_page.dart';
 import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
+import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -60,6 +59,11 @@ class ReadModel with ChangeNotifier {
   final ChapterRepository _chapters = ChapterRepository.instance;
   final BookSourceEngine _engine = BookSourceEngine();
   final TextPaginator _paginator = const TextPaginator();
+  late final ChapterContentLoader _contentLoader = ChapterContentLoader(
+    chaptersRepo: _chapters,
+    paginator: _paginator,
+    fetchContent: getChapterContent,
+  );
   BookSource? _activeSource;
 
   /// In-memory warm cache of disk chapter body + page layout (cur±1).
@@ -606,190 +610,17 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<ReadPage?> loadChapter(int idx) async {
-    // Empty toc: never treat as "beyond last chapter" (0 == length).
-    if (chapters.isEmpty) {
-      return _messagePage(
-        '目录为空',
-        '暂无章节，请检查书源或网络后重试。',
-      );
-    }
-    if (idx < 0) {
-      final r = ReadPage.kong();
-      r.chapterName = "1";
-      r.chapterContent = "Fall In Love At First Sight ,Miss.Zhang";
-      return r;
-    }
-    // Past last chapter — used as nextPage sentinel.
-    if (idx >= chapters.length) {
-      final r = ReadPage.kong();
-      r.chapterName = "-1";
-      r.chapterContent = "没有更多内容,等待作者更新";
-      return null;
-    }
-    var chapter = chapters[idx];
-    final r = ReadPage.kong();
-    r.chapterName = chapter.title;
-    String chapterId = chapter.id;
-
-    // Single SQLite round-trip: body + page layout (prefer warm cache).
-    var contentSource = 'empty';
-    String? cachedPagesJson;
-    String? cachedLayoutFp;
-    try {
-      final disk = _diskChapterWarm.remove(chapterId) ??
-          await _chapters.getChapterCache(chapterId);
-      r.chapterContent = disk.body;
-      cachedPagesJson = disk.pagesJson;
-      cachedLayoutFp = disk.layoutFp;
-      if (r.chapterContent.isNotEmpty) contentSource = 'db';
-    } catch (e) {
-      r.chapterContent = '';
-    }
-
-    // Re-fetch if cache is empty or looks truncated (common after a bad source rule).
-    final cached = r.chapterContent;
-    final cacheLooksBad = cached.isEmpty ||
-        (cached.length < 120 &&
-            !cached.startsWith('章节内容加载失败') &&
-            !cached.startsWith('书源不存在') &&
-            !cached.startsWith('章节地址为空') &&
-            !cached.startsWith('内容为空'));
-    if (cacheLooksBad) {
-      final fresh = await getChapterContent(chapterId, idx: idx);
-      if (fresh.isNotEmpty &&
-          !fresh.startsWith('章节内容加载失败') &&
-          !fresh.startsWith('书源不存在') &&
-          !fresh.startsWith('章节地址为空') &&
-          fresh.length > cached.length) {
-        r.chapterContent = fresh;
-        contentSource = 'network';
-        cachedPagesJson = null;
-        cachedLayoutFp = null;
-        var temp = [ChapterNode(r.chapterContent, chapterId)];
-        // updateBodies also clears stale pages_json for this chapter.
-        await _chapters.updateBodies(temp);
-        chapters[idx].hasBody = true;
-      } else if (r.chapterContent.isEmpty) {
-        r.chapterContent = fresh.isNotEmpty
-            ? fresh
-            : '章节内容加载失败，请检查书源或换源后重试';
-        contentSource = fresh.isNotEmpty ? 'network-error-text' : 'fail';
-      }
-    }
-
-    // --- CONTENT DIAG (区分「正文本身一行」vs「分页坏了」) ---
-    _logContentDiag(idx, r.chapterName, r.chapterContent, contentSource);
-
-    final b = book;
-
-    // Try disk page-layout cache before re-paginating.
-    final layout = _paginator.layoutParams();
-    final contentSig = _paginator.contentSignature(r.chapterContent);
-    final fp = _paginator.layoutFingerprint(
-      layoutParams: layout,
-      contentLen: r.chapterContent.length,
-      contentSig: contentSig,
+    return _contentLoader.load(
+      chapters: chapters,
+      idx: idx,
+      warm: _diskChapterWarm,
+      bookId: book?.id,
+      bookChapterIndex: book?.chapterIndex ?? idx,
+      messagePage: _messagePage,
     );
-
-    List<TextPage>? cachedPages;
-    try {
-      if (cachedPagesJson != null &&
-          cachedPagesJson.isNotEmpty &&
-          cachedLayoutFp == fp) {
-        cachedPages =
-            await ChapterRepository.decodePagesJson(cachedPagesJson);
-        if (cachedPages != null && cachedPages.isNotEmpty) {
-          AppLog.i(
-            'Read',
-            'page cache HIT idx=$idx id=$chapterId pages=${cachedPages.length}',
-          );
-        }
-      } else if (cachedPagesJson != null && cachedPagesJson.isNotEmpty) {
-        AppLog.i(
-          'Read',
-          'page cache STALE idx=$idx fp=$cachedLayoutFp want=$fp',
-        );
-      }
-    } catch (e) {
-      AppLog.w('Read', 'page cache read failed idx=$idx', error: e);
-    }
-
-    if (cachedPages != null && cachedPages.isNotEmpty) {
-      r.pages = cachedPages;
-      // Cache hit skips re-layout — still report which engine is available now.
-      debugPrint(
-        '[PagerEngine] CACHE_HIT idx=$idx pages=${cachedPages.length} '
-        'nativeAvailable=${BookPager.isAvailable} '
-        '(layout not re-run; open a new chapter or change font to force paginate)',
-      );
-      AppLog.i(
-        'Pager',
-        'CACHE_HIT idx=$idx pages=${cachedPages.length} '
-            'native=${BookPager.isAvailable}',
-      );
-    } else {
-      // Always re-paginate with current layout metrics (Rust / Dart).
-      try {
-        r.pages = await _paginator.paginate(r);
-      } catch (e, st) {
-        AppLog.e('Read', 'parseContentAsync failed idx=$idx',
-            error: e, stackTrace: st);
-        r.pages = const [];
-      }
-
-      if (r.pages.isEmpty) {
-        try {
-          r.pages = await _paginator.paginate(r);
-        } catch (e, st) {
-          AppLog.e('Read', 'parseContentAsync retry failed idx=$idx',
-              error: e, stackTrace: st);
-        }
-        if (r.pages.isEmpty) {
-          r.pages = _fallbackPages(r.chapterContent);
-        }
-      }
-
-      // Persist layout async so UI is not blocked by JSON encode + SQLite.
-      if (r.pages.isNotEmpty &&
-          contentSource != 'fail' &&
-          contentSource != 'network-error-text' &&
-          !r.chapterContent.startsWith('章节内容加载失败')) {
-        final pagesToSave = r.pages;
-        final saveId = chapterId;
-        final saveFp = fp;
-        final bookId = b?.id;
-        final cur = b?.chapterIndex ?? idx;
-        unawaited(() async {
-          try {
-            final json =
-                await ChapterRepository.encodePagesJson(pagesToSave);
-            // Skip pathological multi-MB pages for a single chapter.
-            if (json.length > 2 * 1024 * 1024) {
-              AppLog.w(
-                'Read',
-                'skip page cache write idx=$idx size=${json.length}',
-              );
-              return;
-            }
-            await _chapters.savePageLayout(saveId, json, saveFp);
-            await ChapterCache.maybeEvict(
-              activeBookId: bookId,
-              activeCur: cur,
-            );
-          } catch (e) {
-            AppLog.w('Read', 'page cache write failed idx=$idx', error: e);
-          }
-        }());
-      }
-    }
-
-    // --- PAGE DIAG ---
-    _logPageDiag(idx, r);
-
-    return r;
   }
 
-  /// True when chapter body + fingerprinted page layout are both on disk.
+    /// True when chapter body + fingerprinted page layout are both on disk.
   Future<bool> _hasPageCache(int idx) async {
     if (idx < 0 || idx >= chapters.length) return false;
     final chapterId = chapters[idx].id;
@@ -810,118 +641,6 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  /// 打印正文形态：长度 / 换行数 / 最长一行 / 预览。
-  void _logContentDiag(
-    int idx,
-    String name,
-    String content,
-    String source,
-  ) {
-    final text = content;
-    final len = text.length;
-    final nl = '\n'.allMatches(text).length;
-    final crlf = '\r\n'.allMatches(text).length;
-    final br = RegExp(r'<br\s*/?>', caseSensitive: false).allMatches(text).length;
-    final pTag = RegExp(r'</p>', caseSensitive: false).allMatches(text).length;
-    final lines = text.split('\n');
-    var maxLine = 0;
-    for (final l in lines) {
-      if (l.length > maxLine) maxLine = l.length;
-    }
-    final preview = text.length <= 120
-        ? text.replaceAll('\n', r'\n')
-        : '${text.substring(0, 120).replaceAll('\n', r'\n')}…';
-    final verdict = (len > 80 && nl == 0 && br == 0 && pTag == 0)
-        ? 'CONTENT_ONE_BLOB' // 正文几乎无换行 → 源/清洗问题或需强制按字宽切
-        : (len <= 40 ? 'CONTENT_SHORT' : 'CONTENT_HAS_BREAKS');
-    AppLog.i(
-      'ReadDiag',
-      'CONTENT idx=$idx name=$name src=$source '
-          'len=$len newlines=$nl crlf=$crlf br=$br pTag=$pTag '
-          'splitLines=${lines.length} maxLineLen=$maxLine '
-          'verdict=$verdict preview="$preview"',
-    );
-  }
-
-  /// 打印分页结果：页数 / 首页行数 / 单行是否过长。
-  void _logPageDiag(int idx, ReadPage r) {
-    final pages = r.pages;
-    final totalLines =
-        pages.fold<int>(0, (n, p) => n + p.lines.length);
-    final lines0 = pages.isEmpty ? 0 : pages.first.lines.length;
-    final firstLine = (pages.isEmpty || pages.first.lines.isEmpty)
-        ? ''
-        : pages.first.lines.first.text;
-    final firstLineLen = firstLine.characters.length;
-    var maxLineChars = 0;
-    for (final p in pages) {
-      for (final l in p.lines) {
-        final c = l.text.characters.length;
-        if (c > maxLineChars) maxLineChars = c;
-      }
-    }
-    final contentLen = r.chapterContent.length;
-    String verdict;
-    if (contentLen > 80 && totalLines <= 1) {
-      verdict = 'PAGE_BROKEN_ONE_LINE'; // 正文不短但分页只 1 行 → 分页错误
-    } else if (contentLen > 80 && maxLineChars > 80) {
-      verdict = 'PAGE_OVERLONG_LINE'; // 有行过长 → 软换行失败
-    } else if (contentLen <= 40) {
-      verdict = 'PAGE_OK_SHORT_CONTENT';
-    } else {
-      verdict = 'PAGE_OK';
-    }
-    AppLog.i(
-      'ReadDiag',
-      'PAGE idx=$idx name=${r.chapterName} contentLen=$contentLen '
-          'pages=${pages.length} totalLines=$totalLines lines0=$lines0 '
-          'firstLineLen=$firstLineLen maxLineChars=$maxLineChars '
-          'verdict=$verdict firstLine="${firstLine.length > 60 ? '${firstLine.substring(0, 60)}…' : firstLine}"',
-    );
-  }
-
-  /// Wrap plain text into simple pages when the normal pager failed.
-  List<TextPage> _fallbackPages(String content) {
-    final text = content.trim();
-    if (text.isEmpty) {
-      return [TextPage([TextLine('内容为空', 16, 0, 0)], 24)];
-    }
-    try {
-      final pages = _paginator.paginateSync(
-        ReadPage(text, '', 0, const []),
-      );
-      if (pages.isNotEmpty && pages.any((p) => p.lines.isNotEmpty)) {
-        return pages;
-      }
-    } catch (_) {}
-    // Character-chunk wrap so paint still shows multiple lines.
-    const charsPerLine = 18;
-    const linesPerPage = 20;
-    final lines = <TextLine>[];
-    final pages = <TextPage>[];
-    var dy = 0.0;
-    final lineH = ReadSetting.getFontSize() * ReadSetting.getLineHeight();
-    for (var i = 0; i < text.length; i += charsPerLine) {
-      final end = (i + charsPerLine > text.length) ? text.length : i + charsPerLine;
-      lines.add(TextLine(text.substring(i, end), 16, dy, 0));
-      dy += lineH;
-      if (lines.length >= linesPerPage) {
-        pages.add(TextPage(List<TextLine>.from(lines), dy));
-        lines.clear();
-        dy = 0;
-      }
-    }
-    if (lines.isNotEmpty) {
-      pages.add(TextPage(lines, dy));
-    }
-    return pages.isEmpty
-        ? [TextPage([TextLine(text, 16, 0, 0)], 24)]
-        : pages;
-  }
-
-  /*
-   * 页面配置修改（字号/行距等）：静默重分页，完成后刷新，不弹 loading。
-   */
   Future<void> updPage() async {
     widgets.clear();
     // Drop fingerprinted page layouts that no longer match current metrics.

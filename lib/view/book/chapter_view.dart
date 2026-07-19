@@ -249,10 +249,16 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
 
   @override
   Widget build(BuildContext context) {
-    final data = ref.watch(readModelProvider);
-    final chapters = data.chapters;
-    final cur = data.book?.chapterIndex ?? 0;
-    final bookName = data.book?.name ?? '目录';
+    final chapters =
+        ref.watch(readModelProvider.select((m) => m.chapters));
+    final cur =
+        ref.watch(readModelProvider.select((m) => m.book?.chapterIndex ?? 0));
+    final bookName =
+        ref.watch(readModelProvider.select((m) => m.book?.name ?? '目录'));
+    final chaptersLoading =
+        ref.watch(readModelProvider.select((m) => m.chaptersLoading));
+    final loadingHint =
+        ref.watch(readModelProvider.select((m) => m.loadingHint));
     final filtered = _filtered(chapters);
 
     if (!_centeredOnce && chapters.isNotEmpty && _query.isEmpty) {
@@ -311,12 +317,12 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
                 onLocate: chapters.isEmpty ? null : _goCurrent,
               ),
               Expanded(
-                child: data.chaptersLoading && chapters.isEmpty
+                child: chaptersLoading && chapters.isEmpty
                     ? Center(
                         child: Text(
-                          data.loadingHint.isEmpty
+                          loadingHint.isEmpty
                               ? '正在加载目录…'
-                              : data.loadingHint,
+                              : loadingHint,
                           style: TextStyle(color: _secondary, fontSize: 14),
                         ),
                       )
@@ -367,17 +373,17 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
                 secondary: _secondary,
                 divider: _divider,
                 showToTop: showToTopBtn && _query.isEmpty,
-                reloading: data.chaptersLoading,
-                onReload: data.chaptersLoading ? null : refresh,
-                onJumpList: data.chaptersLoading || _query.isNotEmpty
+                reloading: chaptersLoading,
+                onReload: chaptersLoading ? null : refresh,
+                onJumpList: chaptersLoading || _query.isNotEmpty
                     ? null
                     : topOrBottom,
                 onJumpChapter:
-                    data.chaptersLoading || chapters.isEmpty
+                    chaptersLoading || chapters.isEmpty
                         ? null
                         : _showJumpDialog,
                 onLocateCurrent:
-                    data.chaptersLoading || chapters.isEmpty
+                    chaptersLoading || chapters.isEmpty
                         ? null
                         : _goCurrent,
               ),

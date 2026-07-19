@@ -1,5 +1,4 @@
 import 'package:book/entity/book_info.dart';
-import 'package:book/entity/g_book.dart';
 import 'package:book/entity/search_item.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -17,7 +16,6 @@ class SearchModel with ChangeNotifier {
   BuildContext? context;
   bool showResult = false;
   List<SearchItem> bks = [];
-  List<GBook> mks = [];
   List<Widget> hot = [];
   List<Widget> showHot = [];
   int idx = 0;
@@ -54,7 +52,6 @@ class SearchModel with ChangeNotifier {
     idx = 0;
     showResult = false;
     bks = [];
-    mks = [];
     hot = [];
     showHot = [];
     historyKey = "";
@@ -185,7 +182,6 @@ class SearchModel with ChangeNotifier {
 
   void onRefresh() async {
     bks = [];
-    mks = [];
     page = 1;
     loading = true;
     await getSearchData();
@@ -283,7 +279,6 @@ class SearchModel with ChangeNotifier {
     setHistory(w);
     showResult = true;
     bks = [];
-    mks = [];
     page = 1;
     temp = w;
     loading = true;
