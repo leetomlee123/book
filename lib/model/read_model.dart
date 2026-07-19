@@ -17,6 +17,7 @@ import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
+import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
@@ -36,6 +37,17 @@ import 'package:flutter/services.dart';
 class ReadModel with ChangeNotifier {
   NovelPagePainter? pagePainter;
   final PagePictureCache pictureCache = PagePictureCache();
+  late final PagePictureResolver _pictures = PagePictureResolver(
+    cache: pictureCache,
+    drawContent: (page, i) => drawContent(page, i),
+    loadChapter: loadChapter,
+    bookOf: () => book,
+    curPageOf: () => curPage,
+    prePageOf: () => prePage,
+    nextPageOf: () => nextPage,
+    setNextPage: (page) => nextPage = page,
+    activeBookId: () => book?.id,
+  );
   GlobalKey? canvasKey;
   final ReaderPainter _painter = ReaderPainter();
 
@@ -776,15 +788,13 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Content-only picture for vertical scroll (no title/battery/page chrome).
-  /// Canvas height hugs body lines so stacked pages join without gaps.
   ui.Picture? scrollPagePicture(int chapterIdx, int pageIdx, ReadPage readPage) {
-    final b = book;
-    if (b == null) return null;
-    if (pageIdx < 0 || pageIdx >= readPage.pages.length) return null;
-    final key = '${b.id}$chapterIdx${pageIdx}sc';
-    if (pictureCache.containsKey(key)) return pictureCache[key];
-    final pic = drawScrollContent(readPage, pageIdx);
-    return pictureCache.putIfAbsent(key, () => pic);
+    return _pictures.scrollTile(
+      chapterIdx,
+      pageIdx,
+      readPage,
+      drawScrollContent,
+    );
   }
 
   /// Natural height of a scroll tile (content only + tiny pad).
@@ -801,7 +811,7 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-    /// Load a chapter for the scroll window (skips sentinel empty pages).
+  /// Load a chapter for the scroll window (skips sentinel empty pages).
   Future<ReadPage?> loadScrollChapter(int idx) async {
     if (idx < 0 || idx >= chapters.length) return null;
     final page = await loadChapter(idx);
@@ -815,114 +825,18 @@ class ReadModel with ChangeNotifier {
     return page;
   }
 
-  ui.Picture? resolveCurrentPicture({bool firstInit = false}) {
-    final b = book;
-    if (b == null) return null;
-    var key = b.id.toString() + b.chapterIndex.toString() + b.pageIndex.toString();
+  ui.Picture? resolveCurrentPicture({bool firstInit = false}) =>
+      _pictures.resolveCurrent(firstInit: firstInit);
 
-    if (pictureCache.containsKey(key)) {
-      return pictureCache[key];
-    }
-    var widget = paintCurrentPicture();
-    if (widget != null) {
-      pictureCache.putIfAbsent(key, () => widget);
-    }
-    if (firstInit) {
-      Future.delayed(Duration(milliseconds: 200), () => preloadNeighborPictures());
-    }
-    return widget;
-  }
+  void preloadNeighborPictures() => _pictures.preloadNeighbors();
 
-  void preloadNeighborPictures() {
-    final b = book;
-    if (b == null || curPage == null) return;
+  ui.Picture? paintPreviousPicture() => _pictures.paintPrevious();
 
-    // Previous / next page pictures; null neighbors are handled inside pre/next.
-    if (prePage != null || b.pageIndex > 0) {
-      paintPreviousPicture();
-    }
-    if (nextPage != null || b.pageIndex + 1 < curPage!.pageOffsets) {
-      paintNextPicture();
-    }
-  }
+  ui.Picture? paintCurrentPicture() => _pictures.paintCurrent();
 
-  ui.Picture? paintPreviousPicture() {
-    final b = book;
-    final current = curPage;
-    if (b == null || current == null) return null;
-    final i = b.pageIndex - 1;
-    final key = b.id.toString() + b.chapterIndex.toString() + i.toString();
+  ui.Picture? paintNextPicture() => _pictures.paintNext();
 
-    if (pictureCache.containsKey(key)) {
-      return pictureCache[key];
-    }
-
-    final ui.Picture pic;
-    if (i < 0) {
-      final previous = prePage;
-      if (previous == null || previous.pages.isEmpty) return null;
-      pic = drawContent(previous, previous.pageOffsets - 1);
-    } else {
-      pic = drawContent(current, i);
-    }
-    return pictureCache.putIfAbsent(key, () => pic);
-  }
-
-  ui.Picture? paintCurrentPicture() {
-    final b = book;
-    final current = curPage;
-    if (b == null || current == null) return null;
-    // Clamp for paint only — never mutate durable progress during draw.
-    // Loading placeholders are 1 page; writing b.index=0 here wiped restores.
-    if (current.pages.isEmpty) return null;
-    var pageIdx = b.pageIndex;
-    if (pageIdx < 0) pageIdx = 0;
-    if (pageIdx >= current.pageOffsets) {
-      pageIdx = current.pageOffsets - 1;
-    }
-    final key = b.id.toString() + b.chapterIndex.toString() + pageIdx.toString();
-
-    if (pictureCache.containsKey(key)) {
-      return pictureCache[key];
-    }
-    Future.delayed(const Duration(milliseconds: 200), () {
-      // Skip if reader already left this book.
-      if (book?.id == b.id) preloadNeighborPictures();
-    });
-    final pic = drawContent(current, pageIdx);
-    return pictureCache.putIfAbsent(key, () => pic);
-  }
-
-  ui.Picture? paintNextPicture() {
-    final b = book;
-    final current = curPage;
-    if (b == null || current == null) return null;
-    final i = b.pageIndex + 1;
-    final key = b.id.toString() + b.chapterIndex.toString() + i.toString();
-
-    if (pictureCache.containsKey(key)) {
-      return pictureCache[key];
-    }
-
-    final ui.Picture pic;
-    if (i >= current.pageOffsets) {
-      final following = nextPage;
-      if (following == null) {
-        // Kick off async load; do not force-unwrap a null next chapter.
-        loadChapter(b.chapterIndex + 1).then((value) {
-          if (book?.id == b.id) nextPage = value;
-        });
-        return null;
-      }
-      if (following.pages.isEmpty) return null;
-      pic = drawContent(following, 0);
-    } else {
-      pic = drawContent(current, i);
-    }
-    return pictureCache.putIfAbsent(key, () => pic);
-  }
-
-  Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) async {
+    Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) async {
     ByteData data = await rootBundle.load(asset);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
         targetWidth: width, targetHeight: height);
@@ -944,7 +858,7 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-    Future<void> clear() async {
+  Future<void> clear() async {
     // Caller must flush progress first (ReadBook.dispose / lifecycle).
     // Cancel only the timer so a late debounce cannot write after clear.
     _progress.cancel();
