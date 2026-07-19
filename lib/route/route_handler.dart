@@ -10,12 +10,12 @@ import 'package:book/view/book/chapter_view.dart';
 import 'package:book/view/book/read_book.dart';
 import 'package:book/view/book/search_page.dart';
 import 'package:book/view/book/sort_shelf.dart';
-import 'package:book/view/person/Forgetpass.dart';
-import 'package:book/view/person/Login.dart';
-import 'package:book/view/person/Register.dart';
-import 'package:book/view/person/SourceManage.dart';
-import 'package:book/view/system/FontSet.dart';
-import 'package:book/view/system/LogViewer.dart';
+import 'package:book/view/person/forget_password_page.dart';
+import 'package:book/view/person/login_page.dart';
+import 'package:book/view/person/register_page.dart';
+import 'package:book/view/person/source_manage_page.dart';
+import 'package:book/view/system/font_set_page.dart';
+import 'package:book/view/system/log_viewer_page.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
 

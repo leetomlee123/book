@@ -1,5 +1,5 @@
-import 'package:book/animation/BaseAnimationPage.dart';
-import 'package:book/view/newBook/touch_event.dart';
+import 'package:book/animation/base_animation_page.dart';
+import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
 
 /// 无翻页动画：始终绘制当前页。

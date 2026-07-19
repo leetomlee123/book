@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:book/common/PicWidget.dart';
+import 'package:book/common/pic_widget.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/common/screen.dart';
 import 'package:book/common/app_colors.dart';

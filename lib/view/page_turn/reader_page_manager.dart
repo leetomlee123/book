@@ -1,9 +1,9 @@
-import 'package:book/animation/BaseAnimationPage.dart';
-import 'package:book/animation/SimulationTurePageAnimation.dart';
+import 'package:book/animation/base_animation_page.dart';
+import 'package:book/animation/simulation_turn_page_animation.dart';
 import 'package:book/animation/static_page_turn.dart';
 import 'package:book/animation/turn_page_animation.dart';
 import 'package:book/model/read_model.dart';
-import 'package:book/view/newBook/touch_event.dart';
+import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

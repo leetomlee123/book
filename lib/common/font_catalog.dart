@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/service/CustomCacheManager.dart';
+import 'package:book/service/custom_cache_manager.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 

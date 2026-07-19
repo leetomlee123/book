@@ -4,7 +4,7 @@ import 'package:book/common/app_colors.dart';
 import 'package:book/event/event.dart';
 import 'package:book/view/book/book_shelf.dart';
 import 'package:book/view/book/explore_page.dart';
-import 'package:book/view/person/Me.dart';
+import 'package:book/view/person/me_page.dart';
 import 'package:flutter/material.dart';
 
 /// App root shell: 书架 / 发现 / 我 (WeChat Reading–like bottom tabs).

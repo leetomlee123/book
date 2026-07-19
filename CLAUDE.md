@@ -67,11 +67,11 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 
 | Path | Role |
 |------|------|
-| `lib/view/book/` | Core UI: shelf, search, detail, reader (`ReadBook`), chapters, sort shelf |
-| `lib/view/newBook/` | Canvas reader: `NovelPagePainter`, `ReaderPageManager` (page-turn modes) |
+| `lib/view/book/` | Core UI: shelf, search, detail, reader (`read_book.dart`), chapters, sort shelf |
+| `lib/view/page_turn/` | Canvas page-turn: `novel_page_painter.dart`, `reader_page_manager.dart` |
 | `lib/view/person/` | Account: login, register, me, skin, cache |
 | `lib/view/system/` | Reader chrome: font, menu, battery, log viewer |
-| `lib/model/` | `ChangeNotifier` business logic (shelf, search, reading, theme) |
+| `lib/model/` | `ChangeNotifier` business logic (snake_case: `read_model.dart`, `shelf_model.dart`, …) |
 | `lib/entity/` | DTOs: `json_annotation` + checked-in `*.g.dart` (camelCase fields; no legacy JSON key compat) |
 | `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`Http.dart`), text layout (`text_composition.dart`), interceptors, `Screen`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
 | `lib/data/` | Local persistence: `ReaderDatabase` (`reader.db`), `BookRepository`, `ChapterRepository`, `SourceRepository` |

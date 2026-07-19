@@ -1,4 +1,4 @@
-import 'package:book/common/PicWidget.dart';
+import 'package:book/common/pic_widget.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/store/providers.dart';

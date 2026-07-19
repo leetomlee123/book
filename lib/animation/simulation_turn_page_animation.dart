@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:book/animation/BaseAnimationPage.dart';
+import 'package:book/animation/base_animation_page.dart';
 import 'package:book/common/read_setting.dart';
-import 'package:book/view/newBook/touch_event.dart';
+import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as v;
 

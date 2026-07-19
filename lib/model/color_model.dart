@@ -4,7 +4,7 @@ import 'package:book/common/read_setting.dart';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/font_catalog.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/service/CustomCacheManager.dart';
+import 'package:book/service/custom_cache_manager.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

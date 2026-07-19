@@ -1,6 +1,6 @@
 import 'package:book/common/screen.dart';
 import 'package:book/model/read_model.dart';
-import 'package:book/view/newBook/touch_event.dart';
+import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
 
 /// 翻页效果抽象。默认实现为 [StaticPageTurn]；

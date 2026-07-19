@@ -1,6 +1,6 @@
 import 'package:book/model/source_model.dart';
 import 'package:book/store/providers.dart';
-import 'package:book/view/person/YckceoSourcePage.dart';
+import 'package:book/view/person/yckceo_source_page.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

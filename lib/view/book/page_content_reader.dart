@@ -1,9 +1,9 @@
-import 'package:book/animation/AnimationControllerWithListenerNumber.dart';
+import 'package:book/animation/animation_controller_with_listener_number.dart';
 import 'package:book/model/read_model.dart';
 import 'package:book/store/providers.dart';
-import 'package:book/view/newBook/novel_page_painter.dart';
-import 'package:book/view/newBook/reader_page_manager.dart';
-import 'package:book/view/newBook/touch_event.dart';
+import 'package:book/view/page_turn/novel_page_painter.dart';
+import 'package:book/view/page_turn/reader_page_manager.dart';
+import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

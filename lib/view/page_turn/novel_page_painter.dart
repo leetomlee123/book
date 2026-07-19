@@ -1,5 +1,5 @@
-import 'package:book/view/newBook/reader_page_manager.dart';
-import 'package:book/view/newBook/touch_event.dart';
+import 'package:book/view/page_turn/reader_page_manager.dart';
+import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
 
 class NovelPagePainter extends CustomPainter {

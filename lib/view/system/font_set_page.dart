@@ -5,7 +5,7 @@ import 'package:book/common/font_catalog.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/color_model.dart';
-import 'package:book/service/CustomCacheManager.dart';
+import 'package:book/service/custom_cache_manager.dart';
 import 'package:book/store/providers.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:file_picker/file_picker.dart';
