@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/font_catalog.dart';
 import 'package:book/common/local_store.dart';
-import 'package:book/event/event.dart';
 import 'package:book/model/color_model.dart';
 import 'package:book/service/custom_cache_manager.dart';
 import 'package:book/store/providers.dart';
@@ -136,7 +135,6 @@ class _FontSetState extends ConsumerState<FontSet> {
         if (event is DownloadProgress) {
           final v = NumUtil.getNumByValueDouble(event.progress, 2)?.toDouble() ??
               0.0;
-          eventBus.fire(DownLoadNotify(url, v));
           if (mounted) setState(() => _downloadProgress = v.clamp(0.0, 1.0));
         } else if (event is FileInfo) {
           await FontCatalog.persistDownloaded(row.key, event.file);

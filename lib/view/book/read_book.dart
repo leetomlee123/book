@@ -31,7 +31,6 @@ class _ReadBookState extends ConsumerState<ReadBook>
   late ReadModel readModel;
   late ShelfModel shelfModel;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  StreamSubscription? _refreshSub;
   StreamSubscription? _chaptersSub;
 
   @override
@@ -45,13 +44,6 @@ class _ReadBookState extends ConsumerState<ReadBook>
   }
 
   Future<void> setUp() async {
-    _refreshSub = eventBus.on<ReadRefresh>().listen((event) {
-      final b = readModel.book;
-      if (b == null) return;
-      readModel.resetPages();
-      readModel.openChapterAt(b.chapterIndex, true);
-    });
-
     WidgetsBinding.instance.addObserver(this);
     _chaptersSub = eventBus.on<OpenChapters>().listen((event) {
       _openChapterCatalog();
@@ -75,7 +67,6 @@ class _ReadBookState extends ConsumerState<ReadBook>
 
   @override
   void dispose() {
-    _refreshSub?.cancel();
     _chaptersSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     // Flush progress (cancels debounce, snapshots cur/index) before clear().
