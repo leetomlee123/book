@@ -25,6 +25,7 @@ import 'package:book/model/reader/reading_progress_store.dart';
 import 'package:book/model/reader/reading_session_opener.dart';
 import 'package:book/model/reader/source_switch_service.dart';
 import 'package:book/model/reader/toc_service.dart';
+import 'package:book/model/reader/reader_input_controller.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -118,6 +119,24 @@ class ReadModel with ChangeNotifier {
       canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
     },
     notify: notifyListeners,
+  );
+  late final ReaderInputController _input = ReaderInputController(
+    isBusy: () => pagePainter?.pageManager?.isBusy == true,
+    tapLeftToAdvanceOf: () => tapLeftToAdvance,
+    toggleMenu: toggleShowMenu,
+    triggerTapTurn: (dir) {
+      final mgr = pagePainter?.pageManager;
+      if (mgr == null) return false;
+      return mgr.triggerTapTurn(dir);
+    },
+    commitPageTurn: (dir) => commitPageTurn(dir),
+    markNeedsPaint: _markNeedsPaint,
+    notify: notifyListeners,
+    bookOf: () => book,
+    chaptersLength: () => chapters.length,
+    curPageOf: () => curPage,
+    hasNextPicture: () => paintNextPicture() != null,
+    hasPreviousPicture: () => paintPreviousPicture() != null,
   );
   BookSource? _activeSource;
 
@@ -504,47 +523,13 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Zone tap using local coordinates of the reader canvas.
-  /// Middle → menu; left/right → page turn (respects [tapLeftToAdvance]).
-  ///
   /// Returns `true` if a page-turn was started (not for menu-only).
-  bool tapPageAt(Offset localPos, Size size) {
-    if (pagePainter?.pageManager?.isBusy == true) {
-      return false;
-    }
-    final wid = size.width;
-    final hSpace = size.height / 4;
-    final space = wid / 3;
-    final x = localPos.dx;
-    final y = localPos.dy;
-    if (x > space && x < 2 * space && y < hSpace * 3) {
-      toggleShowMenu();
-      return false;
-    }
-    if (x >= 2 * space) {
-      return turnByDirection(1, localPos);
-    }
-    if (x <= space) {
-      return turnByDirection(tapLeftToAdvance ? 1 : -1, localPos);
-    }
-    return false;
-  }
+  bool tapPageAt(Offset localPos, Size size) => _input.tapAt(localPos, size);
 
   /// Returns true if a turn was started.
-  bool turnByDirection(int f, Offset detail) {
-    if (pagePainter?.pageManager?.isBusy == true) {
-      return false;
-    }
-    final mgr = pagePainter?.pageManager;
-    if (mgr != null) {
-      return mgr.triggerTapTurn(f);
-    }
-    commitPageTurn(f);
-    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
-    notifyListeners();
-    return true;
-  }
+  bool turnByDirection(int f, Offset detail) => _input.turnByDirection(f);
 
-  /// True when reader uses vertical page-stack scroll (mode 3).
+    /// True when reader uses vertical page-stack scroll (mode 3).
   bool get isScrollMode =>
       currentAnimationMode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
 
@@ -847,31 +832,11 @@ class ReadModel with ChangeNotifier {
     pictureCache.prune(bookId: b.id, centerChapter: b.chapterIndex);
   }
 
-  bool canTurnNext() {
-    final b = book;
-    if (b == null) return false;
-    // Last chapter, last page.
-    if (b.chapterIndex >= chapters.length - 1 &&
-        b.pageIndex >= ((curPage?.pageOffsets ?? 1) - 1)) {
-      return false;
-    }
-    // Prefer pre-rendered picture, but allow turn if logical next exists.
-    if (paintNextPicture() != null) return true;
-    // Next page within chapter, or next chapter available.
-    if (b.pageIndex + 1 < (curPage?.pageOffsets ?? 0)) return true;
-    return b.chapterIndex + 1 < chapters.length;
-  }
+  bool canTurnNext() => _input.canTurnNext();
 
-  bool canTurnPrevious() {
-    final b = book;
-    if (b == null) return false;
-    if (b.chapterIndex <= 0 && b.pageIndex <= 0) return false;
-    if (paintPreviousPicture() != null) return true;
-    if (b.pageIndex > 0) return true;
-    return b.chapterIndex > 0;
-  }
+  bool canTurnPrevious() => _input.canTurnPrevious();
 
-  Future<void> reloadBackgroundImage() async {
+    Future<void> reloadBackgroundImage() async {
     paperTheme = ReadSetting.getPaperTheme();
     // Solid paper mode: no texture image.
     if (ReadSetting.useSolidPaper()) {
