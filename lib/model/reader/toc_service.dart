@@ -86,8 +86,16 @@ class TocService {
 
     if (init || current.isEmpty) {
       await chapters.syncToc(list, bookId, sourceUrl: book.sourceUrl);
-      AppLog.i('Read', 'toc saved init=${list.length} id=$bookId');
-      return list;
+      if (!isStillActive()) return null;
+      // Rehydrate hasBody (and ord) from DB — syncToc preserves bodies for
+      // matching ids, but the remote list always has hasBody:false.
+      final hydrated = await chapters.getToc(bookId);
+      if (!isStillActive()) return null;
+      AppLog.i(
+        'Read',
+        'toc saved init=${list.length} hydrated=${hydrated.length} id=$bookId',
+      );
+      return hydrated.isNotEmpty ? hydrated : list;
     }
 
     final existing = current.map((e) => e.url).toSet();
@@ -98,6 +106,7 @@ class TocService {
       current.add(c);
     }
     await chapters.appendToc(fresh, bookId, sourceUrl: book.sourceUrl);
+    if (!isStillActive()) return null;
     AppLog.i('Read', 'toc append ${fresh.length} id=$bookId');
     return current;
   }

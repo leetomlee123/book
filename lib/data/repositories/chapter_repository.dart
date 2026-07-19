@@ -326,8 +326,27 @@ class ChapterRepository {
 
   /// Drop page caches whose fingerprint differs from [keepLayoutFp]
   /// (or all page caches when [keepLayoutFp] is null/empty).
-  Future<int> clearAllPageLayouts({String? keepLayoutFp}) async {
+  /// When [bookId] is set, only that book's rows are cleared.
+  Future<int> clearAllPageLayouts({
+    String? keepLayoutFp,
+    String? bookId,
+  }) async {
     final db = await _database;
+    if (bookId != null && bookId.isNotEmpty) {
+      if (keepLayoutFp == null || keepLayoutFp.isEmpty) {
+        return db.rawUpdate(
+          "UPDATE chapters SET pages_json=NULL, layout_fp=NULL, pages_cached_at=0 "
+          "WHERE book_id=? AND pages_json IS NOT NULL AND pages_json!=''",
+          [bookId],
+        );
+      }
+      return db.rawUpdate(
+        "UPDATE chapters SET pages_json=NULL, layout_fp=NULL, pages_cached_at=0 "
+        "WHERE book_id=? AND pages_json IS NOT NULL AND pages_json!='' "
+        "AND (layout_fp IS NULL OR layout_fp!=?)",
+        [bookId, keepLayoutFp],
+      );
+    }
     if (keepLayoutFp == null || keepLayoutFp.isEmpty) {
       return db.rawUpdate(
         "UPDATE chapters SET pages_json=NULL, layout_fp=NULL, pages_cached_at=0 "

@@ -46,7 +46,7 @@ class ChapterContentLoader {
     if (idx < 0) {
       final r = ReadPage.kong();
       r.chapterName = '1';
-      r.chapterContent = 'Fall In Love At First Sight ,Miss.Zhang';
+      r.chapterContent = '已经是第一章';
       return r;
     }
     if (idx >= chapters.length) {

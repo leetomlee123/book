@@ -123,6 +123,7 @@ class ReadModel with ChangeNotifier {
     isBusy: () => pagePainter?.pageManager?.isBusy == true,
     tapLeftToAdvanceOf: () => tapLeftToAdvance,
     toggleMenu: toggleShowMenu,
+    hasPageManager: () => pagePainter?.pageManager != null,
     triggerTapTurn: (dir) {
       final mgr = pagePainter?.pageManager;
       if (mgr == null) return false;
@@ -363,6 +364,8 @@ class ReadModel with ChangeNotifier {
       isStillActive: () => book?.id == bookId,
     );
     if (updated == null) return;
+    // Drop result if session switched books during the await.
+    if (book?.id != bookId) return;
     chapters = updated;
     if (updated.isNotEmpty) {
       book?.latestChapter = updated.last.title;
@@ -392,14 +395,14 @@ class ReadModel with ChangeNotifier {
 
   Future<void> relayoutPages() async {
     pictureCache.clear();
-    // Font/metrics changed — drop all disk page layouts and re-open current chapter.
+    // Font/metrics changed — drop disk page layouts for the active book only.
+    final b = book;
     try {
-      await _chapters.clearAllPageLayouts();
-      AppLog.i('Read', 'cleared page cache on layout change');
+      await _chapters.clearAllPageLayouts(bookId: b?.id);
+      AppLog.i('Read', 'cleared page cache on layout change book=${b?.id}');
     } catch (e) {
       AppLog.w('Read', 'clearAllPageLayouts failed', error: e);
     }
-    final b = book;
     final keepIndex = b?.pageIndex ?? 0;
     await openChapterAt(b?.chapterIndex ?? 0, false, showLoading: false);
     if (b != null) {
@@ -577,6 +580,8 @@ class ReadModel with ChangeNotifier {
         await _chapters.updateBodies([ChapterNode(content, chapter.id)]);
         chapter.hasBody = true;
       }
+      // Drop warm snapshot so loadChapter hits DB (updateBodies only clears SQLite).
+      _diskWarm.remove(chapter.id);
       curPage = await loadChapter(b.chapterIndex);
       _markNeedsPaint();
       notifyListeners();

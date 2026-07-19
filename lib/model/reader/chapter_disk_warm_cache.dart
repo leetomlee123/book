@@ -20,6 +20,9 @@ class ChapterDiskWarmCache {
 
   void clear() => _warm.clear();
 
+  /// Drop a single chapter snapshot (e.g. after body refresh).
+  void remove(String chapterId) => _warm.remove(chapterId);
+
   /// Prefetch disk rows for [centerIdx] and neighbors into [_warm].
   Future<void> warmAround(
     List<ChapterTocEntry> toc,

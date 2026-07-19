@@ -8,6 +8,7 @@ class ReaderInputController {
     required this.isBusy,
     required this.tapLeftToAdvanceOf,
     required this.toggleMenu,
+    required this.hasPageManager,
     required this.triggerTapTurn,
     required this.commitPageTurn,
     required this.markNeedsPaint,
@@ -22,6 +23,8 @@ class ReaderInputController {
   final bool Function() isBusy;
   final bool Function() tapLeftToAdvanceOf;
   final void Function() toggleMenu;
+  /// When true, taps go only through [triggerTapTurn] (no commit fallthrough).
+  final bool Function() hasPageManager;
   final bool Function(int direction) triggerTapTurn;
   final void Function(int direction) commitPageTurn;
   final void Function() markNeedsPaint;
@@ -56,8 +59,10 @@ class ReaderInputController {
   /// Returns true if a turn was started.
   bool turnByDirection(int direction) {
     if (isBusy()) return false;
-    if (triggerTapTurn(direction)) {
-      return true;
+    // With a live page manager, blocked turns must not fall through to commit
+    // (pre-extract behavior: return triggerTapTurn result only).
+    if (hasPageManager()) {
+      return triggerTapTurn(direction);
     }
     commitPageTurn(direction);
     markNeedsPaint();

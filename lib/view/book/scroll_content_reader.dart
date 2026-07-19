@@ -57,6 +57,9 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
   int _lastChapter = 0;
   int _lastPage = 0;
 
+  /// Last model chapter we bootstrapped against; used to detect TOC jumps.
+  int? _syncedChapterIndex;
+
   DateTime? _lastProgressAt;
   static const _progressThrottle = Duration(milliseconds: 400);
 
@@ -95,6 +98,22 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     super.dispose();
   }
 
+  /// Drop local window so the next [_bootstrap] rebuilds around model progress.
+  void _resetForRebootstrap() {
+    _bootstrapped = false;
+    _syncedChapterIndex = null;
+    _restoreDone = false;
+    _loadingNeighbor = false;
+    _chapters.clear();
+    _items = const [];
+    _offsets = const [];
+    _windowStart = 0;
+    _windowEnd = -1;
+    _controller?.removeListener(_onScroll);
+    _controller?.dispose();
+    _controller = null;
+  }
+
   Future<void> _bootstrap() async {
     if (_disposed || !mounted || _bootstrapped) return;
     final model = ref.read(readModelProvider);
@@ -118,6 +137,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     final pageIdx = b.pageIndex < 0 ? 0 : b.pageIndex;
     _lastChapter = cur;
     _lastPage = pageIdx;
+    _syncedChapterIndex = cur;
     _restoreDone = false;
     _log(
       'bootstrap target cur=$cur page=$pageIdx chapters=${model.chapters.length}',
@@ -381,6 +401,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     }
     _lastChapter = it.chapterIndex;
     _lastPage = it.pageIndex;
+    _syncedChapterIndex = it.chapterIndex;
     try {
       final model = ref.read(readModelProvider);
       model.applyScrollProgress(it.chapterIndex, it.pageIndex);
@@ -425,6 +446,9 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     final contentReady = ref.watch(
       readModelProvider.select((m) => m.contentReady),
     );
+    final modelChapter = ref.watch(
+      readModelProvider.select((m) => m.book?.chapterIndex),
+    );
     final dark = paperTheme == PaperTheme.night ||
         SpUtil.getBool(PrefsKeys.dark, defValue: false);
     final paper = ReadSetting.paperColor(
@@ -433,6 +457,29 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     final meta = ReadSetting.metaColor(
       dark ? PaperTheme.night : paperTheme,
     );
+
+    // openChapterAt / switchSource update model chapterIndex without rebuilding
+    // this State; rebootstrap when the jump was not driven by our scroll progress.
+    if (_bootstrapped &&
+        contentReady &&
+        modelChapter != null &&
+        _syncedChapterIndex != null &&
+        modelChapter != _syncedChapterIndex) {
+      final jumpTo = modelChapter;
+      _log(
+        'chapter jump model=$jumpTo synced=$_syncedChapterIndex — rebootstrap',
+      );
+      // Defer reset off the build path (dispose ScrollController safely).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_disposed || !mounted) return;
+        if (!_bootstrapped) return;
+        final still = ref.read(readModelProvider).book?.chapterIndex;
+        if (still != jumpTo) return;
+        if (still == _syncedChapterIndex) return;
+        _resetForRebootstrap();
+        _bootstrap();
+      });
+    }
 
     if (contentReady && !_bootstrapped && !_disposed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
