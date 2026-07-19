@@ -18,6 +18,7 @@ import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
+import 'package:book/model/reader/page_turn_committer.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
@@ -46,6 +47,27 @@ class ReadModel with ChangeNotifier {
     prePageOf: () => prePage,
     nextPageOf: () => nextPage,
     setNextPage: (page) => nextPage = page,
+    activeBookId: () => book?.id,
+  );
+  late final PageTurnCommitter _pageTurn = PageTurnCommitter(
+    bookOf: () => book,
+    chaptersOf: () => chapters,
+    curPageOf: () => curPage,
+    prePageOf: () => prePage,
+    nextPageOf: () => nextPage,
+    setCurPage: (page) => curPage = page,
+    setPrePage: (page) => prePage = page,
+    setNextPage: (page) => nextPage = page,
+    loadChapter: loadChapter,
+    showLoading: _showTextLoading,
+    hideLoading: _hideTextLoading,
+    prunePictures: _prunePictureCache,
+    scheduleProgressSave: () => scheduleProgressSave(),
+    notify: notifyListeners,
+    markNeedsPaint: () {
+      canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
+    },
+    refreshBattery: _refreshBattery,
     activeBookId: () => book?.id,
   );
   GlobalKey? canvasKey;
@@ -1124,138 +1146,10 @@ class ReadModel with ChangeNotifier {
   }
 
   void commitPageTurn(Object? offsetDifference) {
-    final b = book;
-    if (b == null) return;
-    final dir = (offsetDifference is num)
-        ? offsetDifference.toDouble()
-        : double.tryParse(offsetDifference?.toString() ?? '') ?? 0;
-    final beforeCur = b.chapterIndex;
-    final beforeIdx = b.pageIndex;
-    int idx = b.pageIndex;
-
-    int curLen = (curPage?.pageOffsets ?? 0);
-    if (idx == curLen - 1 && dir > 0) {
-      _refreshBattery();
-      int tempCur = b.chapterIndex + 1;
-      if (tempCur >= chapters.length) {
-        BotToast.showText(text: "最后一页");
-        return;
-      }
-
-      b.chapterIndex += 1;
-      prePage = curPage;
-      final following = nextPage;
-      if (following == null || following.chapterName == "-1") {
-        // Next chapter not ready yet — load it synchronously path.
-        _showTextLoading('正在加载下一章…');
-        loadChapter(b.chapterIndex).then((value) {
-          if (book?.id == b.id) {
-            curPage = value;
-            final ro = canvasKey?.currentContext?.findRenderObject();
-            ro?.markNeedsPaint();
-            notifyListeners();
-          }
-          _hideTextLoading();
-        });
-      } else {
-        curPage = following;
-      }
-      b.pageIndex = 0;
-      nextPage = null;
-      if (kDebugMode) {
-        debugPrint(
-          '[ReadModel] commitPageTurn +chapter '
-          '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
-          'dir=$offsetDifference pages=$curLen',
-        );
-      }
-      _prunePictureCache();
-      scheduleProgressSave();
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (book?.id == b.id) {
-          loadChapter(b.chapterIndex + 1).then((value) {
-            if (book?.id == b.id) nextPage = value;
-          });
-        }
-      });
-      return;
-    }
-    if (idx == 0 && dir < 0) {
-      _refreshBattery();
-      int tempCur = b.chapterIndex - 1;
-      if (tempCur < 0) {
-        BotToast.showText(text: "第一页");
-        return;
-      }
-      final previous = prePage;
-      if (previous == null) {
-        // Previous chapter not ready — load it.
-        _showTextLoading('正在加载上一章…');
-        loadChapter(tempCur).then((value) {
-          if (book?.id != b.id) {
-            _hideTextLoading();
-            return;
-          }
-          nextPage = curPage;
-          curPage = value;
-          b.chapterIndex = tempCur;
-          b.pageIndex = (curPage?.pageOffsets ?? 1) - 1;
-          prePage = null;
-          final ro = canvasKey?.currentContext?.findRenderObject();
-          ro?.markNeedsPaint();
-          notifyListeners();
-          _hideTextLoading();
-          _prunePictureCache();
-          scheduleProgressSave();
-          loadChapter(b.chapterIndex - 1).then((v) {
-            if (book?.id == b.id) prePage = v;
-          });
-        });
-        return;
-      }
-      nextPage = curPage;
-      curPage = previous;
-      b.chapterIndex -= 1;
-      b.pageIndex = (curPage?.pageOffsets ?? 1) - 1;
-      notifyListeners();
-      prePage = null;
-      if (kDebugMode) {
-        debugPrint(
-          '[ReadModel] commitPageTurn -chapter '
-          '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
-          'dir=$offsetDifference',
-        );
-      }
-      _prunePictureCache();
-      scheduleProgressSave();
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (book?.id == b.id) {
-          loadChapter(b.chapterIndex - 1).then((value) {
-            if (book?.id == b.id) prePage = value;
-          });
-        }
-      });
-      return;
-    }
-    if (dir > 0) {
-      b.pageIndex += 1;
-    } else {
-      b.pageIndex -= 1;
-    }
-    if (kDebugMode) {
-      debugPrint(
-        '[ReadModel] commitPageTurn page '
-        '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
-        'dir=$offsetDifference pages=$curLen',
-      );
-    }
-    // Within-chapter page change: refresh picture + UI.
-    canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
-    notifyListeners();
-    scheduleProgressSave();
+    _pageTurn.commit(offsetDifference);
   }
 
-  /// Drop in-memory pictures outside the nearby chapter window / hard cap.
+    /// Drop in-memory pictures outside the nearby chapter window / hard cap.
   void _prunePictureCache() {
     final b = book;
     if (b == null) return;
