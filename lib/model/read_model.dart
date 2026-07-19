@@ -13,6 +13,7 @@ import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/read_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
+import 'package:book/model/reader/chapter_disk_warm_cache.dart';
 import 'package:book/model/reader/chapter_download_service.dart';
 import 'package:book/model/reader/chapter_window_controller.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
@@ -96,6 +97,10 @@ class ReadModel with ChangeNotifier {
     paginator: _paginator,
     fetchContent: fetchChapterBody,
   );
+  late final ChapterDiskWarmCache _diskWarm = ChapterDiskWarmCache(
+    chapters: _chapters,
+    paginator: _paginator,
+  );
   late final ChapterDownloadService _downloads = ChapterDownloadService(
     engine: _engine,
     chapters: _chapters,
@@ -104,7 +109,7 @@ class ReadModel with ChangeNotifier {
     bookOf: () => book,
     chaptersLength: () => chapters.length,
     loadChapter: loadChapter,
-    warmDiskCaches: _warmDiskChapterCaches,
+    warmDiskCaches: (idx) => _diskWarm.warmAround(chapters, idx),
     messagePage: _messagePage,
     showLoading: _showTextLoading,
     hideLoading: _hideTextLoading,
@@ -152,10 +157,6 @@ class ReadModel with ChangeNotifier {
   );
   BookSource? _activeSource;
 
-  /// In-memory warm cache of disk chapter body + page layout (cur±1).
-  final Map<String, ({String body, String? pagesJson, String? layoutFp})>
-      _diskChapterWarm = {};
-
   bool isDark() => SpUtil.getBool(PrefsKeys.dark);
 
   double get electricQuantity => _painter.electricQuantity;
@@ -196,7 +197,7 @@ class ReadModel with ChangeNotifier {
     loadToc: ({bool init = false}) => loadToc(init: init),
     openChapterAt: (idx, jump, {bool showLoading = true}) =>
         openChapterAt(idx, jump, showLoading: showLoading),
-    hasPageCache: _hasPageCache,
+    hasPageCache: (idx) => _diskWarm.hasPageCache(chapters, idx),
     restorePageIndex: _restorePageIndex,
     messagePage: _messagePage,
     showLoading: _showTextLoading,
@@ -360,25 +361,6 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _warmDiskChapterCaches(int centerIdx) async {
-    if (chapters.isEmpty) return;
-    final ids = <String>[];
-    for (final i in [centerIdx - 1, centerIdx, centerIdx + 1]) {
-      if (i < 0 || i >= chapters.length) continue;
-      final id = chapters[i].id;
-      if (id.isNotEmpty) ids.add(id);
-    }
-    if (ids.isEmpty) return;
-    try {
-      final map = await _chapters.getChapterCaches(ids);
-      _diskChapterWarm
-        ..clear()
-        ..addAll(map);
-    } catch (e) {
-      AppLog.w('Read', 'warm disk chapter cache failed', error: e);
-    }
-  }
-
   Future<void> _ensureBookRow(Book b) async {
     try {
       await _books.ensureExists(b);
@@ -392,32 +374,11 @@ class ReadModel with ChangeNotifier {
     return _contentLoader.load(
       chapters: chapters,
       idx: idx,
-      warm: _diskChapterWarm,
+      warm: _diskWarm.map,
       bookId: book?.id,
       bookChapterIndex: book?.chapterIndex ?? idx,
       messagePage: _messagePage,
     );
-  }
-
-  /// True when chapter body + fingerprinted page layout are both on disk.
-  Future<bool> _hasPageCache(int idx) async {
-    if (idx < 0 || idx >= chapters.length) return false;
-    final chapterId = chapters[idx].id;
-    try {
-      final disk = await _chapters.getChapterCache(chapterId);
-      if (disk.body.isEmpty) return false;
-      final layout = _paginator.layoutParams();
-      final fp = _paginator.layoutFingerprint(
-        layoutParams: layout,
-        contentLen: disk.body.length,
-        contentSig: _paginator.contentSignature(disk.body),
-      );
-      return disk.pagesJson != null &&
-          disk.pagesJson!.isNotEmpty &&
-          disk.layoutFp == fp;
-    } catch (_) {
-      return false;
-    }
   }
 
   Future<void> relayoutPages() async {
@@ -606,7 +567,7 @@ class ReadModel with ChangeNotifier {
     _progress.ready = false;
     _hideTextLoading();
     chapters = [];
-    _diskChapterWarm.clear();
+    _diskWarm.clear();
     sessionReady = false;
     chaptersLoading = false;
     loadingHint = '正在加载…';
@@ -721,7 +682,7 @@ class ReadModel with ChangeNotifier {
 
       _activeSource = result.source;
       chapters = result.chapters;
-      _diskChapterWarm.clear();
+      _diskWarm.clear();
       resetPages();
       pictureCache.clear();
       await openChapterAt(b.chapterIndex, true);
