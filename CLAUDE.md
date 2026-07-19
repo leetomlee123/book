@@ -73,7 +73,8 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 | `lib/view/system/` | Reader chrome: font, menu, battery, log viewer |
 | `lib/model/` | `ChangeNotifier` business logic (shelf, search, reading, theme) |
 | `lib/entity/` | DTOs: `json_annotation` + checked-in `*.g.dart`; chapters also use protobuf (`chapter.pb.dart`) |
-| `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`Http.dart`), SQLite (`DbHelper.dart`), text layout (`text_composition.dart`), interceptors, `Screen`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
+| `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`Http.dart`), SQLite facade (`DbHelper.dart`), text layout (`text_composition.dart`), interceptors, `Screen`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
+| `lib/data/` | Local persistence: `ReaderDatabase` (`reader.db`), `BookRepository`, `ChapterRepository` |
 | `lib/route/` | Fluro route table (`Routes.dart`) and handlers (`RouteHandler.dart`) |
 | `lib/animation/` | Custom page-turn animations used by the reader |
 | `lib/widgets/` | Reusable UI pieces |
@@ -89,7 +90,10 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 
 ### Local data
 
-- **sqflite** via `DbHelper`: separate DB files for **chapters** and **books** only. Bookshelf and chapter cache go through here; `ShelfModel` / `ReadModel` call it.
+- **sqflite** single-file **`reader.db`** (`lib/data/db/reader_database.dart`): tables `books` + `chapters` (FK cascade, page-layout cache on chapter rows).
+  - Repositories: `BookRepository` / `ChapterRepository` under `lib/data/repositories/`.
+  - `DbHelper` is a **compat facade** over those repositories so existing `ShelfModel` / `ReadModel` call sites keep working. Prefer repositories for new code.
+  - Boot (`AppInit`) calls `ReaderDatabase.wipeLegacyDatabases()` — deletes old `books.db` / `chapters.db` (and dead video/voice DBs). **No data migration.** Book sources stay in separate `sources.db` via `SourceDao`.
 - **SpUtil** is a **local facade** over `shared_preferences` in `lib/common/local_store.dart` (not flustars). Same key strings as before (`auth`, theme, fonts, reading style, remote config). Login: `SpUtil.haveKey("token")` / `"auth"`. Also provides `DateUtil` / `NumUtil` / `DirectoryUtil` used by call sites.
 
 ### Reader pipeline (high level)

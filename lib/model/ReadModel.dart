@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
@@ -11,6 +10,7 @@ import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/text_composition.dart';
+import 'package:book/data/repositories/chapter_repository.dart';
 import 'package:book/entity/Book.dart';
 import 'package:book/entity/ChapterNode.dart';
 import 'package:book/entity/LocalChapter.dart';
@@ -180,7 +180,7 @@ class ReadModel with ChangeNotifier {
       return;
     }
 
-    // Prefer durable progress from books.db over possibly-stale route JSON.
+    // Prefer durable progress from reader.db over possibly-stale route JSON.
     // Snapshot IMMEDIATELY — loading UI must never overwrite these.
     var savedCur = b.cur;
     var savedIndex = b.index;
@@ -539,6 +539,11 @@ class ReadModel with ChangeNotifier {
       return;
     }
 
+    // reader.db enforces FK: chapters.book_id → books.id. Create the book
+    // row first so TOC inserts never fail on first open.
+    await _ensureBookRow(book!);
+    if (book?.Id != bookId) return;
+
     if (init || chapters.isEmpty) {
       chapters = list;
       // Always persist TOC — previously only saved when book was already on
@@ -570,9 +575,6 @@ class ReadModel with ChangeNotifier {
     if (!SpUtil.containsKey(bookId)) {
       SpUtil.putString(bookId, '');
     }
-    // Ensure a books-row exists so progress can be updated.
-    await _ensureBookRow(book!);
-    if (book?.Id != bookId) return;
     notifyListeners();
   }
 
@@ -678,11 +680,9 @@ class ReadModel with ChangeNotifier {
       if (stored.pagesJson != null &&
           stored.pagesJson!.isNotEmpty &&
           stored.layoutFp == fp) {
-        final decoded = jsonDecode(stored.pagesJson!);
-        if (decoded is List && decoded.isNotEmpty) {
-          cachedPages = decoded
-              .map((e) => TextPage.fromJson(e as Map<String, dynamic>))
-              .toList();
+        cachedPages =
+            await ChapterRepository.decodePagesJson(stored.pagesJson);
+        if (cachedPages != null && cachedPages.isNotEmpty) {
           AppLog.i(
             'Read',
             'page cache HIT idx=$idx id=$chapterId pages=${cachedPages.length}',
@@ -745,7 +745,8 @@ class ReadModel with ChangeNotifier {
         final cur = b?.cur ?? idx;
         unawaited(() async {
           try {
-            final json = jsonEncode(pagesToSave.map((p) => p.toJson()).toList());
+            final json =
+                await ChapterRepository.encodePagesJson(pagesToSave);
             // Skip pathological multi-MB pages for a single chapter.
             if (json.length > 2 * 1024 * 1024) {
               AppLog.w(
@@ -1006,6 +1007,8 @@ class ReadModel with ChangeNotifier {
     if (!SpUtil.containsKey(id)) {
       SpUtil.putString(id, '');
     }
+    // Ensure book row first — reader.db FK requires books.id before chapters.
+    await _ensureBookRow(b);
     // Persist TOC if missing (first open may not have flushed yet).
     if (tocSnapshot.isNotEmpty) {
       try {
@@ -1019,8 +1022,7 @@ class ReadModel with ChangeNotifier {
         AppLog.w('Read', 'toc save on exit failed', error: e);
       }
     }
-    // Ensure row exists, then upsert progress (UPDATE may hit 0 rows on race).
-    await _ensureBookRow(b);
+    // Upsert progress (UPDATE may hit 0 rows on race).
     final updated = await DbHelper.instance.updBookProcess(
       cur,
       idx,
@@ -1670,6 +1672,7 @@ class ReadModel with ChangeNotifier {
         return;
       }
 
+      await _ensureBookRow(b);
       await DbHelper.instance
           .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
     } finally {
@@ -1837,23 +1840,23 @@ class ReadModel with ChangeNotifier {
                 index: c.index,
               ))
           .toList();
-      if (SpUtil.containsKey(b.Id)) {
-        await DbHelper.instance
-            .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
-        await DbHelper.instance.updBookSource(
-            b.sourceUrl, b.bookUrl, b.originName, b.tocUrl, b.Id);
-        final readName = (b.cur >= 0 && b.cur < chapters.length)
-            ? chapters[b.cur].chapterName
-            : b.ChapterName;
-        b.ChapterName = readName;
-        await DbHelper.instance.updBookProcess(
-          b.cur,
-          b.index,
-          b.position,
-          b.Id,
-          readingChapter: readName,
-        );
-      }
+      // Always keep books/chapters in sync after source switch (FK-safe).
+      await _ensureBookRow(b);
+      await DbHelper.instance
+          .addChapters(chapters, b.Id, sourceUrl: b.sourceUrl);
+      await DbHelper.instance.updBookSource(
+          b.sourceUrl, b.bookUrl, b.originName, b.tocUrl, b.Id);
+      final readName = (b.cur >= 0 && b.cur < chapters.length)
+          ? chapters[b.cur].chapterName
+          : b.ChapterName;
+      b.ChapterName = readName;
+      await DbHelper.instance.updBookProcess(
+        b.cur,
+        b.index,
+        b.position,
+        b.Id,
+        readingChapter: readName,
+      );
 
       reSetPages();
       widgets.clear();

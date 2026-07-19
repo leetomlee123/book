@@ -2,9 +2,9 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/local_store.dart';
 
-/// Disk page-layout cache policy (pages_json on chapters.db).
+/// Disk page-layout cache policy (pages_json on reader.db chapters).
 ///
-/// Body text remains in [content]; this only bounds pagination JSON growth.
+/// Body text remains in chapter body; this only bounds pagination JSON growth.
 class ChapterCache {
   static const int defaultMaxMb = 100;
   static const int protectRadius = 30;

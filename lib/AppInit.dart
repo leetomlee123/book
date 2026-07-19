@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:book/common/PicWidget.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/data/db/reader_database.dart';
 import 'package:book/main.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
@@ -90,6 +91,8 @@ class AppInit {
     }
 
     await SpUtil.getInstance();
+    // Single-file reader.db — drop legacy multi-DB files (no migration).
+    await ReaderDatabase.wipeLegacyDatabases();
     locator.registerSingleton(TelAndSmsService());
     final router = FluroRouter();
     Routes.configureRoutes(router);
