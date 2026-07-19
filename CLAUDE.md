@@ -79,13 +79,13 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 | `lib/animation/` | Custom page-turn animations used by the reader |
 | `lib/widgets/` | Reusable UI pieces |
 | `lib/service/` | Cache manager, tel/SMS helper |
-| `lib/model/reader/` | Reader collaborators: `text_paginator`, `reader_painter`, `chapter_content_loader`, `reading_progress_store`, `reading_session_opener`, `page_picture_cache`, `page_picture_resolver`, `page_turn_committer`, `source_switch_service`, `toc_service` |
+| `lib/model/reader/` | Reader collaborators: `text_paginator`, `reader_painter`, `chapter_content_loader`, `chapter_download_service`, `reading_progress_store`, `reading_session_opener`, `page_picture_cache`, `page_picture_resolver`, `page_turn_committer`, `source_switch_service`, `toc_service` |
 
 ### Networking
 
 - Singleton `HttpUtil` (`lib/common/http.dart`): Dio 5 + `AuthInterceptor` (adds `auth` header from SpUtil + UA) + `ErrorInterceptor` (`DioException` → BotToast).
 - Timeouts use `Duration` (Dio 5), not raw ints.
-- Base URLs and path constants live in `lib/common/common.dart` (`Common.domain`, shelf/search/chapter endpoints, SpUtil key names). Prefer adding endpoints there rather than hardcoding URLs in views.
+- Prefs keys live in `PrefsKeys` (`lib/common/common.dart`). Reading uses local book sources (no remote novel API base URL).
 - JSON decode off the UI isolate via top-level `parseJson` + `compute`.
 - Backend may be HTTP cleartext; Android keeps `android:usesCleartextTraffic="true"`.
 
@@ -104,7 +104,7 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 2. **Rust** `book_pager` runs via `BookPager.paginateAsync` → `Isolate.run` so long chapters do **not** block frames (each worker isolate loads `libbook_pager` itself).
 3. If the native lib is missing, falls back to Dart `TextPainter` on the caller isolate (after one event-loop yield).
 
-Pages are painted by `NovelPagePainter` / `ReadModel.drawContent` (per-page, cached), and flipped via `ReaderPageManager`. Progress is persisted locally and can sync with the server when authenticated.
+Pages are painted by `NovelPagePainter` / `ReaderPainter` (per-page, cached in `PagePictureCache`), and flipped via `ReaderPageManager` / `PageTurnCommitter`. Progress is persisted locally via `ReadingProgressStore`.
 
 **Rust pager build**
 

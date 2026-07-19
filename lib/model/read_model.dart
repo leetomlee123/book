@@ -16,6 +16,7 @@ import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
+import 'package:book/model/reader/chapter_download_service.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
@@ -94,6 +95,10 @@ class ReadModel with ChangeNotifier {
     chaptersRepo: _chapters,
     paginator: _paginator,
     fetchContent: fetchChapterBody,
+  );
+  late final ChapterDownloadService _downloads = ChapterDownloadService(
+    engine: _engine,
+    chapters: _chapters,
   );
   BookSource? _activeSource;
 
@@ -801,73 +806,31 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> downloadAll(int start) async {
-    List<ChapterTocEntry> temp = chapters;
-    if (temp.isEmpty) {
+    if (chapters.isEmpty) {
       await loadToc(init: true);
-      temp = chapters;
     }
-    List<ChapterNode> cpNodes = [];
-    for (var i = start; i < temp.length; i++) {
-      ChapterTocEntry chapter = temp[i];
-      var id = chapter.id;
-      if (chapter.hasBody == false) {
-        String content = await fetchChapterBody(id, idx: i);
-        if (content.isNotEmpty) {
-          cpNodes.add(ChapterNode(content, id));
-          chapter.hasBody = true;
-        }
-      }
-      if (cpNodes.length % downloadBatchSize == 0) {
-        await _chapters.updateBodies(cpNodes);
-        cpNodes.clear();
-      }
-    }
-    if (cpNodes.isNotEmpty) {
-      await _chapters.updateBodies(cpNodes);
-      cpNodes.clear();
-    }
-    BotToast.showText(text: "${book?.name ?? ""}下载完成");
+    await _ensureSource();
+    await _downloads.downloadFrom(
+      toc: chapters,
+      start: start,
+      source: _activeSource,
+      bookName: book?.name ?? '',
+      batchSize: downloadBatchSize,
+    );
   }
 
   Future<String> fetchChapterBody(String id, {int? idx}) async {
-    final b = book;
-    if (b == null) return '';
+    if (book == null) return '';
     await _ensureSource();
-    final source = _activeSource;
-    if (source == null) {
-      return '书源不存在，请重新搜索添加或换源';
-    }
-    String chapterUrl = '';
-    if (idx != null && idx >= 0 && idx < chapters.length) {
-      chapterUrl = chapters[idx].url;
-    } else {
-      for (final c in chapters) {
-        if (c.id == id) {
-          chapterUrl = c.url;
-          break;
-        }
-      }
-    }
-    if (chapterUrl.isEmpty) {
-      return '章节地址为空，请重新加载目录';
-    }
-    try {
-      AppLog.d('Read', 'fetch content idx=$idx url=$chapterUrl');
-      final content = await _engine.content(source, chapterUrl);
-      if (content.isEmpty) {
-        AppLog.w('Read', 'empty content idx=$idx url=$chapterUrl');
-        return '章节内容加载失败，请检查书源或换源后重试';
-      }
-      AppLog.d('Read', 'content ok idx=$idx len=${content.length}');
-      return content;
-    } catch (e, st) {
-      AppLog.e('Read', 'content failed idx=$idx url=$chapterUrl',
-          error: e, stackTrace: st);
-      return '章节内容加载失败，请检查书源或换源后重试\n$e';
-    }
+    return _downloads.fetchBody(
+      source: _activeSource,
+      toc: chapters,
+      chapterId: id,
+      idx: idx,
+    );
   }
 
-  /// Switch active source for the current book, remap progress, reload toc.
+    /// Switch active source for the current book, remap progress, reload toc.
   Future<bool> switchSource(BookSource source, SearchBook hit) async {
     final b = book;
     if (b == null) return false;
