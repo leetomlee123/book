@@ -16,6 +16,7 @@ import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
+import 'package:book/model/reader/reading_progress_store.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -77,16 +78,15 @@ class ReadModel with ChangeNotifier {
 
   //缓存批量提交大小
   int downloadBatchSize = 100;
-  /// Debounced progress persist after page turns.
-  Timer? _progressSaveTimer;
-  static const _progressSaveDebounce = Duration(milliseconds: 800);
 
   /// Soft cap for in-memory page pictures (disk holds TextPage JSON).
   static const int _maxPictureCache = 24;
 
-  /// False until [hydrateReadingSession] finishes hydrating progress from DB.
-  /// Prevents lifecycle/dispose from writing route-stale zeros over durable progress.
-  bool _progressReady = false;
+  late final ReadingProgressStore _progress = ReadingProgressStore(
+    books: _books,
+    chapters: _chapters,
+    ensureBookRow: _ensureBookRow,
+  );
 
   //显示上层 设置
   bool showMenu = false;
@@ -112,8 +112,9 @@ class ReadModel with ChangeNotifier {
 
   //页面上下文
 
-//是否修改font
-  bool? allowProgressSave;
+/// When false, progress persistence is disabled (e.g. user declined shelf add).
+  bool get allowProgressSave => _progress.enabled;
+  set allowProgressSave(bool v) => _progress.enabled = v;
 
   /// Sync seed when opening a book from shelf — call before first paint.
   /// Clears previous book state and plants a centered loading page so the
@@ -124,9 +125,8 @@ class ReadModel with ChangeNotifier {
     chaptersLoading = true;
     loadingHint = '正在加载…';
     allowProgressSave = true;
-    _progressReady = false;
-    _progressSaveTimer?.cancel();
-    _progressSaveTimer = null;
+    _progress.ready = false;
+    _progress.cancel();
     pictureCache.clear();
     prePage = null;
     nextPage = null;
@@ -217,7 +217,7 @@ class ReadModel with ChangeNotifier {
       b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       sessionReady = true;
       chaptersLoading = false;
-      _progressReady = false;
+      _progress.ready = false;
       notifyListeners();
       return;
     }
@@ -238,7 +238,7 @@ class ReadModel with ChangeNotifier {
       b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       sessionReady = true;
       chaptersLoading = false;
-      _progressReady = false;
+      _progress.ready = false;
       notifyListeners();
       return;
     }
@@ -269,7 +269,7 @@ class ReadModel with ChangeNotifier {
       _restorePageIndex(savedIndex);
       sessionReady = true;
       chaptersLoading = false;
-      _progressReady = true;
+      _progress.ready = true;
       AppLog.i(
         'Read',
         'ready cur=${b.chapterIndex} index=${b.pageIndex} pages=${curPage?.pageOffsets} '
@@ -304,7 +304,7 @@ class ReadModel with ChangeNotifier {
       sessionReady = true;
       chaptersLoading = false;
       // Allow persist even if toc empty — chapter index is still meaningful.
-      _progressReady = true;
+      _progress.ready = true;
       notifyListeners();
     }
   }
@@ -340,7 +340,7 @@ class ReadModel with ChangeNotifier {
     // Do not zero progress or mark ready — avoid wiping DB on open failure.
     sessionReady = true;
     chaptersLoading = false;
-    _progressReady = false;
+    _progress.ready = false;
     notifyListeners();
   }
 
@@ -660,103 +660,21 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Debounced progress save after page turns.
-  void scheduleProgressSave(
-      {Duration delay = _progressSaveDebounce}) {
-    if (allowProgressSave != true || book == null || !_progressReady) return;
-    _progressSaveTimer?.cancel();
-    if (delay == Duration.zero) {
-      unawaited(saveData());
-      return;
-    }
-    _progressSaveTimer = Timer(delay, () {
-      unawaited(saveData());
-    });
+  void scheduleProgressSave({Duration delay = ReadingProgressStore.debounce}) {
+    _progress.schedule(book: book, chapters: chapters, delay: delay);
   }
 
   /// Flush any pending debounced save immediately (call on exit / background).
   Future<void> flushProgressSave() {
-    _progressSaveTimer?.cancel();
-    _progressSaveTimer = null;
-    return saveData();
+    return _progress.flush(book: book, chapters: chapters);
   }
 
   /*状态保存 */
-  Future<void> saveData() async {
-    if (allowProgressSave != true) return;
-    // Skip until open path has merged DB progress + restored page index.
-    // Otherwise lifecycle/dispose can overwrite durable progress with route defaults.
-    if (!_progressReady) {
-      AppLog.i('Read', 'skip progress save (not hydrated yet)');
-      return;
-    }
-    final b = book;
-    if (b == null) return;
-    _progressSaveTimer?.cancel();
-    _progressSaveTimer = null;
-
-    // Snapshot before any await so dispose/clear cannot race.
-    final cur = b.chapterIndex;
-    final idx = b.pageIndex;
-    final pos = b.scrollOffset;
-    final id = b.id;
-    final sourceUrl = b.sourceUrl;
-    final tocSnapshot =
-        chapters.isNotEmpty ? List<ChapterTocEntry>.from(chapters) : const <ChapterTocEntry>[];
-    final name = (cur >= 0 && cur < tocSnapshot.length)
-        ? tocSnapshot[cur].title
-        : b.readingChapter;
-    // Avoid wiping a real chapter title with empty/loading placeholder.
-    if (name.isNotEmpty && name != '加载中') {
-      b.readingChapter = name;
-    }
-    final chapterName = (b.readingChapter.isNotEmpty && b.readingChapter != '加载中')
-        ? b.readingChapter
-        : name;
-
-    // Ensure book row first — reader.db FK requires books.id before chapters.
-    await _ensureBookRow(b);
-    // Persist TOC if missing (first open may not have flushed yet).
-    if (tocSnapshot.isNotEmpty) {
-      try {
-        final len = await _chapters.count(id);
-        if (len == 0) {
-          await _chapters.syncToc(tocSnapshot, id, sourceUrl: sourceUrl);
-          AppLog.i('Read', 'toc saved on exit count=${tocSnapshot.length}');
-        }
-      } catch (e) {
-        AppLog.w('Read', 'toc save on exit failed', error: e);
-      }
-    }
-    // Upsert progress (UPDATE may hit 0 rows on race).
-    final updated = await _books.saveProgress(
-      bookId: id,
-      chapterIndex: cur,
-      pageIndex: idx,
-      scrollOffset: pos,
-      readingChapter: chapterName,
-    );
-    if (updated == 0) {
-      // Row missing (first open race) — insert then update.
-      try {
-        await _books.upsertAll([b]);
-        await _books.saveProgress(
-          bookId: id,
-          chapterIndex: cur,
-          pageIndex: idx,
-          scrollOffset: pos,
-          readingChapter: chapterName,
-        );
-      } catch (e) {
-        AppLog.w('Read', 'progress upsert fallback failed', error: e);
-      }
-    }
-    AppLog.i(
-      'Read',
-      'progress save id=$id cur=$cur idx=$idx name=$chapterName rows=$updated',
-    );
+  Future<void> saveData() {
+    return _progress.save(book: book, chapters: chapters);
   }
 
-  /*页面点击事件（兼容旧入口） */
+    /*页面点击事件（兼容旧入口） */
   void tapPage(BuildContext context, TapUpDetails details) {
     final size = MediaQuery.of(context).size;
     tapPageAt(details.localPosition, size);
@@ -810,7 +728,7 @@ class ReadModel with ChangeNotifier {
   /// True after [hydrateReadingSession] finished hydrating and current chapter is ready.
   /// Scroll surface must wait for this — [sessionReady] alone is true during prepareOpen.
   bool get contentReady =>
-      _progressReady &&
+      _progress.ready &&
       book != null &&
       chapters.isNotEmpty &&
       curPage != null &&
@@ -846,7 +764,7 @@ class ReadModel with ChangeNotifier {
   /// Update progress from scroll list visible page.
   void applyScrollProgress(int chapterIdx, int pageIdx) {
     final b = book;
-    if (b == null || !_progressReady) return;
+    if (b == null || !_progress.ready) return;
     if (chapterIdx < 0 || chapterIdx >= chapters.length) return;
     final idx = pageIdx < 0 ? 0 : pageIdx;
     if (b.chapterIndex == chapterIdx && b.pageIndex == idx) return;
@@ -1031,9 +949,8 @@ class ReadModel with ChangeNotifier {
     Future<void> clear() async {
     // Caller must flush progress first (ReadBook.dispose / lifecycle).
     // Cancel only the timer so a late debounce cannot write after clear.
-    _progressSaveTimer?.cancel();
-    _progressSaveTimer = null;
-    _progressReady = false;
+    _progress.cancel();
+    _progress.ready = false;
     _hideTextLoading();
     chapters = [];
     _diskChapterWarm.clear();
