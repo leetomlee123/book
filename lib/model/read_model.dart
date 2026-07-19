@@ -103,7 +103,7 @@ class ReadModel with ChangeNotifier {
 
   //背景色索引（legacy texture path; solid paper preferred）
   String backgroundImageName =
-      SpUtil.getString(Common.bgIdx, defValue: ReadSetting.bgImg.first);
+      SpUtil.getString(PrefsKeys.bgIdx, defValue: ReadSetting.bgImg.first);
 
   PaperTheme paperTheme = ReadSetting.getPaperTheme();
 
@@ -474,7 +474,7 @@ class ReadModel with ChangeNotifier {
     // Legacy texture path.
     final path = i?.toString() ?? backgroundImageName;
     backgroundImageName = path;
-    SpUtil.putString(Common.bgIdx, path);
+    SpUtil.putString(PrefsKeys.bgIdx, path);
     ReadSetting.setUseSolidPaper(false);
     await refreshThemePaint();
     notifyListeners();
@@ -1262,7 +1262,7 @@ class ReadModel with ChangeNotifier {
     pictureCache.prune(bookId: b.id, centerChapter: b.chapterIndex);
   }
 
-    bool canTurnNext() {
+  bool canTurnNext() {
     final b = book;
     if (b == null) return false;
     // Last chapter, last page.

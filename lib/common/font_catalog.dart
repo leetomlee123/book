@@ -61,7 +61,7 @@ class FontCatalog {
     final out = <String, String>{...builtIn};
     // SpUtil remote config may add extra names; built-in URLs win for known keys
     // so a stale empty/bad URL cannot hide a downloadable font.
-    final remote = _readMap(Common.fonts);
+    final remote = _readMap(PrefsKeys.fonts);
     remote.forEach((k, v) {
       if (!out.containsKey(k)) out[k] = v;
     });
@@ -71,7 +71,7 @@ class FontCatalog {
 
   /// Ensure SpUtil has at least the built-in list (merge, don't wipe user fonts).
   static void ensureSeeded() {
-    final existing = _readMap(Common.fonts);
+    final existing = _readMap(PrefsKeys.fonts);
     var changed = false;
     for (final e in builtIn.entries) {
       // Always refresh known built-in URLs so old empty values don't stick.
@@ -80,8 +80,8 @@ class FontCatalog {
         changed = true;
       }
     }
-    if (changed || !SpUtil.haveKey(Common.fonts)) {
-      SpUtil.putObject(Common.fonts, existing);
+    if (changed || !SpUtil.haveKey(PrefsKeys.fonts)) {
+      SpUtil.putObject(PrefsKeys.fonts, existing);
     }
   }
 

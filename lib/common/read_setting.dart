@@ -181,10 +181,10 @@ class ReadSetting {
   /// Page-turn / scroll mode: 0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动.
   /// See [ReaderPageManager] TYPE_* constants.
   static int getPageTurnMode() =>
-      SpUtil.getInt(Common.turnPageAnima, defValue: 0);
+      SpUtil.getInt(PrefsKeys.pageTurnMode, defValue: 0);
 
   static void setPageTurnMode(int mode) {
-    SpUtil.putInt(Common.turnPageAnima, mode.clamp(0, 3));
+    SpUtil.putInt(PrefsKeys.pageTurnMode, mode.clamp(0, 3));
   }
 
   static double getLineHeight() {
@@ -271,13 +271,13 @@ class ReadSetting {
 
   /// Y where chapter title is painted (below status bar).
   static double chapterTitleOffsetY() {
-    return 15 + SpUtil.getDouble(Common.top_safe_height);
+    return 15 + SpUtil.getDouble(PrefsKeys.topSafeHeight);
   }
 
   /// Top inset of the paginated content box (and paint offset for body lines).
   static double contentTopInset() {
     return contentTopChrome +
-        SpUtil.getDouble(Common.top_safe_height) +
+        SpUtil.getDouble(PrefsKeys.topSafeHeight) +
         contentTopExtra;
   }
 

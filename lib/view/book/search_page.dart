@@ -93,7 +93,7 @@ class _SearchState extends ConsumerState<Search> {
     searchModel.context = context;
     searchModel.textFieldKey = textFieldKey;
     searchModel.controller = controller;
-    searchModel.historyKey = Common.book_search_history;
+    searchModel.historyKey = PrefsKeys.bookSearchHistory;
     searchModel.initHistory();
     await searchModel.initBookHot();
     if (!mounted) return;
@@ -152,7 +152,7 @@ class _SearchState extends ConsumerState<Search> {
 
   Widget resultWidget(SearchModel model) {
     // book_pic_width may never have been written; 0 makes itemExtent 0 → blank list.
-    var picW = SpUtil.getDouble(Common.book_pic_width, defValue: .0);
+    var picW = SpUtil.getDouble(PrefsKeys.bookPicWidth, defValue: .0);
     if (picW <= 0) {
       picW = 72;
     }

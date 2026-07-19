@@ -21,12 +21,12 @@ class _BookShelfState extends ConsumerState<BookShelf> {
   @override
   void initState() {
     super.initState();
-    if (!SpUtil.containsKey(Common.top_safe_height)) {
-      SpUtil.putDouble(Common.top_safe_height, Screen.topSafeHeight);
+    if (!SpUtil.containsKey(PrefsKeys.topSafeHeight)) {
+      SpUtil.putDouble(PrefsKeys.topSafeHeight, Screen.topSafeHeight);
     }
-    if (!SpUtil.containsKey(Common.shimmer_nums)) {
+    if (!SpUtil.containsKey(PrefsKeys.shimmerNums)) {
       SpUtil.putInt(
-        Common.shimmer_nums,
+        PrefsKeys.shimmerNums,
         (Screen.height -
                 Screen.topSafeHeight -
                 Screen.bottomSafeHeight -

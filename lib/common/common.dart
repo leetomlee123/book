@@ -1,17 +1,3 @@
-/// Shared constants (prefs keys).
-class Common {
-  static String bgIdx = PrefsKeys.bgIdx;
-  static String turnPageAnima = PrefsKeys.pageTurnMode;
-
-  static String book_search_history = PrefsKeys.bookSearchHistory;
-  static String reading_style = PrefsKeys.readingStyle;
-  static String fonts = PrefsKeys.fonts;
-  static String book_pic_width = PrefsKeys.bookPicWidth;
-  static String top_safe_height = PrefsKeys.topSafeHeight;
-  static String shimmer_nums = PrefsKeys.shimmerNums;
-  static String source_disclaimer_agreed = PrefsKeys.sourceDisclaimerAgreed;
-}
-
 /// Canonical SpUtil key strings used across the app.
 ///
 /// Prefer these over string literals so prefs stay discoverable.
@@ -36,3 +22,7 @@ class PrefsKeys {
   static const shimmerNums = 'shimmer_nums';
   static const sourceDisclaimerAgreed = 'source_disclaimer_agreed';
 }
+
+/// Backward-compatible alias — prefer [PrefsKeys].
+@Deprecated('Use PrefsKeys')
+typedef Common = PrefsKeys;
