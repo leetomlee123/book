@@ -12,8 +12,6 @@ import 'package:book/entity/book.dart';
 import 'package:book/entity/chapter_node.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/read_page.dart';
-import 'package:book/entity/text_line.dart';
-import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/chapter_download_service.dart';
@@ -26,6 +24,7 @@ import 'package:book/model/reader/reading_session_opener.dart';
 import 'package:book/model/reader/source_switch_service.dart';
 import 'package:book/model/reader/toc_service.dart';
 import 'package:book/model/reader/reader_input_controller.dart';
+import 'package:book/model/reader/reader_loading_presenter.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
@@ -137,6 +136,14 @@ class ReadModel with ChangeNotifier {
     curPageOf: () => curPage,
     hasNextPicture: () => paintNextPicture() != null,
     hasPreviousPicture: () => paintPreviousPicture() != null,
+  );
+  late final ReaderLoadingPresenter _loading = ReaderLoadingPresenter(
+    paginator: _paginator,
+    setLoadingHint: (text) => loadingHint = text,
+    setCurPage: (page) => curPage = page,
+    clearPictures: pictureCache.clear,
+    markNeedsPaint: _markNeedsPaint,
+    notify: notifyListeners,
   );
   BookSource? _activeSource;
 
@@ -251,14 +258,7 @@ class ReadModel with ChangeNotifier {
     canvasKey = null;
     chapters = [];
     book = b;
-    // Lightweight sync placeholder (no paginator / isolate).
-    final page = ReadPage.kong();
-    page.chapterName = '加载中';
-    page.chapterContent = loadingHint;
-    page.pages = [
-      TextPage([TextLine(loadingHint, 0, 0, 0)], 24),
-    ];
-    curPage = page;
+    curPage = ReaderLoadingPresenter.syncPlaceholder(loadingHint);
     b.pageIndex = b.pageIndex < 0 ? 0 : b.pageIndex;
     sessionReady = true;
     // Do not notifyListeners here: the upcoming ReadBook build will watch us.
@@ -302,26 +302,8 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Build a single-page ReadPage with a readable error/hint message.
-  Future<ReadPage> _messagePage(String title, String message) async {
-    final page = ReadPage.kong();
-    page.chapterName = title;
-    page.chapterContent = message;
-    try {
-      page.pages = await _paginator.paginate(page);
-    } catch (_) {
-      page.pages = const [];
-    }
-    if (page.pages.isEmpty) {
-      // Absolute fallback so drawContent never paints a blank canvas.
-      page.pages = [
-        TextPage([
-          TextLine(message, 16, 0, 0),
-        ], 24),
-      ];
-    }
-    return page;
-  }
+  Future<ReadPage> _messagePage(String title, String message) =>
+      _loading.messagePage(title, message);
 
   Future<void> _ensureSource() async {
     final b = book;
@@ -333,28 +315,9 @@ class ReadModel with ChangeNotifier {
     _activeSource = await SourceModel().findByUrl(b.sourceUrl);
   }
 
-  /// In-page loading (drawn as a normal ReadPage). No BotToast overlay.
-  int _loadingToken = 0;
+  Future<void> _showTextLoading(String text) => _loading.show(text);
 
-  Future<void> _showTextLoading(String text) async {
-    loadingHint = text;
-    final token = ++_loadingToken;
-    final page = await _messagePage('加载中', text);
-    if (token != _loadingToken) return; // superseded
-    curPage = page;
-    // Do NOT touch book.index — loading is a 1-page placeholder only.
-    // Mutating index here used to wipe restored progress (DB idx → 0).
-    pictureCache.clear();
-    final ro = canvasKey?.currentContext?.findRenderObject();
-    ro?.markNeedsPaint();
-    notifyListeners();
-  }
-
-  void _hideTextLoading() {
-    // Content replacement (openChapterAt / chapter load) clears the hint page.
-    // Bump token so any in-flight _showTextLoading paint is ignored.
-    _loadingToken++;
-  }
+  void _hideTextLoading() => _loading.hide();
 
   Future openChapterAt(int idx, bool jump, {bool showLoading = true}) {
     return _window.openAt(idx, jump, showLoadingUi: showLoading);
@@ -673,13 +636,7 @@ class ReadModel with ChangeNotifier {
     pictureCache.clear();
     // Keep a neutral loading page so the next open doesn't paint stale content
     // if prepareOpen races with a rebuild.
-    final page = ReadPage.kong();
-    page.chapterName = '加载中';
-    page.chapterContent = loadingHint;
-    page.pages = [
-      TextPage([TextLine(loadingHint, 0, 0, 0)], 24),
-    ];
-    curPage = page;
+    curPage = ReaderLoadingPresenter.syncPlaceholder(loadingHint);
     prePage = null;
     nextPage = null;
     book = null;
