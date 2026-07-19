@@ -537,6 +537,16 @@ class ReadModel with ChangeNotifier {
     pictureCache.prune(bookId: b.id, centerChapter: b.chapterIndex);
   }
 
+  /// Scroll-mode window moved — prune pictures around [centerChapter].
+  void pruneScrollPictures({int? centerChapter}) {
+    final b = book;
+    if (b == null) return;
+    pictureCache.prune(
+      bookId: b.id,
+      centerChapter: centerChapter ?? b.chapterIndex,
+    );
+  }
+
   bool canTurnNext() => _input.canTurnNext();
 
   bool canTurnPrevious() => _input.canTurnPrevious();

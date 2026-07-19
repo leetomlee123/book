@@ -32,7 +32,10 @@ class PagePictureResolver {
   final String? Function() activeBookId;
 
   static String _key(String bookId, int chapterIndex, int pageIndex) =>
-      '$bookId$chapterIndex$pageIndex';
+      '$bookId|$chapterIndex|$pageIndex';
+
+  static String _scrollKey(String bookId, int chapterIndex, int pageIndex) =>
+      '$bookId|$chapterIndex|$pageIndex|sc';
 
   ui.Picture? resolveCurrent({bool firstInit = false}) {
     final b = bookOf();
@@ -134,7 +137,7 @@ class PagePictureResolver {
     final b = bookOf();
     if (b == null) return null;
     if (pageIdx < 0 || pageIdx >= readPage.pages.length) return null;
-    final key = '${b.id}$chapterIdx${pageIdx}sc';
+    final key = _scrollKey(b.id, chapterIdx, pageIdx);
     if (cache.containsKey(key)) return cache[key];
     final pic = paintScroll(readPage, pageIdx);
     return cache.putIfAbsent(key, () => pic);

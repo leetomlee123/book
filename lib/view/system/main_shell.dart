@@ -60,29 +60,34 @@ class _MainShellState extends State<MainShell> {
         ),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            height: AppDimens.bottomNavHeight,
-            child: BottomNavigationBar(
-              currentIndex: _index,
-              onTap: (i) => setState(() => _index = i),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.menu_book_outlined),
-                  activeIcon: Icon(Icons.menu_book),
-                  label: '书架',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.explore_outlined),
-                  activeIcon: Icon(Icons.explore),
-                  label: '发现',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person),
-                  label: '我',
-                ),
-              ],
-            ),
+          // Don't force a fixed height — Material BottomNavigationBar needs
+          // slightly more than 56px for icon + label and overflows otherwise.
+          child: BottomNavigationBar(
+            currentIndex: _index,
+            onTap: (i) => setState(() => _index = i),
+            type: BottomNavigationBarType.fixed,
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            iconSize: 22,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book_outlined),
+                activeIcon: Icon(Icons.menu_book),
+                label: '书架',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.explore_outlined),
+                activeIcon: Icon(Icons.explore),
+                label: '发现',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: '我',
+              ),
+            ],
           ),
         ),
       ),

@@ -8,6 +8,7 @@ import 'package:book/entity/read_page.dart';
 import 'package:book/store/providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One flattened page tile in the vertical scroll window.
@@ -31,6 +32,7 @@ class _ScrollItem {
 ///
 /// Open path loads cur±1 first, then attaches [ScrollController] with
 /// [initialScrollOffset] so restore never races maxScrollExtent clamping.
+/// Neighbor loads keep the same controller and correct the offset on prepend.
 class ScrollContentReader extends ConsumerStatefulWidget {
   const ScrollContentReader({super.key});
 
@@ -66,10 +68,14 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
   static const double _edgePad = 20;
 
   /// Pixels into the viewport used as the reading anchor when mapping
-  /// scroll offset → chapter/page. Top-of-viewport tracking saves a page
-  /// behind what the user is actually reading; a full-viewport fraction
-  /// overshoots when tiles are shorter than the screen.
+  /// scroll offset → chapter/page.
   static const double _progressInset = 96;
+
+  /// How far ahead the list builds (and thus paints) tiles.
+  // Prewarm handles ahead-of-viewport pictures; default ListView cache is fine.
+  static const int _prewarmRadius = 4;
+
+  int _prewarmToken = 0;
 
   void _safeSetState(VoidCallback fn) {
     if (_disposed || !mounted) return;
@@ -102,6 +108,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
       _log('dispose save cur=$_lastChapter page=$_lastPage');
     } catch (_) {}
     _disposed = true;
+    _prewarmToken++;
     _controller?.removeListener(_onScroll);
     _controller?.dispose();
     _controller = null;
@@ -110,7 +117,6 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
 
   void _forceSyncProgress() {
     if (_disposed) {
-      // Controller may already be gone; still push last known page.
       try {
         ref
             .read(readModelProvider)
@@ -127,6 +133,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     _syncedChapterIndex = null;
     _restoreDone = false;
     _loadingNeighbor = false;
+    _prewarmToken++;
     _chapters.clear();
     _items = const [];
     _offsets = const [];
@@ -211,6 +218,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     _restoreDone = true;
     try {
       model.applyScrollProgress(cur, pageIdx);
+      model.pruneScrollPictures(centerChapter: cur);
     } catch (_) {}
 
     _log(
@@ -218,8 +226,10 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
       'window=$_windowStart..$_windowEnd item=$target initial=$initial',
     );
     _safeSetState(() {});
+    _schedulePrewarm();
   }
 
+  /// Create controller only for bootstrap / rebootstrap — never on neighbor load.
   void _attachController(double initialOffset) {
     _controller?.removeListener(_onScroll);
     _controller?.dispose();
@@ -247,6 +257,15 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     _loadingNeighbor = true;
     final holdChapter = _lastChapter;
     final holdPage = _lastPage;
+    final c = _controller;
+    final oldOffset =
+        (c != null && c.hasClients) ? c.offset : 0.0;
+    // Content-space offset of the held page (excludes top padding).
+    final heldItemBefore = _indexOf(holdChapter, holdPage);
+    final heldContentBefore =
+        heldItemBefore >= 0 && heldItemBefore < _offsets.length
+            ? _offsets[heldItemBefore]
+            : 0.0;
     try {
       final model = ref.read(readModelProvider);
       if (forward) {
@@ -268,20 +287,46 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
           _chapters.remove(drop);
         }
       }
+
       _rebuildItems();
-      final t = _indexOf(holdChapter, holdPage);
-      final initial = _scrollOffsetForItem(t);
-      _attachController(initial);
+      final heldItemAfter = _indexOf(holdChapter, holdPage);
+      final heldContentAfter =
+          heldItemAfter >= 0 && heldItemAfter < _offsets.length
+              ? _offsets[heldItemAfter]
+              : 0.0;
+      final delta = heldContentAfter - heldContentBefore;
+
+      // Keep the same controller so fling/ballistics survive chapter edges.
+      // Prepend shifts content down → correctBy(delta). Append → delta≈0.
+      if (c != null && c.hasClients && delta.abs() > 0.5) {
+        c.position.correctBy(delta);
+      } else if (c != null && c.hasClients && !forward) {
+        // Fallback if held item vanished from window.
+        final target = _scrollOffsetForItem(heldItemAfter);
+        if ((c.offset - target).abs() > 1) {
+          c.jumpTo(target < 0 ? 0 : target);
+        }
+      } else if (c == null) {
+        // Should not happen mid-session; recover with a fresh controller.
+        final target = _scrollOffsetForItem(heldItemAfter);
+        _attachController(target);
+      } else {
+        // ignore unused oldOffset when delta is 0 (forward append)
+        assert(oldOffset >= 0);
+      }
+
       _lastChapter = holdChapter;
       _lastPage = holdPage;
       try {
         model.applyScrollProgress(holdChapter, holdPage);
+        model.pruneScrollPictures(centerChapter: holdChapter);
       } catch (_) {}
       _log(
         'loadMore forward=$forward re-anchor cur=$holdChapter page=$holdPage '
-        'item=$t initial=$initial items=${_items.length}',
+        'delta=$delta items=${_items.length}',
       );
       _safeSetState(() {});
+      _schedulePrewarm();
     } finally {
       _loadingNeighbor = false;
     }
@@ -375,8 +420,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     }
     _maybeLoadNeighbors();
     // Keep model indices current every frame; disk write is still debounced
-    // in ReadingProgressStore (800ms). Throttling here made progress lag
-    // behind the visible page during continuous scroll / app pause.
+    // in ReadingProgressStore (800ms).
     _applyVisibleProgress();
   }
 
@@ -407,8 +451,6 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     if (_loadingNeighbor && !force) return;
     if (_disposed || c == null || !c.hasClients) return;
 
-    // Slightly below the top edge so progress matches what the reader is
-    // looking at, without jumping several short tiles ahead.
     final contentY = c.offset - _edgePad + _progressInset;
     final i = _itemAtContentY(contentY);
     if (i < 0 || i >= _items.length) return;
@@ -418,6 +460,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
         it.pageIndex == _lastPage) {
       return;
     }
+    final chapterChanged = it.chapterIndex != _lastChapter;
     _lastChapter = it.chapterIndex;
     _lastPage = it.pageIndex;
     _syncedChapterIndex = it.chapterIndex;
@@ -425,7 +468,49 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
       final model = ref.read(readModelProvider);
       model.applyScrollProgress(it.chapterIndex, it.pageIndex);
       if (force) model.scheduleProgressSave(delay: Duration.zero);
+      if (chapterChanged) {
+        model.pruneScrollPictures(centerChapter: it.chapterIndex);
+      }
     } catch (_) {}
+    if (!force) _schedulePrewarm();
+  }
+
+  /// Paint nearby tiles into picture cache off the critical path.
+  void _schedulePrewarm() {
+    if (_disposed || !_restoreDone || _items.isEmpty) return;
+    final token = ++_prewarmToken;
+    final center = _indexOf(_lastChapter, _lastPage);
+    final targets = <int>[];
+    for (var d = 1; d <= _prewarmRadius; d++) {
+      final next = center + d;
+      final prev = center - d;
+      if (next < _items.length) targets.add(next);
+      if (prev >= 0) targets.add(prev);
+    }
+    if (targets.isEmpty) return;
+
+    var i = 0;
+    void slice(Duration _) {
+      if (_disposed || token != _prewarmToken) return;
+      // Budget a few tiles per frame to avoid a long stall.
+      const budget = 2;
+      var painted = 0;
+      final model = ref.read(readModelProvider);
+      while (i < targets.length && painted < budget) {
+        final idx = targets[i++];
+        if (idx < 0 || idx >= _items.length) continue;
+        final it = _items[idx];
+        try {
+          model.scrollPagePicture(it.chapterIndex, it.pageIndex, it.readPage);
+        } catch (_) {}
+        painted++;
+      }
+      if (i < targets.length && !_disposed && token == _prewarmToken) {
+        SchedulerBinding.instance.scheduleFrameCallback(slice);
+      }
+    }
+
+    SchedulerBinding.instance.scheduleFrameCallback(slice);
   }
 
   void _onPointerDown(PointerDownEvent e) {
@@ -488,7 +573,6 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
       _log(
         'chapter jump model=$jumpTo synced=$_syncedChapterIndex — rebootstrap',
       );
-      // Defer reset off the build path (dispose ScrollController safely).
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_disposed || !mounted) return;
         if (!_bootstrapped) return;
@@ -519,6 +603,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
             if (n is ScrollEndNotification && _restoreDone) {
               _applyVisibleProgress(force: true);
               _maybeLoadNeighbors();
+              _schedulePrewarm();
             }
             return false;
           },
@@ -543,8 +628,25 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
                     if (index < 0 || index >= _items.length) return null;
                     return _items[index].height;
                   },
+                  findChildIndexCallback: (Key key) {
+                    if (key is! ValueKey<String>) return null;
+                    final parts = key.value.split(':');
+                    if (parts.length != 2) return null;
+                    final ch = int.tryParse(parts[0]);
+                    final pg = int.tryParse(parts[1]);
+                    if (ch == null || pg == null) return null;
+                    final idx = _indexOf(ch, pg);
+                    if (idx < 0 || idx >= _items.length) return null;
+                    final it = _items[idx];
+                    if (it.chapterIndex != ch || it.pageIndex != pg) return null;
+                    return idx;
+                  },
                   itemBuilder: (context, index) {
-                    return _ScrollPageTile(item: _items[index]);
+                    final item = _items[index];
+                    return _ScrollPageTile(
+                      key: ValueKey('${item.chapterIndex}:${item.pageIndex}'),
+                      item: item,
+                    );
                   },
                 ),
         ),
@@ -555,7 +657,7 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
 
 class _ScrollPageTile extends ConsumerWidget {
   final _ScrollItem item;
-  const _ScrollPageTile({required this.item});
+  const _ScrollPageTile({super.key, required this.item});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

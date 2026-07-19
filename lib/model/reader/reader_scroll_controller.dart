@@ -89,7 +89,7 @@ class ReaderScrollController {
     if (name.isNotEmpty) b.readingChapter = name;
     // Debounced disk write only — do NOT notifyListeners (scroll UI owns state).
     scheduleProgressSave();
-    AppLog.i('Read', 'scroll progress cur=$chapterIdx idx=$idx name=$name');
+    AppLog.d('Read', 'scroll progress cur=$chapterIdx idx=$idx name=$name');
   }
 
   /// Content-only picture for vertical scroll (no title/time/page chrome).
