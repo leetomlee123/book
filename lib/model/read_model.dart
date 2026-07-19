@@ -21,12 +21,12 @@ import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
 import 'package:book/model/reader/reading_progress_store.dart';
 import 'package:book/model/reader/source_switch_service.dart';
+import 'package:book/model/reader/toc_service.dart';
 import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
-import 'package:book/source/util/book_id.dart';
 import 'package:book/view/page_turn/novel_page_painter.dart';
 import 'package:book/view/page_turn/reader_page_manager.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -123,6 +123,16 @@ class ReadModel with ChangeNotifier {
     books: _books,
     chapters: _chapters,
     ensureBookRow: _ensureBookRow,
+  );
+  late final TocService _toc = TocService(
+    engine: _engine,
+    chapters: _chapters,
+    ensureBookRow: _ensureBookRow,
+    resolveSource: (b) async {
+      book = b;
+      await _ensureSource();
+      return _activeSource;
+    },
   );
 
   //显示上层 设置
@@ -521,85 +531,28 @@ class ReadModel with ChangeNotifier {
   Future<List<ChapterTocEntry>?> fetchRemoteToc() async {
     final b = book;
     if (b == null) return null;
-    await _ensureSource();
-    final source = _activeSource;
-    if (source == null) {
-      BotToast.showText(text: '书源不存在：${b.originName}');
-      return null;
-    }
-    final tocUrl =
-        b.tocUrl.isNotEmpty ? b.tocUrl : (b.bookUrl.isNotEmpty ? b.bookUrl : '');
-    if (tocUrl.isEmpty) return null;
-    try {
-      AppLog.i(
-        'Read',
-        'fetchRemoteToc source=${source.bookSourceName} '
-            'tocUrl=$tocUrl chapterList=${source.ruleToc.chapterList}',
-      );
-      final list = await _engine.toc(source, tocUrl);
-      AppLog.i('Read', 'fetchRemoteToc got ${list.length} chapters');
-      return list
-          .map((c) => ChapterTocEntry(
-                id: makeChapterId(b.id, c.url),
-                title: c.name,
-                url: c.url,
-                hasBody: false,
-                ord: c.index,
-              ))
-          .toList();
-    } catch (e, st) {
-      AppLog.e('Read', 'fetchRemoteToc failed for $tocUrl', error: e, stackTrace: st);
-      BotToast.showText(text: '目录加载失败：$e');
-      return null;
-    }
+    return _toc.fetchRemote(b);
   }
 
   Future loadToc({bool init = false}) async {
     final b = book;
     if (b == null) return;
-    // Capture id so a late network return cannot touch a different/closed book.
     final bookId = b.id;
-    List<ChapterTocEntry>? list = await fetchRemoteToc();
-    if (list == null || list.isEmpty) return;
-    // Reader may have been closed (clear() sets book=null) while toc was in flight.
-    if (book?.id != bookId) {
-      AppLog.i('Read', 'loadToc drop stale toc for $bookId');
-      return;
-    }
-
-    // reader.db enforces FK: chapters.book_id → books.id. Create the book
-    // row first so TOC inserts never fail on first open.
-    await _ensureBookRow(book!);
-    if (book?.id != bookId) return;
-
-    if (init || chapters.isEmpty) {
-      chapters = list;
-      // Diff-upsert keeps any already-cached bodies for matching chapter ids.
-      await _chapters.syncToc(list, bookId, sourceUrl: b.sourceUrl);
-      AppLog.i('Read', 'toc saved init=${list.length} id=$bookId');
-    } else {
-      // append only new urls
-      final existing = chapters.map((e) => e.url).toSet();
-      final fresh = list.where((e) => !existing.contains(e.url)).toList();
-      if (fresh.isNotEmpty) {
-        for (final c in fresh) {
-          c.ord = chapters.length;
-          chapters.add(c);
-        }
-        await _chapters.appendToc(fresh, bookId, sourceUrl: b.sourceUrl);
-        AppLog.i('Read', 'toc append ${fresh.length} id=$bookId');
-      }
-    }
-    if (book?.id != bookId) return;
-    if (list.isNotEmpty) {
-      book!.latestChapter = list.last.title;
+    final updated = await _toc.load(
+      book: b,
+      current: chapters,
+      init: init,
+      isStillActive: () => book?.id == bookId,
+    );
+    if (updated == null) return;
+    chapters = updated;
+    if (updated.isNotEmpty) {
+      book?.latestChapter = updated.last.title;
     }
     notifyListeners();
   }
 
-  /// Insert book row if missing. Concurrent callers may race; insert ignores PK conflict.
-  /// Prefetch cur±1 chapter body/layout rows in one SQLite query.
-  Future<void> _warmDiskChapterCaches(int centerIdx) async {
+    Future<void> _warmDiskChapterCaches(int centerIdx) async {
     if (chapters.isEmpty) return;
     final ids = <String>[];
     for (final i in [centerIdx - 1, centerIdx, centerIdx + 1]) {
