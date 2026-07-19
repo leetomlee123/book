@@ -450,7 +450,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  Future<void> colorModelSwitch() async {
+  Future<void> refreshThemePaint() async {
     await changeBgUI();
     widgets.clear();
 
@@ -460,24 +460,24 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  Future<void> switchBgColor(Object? i) async {
+  Future<void> setBackgroundImage(Object? i) async {
     // Legacy texture path.
     final path = i?.toString() ?? bgPath;
     bgPath = path;
     SpUtil.putString(Common.bgIdx, path);
     ReadSetting.setUseSolidPaper(false);
-    await colorModelSwitch();
+    await refreshThemePaint();
     notifyListeners();
   }
 
   /// WeChat-style solid paper swatch.
-  Future<void> switchPaperTheme(PaperTheme theme) async {
+  Future<void> setPaperTheme(PaperTheme theme) async {
     paperTheme = theme;
     ReadSetting.setPaperTheme(theme);
     ReadSetting.setUseSolidPaper(true);
     widgets.clear();
     bgUI = null; // solid fill only
-    await colorModelSwitch();
+    await refreshThemePaint();
     notifyListeners();
   }
 
@@ -780,16 +780,16 @@ class ReadModel with ChangeNotifier {
       return false;
     }
     if (x >= 2 * space) {
-      return clickPage(1, localPos);
+      return turnByDirection(1, localPos);
     }
     if (x <= space) {
-      return clickPage(tapLeftToAdvance ? 1 : -1, localPos);
+      return turnByDirection(tapLeftToAdvance ? 1 : -1, localPos);
     }
     return false;
   }
 
   /// Returns true if a turn was started.
-  bool clickPage(int f, Offset detail) {
+  bool turnByDirection(int f, Offset detail) {
     if (mPainter?.pageManager?.isBusy == true) {
       return false;
     }
@@ -797,7 +797,7 @@ class ReadModel with ChangeNotifier {
     if (mgr != null) {
       return mgr.triggerTapTurn(f);
     }
-    changeCoverPage(f);
+    commitPageTurn(f);
     canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
     notifyListeners();
     return true;
@@ -912,12 +912,12 @@ class ReadModel with ChangeNotifier {
       widgets.putIfAbsent(key, () => widget);
     }
     if (firstInit) {
-      Future.delayed(Duration(milliseconds: 200), () => preLoadWidget());
+      Future.delayed(Duration(milliseconds: 200), () => preloadNeighborPictures());
     }
     return widget;
   }
 
-  void preLoadWidget() {
+  void preloadNeighborPictures() {
     final b = book;
     if (b == null || curPage == null) return;
 
@@ -971,7 +971,7 @@ class ReadModel with ChangeNotifier {
     }
     Future.delayed(const Duration(milliseconds: 200), () {
       // Skip if reader already left this book.
-      if (book?.id == b.id) preLoadWidget();
+      if (book?.id == b.id) preloadNeighborPictures();
     });
     final pic = drawContent(current, pageIdx);
     return widgets.putIfAbsent(key, () => pic);
@@ -1275,7 +1275,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  void switchClickNextPage() {
+  void toggleTapLeftToAdvance() {
     tapLeftToAdvance = !tapLeftToAdvance;
     SpUtil.putBool("leftClickNext", tapLeftToAdvance);
     notifyListeners();
@@ -1291,7 +1291,7 @@ class ReadModel with ChangeNotifier {
     });
   }
 
-  void changeCoverPage(Object? offsetDifference) {
+  void commitPageTurn(Object? offsetDifference) {
     final b = book;
     if (b == null) return;
     final dir = (offsetDifference is num)
@@ -1332,7 +1332,7 @@ class ReadModel with ChangeNotifier {
       nextPage = null;
       if (kDebugMode) {
         debugPrint(
-          '[ReadModel] changeCoverPage +chapter '
+          '[ReadModel] commitPageTurn +chapter '
           '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
           'dir=$offsetDifference pages=$curLen',
         );
@@ -1389,7 +1389,7 @@ class ReadModel with ChangeNotifier {
       prePage = null;
       if (kDebugMode) {
         debugPrint(
-          '[ReadModel] changeCoverPage -chapter '
+          '[ReadModel] commitPageTurn -chapter '
           '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
           'dir=$offsetDifference',
         );
@@ -1412,7 +1412,7 @@ class ReadModel with ChangeNotifier {
     }
     if (kDebugMode) {
       debugPrint(
-        '[ReadModel] changeCoverPage page '
+        '[ReadModel] commitPageTurn page '
         '$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
         'dir=$offsetDifference pages=$curLen',
       );

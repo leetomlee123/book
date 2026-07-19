@@ -353,13 +353,13 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                       value: _readModel.tapLeftToAdvance,
                       activeTrackColor: AppColors.brand,
                       onChanged: (_) {
-                        _readModel.switchClickNextPage();
+                        _readModel.toggleTapLeftToAdvance();
                         setState(() {});
                       },
                     ),
                   ),
                   onTap: () {
-                    _readModel.switchClickNextPage();
+                    _readModel.toggleTapLeftToAdvance();
                     setState(() {});
                   },
                 ),
@@ -629,7 +629,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
         return GestureDetector(
           onTap: () async {
             final wasDark = _colorModel.dark;
-            await _readModel.switchPaperTheme(t);
+            await _readModel.setPaperTheme(t);
             final nowDark = t == PaperTheme.night;
             if (wasDark != nowDark) {
               _colorModel.switchModel();
@@ -846,7 +846,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
             onTap: () async {
               ref.read(colorModelProvider).switchModel();
               final night = ref.read(colorModelProvider).dark;
-              await _readModel.switchPaperTheme(
+              await _readModel.setPaperTheme(
                 night ? PaperTheme.night : PaperTheme.cream,
               );
               setState(() {});

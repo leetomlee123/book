@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 /// 覆盖翻页：拖动时顶页平移露出底页，松手确认/取消。
 ///
-/// 切页由 [ReaderPageManager] 在动画完成后统一提交，本类不调用 changeCoverPage。
+/// 切页由 [ReaderPageManager] 在动画完成后统一提交，本类不调用 commitPageTurn。
 class CoverPageAnimation extends BaseAnimationPage {
   bool isTurnNext = true;
   bool isDragging = false;

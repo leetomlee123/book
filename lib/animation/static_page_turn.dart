@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 /// 无翻页动画：始终绘制当前页。
 ///
-/// **Does not call changeCoverPage.** [ReaderPageManager.finishSwipe] reads
+/// **Does not call commitPageTurn.** [ReaderPageManager.finishSwipe] reads
 /// [consumeSwipeDirection] and commits once.
 class StaticPageTurn extends BaseAnimationPage {
   Offset _down = Offset.zero;

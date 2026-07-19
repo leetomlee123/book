@@ -10,8 +10,8 @@ import 'package:flutter/material.dart';
 /// Page-turn orchestrator.
 ///
 /// **Single commit rule:** the only place that advances the page is
-/// [_commitTurn] → [ReadModel.changeCoverPage]. Cover / Simulation / Static
-/// paint only; they never call changeCoverPage themselves.
+/// [_commitTurn] → [ReadModel.commitPageTurn]. Cover / Simulation / Static
+/// paint only; they never call commitPageTurn themselves.
 class ReaderPageManager {
   static const int TYPE_ANIMATION_NONE = 0;
   static const int TYPE_ANIMATION_SIMULATION_TURN = 1;
@@ -372,7 +372,7 @@ class ReaderPageManager {
     // Start cooldown BEFORE mutating page so any re-entrant busy check sees it.
     _lastCommitAt = DateTime.now();
     _log('COMMIT dir=$direction');
-    currentAnimationPage.readerViewModel.changeCoverPage(direction);
+    currentAnimationPage.readerViewModel.commitPageTurn(direction);
     _markPaint();
     // Instant (static) turns settle immediately.
     if (currentState != PageTurnState.animating) {
