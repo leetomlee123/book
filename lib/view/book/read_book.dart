@@ -142,12 +142,16 @@ class _ReadBookState extends ConsumerState<ReadBook>
 
   @override
   Widget build(BuildContext context) {
-    final model = ref.watch(readModelProvider);
+    final isScroll = ref.watch(readModelProvider.select((m) => m.isScrollMode));
+    final showMenu = ref.watch(readModelProvider.select((m) => m.showMenu));
+    final loadOk = ref.watch(readModelProvider.select((m) => m.loadOk));
+    final paperTheme =
+        ref.watch(readModelProvider.select((m) => m.paperTheme));
     final paper = ReadSetting.paperColor(
-      model.paperTheme == PaperTheme.night ||
+      paperTheme == PaperTheme.night ||
               SpUtil.getBool('dark', defValue: false)
           ? PaperTheme.night
-          : model.paperTheme,
+          : paperTheme,
     );
 
     return PopScope(
@@ -178,11 +182,11 @@ class _ReadBookState extends ConsumerState<ReadBook>
             ),
             // Page-turn canvas vs vertical scroll list.
             RepaintBoundary(
-              child: model.isScrollMode
+              child: isScroll
                   ? const ScrollContentReader()
                   : const PageContentReader(),
             ),
-            if (model.loadOk && model.showMenu) Menu(),
+            if (loadOk && showMenu) Menu(),
           ],
         ),
       ),

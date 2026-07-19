@@ -93,7 +93,7 @@ class _SearchState extends ConsumerState<Search> {
     searchModel.context = context;
     searchModel.textFieldKey = textFieldKey;
     searchModel.controller = controller;
-    searchModel.store_word = Common.book_search_history;
+    searchModel.historyKey = Common.book_search_history;
     searchModel.initHistory();
     await searchModel.initBookHot();
     if (!mounted) return;

@@ -18,6 +18,7 @@ import 'package:book/entity/read_page.dart';
 import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:book/model/source_model.dart';
+import 'package:book/model/reader/reader_painter.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/engine/progress_mapper.dart';
@@ -39,10 +40,11 @@ class ReadModel with ChangeNotifier {
   Map<String, ui.Picture> widgets = {};
   Stack? stackContent;
   Paint bgPaint = Paint();
-  ui.Image? bgUI;
   GlobalKey? canvasKey;
-  TextPainter textPainter =
-      TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+  final ReaderPainter _painter = ReaderPainter();
+
+  ui.Image? get bgUI => _painter.bgUI;
+  set bgUI(ui.Image? value) => _painter.bgUI = value;
 
   /// 翻页/阅读模式：0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动（见 [ReaderPageManager]）
   int currentAnimationMode = () {
@@ -65,11 +67,11 @@ class ReadModel with ChangeNotifier {
       _diskChapterWarm = {};
 
   var currentPageValue = 0.0;
-  String poet = "";
 
   bool isDark() => SpUtil.getBool("dark");
 
-  var electricQuantity = 1.0;
+  double get electricQuantity => _painter.electricQuantity;
+  set electricQuantity(double value) => _painter.electricQuantity = value;
 
   //本书记录
   ReadPage? prePage;
@@ -1170,106 +1172,20 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Natural height of a scroll tile (content only + tiny pad).
-  /// Uses line dy span (ignores bottom-justify empty space in page box).
-  double scrollPageHeight(ReadPage readPage, int pageIdx) {
-    if (pageIdx < 0 || pageIdx >= readPage.pages.length) {
-      return 120;
-    }
-    final page = readPage.pages[pageIdx];
-    final lineH =
-        ReadSetting.getFontSize() * ReadSetting.getLineHeight();
-    if (page.lines.isEmpty) {
-      return lineH + 4;
-    }
-    var minDy = double.infinity;
-    var maxDy = 0.0;
-    for (final line in page.lines) {
-      if (line.dy < minDy) minDy = line.dy;
-      if (line.dy > maxDy) maxDy = line.dy;
-    }
-    if (!minDy.isFinite) minDy = 0;
-    // Paint shifts by -minDy; height is the drawn span only.
-    final contentH = (maxDy - minDy) + lineH;
-    return (contentH < lineH ? lineH : contentH) + 2;
-  }
+  double scrollPageHeight(ReadPage readPage, int pageIdx) =>
+      _painter.scrollPageHeight(readPage, pageIdx);
 
   /// Paint body lines only into a tight-height picture for continuous scroll.
   ui.Picture drawScrollContent(ReadPage readPage, int pageIdx) {
     paperTheme = ReadSetting.getPaperTheme();
-    final bool night = paperTheme == PaperTheme.night ||
-        SpUtil.getBool('dark', defValue: false);
-    final effectivePaper = night ? PaperTheme.night : paperTheme;
-    final paper = ReadSetting.paperColor(effectivePaper);
-    final ink = ReadSetting.inkColor(effectivePaper);
-
-    final contentPadding = ReadSetting.getPageDis().toDouble();
-    final pageW = Screen.width;
-    final fontFamily = ReadSetting.getFontFamily();
-    final familyOrNull =
-        (fontFamily.isEmpty || fontFamily == 'Roboto') ? null : fontFamily;
-    final fontSize = ReadSetting.getFontSize();
-    final lineHeight = ReadSetting.getLineHeight();
-    final TextStyle style = TextStyle(
-      color: ink,
-      locale: const Locale('zh_CN'),
-      fontFamily: familyOrNull,
-      fontSize: fontSize,
-      height: lineHeight,
+    return _painter.drawScrollContent(
+      readPage,
+      pageIdx,
+      paperTheme: paperTheme,
     );
-
-    final tileH = scrollPageHeight(readPage, pageIdx);
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, pageW, tileH));
-    canvas.drawRect(Rect.fromLTWH(0, 0, pageW, tileH), Paint()..color = paper);
-
-    final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
-    final linePainter = TextPainter(textDirection: TextDirection.ltr);
-
-    if (pageIdx < 0 ||
-        pageIdx >= readPage.pages.length ||
-        readPage.pages[pageIdx].lines.isEmpty) {
-      final fallback = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(
-          text: readPage.chapterContent.isNotEmpty
-              ? readPage.chapterContent
-              : '内容为空',
-          style: style,
-        ),
-      );
-      fallback.layout(maxWidth: maxLineWidth);
-      fallback.paint(canvas, Offset(contentPadding, 0));
-      return recorder.endRecording();
-    }
-
-    final page = readPage.pages[pageIdx];
-    // Pager lays lines with dy relative to content box top (0..boxH).
-    // For continuous scroll we shift so first line starts near y=0.
-    var minDy = double.infinity;
-    for (final line in page.lines) {
-      if (line.dy < minDy) minDy = line.dy;
-    }
-    if (!minDy.isFinite) minDy = 0;
-
-    for (final line in page.lines) {
-      final ls = line.letterSpacing;
-      final TextStyle lineStyle =
-          (ls != null && (ls < -0.1 || ls > 0.1) && ls.isFinite)
-              ? style.copyWith(letterSpacing: ls)
-              : style;
-      linePainter.text = TextSpan(text: line.text, style: lineStyle);
-      linePainter.layout();
-      if (linePainter.width > maxLineWidth * 1.05) {
-        linePainter.layout(maxWidth: maxLineWidth);
-      }
-      // No bodyTop / title chrome offset — continuous body stream.
-      final y = (line.dy - minDy).clamp(0.0, tileH);
-      linePainter.paint(canvas, Offset(line.dx, y));
-    }
-    return recorder.endRecording();
   }
 
-  /// Load a chapter for the scroll window (skips sentinel empty pages).
+    /// Load a chapter for the scroll window (skips sentinel empty pages).
   Future<ReadPage?> loadScrollChapter(int idx) async {
     if (idx < 0 || idx >= chapters.length) return null;
     final page = await loadChapter(idx);
@@ -1403,235 +1319,16 @@ class ReadModel with ChangeNotifier {
   /// [chrome]: when true (page-turn), bake chapter title + battery/time/page.
   /// When false (vertical scroll), body only — chrome is a sticky overlay.
   ui.Picture drawContent(ReadPage readPage, int i, {bool chrome = true}) {
-    ui.PictureRecorder pageRecorder = ui.PictureRecorder();
-
     paperTheme = ReadSetting.getPaperTheme();
-    final bool night = paperTheme == PaperTheme.night ||
-        SpUtil.getBool("dark", defValue: false);
-    final effectivePaper =
-        night ? PaperTheme.night : paperTheme;
-    final paper = ReadSetting.paperColor(effectivePaper);
-    final ink = ReadSetting.inkColor(effectivePaper);
-    final meta = ReadSetting.metaColor(effectivePaper);
-
-    var contentPadding = ReadSetting.getPageDis().toDouble();
-    final pageW = Screen.width;
-    final pageH = Screen.height;
-    Canvas pageCanvas = Canvas(
-        pageRecorder, Rect.fromLTWH(0, 0, pageW, pageH));
-    // Solid paper base (WeChat style). Texture image is optional overlay.
-    pageCanvas.drawRect(
-      Rect.fromLTWH(0, 0, pageW, pageH),
-      Paint()..color = paper,
+    return _painter.drawContent(
+      readPage,
+      i,
+      chrome: chrome,
+      paperTheme: paperTheme,
     );
-    if (!ReadSetting.useSolidPaper()) {
-      Paint selfPaint = Paint()
-        ..style = PaintingStyle.fill
-        ..isAntiAlias = true
-        ..strokeCap = StrokeCap.butt
-        ..strokeWidth = 30.0;
-      final bg = bgUI;
-      if (bg != null) {
-        pageCanvas.drawImage(bg, Offset(0, 0), selfPaint);
-      }
-    }
-
-    final fontFamily = ReadSetting.getFontFamily();
-    final familyOrNull =
-        (fontFamily.isEmpty || fontFamily == 'Roboto') ? null : fontFamily;
-    final fontSize = ReadSetting.getFontSize();
-    final TextStyle style = TextStyle(
-        color: ink,
-        locale: Locale('zh_CN'),
-        fontFamily: familyOrNull,
-        fontSize: fontSize,
-        height: ReadSetting.getLineHeight());
-
-    final bodyTop = ReadSetting.contentTopInset();
-    final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
-
-    // Loading / status pages: paint message centered on the canvas.
-    if (readPage.chapterName == '加载中') {
-      final msg = readPage.chapterContent.isNotEmpty
-          ? readPage.chapterContent
-          : '正在加载…';
-      final centerPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          text: msg,
-          style: style.copyWith(
-            color: meta,
-            fontSize: (fontSize * 0.95).clamp(14.0, 18.0),
-          ),
-        ),
-      );
-      centerPainter.layout(maxWidth: maxLineWidth);
-      final dx = (pageW - centerPainter.width) / 2;
-      final dy = (pageH - centerPainter.height) / 2;
-      centerPainter.paint(pageCanvas, Offset(dx, dy));
-      return pageRecorder.endRecording();
-    }
-
-    if (chrome) {
-      // Chapter title (page-turn only; scroll uses sticky overlay).
-      textPainter.text = TextSpan(
-          text: readPage.chapterName,
-          style: TextStyle(
-            fontSize: 12 / Screen.textScaleFactor,
-            color: meta,
-            fontFamily: familyOrNull,
-          ));
-      textPainter.layout();
-      textPainter.paint(
-        pageCanvas,
-        Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
-      );
-    }
-    //正文
-    // Per-line painter: shared maxLines:1 painter would clip overlong lines.
-    final linePainter = TextPainter(textDirection: TextDirection.ltr);
-
-    if (readPage.pages.isEmpty) {
-      final fallbackPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(
-          text: readPage.chapterContent.isNotEmpty
-              ? readPage.chapterContent
-              : '内容为空',
-          style: style,
-        ),
-      );
-      fallbackPainter.layout(maxWidth: maxLineWidth);
-      fallbackPainter.paint(
-        pageCanvas,
-        Offset(contentPadding, bodyTop),
-      );
-      return pageRecorder.endRecording();
-    }
-    final pageIndex = i.clamp(0, readPage.pages.length - 1);
-    final TextPage page = readPage.pages[pageIndex];
-    final lineCount = page.lines.length;
-    for (var li = 0; li < lineCount; li++) {
-      final line = page.lines[li];
-      final ls = line.letterSpacing;
-      final TextStyle lineStyle =
-          (ls != null && (ls < -0.1 || ls > 0.1) && ls.isFinite)
-              ? style.copyWith(letterSpacing: ls)
-              : style;
-      // Defensive wrap: if a single TextLine is longer than the column (bad
-      // pager output), paint it multi-line instead of maxLines:1 clipping.
-      final charCount = line.text.characters.length;
-      final roughMaxChars = (maxLineWidth / (fontSize * 0.9)).floor().clamp(1, 500);
-      final needsWrap = charCount > roughMaxChars;
-      linePainter.text = TextSpan(text: line.text, style: lineStyle);
-      if (needsWrap) {
-        AppLog.w(
-          'Read',
-          'overlong line li=$li chars=$charCount — wrapping in drawContent',
-        );
-        linePainter.layout(maxWidth: maxLineWidth);
-      } else {
-        linePainter.layout();
-        if (linePainter.width > maxLineWidth * 1.05) {
-          linePainter.layout(maxWidth: maxLineWidth);
-        }
-      }
-      final offset = Offset(line.dx, line.dy + bodyTop);
-      linePainter.paint(pageCanvas, offset);
-    }
-    if (!chrome) {
-      return pageRecorder.endRecording();
-    }
-    //画电池
-    double batteryPaddingLeft = contentPadding - 5;
-    double mStrokeWidth = 1.0;
-    double mPaintStrokeWidth = 1.5;
-    Paint mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
-    var bottomH = Screen.height - 25 - Screen.bottomSafeHeight;
-    var bottomTextH = bottomH - 2;
-    //电池头部位置
-    Size size = Size(22, 10);
-    double batteryHeadLeft = 0;
-    double batteryHeadTop = size.height / 4 + bottomH;
-    double batteryHeadRight = size.width / 15;
-    double batteryHeadBottom = batteryHeadTop + (size.height / 2);
-
-    //电池框位置
-    double batteryLeft = batteryHeadRight + mStrokeWidth;
-    double batteryTop = bottomH;
-    double batteryRight = size.width;
-    double batteryBottom = size.height + bottomH;
-
-    //电量位置
-    double electricQuantityTotalWidth =
-        size.width - batteryHeadRight - 5 * mStrokeWidth; //电池减去边框减去头部剩下的宽度
-    double electricQuantityLeft = batteryHeadRight +
-        2 * mStrokeWidth +
-        electricQuantityTotalWidth * (1 - electricQuantity);
-    double electricQuantityTop = mStrokeWidth * 2 + bottomH;
-    double electricQuantityRight = size.width - 2 * mStrokeWidth;
-    double electricQuantityBottom = size.height - 2 * mStrokeWidth + bottomH;
-
-    mPaint.style = PaintingStyle.fill;
-    mPaint.color = meta;
-    //画电池头部
-    pageCanvas.drawRRect(
-        RRect.fromLTRBR(
-            batteryHeadLeft + batteryPaddingLeft,
-            batteryHeadTop,
-            batteryHeadRight + batteryPaddingLeft,
-            batteryHeadBottom,
-            Radius.circular(mStrokeWidth)),
-        mPaint);
-    mPaint.style = PaintingStyle.stroke;
-    //画电池框
-    pageCanvas.drawRRect(
-        RRect.fromLTRBR(
-            batteryLeft + batteryPaddingLeft,
-            batteryTop,
-            batteryRight + batteryPaddingLeft,
-            batteryBottom,
-            Radius.circular(mStrokeWidth)),
-        mPaint);
-    mPaint.style = PaintingStyle.fill;
-    mPaint.color = meta;
-    //画电池电量
-    pageCanvas.drawRRect(
-        RRect.fromLTRBR(
-            electricQuantityLeft + batteryPaddingLeft + .5,
-            electricQuantityTop,
-            electricQuantityRight + batteryPaddingLeft + .5,
-            electricQuantityBottom,
-            Radius.circular(mStrokeWidth)),
-        mPaint);
-    //时间
-    textPainter.text = TextSpan(
-      text: DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m),
-      style: TextStyle(
-        fontFamily: familyOrNull,
-        fontSize: 12 / Screen.textScaleFactor,
-        color: meta,
-      ),
-    );
-    textPainter.layout();
-    textPainter.paint(
-        pageCanvas, Offset(contentPadding + size.width + 1, bottomTextH));
-    //页码
-    textPainter.text = TextSpan(
-        text: "${i + 1}/${readPage.pages.length}",
-        style: TextStyle(
-          fontSize: 12 / Screen.textScaleFactor,
-          fontFamily: familyOrNull,
-          color: meta,
-        ));
-    textPainter.layout();
-    textPainter.paint(
-        pageCanvas, Offset(Screen.width - contentPadding - 40, bottomTextH));
-    return pageRecorder.endRecording();
   }
 
-  Future<void> clear() async {
+    Future<void> clear() async {
     // Caller must flush progress first (ReadBook.dispose / lifecycle).
     // Cancel only the timer so a late debounce cannot write after clear.
     _progressSaveTimer?.cancel();

@@ -24,8 +24,7 @@ class SearchModel with ChangeNotifier {
   bool loading = false;
   GlobalKey? textFieldKey;
 
-  // ignore: non_constant_identifier_names
-  String store_word = "";
+  String historyKey = "";
   int page = 1;
   int size = 10;
   var word = "";
@@ -58,8 +57,7 @@ class SearchModel with ChangeNotifier {
     mks = [];
     hot = [];
     showHot = [];
-    // ignore: non_constant_identifier_names
-    store_word = "";
+    historyKey = "";
     page = 1;
     size = 10;
     word = "";
@@ -211,7 +209,7 @@ class SearchModel with ChangeNotifier {
         searchHistory.removeAt(i);
       }
     }
-    SpUtil.putStringList(store_word, searchHistory);
+    SpUtil.putStringList(historyKey, searchHistory);
     notifyListeners();
   }
 
@@ -250,21 +248,21 @@ class SearchModel with ChangeNotifier {
       }
     }
     searchHistory.insert(0, value);
-    if (SpUtil.haveKey(store_word)) {
-      SpUtil.remove(store_word);
+    if (SpUtil.haveKey(historyKey)) {
+      SpUtil.remove(historyKey);
     }
-    SpUtil.putStringList(store_word, searchHistory);
+    SpUtil.putStringList(historyKey, searchHistory);
   }
 
   void initHistory() {
-    if (SpUtil.haveKey(store_word)) {
-      searchHistory = SpUtil.getStringList(store_word);
+    if (SpUtil.haveKey(historyKey)) {
+      searchHistory = SpUtil.getStringList(historyKey);
     }
     notifyListeners();
   }
 
   void clearHistory() {
-    SpUtil.remove(store_word);
+    SpUtil.remove(historyKey);
     searchHistory = [];
     notifyListeners();
   }

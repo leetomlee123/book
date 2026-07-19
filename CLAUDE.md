@@ -97,7 +97,7 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 
 ### Reader pipeline (high level)
 
-`ReadModel` owns the active book, chapter list (`List<ChapterTocEntry>`), pre/cur/next `ReadPage`, background, and menu state. Content is laid out by `TextComposition.parseContentAsync` (preferred) / `parseContent`:
+`ReadModel` owns the active book, chapter list (`List<ChapterTocEntry>`), pre/cur/next `ReadPage`, background, and menu state. Page paint lives in `ReaderPainter` (`lib/model/reader/reader_painter.dart`). Content is laid out by `TextComposition.parseContentAsync` (preferred) / `parseContent`:
 
 1. Metrics (`fontSize`, box size, padding…) are read on the **UI isolate** (`SpUtil` / `Screen`).
 2. **Rust** `book_pager` runs via `BookPager.paginateAsync` → `Isolate.run` so long chapters do **not** block frames (each worker isolate loads `libbook_pager` itself).
