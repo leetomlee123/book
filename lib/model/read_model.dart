@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/common.dart';
@@ -23,6 +21,7 @@ import 'package:book/model/reader/reading_session_lifecycle.dart';
 import 'package:book/model/reader/reading_session_opener.dart';
 import 'package:book/model/reader/source_switch_service.dart';
 import 'package:book/model/reader/toc_service.dart';
+import 'package:book/model/reader/reader_chrome_controller.dart';
 import 'package:book/model/reader/reader_input_controller.dart';
 import 'package:book/model/reader/reader_loading_presenter.dart';
 import 'package:book/model/reader/reader_painter.dart';
@@ -66,10 +65,8 @@ class ReadModel with ChangeNotifier {
     prunePictures: _prunePictureCache,
     scheduleProgressSave: () => scheduleProgressSave(),
     notify: notifyListeners,
-    markNeedsPaint: () {
-      canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
-    },
-    refreshBattery: _refreshBattery,
+    markNeedsPaint: _markNeedsPaint,
+    refreshBattery: () => _chrome.refreshBattery(),
     activeBookId: () => book?.id,
   );
   GlobalKey? canvasKey;
@@ -179,6 +176,10 @@ class ReadModel with ChangeNotifier {
     hasNextPicture: () => paintNextPicture() != null,
     hasPreviousPicture: () => paintPreviousPicture() != null,
   );
+  late final ReaderChromeController _chrome = ReaderChromeController(
+    setElectricQuantity: (v) => electricQuantity = v,
+    notify: notifyListeners,
+  );
   late final ReaderLoadingPresenter _loading = ReaderLoadingPresenter(
     paginator: _paginator,
     setLoadingHint: (text) => loadingHint = text,
@@ -287,7 +288,8 @@ class ReadModel with ChangeNotifier {
   );
 
   //显示上层 设置
-  bool showMenu = false;
+  bool get showMenu => _chrome.showMenu;
+  set showMenu(bool value) => _chrome.showMenu = value;
 
   //背景色索引（legacy texture path; solid paper preferred）
   String get backgroundImageName => _theme.backgroundImageName;
@@ -307,7 +309,8 @@ class ReadModel with ChangeNotifier {
   String loadingHint = '正在加载目录…';
 
   //点击上下页方式
-  bool tapLeftToAdvance = SpUtil.getBool(PrefsKeys.leftClickNext, defValue: false);
+  bool get tapLeftToAdvance => _chrome.tapLeftToAdvance;
+  set tapLeftToAdvance(bool value) => _chrome.tapLeftToAdvance = value;
 
   //页面上下文
 
@@ -395,10 +398,7 @@ class ReadModel with ChangeNotifier {
   }
 
   /*菜单控制 */
-  void toggleShowMenu() {
-    showMenu = !showMenu;
-    notifyListeners();
-  }
+  void toggleShowMenu() => _chrome.toggleShowMenu();
 
   /// Debounced progress save after page turns.
   void scheduleProgressSave({Duration delay = ReadingProgressStore.debounce}) =>
@@ -514,21 +514,7 @@ class ReadModel with ChangeNotifier {
   Future<bool> switchSource(BookSource source, SearchBook hit) =>
       _source.switchSource(source, hit);
 
-  void toggleTapLeftToAdvance() {
-    tapLeftToAdvance = !tapLeftToAdvance;
-    SpUtil.putBool(PrefsKeys.leftClickNext, tapLeftToAdvance);
-    notifyListeners();
-  }
-
-  void _refreshBattery() {
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      try {
-        electricQuantity = (await Battery().batteryLevel) / 100;
-      } catch (_) {
-        // Desktop / unsupported platforms: keep previous value.
-      }
-    });
-  }
+  void toggleTapLeftToAdvance() => _chrome.toggleTapLeftToAdvance();
 
   void commitPageTurn(Object? offsetDifference) {
     _pageTurn.commit(offsetDifference);
