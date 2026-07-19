@@ -283,7 +283,7 @@ class ReadModel with ChangeNotifier {
   //获取本书记录
   Future<void> hydrateReadingSession() => _sessionOpener.hydrate();
 
-    /// Restore in-chapter page index after pagination.
+  /// Restore in-chapter page index after pagination.
   /// Prefer last page over page 0 when layout shrank (font/size change).
   void _restorePageIndex(int savedIndex) {
     final b = book;
@@ -616,7 +616,7 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-    /// Switch active source for the current book, remap progress, reload toc.
+  /// Switch active source for the current book, remap progress, reload toc.
   Future<bool> switchSource(BookSource source, SearchBook hit) async {
     final b = book;
     if (b == null) return false;
