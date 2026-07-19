@@ -145,7 +145,7 @@ class ShelfModel with ChangeNotifier {
   }
 
 //根据id判断书架是否存在本书
-  bool exitsInBookShelfById(String id) {
+  bool isOnShelf(String id) {
     return shelf.map((f) => f.id).toList().contains(id);
   }
 

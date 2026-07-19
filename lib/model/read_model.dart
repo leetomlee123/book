@@ -76,7 +76,7 @@ class ReadModel with ChangeNotifier {
   ReadPage? nextPage;
 
   //缓存批量提交大小
-  int batchNum = 100;
+  int downloadBatchSize = 100;
   /// Debounced progress persist after page turns.
   Timer? _progressSaveTimer;
   static const _progressSaveDebounce = Duration(milliseconds: 800);
@@ -251,7 +251,7 @@ class ReadModel with ChangeNotifier {
 
     if (chapters.isNotEmpty) {
       // refresh toc in background for new chapters
-      getChapters();
+      loadToc();
 
       if (savedCur < 0 || savedCur >= chapters.length) {
         AppLog.w(
@@ -281,7 +281,7 @@ class ReadModel with ChangeNotifier {
       await _showTextLoading('正在获取章节目录…');
       b.chapterIndex = savedCur;
       b.pageIndex = savedIndex;
-      await getChapters(init: true);
+      await loadToc(init: true);
       AppLog.i('Read', 'fetched toc chapters=${chapters.length}');
       if (chapters.isEmpty) {
         AppLog.e('Read', 'toc empty after fetch for ${b.bookUrl}');
@@ -481,7 +481,7 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ChapterTocEntry>?> reqChapters() async {
+  Future<List<ChapterTocEntry>?> fetchRemoteToc() async {
     final b = book;
     if (b == null) return null;
     await _ensureSource();
@@ -496,11 +496,11 @@ class ReadModel with ChangeNotifier {
     try {
       AppLog.i(
         'Read',
-        'reqChapters source=${source.bookSourceName} '
+        'fetchRemoteToc source=${source.bookSourceName} '
             'tocUrl=$tocUrl chapterList=${source.ruleToc.chapterList}',
       );
       final list = await _engine.toc(source, tocUrl);
-      AppLog.i('Read', 'reqChapters got ${list.length} chapters');
+      AppLog.i('Read', 'fetchRemoteToc got ${list.length} chapters');
       return list
           .map((c) => ChapterTocEntry(
                 id: makeChapterId(b.id, c.url),
@@ -511,22 +511,22 @@ class ReadModel with ChangeNotifier {
               ))
           .toList();
     } catch (e, st) {
-      AppLog.e('Read', 'reqChapters failed for $tocUrl', error: e, stackTrace: st);
+      AppLog.e('Read', 'fetchRemoteToc failed for $tocUrl', error: e, stackTrace: st);
       BotToast.showText(text: '目录加载失败：$e');
       return null;
     }
   }
 
-  Future getChapters({bool init = false}) async {
+  Future loadToc({bool init = false}) async {
     final b = book;
     if (b == null) return;
     // Capture id so a late network return cannot touch a different/closed book.
     final bookId = b.id;
-    List<ChapterTocEntry>? list = await reqChapters();
+    List<ChapterTocEntry>? list = await fetchRemoteToc();
     if (list == null || list.isEmpty) return;
     // Reader may have been closed (clear() sets book=null) while toc was in flight.
     if (book?.id != bookId) {
-      AppLog.i('Read', 'getChapters drop stale toc for $bookId');
+      AppLog.i('Read', 'loadToc drop stale toc for $bookId');
       return;
     }
 
@@ -622,7 +622,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  Future<void> updPage() async {
+  Future<void> relayoutPages() async {
     widgets.clear();
     // Drop fingerprinted page layouts that no longer match current metrics.
     try {
@@ -1065,7 +1065,7 @@ class ReadModel with ChangeNotifier {
     notifyListeners();
 
     try {
-      final list = await reqChapters() ?? [];
+      final list = await fetchRemoteToc() ?? [];
       if (list.isEmpty) {
         BotToast.showText(text: '目录为空，请检查书源或网络');
         return;
@@ -1121,7 +1121,7 @@ class ReadModel with ChangeNotifier {
   Future<void> downloadAll(int start) async {
     List<ChapterTocEntry> temp = chapters;
     if (temp.isEmpty) {
-      await getChapters(init: true);
+      await loadToc(init: true);
       temp = chapters;
     }
     List<ChapterNode> cpNodes = [];
@@ -1135,7 +1135,7 @@ class ReadModel with ChangeNotifier {
           chapter.hasBody = true;
         }
       }
-      if (cpNodes.length % batchNum == 0) {
+      if (cpNodes.length % downloadBatchSize == 0) {
         await _chapters.updateBodies(cpNodes);
         cpNodes.clear();
       }

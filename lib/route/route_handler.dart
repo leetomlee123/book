@@ -2,8 +2,6 @@ import 'dart:convert' as convert;
 
 import 'package:book/entity/book.dart';
 import 'package:book/entity/book_info.dart';
-import 'package:book/entity/g_book.dart';
-import 'package:book/view/book/all_tag_book.dart';
 import 'package:book/view/book/book_detail.dart';
 import 'package:book/view/book/book_shelf.dart';
 import 'package:book/view/book/chapter_view.dart';
@@ -49,14 +47,6 @@ var modifyPasswordHandler =
 var fontSetHandler =
     Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
   return FontSet();
-});
-
-var allTagBookHandler =
-    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
-  String title = (params['title']![0]);
-  List list = convert.jsonDecode(params["bks"]![0]);
-  List<GBook> list2 = list.map((f) => GBook.fromJson(f)).toList();
-  return AllTagBook(title, list2);
 });
 
 var sortShelfHandler =

@@ -161,7 +161,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
         if (!popWithMenuAndChapterView()) return;
         final bookId = readModel.book?.id;
         if (bookId != null &&
-            !ref.read(shelfModelProvider).exitsInBookShelfById(bookId)) {
+            !ref.read(shelfModelProvider).isOnShelf(bookId)) {
           await confirmAddToShelf(context);
         }
         if (context.mounted) {

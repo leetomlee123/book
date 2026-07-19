@@ -297,12 +297,12 @@ class _MenuState extends ConsumerState<ReaderMenu> {
             valueText: ReadSetting.getFontSize().round().toString(),
             onMinus: () {
               ReadSetting.calcFontSize(-1);
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             onPlus: () {
               ReadSetting.calcFontSize(1);
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             child: _buildSlider(
@@ -311,7 +311,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
               max: 60,
               onChanged: (v) {
                 ReadSetting.setFontSize(v);
-                _readModel.updPage();
+                _readModel.relayoutPages();
                 setState(() {});
               },
             ),
@@ -455,12 +455,12 @@ class _MenuState extends ConsumerState<ReaderMenu> {
             valueText: ReadSetting.getLineHeight().toStringAsFixed(1),
             onMinus: () {
               ReadSetting.subLineHeight();
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             onPlus: () {
               ReadSetting.addLineHeight();
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             child: _buildSlider(
@@ -469,7 +469,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
               max: 4.0,
               onChanged: (v) {
                 ReadSetting.setLineHeight(v);
-                _readModel.updPage();
+                _readModel.relayoutPages();
                 setState(() {});
               },
             ),
@@ -480,12 +480,12 @@ class _MenuState extends ConsumerState<ReaderMenu> {
             valueText: ReadSetting.getParagraph().toStringAsFixed(1),
             onMinus: () {
               ReadSetting.subParagraph();
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             onPlus: () {
               ReadSetting.addParagraph();
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             child: _buildSlider(
@@ -494,7 +494,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
               max: 2.0,
               onChanged: (v) {
                 ReadSetting.setParagraph(v);
-                _readModel.updPage();
+                _readModel.relayoutPages();
                 setState(() {});
               },
             ),
@@ -505,12 +505,12 @@ class _MenuState extends ConsumerState<ReaderMenu> {
             valueText: '${ReadSetting.getPageDis()}',
             onMinus: () {
               ReadSetting.calcPageDis(-1);
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             onPlus: () {
               ReadSetting.calcPageDis(1);
-              _readModel.updPage();
+              _readModel.relayoutPages();
               setState(() {});
             },
             child: _buildSlider(
@@ -519,7 +519,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
               max: 50,
               onChanged: (v) {
                 ReadSetting.setPageDis(v.toInt());
-                _readModel.updPage();
+                _readModel.relayoutPages();
                 setState(() {});
               },
             ),

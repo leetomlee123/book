@@ -15,7 +15,6 @@ class Routes {
   static String modifyPassword = '/modifyPassword';
   static String detail = '/detail';
   static String chapters = '/chapters';
-  static String allTagBook = '/allTagBook';
   static String fontSet = '/fontSet';
   static String sortShelf = '/sortShelf';
   static String update = '/update';
@@ -34,7 +33,6 @@ class Routes {
     router.define(modifyPassword, handler: modifyPasswordHandler);
     router.define(detail, handler: detailHandler);
     router.define(chapters, handler: chaptersHandler);
-    router.define(allTagBook, handler: allTagBookHandler);
     router.define(fontSet, handler: fontSetHandler);
     router.define(sortShelf, handler: sortShelfHandler);
     router.define(sources, handler: sourcesHandler);

@@ -106,7 +106,7 @@ class _FontSetState extends ConsumerState<FontSet> {
       BotToast.showText(text: '字体加载失败，请重新下载或导入');
       return;
     }
-    await readModel.updPage();
+    await readModel.relayoutPages();
     if (mounted) setState(() {});
   }
 
