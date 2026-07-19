@@ -451,7 +451,7 @@ class ReadModel with ChangeNotifier {
   }
 
   Future<void> refreshThemePaint() async {
-    await changeBgUI();
+    await reloadBackgroundImage();
     pictureCache.clear();
 
     final ro = canvasKey?.currentContext?.findRenderObject();
@@ -899,7 +899,7 @@ class ReadModel with ChangeNotifier {
     return page;
   }
 
-  ui.Picture? getPage({bool firstInit = false}) {
+  ui.Picture? resolveCurrentPicture({bool firstInit = false}) {
     final b = book;
     if (b == null) return null;
     var key = b.id.toString() + b.chapterIndex.toString() + b.pageIndex.toString();
@@ -907,7 +907,7 @@ class ReadModel with ChangeNotifier {
     if (pictureCache.containsKey(key)) {
       return pictureCache[key];
     }
-    var widget = cur();
+    var widget = paintCurrentPicture();
     if (widget != null) {
       pictureCache.putIfAbsent(key, () => widget);
     }
@@ -923,14 +923,14 @@ class ReadModel with ChangeNotifier {
 
     // Previous / next page pictures; null neighbors are handled inside pre/next.
     if (prePage != null || b.pageIndex > 0) {
-      pre();
+      paintPreviousPicture();
     }
     if (nextPage != null || b.pageIndex + 1 < curPage!.pageOffsets) {
-      next();
+      paintNextPicture();
     }
   }
 
-  ui.Picture? pre() {
+  ui.Picture? paintPreviousPicture() {
     final b = book;
     final current = curPage;
     if (b == null || current == null) return null;
@@ -952,7 +952,7 @@ class ReadModel with ChangeNotifier {
     return pictureCache.putIfAbsent(key, () => pic);
   }
 
-  ui.Picture? cur() {
+  ui.Picture? paintCurrentPicture() {
     final b = book;
     final current = curPage;
     if (b == null || current == null) return null;
@@ -977,7 +977,7 @@ class ReadModel with ChangeNotifier {
     return pictureCache.putIfAbsent(key, () => pic);
   }
 
-  ui.Picture? next() {
+  ui.Picture? paintNextPicture() {
     final b = book;
     final current = curPage;
     if (b == null || current == null) return null;
@@ -1449,7 +1449,7 @@ class ReadModel with ChangeNotifier {
     }
   }
 
-  bool isCanGoNext() {
+  bool canTurnNext() {
     final b = book;
     if (b == null) return false;
     // Last chapter, last page.
@@ -1458,22 +1458,22 @@ class ReadModel with ChangeNotifier {
       return false;
     }
     // Prefer pre-rendered picture, but allow turn if logical next exists.
-    if (next() != null) return true;
+    if (paintNextPicture() != null) return true;
     // Next page within chapter, or next chapter available.
     if (b.pageIndex + 1 < (curPage?.pageOffsets ?? 0)) return true;
     return b.chapterIndex + 1 < chapters.length;
   }
 
-  bool isCanGoPre() {
+  bool canTurnPrevious() {
     final b = book;
     if (b == null) return false;
     if (b.chapterIndex <= 0 && b.pageIndex <= 0) return false;
-    if (pre() != null) return true;
+    if (paintPreviousPicture() != null) return true;
     if (b.pageIndex > 0) return true;
     return b.chapterIndex > 0;
   }
 
-  Future<void> changeBgUI() async {
+  Future<void> reloadBackgroundImage() async {
     paperTheme = ReadSetting.getPaperTheme();
     // Solid paper mode: no texture image.
     if (ReadSetting.useSolidPaper()) {

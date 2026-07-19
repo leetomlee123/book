@@ -33,7 +33,7 @@ class CoverPageAnimation extends BaseAnimationPage {
   @override
   Animation<Offset>? getCancelAnimation(
       AnimationController controller, GlobalKey canvasKey) {
-    if ((!isTurnNext && !isCanGoPre()) || (isTurnNext && !isCanGoNext())) {
+    if ((!isTurnNext && !canTurnPrevious()) || (isTurnNext && !canTurnNext())) {
       return null;
     }
     _ensureAnimation(controller);
@@ -46,11 +46,11 @@ class CoverPageAnimation extends BaseAnimationPage {
   @override
   Animation<Offset>? getConfirmAnimation(
       AnimationController controller, GlobalKey canvasKey) {
-    if (!isTurnNext && !isCanGoPre()) {
+    if (!isTurnNext && !canTurnPrevious()) {
       BotToast.showText(text: '已经是第一页');
       return null;
     }
-    if (isTurnNext && !isCanGoNext()) {
+    if (isTurnNext && !canTurnNext()) {
       BotToast.showText(text: '已经是最后一页');
       return null;
     }
@@ -96,14 +96,14 @@ class CoverPageAnimation extends BaseAnimationPage {
         final dx = mTouch.dx - mStartPoint.dx;
         if (dx.abs() < 2) break;
         isTurnNext = dx < 0;
-        if ((!isTurnNext && isCanGoPre()) || (isTurnNext && isCanGoNext())) {
+        if ((!isTurnNext && canTurnPrevious()) || (isTurnNext && canTurnNext())) {
           isDragging = true;
         }
         break;
       case TouchEvent.ACTION_UP:
         final dx = mTouch.dx - mStartPoint.dx;
         isTurnNext = dx < 0;
-        if ((!isTurnNext && isCanGoPre()) || (isTurnNext && isCanGoNext())) {
+        if ((!isTurnNext && canTurnPrevious()) || (isTurnNext && canTurnNext())) {
           isDragging = true;
         }
         break;
@@ -113,13 +113,13 @@ class CoverPageAnimation extends BaseAnimationPage {
   }
 
   void drawStatic(Canvas canvas) {
-    final pic = readerViewModel.cur();
+    final pic = readerViewModel.paintCurrentPicture();
     if (pic != null) canvas.drawPicture(pic);
   }
 
   void drawBottomPage(Canvas canvas) {
     canvas.save();
-    final pic = isTurnNext ? readerViewModel.next() : readerViewModel.cur();
+    final pic = isTurnNext ? readerViewModel.paintNextPicture() : readerViewModel.paintCurrentPicture();
     if (pic != null) canvas.drawPicture(pic);
     canvas.restore();
   }
@@ -128,11 +128,11 @@ class CoverPageAnimation extends BaseAnimationPage {
     canvas.save();
     if (isTurnNext) {
       canvas.translate(mTouch.dx - mStartPoint.dx, 0);
-      final pic = readerViewModel.cur();
+      final pic = readerViewModel.paintCurrentPicture();
       if (pic != null) canvas.drawPicture(pic);
     } else {
       canvas.translate((mTouch.dx - mStartPoint.dx) - currentSize.width, 0);
-      final pic = readerViewModel.pre();
+      final pic = readerViewModel.paintPreviousPicture();
       if (pic != null) canvas.drawPicture(pic);
     }
     canvas.restore();

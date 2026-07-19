@@ -13,7 +13,7 @@ class StaticPageTurn extends BaseAnimationPage {
 
   @override
   void onDraw(Canvas canvas) {
-    final pic = readerViewModel.cur();
+    final pic = readerViewModel.paintCurrentPicture();
     if (pic != null) {
       canvas.drawPicture(pic);
     }
@@ -59,9 +59,9 @@ class StaticPageTurn extends BaseAnimationPage {
     mTouch = Offset.zero;
     if (dx.abs() <= threshold) return 0;
     if (dx < 0) {
-      return isCanGoNext() ? 1 : 0;
+      return canTurnNext() ? 1 : 0;
     }
-    return isCanGoPre() ? -1 : 0;
+    return canTurnPrevious() ? -1 : 0;
   }
 
   @override

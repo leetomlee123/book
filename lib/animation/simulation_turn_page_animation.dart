@@ -237,7 +237,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   void _updateDirectionAndActive() {
     // Corner on the right + finger left of corner ⇒ turn next; opposite ⇒ prev.
     isTurnToNext = mTouch.dx < mCornerX;
-    final can = (!isTurnToNext && isCanGoPre()) || (isTurnToNext && isCanGoNext());
+    final can = (!isTurnToNext && canTurnPrevious()) || (isTurnToNext && canTurnNext());
     if (can) {
       isStartAnimation = true;
     }
@@ -291,7 +291,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       drawTopPageCanvas(canvas);
       drawTopPageBackArea(canvas);
     } else {
-      final targetPicture = readerViewModel.cur();
+      final targetPicture = readerViewModel.paintCurrentPicture();
       if (targetPicture != null) {
         canvas.drawPicture(targetPicture);
       }
@@ -329,7 +329,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     canvas.save();
     // Clip so the revealed bottom page stays visible.
     canvas.clipPath(mTopPagePath, doAntiAlias: false);
-    final curPic = readerViewModel.cur();
+    final curPic = readerViewModel.paintCurrentPicture();
     if (curPic != null) canvas.drawPicture(curPic);
     drawTopPageShadow(canvas);
     canvas.restore();
@@ -410,7 +410,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
 //          ..isAntiAlias = true
 //          ..blendMode = BlendMode.srcATop);
     final pagePic =
-        isTurnToNext ? readerViewModel.next() : readerViewModel.pre();
+        isTurnToNext ? readerViewModel.paintNextPicture() : readerViewModel.paintPreviousPicture();
     if (pagePic != null) canvas.drawPicture(pagePic);
 //
     drawBottomPageShadow(canvas);
@@ -525,7 +525,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
           -mBezierControl1.dx, -mBezierControl1.dy, 0, 1);
       canvas.transform(matrix4.storage);
 
-      final curPic = readerViewModel.cur();
+      final curPic = readerViewModel.paintCurrentPicture();
       if (curPic != null) {
         // Slightly faded so it reads as ink showing through thin paper.
         canvas.saveLayer(
@@ -592,7 +592,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   @override
   Animation<Offset>? getCancelAnimation(
       AnimationController controller, GlobalKey canvasKey) {
-    if ((!isTurnToNext && !isCanGoPre()) || (isTurnToNext && !isCanGoNext())) {
+    if ((!isTurnToNext && !canTurnPrevious()) || (isTurnToNext && !canTurnNext())) {
       return null;
     }
     isConfirmAnimation = false;
@@ -615,7 +615,7 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   @override
   Animation<Offset>? getConfirmAnimation(
       AnimationController controller, GlobalKey canvasKey) {
-    if ((!isTurnToNext && !isCanGoPre()) || (isTurnToNext && !isCanGoNext())) {
+    if ((!isTurnToNext && !canTurnPrevious()) || (isTurnToNext && !canTurnNext())) {
       return null;
     }
     // Drawing flags — page commit is owned by ReaderPageManager.

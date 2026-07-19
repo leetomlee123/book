@@ -138,11 +138,11 @@ class ReaderPageManager {
     }
 
     final goNext = direction > 0;
-    if (goNext && !currentAnimationPage.isCanGoNext()) {
+    if (goNext && !currentAnimationPage.canTurnNext()) {
       _log('triggerTapTurn blocked: cannot go next');
       return false;
     }
-    if (!goNext && !currentAnimationPage.isCanGoPre()) {
+    if (!goNext && !currentAnimationPage.canTurnPrevious()) {
       _log('triggerTapTurn blocked: cannot go pre');
       return false;
     }

@@ -31,9 +31,9 @@ abstract class BaseAnimationPage {
 
   bool isShouldAnimatingInterrupt() => false;
 
-  bool isCanGoNext() => readerViewModel.isCanGoNext();
+  bool canTurnNext() => readerViewModel.canTurnNext();
 
-  bool isCanGoPre() => readerViewModel.isCanGoPre();
+  bool canTurnPrevious() => readerViewModel.canTurnPrevious();
 
   bool isCancelArea();
   bool isConfirmArea();
