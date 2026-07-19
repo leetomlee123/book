@@ -1,7 +1,6 @@
 import 'package:book/entity/BookInfo.dart';
 import 'package:book/entity/GBook.dart';
 import 'package:book/entity/SearchItem.dart';
-import 'package:book/entity/book_ai.dart';
 import 'package:book/model/SourceModel.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
@@ -18,7 +17,6 @@ class SearchModel with ChangeNotifier {
   BuildContext? context;
   bool showResult = false;
   List<SearchItem> bks = [];
-  List<BookAi> bksAi = [];
   List<GBook> mks = [];
   List<Widget> hot = [];
   List<Widget> showHot = [];
@@ -66,12 +64,6 @@ class SearchModel with ChangeNotifier {
     size = 10;
     word = "";
     temp = "";
-  }
-
-  Future<void> searchAi(Object? word) async {
-    // AI suggest removed with backend; keep empty for UI compatibility.
-    bksAi.clear();
-    notifyListeners();
   }
 
   Future<List<BookSource>> _enabled() async {
@@ -127,16 +119,13 @@ class SearchModel with ChangeNotifier {
   SearchItem _toSearchItem(SearchBook h) {
     final id = makeBookKey(h.sourceUrl, h.bookUrl);
     return SearchItem(
-      id,
-      h.name,
-      h.author,
-      h.coverUrl,
-      h.intro,
-      '',
-      '',
-      h.lastChapter,
-      h.kind,
-      '',
+      id: id,
+      name: h.name,
+      author: h.author,
+      coverUrl: h.coverUrl,
+      description: h.intro,
+      latestChapter: h.lastChapter,
+      category: h.kind,
       sourceUrl: h.sourceUrl,
       bookUrl: h.bookUrl,
       sourceName: h.sourceName,
@@ -178,12 +167,12 @@ class SearchModel with ChangeNotifier {
     }
     try {
       final seed = SearchBook(
-        name: item.Name,
-        author: item.Author,
-        intro: item.Desc,
-        coverUrl: item.Img,
-        lastChapter: item.LastChapter,
-        kind: item.CName,
+        name: item.name,
+        author: item.author,
+        intro: item.description,
+        coverUrl: item.coverUrl,
+        lastChapter: item.latestChapter,
+        kind: item.category,
         bookUrl: item.bookUrl,
         sourceUrl: item.sourceUrl,
         sourceName: item.sourceName,

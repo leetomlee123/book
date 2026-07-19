@@ -34,16 +34,6 @@ class _SearchState extends ConsumerState<Search> {
   Widget? body;
   late GlobalKey textFieldKey;
   TextEditingController controller = TextEditingController();
-  OverlayEntry? searchSuggest;
-  OverlayState? overlayState;
-  double aiItemH = 40;
-  double? height;
-
-  double? width;
-
-  double? xPosition;
-
-  double? yPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -78,15 +68,8 @@ class _SearchState extends ConsumerState<Search> {
   }
 
   @override
-  void deactivate() {
-    super.deactivate();
-    removeOverlay();
-  }
-
-  @override
   void initState() {
     super.initState();
-    overlayState = Overlay.of(context);
     textFieldKey = GlobalKey();
     // Non-listening read only — do not mutate / notify here (Riverpod forbids
     // provider updates while the tree is building).
@@ -112,7 +95,6 @@ class _SearchState extends ConsumerState<Search> {
     searchModel.controller = controller;
     searchModel.store_word = Common.book_search_history;
     searchModel.initHistory();
-    findOverLayPosition();
     await searchModel.initBookHot();
     if (!mounted) return;
     // Skip hot-list notify if results are already on screen.
@@ -134,11 +116,9 @@ class _SearchState extends ConsumerState<Search> {
         key: textFieldKey,
         controller: controller,
         onSubmitted: (word) {
-          removeOverlay();
           searchModel.search(word);
         },
         onChanged: (value) async {
-          removeOverlay();
           setState(() {});
         },
         style: const TextStyle(fontSize: 14, height: 1.2),
@@ -161,7 +141,6 @@ class _SearchState extends ConsumerState<Search> {
                   onPressed: () {
                     controller.text = "";
                     searchModel.reset();
-                    removeOverlay();
                     setState(() {});
                   },
                 ),
@@ -169,23 +148,6 @@ class _SearchState extends ConsumerState<Search> {
         ),
       ),
     );
-  }
-
-  void removeOverlay() {
-    searchSuggest?.remove();
-    searchSuggest = null;
-  }
-
-  void findOverLayPosition() {
-    final renderObject = textFieldKey.currentContext?.findRenderObject();
-    if (renderObject is! RenderBox) return;
-    height = renderObject.size.height;
-    width = renderObject.size.width;
-
-    Offset offset = renderObject.localToGlobal(Offset.zero);
-    xPosition = offset.dx;
-
-    yPosition = offset.dy;
   }
 
   Widget resultWidget(SearchModel model) {
@@ -281,7 +243,7 @@ class _SearchState extends ConsumerState<Search> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppDimens.coverRadius),
                   child: PicWidget(
-                    item.Img,
+                    item.coverUrl,
                     width: picW,
                     height: picH,
                   ),
@@ -294,7 +256,7 @@ class _SearchState extends ConsumerState<Search> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          item.Name,
+                          item.name,
                           style: const TextStyle(
                               fontSize: 16.0,
                               fontWeight: FontWeight.w600,
@@ -302,7 +264,7 @@ class _SearchState extends ConsumerState<Search> {
                           maxLines: 1,
                         ),
                         Text(
-                          item.Author,
+                          item.author,
                           style: const TextStyle(
                             fontSize: 12.0,
                             color: AppColors.textSecondary,
@@ -310,7 +272,7 @@ class _SearchState extends ConsumerState<Search> {
                           maxLines: 1,
                         ),
                         Text(
-                          item.Desc.isEmpty ? "暂无简介" : item.Desc,
+                          item.description.isEmpty ? "暂无简介" : item.description,
                           style: const TextStyle(
                             fontSize: 12.0,
                             color: AppColors.textSecondary,
@@ -336,7 +298,7 @@ class _SearchState extends ConsumerState<Search> {
                               ),
                             Expanded(
                               child: Text(
-                                item.LastChapter,
+                                item.latestChapter,
                                 style: const TextStyle(
                                     fontSize: 12,
                                     color: AppColors.textTertiary),

@@ -288,7 +288,7 @@ class _BookRow extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(AppDimens.coverRadius),
-              child: PicWidget(item.Img, width: picW, height: picH),
+              child: PicWidget(item.coverUrl, width: picW, height: picH),
             ),
             Expanded(
               child: Padding(
@@ -298,7 +298,7 @@ class _BookRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.Name,
+                      item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -308,7 +308,7 @@ class _BookRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      item.Author.isEmpty ? '未知作者' : item.Author,
+                      item.author.isEmpty ? '未知作者' : item.author,
                       maxLines: 1,
                       style: const TextStyle(
                         fontSize: 12,
@@ -316,7 +316,7 @@ class _BookRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      item.Desc.isEmpty ? '暂无简介' : item.Desc,
+                      item.description.isEmpty ? '暂无简介' : item.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -347,7 +347,7 @@ class _BookRow extends StatelessWidget {
                           ),
                         Expanded(
                           child: Text(
-                            item.LastChapter,
+                            item.latestChapter,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

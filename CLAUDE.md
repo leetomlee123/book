@@ -72,9 +72,9 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 | `lib/view/person/` | Account: login, register, me, skin, cache |
 | `lib/view/system/` | Reader chrome: font, menu, battery, log viewer |
 | `lib/model/` | `ChangeNotifier` business logic (shelf, search, reading, theme) |
-| `lib/entity/` | DTOs: `json_annotation` + checked-in `*.g.dart`; chapters also use protobuf (`chapter.pb.dart`) |
+| `lib/entity/` | DTOs: `json_annotation` + checked-in `*.g.dart` (camelCase fields; no legacy JSON key compat) |
 | `lib/common/` | Shared infra: API URLs (`common.dart`), Dio (`Http.dart`), text layout (`text_composition.dart`), interceptors, `Screen`, **`local_store.dart` (SpUtil/DateUtil/NumUtil)** |
-| `lib/data/` | Local persistence: `ReaderDatabase` (`reader.db`), `BookRepository`, `ChapterRepository` |
+| `lib/data/` | Local persistence: `ReaderDatabase` (`reader.db`), `BookRepository`, `ChapterRepository`, `SourceRepository` |
 | `lib/route/` | Fluro route table (`Routes.dart`) and handlers (`RouteHandler.dart`) |
 | `lib/animation/` | Custom page-turn animations used by the reader |
 | `lib/widgets/` | Reusable UI pieces |
@@ -97,7 +97,7 @@ There is no separate lint script beyond `flutter analyze`. Prefer fixing **error
 
 ### Reader pipeline (high level)
 
-`ReadModel` owns the active book, chapter list (`ChapterProto`), pre/cur/next `ReadPage`, background, and menu state. Content is laid out by `TextComposition.parseContentAsync` (preferred) / `parseContent`:
+`ReadModel` owns the active book, chapter list (`List<ChapterTocEntry>`), pre/cur/next `ReadPage`, background, and menu state. Content is laid out by `TextComposition.parseContentAsync` (preferred) / `parseContent`:
 
 1. Metrics (`fontSize`, box size, padding…) are read on the **UI isolate** (`SpUtil` / `Screen`).
 2. **Rust** `book_pager` runs via `BookPager.paginateAsync` → `Isolate.run` so long chapters do **not** block frames (each worker isolate loads `libbook_pager` itself).

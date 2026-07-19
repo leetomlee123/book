@@ -155,16 +155,13 @@ class ExploreModel with ChangeNotifier {
   SearchItem _toItem(SearchBook h) {
     final id = makeBookKey(h.sourceUrl, h.bookUrl);
     return SearchItem(
-      id,
-      h.name,
-      h.author,
-      h.coverUrl,
-      h.intro,
-      '',
-      '',
-      h.lastChapter,
-      h.kind,
-      '',
+      id: id,
+      name: h.name,
+      author: h.author,
+      coverUrl: h.coverUrl,
+      description: h.intro,
+      latestChapter: h.lastChapter,
+      category: h.kind,
       sourceUrl: h.sourceUrl,
       bookUrl: h.bookUrl,
       sourceName: h.sourceName,
@@ -183,12 +180,12 @@ class ExploreModel with ChangeNotifier {
     }
     try {
       final seed = SearchBook(
-        name: item.Name,
-        author: item.Author,
-        intro: item.Desc,
-        coverUrl: item.Img,
-        lastChapter: item.LastChapter,
-        kind: item.CName,
+        name: item.name,
+        author: item.author,
+        intro: item.description,
+        coverUrl: item.coverUrl,
+        lastChapter: item.latestChapter,
+        kind: item.category,
         bookUrl: item.bookUrl,
         sourceUrl: item.sourceUrl,
         sourceName: item.sourceName,

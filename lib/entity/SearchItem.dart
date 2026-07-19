@@ -2,18 +2,18 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'SearchItem.g.dart';
 
+/// Search / explore list row (local book-source hit).
 @JsonSerializable()
 class SearchItem {
-  String Id;
-  String Name;
-  String Author;
-  String Img;
-  String Desc;
-  String BookStatus;
-  String LastChapterId;
-  String LastChapter;
-  String CName;
-  String UpdateTime;
+  String id;
+  String name;
+  String author;
+  String coverUrl;
+  String description;
+  String status;
+  String latestChapter;
+  String category;
+  String updatedAt;
 
   @JsonKey(defaultValue: '')
   String sourceUrl;
@@ -22,17 +22,16 @@ class SearchItem {
   @JsonKey(defaultValue: '')
   String sourceName;
 
-  SearchItem(
-    this.Id,
-    this.Name,
-    this.Author,
-    this.Img,
-    this.Desc,
-    this.BookStatus,
-    this.LastChapterId,
-    this.LastChapter,
-    this.CName,
-    this.UpdateTime, {
+  SearchItem({
+    this.id = '',
+    this.name = '',
+    this.author = '',
+    this.coverUrl = '',
+    this.description = '',
+    this.status = '',
+    this.latestChapter = '',
+    this.category = '',
+    this.updatedAt = '',
     this.sourceUrl = '',
     this.bookUrl = '',
     this.sourceName = '',
