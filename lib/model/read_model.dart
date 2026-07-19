@@ -8,13 +8,13 @@ import 'package:book/common/common.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
 import 'package:book/entity/book.dart';
-import 'package:book/entity/chapter_node.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/read_page.dart';
 import 'package:book/model/reader/chapter_content_loader.dart';
 import 'package:book/model/reader/chapter_disk_warm_cache.dart';
 import 'package:book/model/reader/chapter_download_service.dart';
 import 'package:book/model/reader/chapter_window_controller.dart';
+import 'package:book/model/reader/reader_content_reloader.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
 import 'package:book/model/reader/page_picture_resolver.dart';
 import 'package:book/model/reader/page_turn_committer.dart';
@@ -34,7 +34,6 @@ import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/view/page_turn/novel_page_painter.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
 
@@ -122,6 +121,27 @@ class ReadModel with ChangeNotifier {
     showLoading: _showTextLoading,
     hideLoading: _hideTextLoading,
     loadToc: ({bool init = false}) => loadToc(init: init),
+    notify: notifyListeners,
+  );
+  late final ReaderContentReloader _reloader = ReaderContentReloader(
+    chaptersRepo: _chapters,
+    bookOf: () => book,
+    chaptersOf: () => chapters,
+    setChaptersLoading: (v) => chaptersLoading = v,
+    setLoadingHint: (v) => loadingHint = v,
+    loadToc: ({bool init = false}) => loadToc(init: init),
+    fetchChapterBody: (id, {int? idx}) => fetchChapterBody(id, idx: idx),
+    loadChapter: loadChapter,
+    setCurPage: (page) => curPage = page,
+    removeWarm: _diskWarm.remove,
+    clearPictures: pictureCache.clear,
+    openChapterAt: (idx, jump, {bool showLoading = true}) =>
+        openChapterAt(idx, jump, showLoading: showLoading),
+    restorePageIndex: (idx) => _lifecycle.restorePageIndex(idx),
+    toggleMenu: toggleShowMenu,
+    showLoading: _showTextLoading,
+    hideLoading: _hideTextLoading,
+    markNeedsPaint: _markNeedsPaint,
     notify: notifyListeners,
   );
   late final ChapterWindowController _window = ChapterWindowController(
@@ -368,24 +388,7 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-  Future<void> relayoutPages() async {
-    pictureCache.clear();
-    // Font/metrics changed — drop disk page layouts for the active book only.
-    final b = book;
-    try {
-      await _chapters.clearAllPageLayouts(bookId: b?.id);
-      AppLog.i('Read', 'cleared page cache on layout change book=${b?.id}');
-    } catch (e) {
-      AppLog.w('Read', 'clearAllPageLayouts failed', error: e);
-    }
-    final keepIndex = b?.pageIndex ?? 0;
-    await openChapterAt(b?.chapterIndex ?? 0, false, showLoading: false);
-    if (b != null) {
-      _lifecycle.restorePageIndex(keepIndex);
-    }
-    _markNeedsPaint();
-    notifyListeners();
-  }
+  Future<void> relayoutPages() => _reloader.relayoutPages();
 
   void _markNeedsPaint() {
     canvasKey?.currentContext?.findRenderObject()?.markNeedsPaint();
@@ -398,24 +401,19 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Debounced progress save after page turns.
-  void scheduleProgressSave({Duration delay = ReadingProgressStore.debounce}) {
-    _progress.schedule(book: book, chapters: chapters, delay: delay);
-  }
+  void scheduleProgressSave({Duration delay = ReadingProgressStore.debounce}) =>
+      _progress.schedule(book: book, chapters: chapters, delay: delay);
 
   /// Flush any pending debounced save immediately (call on exit / background).
-  Future<void> flushProgressSave() {
-    return _progress.flush(book: book, chapters: chapters);
-  }
+  Future<void> flushProgressSave() =>
+      _progress.flush(book: book, chapters: chapters);
 
   /*状态保存 */
-  Future<void> saveData() {
-    return _progress.save(book: book, chapters: chapters);
-  }
+  Future<void> saveData() => _progress.save(book: book, chapters: chapters);
 
   /*页面点击事件（兼容旧入口） */
   void tapPage(BuildContext context, TapUpDetails details) {
-    final size = MediaQuery.of(context).size;
-    tapPageAt(details.localPosition, size);
+    tapPageAt(details.localPosition, MediaQuery.of(context).size);
   }
 
   /// Zone tap using local coordinates of the reader canvas.
@@ -497,54 +495,9 @@ class ReadModel with ChangeNotifier {
   /// Caller must flush progress first (ReadBook.dispose / lifecycle).
   Future<void> clear() => _lifecycle.clear();
 
-  Future<void> reloadChapters() async {
-    final b = book;
-    if (b == null) return;
-    chaptersLoading = true;
-    loadingHint = '正在重新加载目录…';
-    notifyListeners();
-    try {
-      // init:true re-syncs full remote TOC while preserving bodies for same ids.
-      await loadToc(init: true);
-      if (chapters.isEmpty) {
-        BotToast.showText(text: '目录为空，请检查书源或网络');
-      }
-    } finally {
-      chaptersLoading = false;
-      notifyListeners();
-    }
-  }
+  Future<void> reloadChapters() => _reloader.reloadChapters();
 
-  Future<void> reloadCurrentPage() async {
-    final b = book;
-    if (b == null) return;
-    if (chapters.isEmpty || b.chapterIndex < 0 || b.chapterIndex >= chapters.length) {
-      return;
-    }
-    toggleShowMenu();
-    final chapter = chapters[b.chapterIndex];
-    await _showTextLoading('正在刷新正文…');
-    try {
-      var content = await fetchChapterBody(chapter.id, idx: b.chapterIndex);
-      if (content.isEmpty) {
-        content = '章节内容加载失败，请检查书源或换源后重试';
-      }
-      final looksOk = !content.startsWith('章节内容加载失败') &&
-          !content.startsWith('书源不存在') &&
-          !content.startsWith('章节地址为空');
-      if (looksOk) {
-        await _chapters.updateBodies([ChapterNode(content, chapter.id)]);
-        chapter.hasBody = true;
-      }
-      // Drop warm snapshot so loadChapter hits DB (updateBodies only clears SQLite).
-      _diskWarm.remove(chapter.id);
-      curPage = await loadChapter(b.chapterIndex);
-      _markNeedsPaint();
-      notifyListeners();
-    } finally {
-      _hideTextLoading();
-    }
-  }
+  Future<void> reloadCurrentPage() => _reloader.reloadCurrentPage();
 
   void resetPages() {
     prePage = null;
