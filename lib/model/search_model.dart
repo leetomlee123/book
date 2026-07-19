@@ -8,77 +8,42 @@ import 'package:book/source/util/book_id.dart';
 import 'package:book/common/local_store.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class SearchModel with ChangeNotifier {
   List<String> searchHistory = [];
-  bool isBookSearch = false;
   BuildContext? context;
   bool showResult = false;
   List<SearchItem> bks = [];
-  List<Widget> hot = [];
-  List<Widget> showHot = [];
-  int idx = 0;
   bool loading = false;
-  GlobalKey? textFieldKey;
+
+  /// True after a page returns empty results — stops further load-more.
+  bool noMore = false;
 
   String historyKey = "";
   int page = 1;
-  int size = 10;
   var word = "";
-  var temp = "";
-  RefreshController refreshController =
-      RefreshController(initialRefresh: false);
   TextEditingController? controller;
 
-  List<Color> colors = Colors.accents;
-
   final BookSourceEngine _engine = BookSourceEngine();
-  SourceModel? sourceModel;
 
   /// Concurrent source search pool size.
   static const int poolSize = 5;
 
-  void clear1() {
-    searchHistory = [];
-    page = 1;
-    size = 10;
-    notifyListeners();
-  }
-
   void clear() {
     searchHistory = [];
-    isBookSearch = false;
-    idx = 0;
     showResult = false;
     bks = [];
-    hot = [];
-    showHot = [];
     historyKey = "";
     page = 1;
-    size = 10;
     word = "";
-    temp = "";
+    noMore = false;
   }
 
-  Future<List<BookSource>> _enabled() async {
-    if (sourceModel != null) {
-      return sourceModel!.enabledSources();
-    }
-    return SourceModel().enabledSources();
-  }
+  Future<List<BookSource>> _enabled() => SourceModel().enabledSources();
 
   Future<void> getSearchData() async {
-    if (!loading) {
-      return;
-    }
-    if (temp == "") {
-      temp = word;
-    } else {
-      if (temp != word && page <= 1) {
-        page = 1;
-      }
-    }
+    if (!loading) return;
+
     //收起键盘
     if (context != null) {
       FocusScope.of(context!).requestFocus(FocusNode());
@@ -89,7 +54,7 @@ class SearchModel with ChangeNotifier {
         sources.where((s) => s.searchUrl.isNotEmpty && s.enabled).toList();
     if (searchable.isEmpty) {
       loading = false;
-      refreshController.loadNoData();
+      noMore = true;
       BotToast.showText(text: '请先在「书源管理」导入并启用书源');
       notifyListeners();
       return;
@@ -98,15 +63,13 @@ class SearchModel with ChangeNotifier {
     try {
       final hits = await _searchAll(searchable, word, page);
       if (hits.isEmpty) {
-        refreshController.loadNoData();
+        noMore = true;
       } else {
         for (final h in hits) {
           bks.add(_toSearchItem(h));
         }
-        refreshController.loadComplete();
       }
     } catch (e) {
-      refreshController.loadFailed();
       BotToast.showText(text: '搜索失败：$e');
     }
   }
@@ -180,38 +143,17 @@ class SearchModel with ChangeNotifier {
     }
   }
 
-  void onRefresh() async {
-    bks = [];
-    page = 1;
-    loading = true;
-    await getSearchData();
-    loading = false;
-    refreshController.refreshCompleted();
-    notifyListeners();
-  }
-
-  void onLoading() async {
+  Future<void> loadMore() async {
+    if (loading || noMore || word.isEmpty) return;
     page += 1;
     loading = true;
-    await getSearchData();
-    loading = false;
-
     notifyListeners();
-  }
-
-  void deleteHistoryItem(String source) {
-    for (var i = 0; i < searchHistory.length; i++) {
-      if (source == searchHistory[i]) {
-        searchHistory.removeAt(i);
-      }
+    try {
+      await getSearchData();
+    } finally {
+      loading = false;
+      notifyListeners();
     }
-    SpUtil.putStringList(historyKey, searchHistory);
-    notifyListeners();
-  }
-
-  void toggleShowResult() {
-    showResult = !showResult;
-    notifyListeners();
   }
 
   List<Widget> getHistory() {
@@ -270,6 +212,7 @@ class SearchModel with ChangeNotifier {
     word = "";
     page = 1;
     showResult = false;
+    noMore = false;
     notifyListeners();
   }
 
@@ -280,12 +223,8 @@ class SearchModel with ChangeNotifier {
     showResult = true;
     bks = [];
     page = 1;
-    temp = w;
+    noMore = false;
     loading = true;
-    // Reset pull-to-refresh footer so a previous "no more" doesn't stick.
-    try {
-      refreshController.resetNoData();
-    } catch (_) {}
     notifyListeners(); // UI shows loading spinner
     try {
       await getSearchData();
@@ -293,24 +232,5 @@ class SearchModel with ChangeNotifier {
       loading = false;
       notifyListeners();
     }
-  }
-
-  Future initBookHot() async {
-    // Server hot list removed — show source tip instead.
-    hot = [];
-    final n = await SourceModel().enabledCount();
-    hot.add(Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Text(
-        n == 0 ? '尚未启用书源，请先导入书源' : '已启用 $n 个书源，输入书名或作者搜索',
-        style: TextStyle(color: Colors.grey),
-      ),
-    ));
-    notifyListeners();
-  }
-
-  void getHot() {
-    showHot = hot;
-    notifyListeners();
   }
 }

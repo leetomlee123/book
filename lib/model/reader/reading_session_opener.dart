@@ -1,4 +1,3 @@
-import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/data/repositories/chapter_repository.dart';
@@ -27,7 +26,6 @@ class ReadingSessionOpener {
     required this.setChapters,
     required this.curPageOf,
     required this.setCurPage,
-    required this.setElectricQuantity,
     required this.setShowMenu,
     required this.setChaptersLoading,
     required this.setLoadingHint,
@@ -54,7 +52,6 @@ class ReadingSessionOpener {
   final void Function(List<ChapterTocEntry> chapters) setChapters;
   final ReadPage? Function() curPageOf;
   final void Function(ReadPage? page) setCurPage;
-  final void Function(double value) setElectricQuantity;
   final void Function(bool value) setShowMenu;
   final void Function(bool value) setChaptersLoading;
   final void Function(String value) setLoadingHint;
@@ -65,12 +62,6 @@ class ReadingSessionOpener {
   final void Function() notify;
 
   Future<void> hydrate() async {
-    try {
-      setElectricQuantity((await Battery().batteryLevel) / 100);
-    } catch (e) {
-      AppLog.w('Read', 'batteryLevel failed', error: e);
-      setElectricQuantity(1.0);
-    }
     setShowMenu(false);
     setChaptersLoading(true);
     final hint = loadingHintOf();

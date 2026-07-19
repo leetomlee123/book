@@ -25,7 +25,6 @@ class PageTurnCommitter {
     required this.scheduleProgressSave,
     required this.notify,
     required this.markNeedsPaint,
-    required this.refreshBattery,
     required this.activeBookId,
   });
 
@@ -44,7 +43,6 @@ class PageTurnCommitter {
   final void Function() scheduleProgressSave;
   final void Function() notify;
   final void Function() markNeedsPaint;
-  final void Function() refreshBattery;
   final String? Function() activeBookId;
 
   void commit(Object? offsetDifference) {
@@ -92,7 +90,6 @@ class PageTurnCommitter {
     double dir,
     int curLen,
   ) {
-    refreshBattery();
     final tempCur = b.chapterIndex + 1;
     if (tempCur >= chapters.length) {
       BotToast.showText(text: '最后一页');
@@ -141,7 +138,6 @@ class PageTurnCommitter {
     int beforeIdx,
     double dir,
   ) {
-    refreshBattery();
     final tempCur = b.chapterIndex - 1;
     if (tempCur < 0) {
       BotToast.showText(text: '第一页');

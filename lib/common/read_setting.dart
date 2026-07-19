@@ -265,7 +265,7 @@ class ReadSetting {
   static const double contentTopChrome = 52;
   static const double contentTopExtra = 18;
 
-  /// Space reserved below body text: battery/progress chrome + breathing room.
+  /// Space reserved below body text: time/progress chrome + breathing room.
   static const double contentBottomChrome = 36;
   static const double contentBottomExtra = 18;
 

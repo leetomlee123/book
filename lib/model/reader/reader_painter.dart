@@ -16,7 +16,6 @@ class ReaderPainter {
   ReaderPainter();
 
   ui.Image? bgUI;
-  double electricQuantity = 1.0;
 
   final TextPainter _labelPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
@@ -120,7 +119,7 @@ class ReaderPainter {
 
   /// Paint one page picture.
   ///
-  /// [chrome]: when true (page-turn), bake chapter title + battery/time/page.
+  /// [chrome]: when true (page-turn), bake chapter title + time/page.
   /// When false (vertical scroll), body only — chrome is a sticky overlay.
   ui.Picture drawContent(
     ReadPage readPage,
@@ -263,69 +262,8 @@ class ReaderPainter {
       return pageRecorder.endRecording();
     }
 
-    // Battery + time + page number chrome.
-    final batteryPaddingLeft = contentPadding - 5;
-    const mStrokeWidth = 1.0;
-    const mPaintStrokeWidth = 1.5;
-    final mPaint = Paint()..strokeWidth = mPaintStrokeWidth;
-    final bottomH = Screen.height - 25 - Screen.bottomSafeHeight;
-    final bottomTextH = bottomH - 2;
-    const size = Size(22, 10);
-    const batteryHeadLeft = 0.0;
-    final batteryHeadTop = size.height / 4 + bottomH;
-    final batteryHeadRight = size.width / 15;
-    final batteryHeadBottom = batteryHeadTop + (size.height / 2);
-
-    final batteryLeft = batteryHeadRight + mStrokeWidth;
-    final batteryTop = bottomH;
-    final batteryRight = size.width;
-    final batteryBottom = size.height + bottomH;
-
-    final electricQuantityTotalWidth =
-        size.width - batteryHeadRight - 5 * mStrokeWidth;
-    final electricQuantityLeft = batteryHeadRight +
-        2 * mStrokeWidth +
-        electricQuantityTotalWidth * (1 - electricQuantity);
-    final electricQuantityTop = mStrokeWidth * 2 + bottomH;
-    final electricQuantityRight = size.width - 2 * mStrokeWidth;
-    final electricQuantityBottom = size.height - 2 * mStrokeWidth + bottomH;
-
-    mPaint.style = PaintingStyle.fill;
-    mPaint.color = meta;
-    pageCanvas.drawRRect(
-      RRect.fromLTRBR(
-        batteryHeadLeft + batteryPaddingLeft,
-        batteryHeadTop,
-        batteryHeadRight + batteryPaddingLeft,
-        batteryHeadBottom,
-        Radius.circular(mStrokeWidth),
-      ),
-      mPaint,
-    );
-    mPaint.style = PaintingStyle.stroke;
-    pageCanvas.drawRRect(
-      RRect.fromLTRBR(
-        batteryLeft + batteryPaddingLeft,
-        batteryTop,
-        batteryRight + batteryPaddingLeft,
-        batteryBottom,
-        Radius.circular(mStrokeWidth),
-      ),
-      mPaint,
-    );
-    mPaint.style = PaintingStyle.fill;
-    mPaint.color = meta;
-    pageCanvas.drawRRect(
-      RRect.fromLTRBR(
-        electricQuantityLeft + batteryPaddingLeft + .5,
-        electricQuantityTop,
-        electricQuantityRight + batteryPaddingLeft + .5,
-        electricQuantityBottom,
-        Radius.circular(mStrokeWidth),
-      ),
-      mPaint,
-    );
-
+    // Time + page number chrome (no battery).
+    final bottomTextH = Screen.height - 27 - Screen.bottomSafeHeight;
     _labelPainter.text = TextSpan(
       text: DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m),
       style: TextStyle(
@@ -337,7 +275,7 @@ class ReaderPainter {
     _labelPainter.layout();
     _labelPainter.paint(
       pageCanvas,
-      Offset(contentPadding + size.width + 1, bottomTextH),
+      Offset(contentPadding, bottomTextH),
     );
     _labelPainter.text = TextSpan(
       text: '${i + 1}/${readPage.pages.length}',

@@ -92,7 +92,7 @@ class ReaderScrollController {
     AppLog.i('Read', 'scroll progress cur=$chapterIdx idx=$idx name=$name');
   }
 
-  /// Content-only picture for vertical scroll (no title/battery/page chrome).
+  /// Content-only picture for vertical scroll (no title/time/page chrome).
   ui.Picture? scrollPagePicture(
     int chapterIdx,
     int pageIdx,

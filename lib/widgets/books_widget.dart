@@ -3,17 +3,13 @@ import 'dart:convert';
 import 'package:book/common/screen.dart';
 import 'package:book/data/repositories/book_repository.dart';
 import 'package:book/common/app_colors.dart';
-import 'package:book/common/local_store.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/model/shelf_model.dart';
 import 'package:book/route/routes.dart';
 import 'package:book/store/providers.dart';
 import 'package:book/widgets/has_update_icon_img.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
-import 'package:book/common/common.dart';
 
 class BooksWidget extends ConsumerStatefulWidget {
   final String type;
@@ -25,7 +21,6 @@ class BooksWidget extends ConsumerStatefulWidget {
 }
 
 class _BooksWidgetState extends ConsumerState<BooksWidget> {
-  late RefreshController _refreshController;
   late ShelfModel _shelfModel;
   late bool isShelf;
 
@@ -37,20 +32,13 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
     super.initState();
     isShelf = widget.type == '';
     _shelfModel = ref.read(shelfModelProvider);
-    _refreshController = RefreshController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _shelfModel.context = context;
-      if (isShelf) {
-        _shelfModel.freshToken();
-        _refreshController.requestRefresh();
+      if (isShelf && _shelfModel.shelf.isEmpty) {
+        _shelfModel.initShelf();
       }
     });
-  }
-
-  @override
-  void dispose() {
-    _refreshController.dispose();
-    super.dispose();
   }
 
   double get _coverWidth {
@@ -69,26 +57,12 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
   @override
   Widget build(BuildContext context) {
     _shelfModel = ref.watch(shelfModelProvider);
-    return SmartRefresher(
-      enablePullDown: true,
-      header: ClassicHeader(
-        refreshingText: '刷新中…',
-        completeText: '刷新完成',
-        idleText: '下拉刷新',
-        releaseText: '松开刷新',
-        textStyle: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-        refreshingIcon: const CupertinoActivityIndicator(radius: 8),
+    if (_shelfModel.shelf.isEmpty) return _emptyShelf();
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimens.pagePadding,
       ),
-      controller: _refreshController,
-      onRefresh: freshShelf,
-      child: _shelfModel.shelf.isEmpty
-          ? _emptyShelf()
-          : Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.pagePadding,
-              ),
-              child: _shelfModel.cover ? coverModel() : listModel(),
-            ),
+      child: _shelfModel.cover ? coverModel() : listModel(),
     );
   }
 
@@ -151,22 +125,6 @@ class _BooksWidgetState extends ConsumerState<BooksWidget> {
         ),
       ),
     );
-  }
-
-  Future<void> freshShelf() async {
-    if (_shelfModel.shelf.isEmpty) {
-      await _shelfModel.initShelf();
-    }
-    if (SpUtil.haveKey(PrefsKeys.auth)) {
-      try {
-        await _shelfModel.refreshShelf();
-      } catch (_) {
-        // ignore network refresh errors
-      }
-    } else {
-      await _shelfModel.refreshShelf();
-    }
-    if (mounted) _refreshController.refreshCompleted();
   }
 
   // ---------------------------------------------------------------------------

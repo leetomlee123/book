@@ -41,22 +41,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.13.1"
-  battery_plus:
-    dependency: "direct main"
-    description:
-      name: battery_plus
-      sha256: f14567a9548ac57c010df641acbd35869429b3dc234fec0bb61b01f429285e61
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "7.1.0"
-  battery_plus_platform_interface:
-    dependency: transitive
-    description:
-      name: battery_plus_platform_interface
-      sha256: e8342c0f32de4b1dfd0223114b6785e48e579bfc398da9471c9179b907fa4910
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "2.0.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -783,14 +767,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.5.2"
-  protobuf:
-    dependency: "direct main"
-    description:
-      name: protobuf
-      sha256: de9c9eb2c33f8e933a42932fe1dc504800ca45ebc3d673e6ed7f39754ee4053e
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "4.2.0"
   pub_semver:
     dependency: transitive
     description:
@@ -807,14 +783,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.5.0"
-  pull_to_refresh:
-    dependency: "direct main"
-    description:
-      name: pull_to_refresh
-      sha256: bbadd5a931837b57739cf08736bea63167e284e71fb23b218c8c9a6e042aad12
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "2.0.0"
   readmore:
     dependency: "direct main"
     description:
@@ -1068,14 +1036,6 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.3.0"
-  upower:
-    dependency: transitive
-    description:
-      name: upower
-      sha256: cf042403154751180affa1d15614db7fa50234bc2373cd21c3db666c38543ebf
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.7.0"
   url_launcher:
     dependency: "direct main"
     description:

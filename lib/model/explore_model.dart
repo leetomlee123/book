@@ -7,7 +7,6 @@ import 'package:book/source/model/search_book.dart';
 import 'package:book/source/util/book_id.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 /// Bottom-tab discovery: book-source exploreUrl kinds + paginated book list.
 class ExploreModel with ChangeNotifier {
@@ -21,11 +20,10 @@ class ExploreModel with ChangeNotifier {
   List<SearchItem> books = [];
   bool loading = false;
   bool bootstrapped = false;
+  /// True after a page returns empty results — stops further load-more.
+  bool noMore = false;
   int page = 1;
   String? error;
-
-  final RefreshController refreshController =
-      RefreshController(initialRefresh: false);
 
   Future<void> ensureLoaded() async {
     if (bootstrapped && exploreSources.isNotEmpty) return;
@@ -35,6 +33,7 @@ class ExploreModel with ChangeNotifier {
   Future<void> reloadSources() async {
     loading = true;
     error = null;
+    noMore = false;
     notifyListeners();
     try {
       final all = await SourceModel().enabledSources();
@@ -106,9 +105,7 @@ class ExploreModel with ChangeNotifier {
     if (refresh) {
       page = 1;
       books = [];
-      try {
-        refreshController.resetNoData();
-      } catch (_) {}
+      noMore = false;
     }
 
     loading = true;
@@ -120,34 +117,22 @@ class ExploreModel with ChangeNotifier {
         if (page == 1) {
           error = '该分类暂无内容';
         }
-        refreshController.loadNoData();
+        noMore = true;
       } else {
         for (final h in hits) {
           books.add(_toItem(h));
         }
-        refreshController.loadComplete();
-      }
-      if (refresh) {
-        refreshController.refreshCompleted();
       }
     } catch (e) {
       error = '加载失败：$e';
-      if (refresh) {
-        refreshController.refreshFailed();
-      } else {
-        refreshController.loadFailed();
-      }
     } finally {
       loading = false;
       notifyListeners();
     }
   }
 
-  Future<void> onRefresh() async {
-    await loadBooks(refresh: true);
-  }
-
-  Future<void> onLoading() async {
+  Future<void> loadMore() async {
+    if (loading || noMore) return;
     page += 1;
     await loadBooks(refresh: false);
   }

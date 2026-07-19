@@ -66,7 +66,6 @@ class ReadModel with ChangeNotifier {
     scheduleProgressSave: () => scheduleProgressSave(),
     notify: notifyListeners,
     markNeedsPaint: _markNeedsPaint,
-    refreshBattery: () => _chrome.refreshBattery(),
     activeBookId: () => book?.id,
   );
   GlobalKey? canvasKey;
@@ -177,7 +176,6 @@ class ReadModel with ChangeNotifier {
     hasPreviousPicture: () => paintPreviousPicture() != null,
   );
   late final ReaderChromeController _chrome = ReaderChromeController(
-    setElectricQuantity: (v) => electricQuantity = v,
     notify: notifyListeners,
   );
   late final ReaderLoadingPresenter _loading = ReaderLoadingPresenter(
@@ -209,9 +207,6 @@ class ReadModel with ChangeNotifier {
   );
 
   bool isDark() => SpUtil.getBool(PrefsKeys.dark);
-
-  double get electricQuantity => _painter.electricQuantity;
-  set electricQuantity(double value) => _painter.electricQuantity = value;
 
   //本书记录
   ReadPage? prePage;
@@ -276,7 +271,6 @@ class ReadModel with ChangeNotifier {
     setChapters: (c) => chapters = c,
     curPageOf: () => curPage,
     setCurPage: (page) => curPage = page,
-    setElectricQuantity: (v) => electricQuantity = v,
     setShowMenu: (v) => showMenu = v,
     setChaptersLoading: (v) => chaptersLoading = v,
     setLoadingHint: (v) => loadingHint = v,
@@ -447,7 +441,20 @@ class ReadModel with ChangeNotifier {
   void applyScrollProgress(int chapterIdx, int pageIdx) =>
       _scroll.applyScrollProgress(chapterIdx, pageIdx);
 
-  /// Content-only picture for vertical scroll (no title/battery/page chrome).
+  /// Registered by [ScrollContentReader] so lifecycle/exit can force-sync the
+  /// currently visible page into [book] before flushing progress to disk.
+  VoidCallback? scrollProgressSync;
+
+  /// Pull latest visible scroll page into model indices (no-op off scroll mode).
+  void syncScrollProgress() {
+    final sync = scrollProgressSync;
+    if (sync != null) {
+      sync();
+      return;
+    }
+  }
+
+  /// Content-only picture for vertical scroll (no title/time/page chrome).
   ui.Picture? scrollPagePicture(
           int chapterIdx, int pageIdx, ReadPage readPage) =>
       _scroll.scrollPagePicture(chapterIdx, pageIdx, readPage);
@@ -480,7 +487,7 @@ class ReadModel with ChangeNotifier {
 
   /// Paint one page picture.
   ///
-  /// [chrome]: when true (page-turn), bake chapter title + battery/time/page.
+  /// [chrome]: when true (page-turn), bake chapter title + time/page.
   /// When false (vertical scroll), body only — chrome is a sticky overlay.
   ui.Picture drawContent(ReadPage readPage, int i, {bool chrome = true}) {
     _theme.syncPaperTheme();
@@ -493,7 +500,10 @@ class ReadModel with ChangeNotifier {
   }
 
   /// Caller must flush progress first (ReadBook.dispose / lifecycle).
-  Future<void> clear() => _lifecycle.clear();
+  Future<void> clear() {
+    scrollProgressSync = null;
+    return _lifecycle.clear();
+  }
 
   Future<void> reloadChapters() => _reloader.reloadChapters();
 

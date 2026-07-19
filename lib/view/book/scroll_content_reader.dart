@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:book/common/read_setting.dart';
+import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/entity/read_page.dart';
 import 'package:book/store/providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:book/common/common.dart';
 
 /// One flattened page tile in the vertical scroll window.
 class _ScrollItem {
@@ -60,13 +60,16 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
   /// Last model chapter we bootstrapped against; used to detect TOC jumps.
   int? _syncedChapterIndex;
 
-  DateTime? _lastProgressAt;
-  static const _progressThrottle = Duration(milliseconds: 400);
-
   Offset? _downPos;
   int? _activePointer;
   static const double _tapSlop = 18;
   static const double _edgePad = 20;
+
+  /// Pixels into the viewport used as the reading anchor when mapping
+  /// scroll offset → chapter/page. Top-of-viewport tracking saves a page
+  /// behind what the user is actually reading; a full-viewport fraction
+  /// overshoots when tiles are shorter than the screen.
+  static const double _progressInset = 96;
 
   void _safeSetState(VoidCallback fn) {
     if (_disposed || !mounted) return;
@@ -80,22 +83,42 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
   @override
   void initState() {
     super.initState();
+    // Allow ReadBook lifecycle save to force-sync visible page first.
+    ref.read(readModelProvider).scrollProgressSync = _forceSyncProgress;
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
   @override
   void dispose() {
-    _disposed = true;
     try {
       final model = ref.read(readModelProvider);
+      if (identical(model.scrollProgressSync, _forceSyncProgress)) {
+        model.scrollProgressSync = null;
+      }
+      // Recompute while controller still has clients.
+      _applyVisibleProgress(force: true);
       model.applyScrollProgress(_lastChapter, _lastPage);
       model.scheduleProgressSave(delay: Duration.zero);
       _log('dispose save cur=$_lastChapter page=$_lastPage');
     } catch (_) {}
+    _disposed = true;
     _controller?.removeListener(_onScroll);
     _controller?.dispose();
     _controller = null;
     super.dispose();
+  }
+
+  void _forceSyncProgress() {
+    if (_disposed) {
+      // Controller may already be gone; still push last known page.
+      try {
+        ref
+            .read(readModelProvider)
+            .applyScrollProgress(_lastChapter, _lastPage);
+      } catch (_) {}
+      return;
+    }
+    _applyVisibleProgress(force: true);
   }
 
   /// Drop local window so the next [_bootstrap] rebuilds around model progress.
@@ -324,15 +347,15 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
     return _edgePad + _offsets[i];
   }
 
-  int _itemAtOffset(double scrollOffset) {
+  /// Map a y position in list content space (padding excluded) to item index.
+  int _itemAtContentY(double contentY) {
     if (_items.isEmpty) return 0;
-    final contentY =
-        (scrollOffset - _edgePad + 0.5).clamp(0.0, double.infinity);
+    final y = contentY.clamp(0.0, double.infinity);
     var lo = 0;
     var hi = _items.length - 1;
     while (lo < hi) {
       final mid = (lo + hi + 1) >> 1;
-      if (_offsets[mid] <= contentY) {
+      if (_offsets[mid] <= y) {
         lo = mid;
       } else {
         hi = mid - 1;
@@ -351,12 +374,10 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
       return;
     }
     _maybeLoadNeighbors();
-    final now = DateTime.now();
-    final last = _lastProgressAt;
-    if (last == null || now.difference(last) >= _progressThrottle) {
-      _lastProgressAt = now;
-      _applyVisibleProgress();
-    }
+    // Keep model indices current every frame; disk write is still debounced
+    // in ReadingProgressStore (800ms). Throttling here made progress lag
+    // behind the visible page during continuous scroll / app pause.
+    _applyVisibleProgress();
   }
 
   void _maybeLoadNeighbors() {
@@ -381,22 +402,20 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
   void _applyVisibleProgress({bool force = false}) {
     final c = _controller;
     if (_items.isEmpty || !_restoreDone) return;
-    if (_loadingNeighbor) return;
+    // While neighbors load we re-anchor the controller; skip mid-rebuild noise
+    // unless caller is forcing a lifecycle/exit snapshot.
+    if (_loadingNeighbor && !force) return;
+    if (_disposed || c == null || !c.hasClients) return;
 
-    final offset =
-        (!_disposed && c != null && c.hasClients) ? c.offset : 0.0;
-    final i = _itemAtOffset(offset);
+    // Slightly below the top edge so progress matches what the reader is
+    // looking at, without jumping several short tiles ahead.
+    final contentY = c.offset - _edgePad + _progressInset;
+    final i = _itemAtContentY(contentY);
     if (i < 0 || i >= _items.length) return;
     final it = _items[i];
     if (!force &&
-        (it.chapterIndex - _lastChapter).abs() > 1 &&
-        _lastProgressAt != null &&
-        DateTime.now().difference(_lastProgressAt!) <
-            const Duration(seconds: 2)) {
-      _log(
-        'skip progress jump $_lastChapter:$_lastPage → '
-        '${it.chapterIndex}:${it.pageIndex}',
-      );
+        it.chapterIndex == _lastChapter &&
+        it.pageIndex == _lastPage) {
       return;
     }
     _lastChapter = it.chapterIndex;

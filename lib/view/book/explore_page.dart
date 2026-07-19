@@ -9,7 +9,6 @@ import 'package:book/store/providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 /// Bottom-tab discovery page driven by book-source `exploreUrl` / `ruleExplore`.
 class ExplorePage extends ConsumerStatefulWidget {
@@ -210,35 +209,35 @@ class _BookList extends StatelessWidget {
     const picW = 72.0;
     final picH = picW / .65;
     final rowH = picH + 20;
+    final showFooter = model.loading || model.noMore;
 
-    return SmartRefresher(
-      enablePullDown: true,
-      enablePullUp: true,
-      header: const WaterDropHeader(),
-      footer: CustomFooter(
-        builder: (context, mode) {
-          Widget body;
-          if (mode == LoadStatus.loading) {
-            body = const CupertinoActivityIndicator();
-          } else if (mode == LoadStatus.failed) {
-            body = const Text('加载失败');
-          } else if (mode == LoadStatus.canLoading) {
-            body = const Text('松手加载更多');
-          } else if (mode == LoadStatus.noMore) {
-            body = const Text('没有更多了');
-          } else {
-            body = const SizedBox.shrink();
-          }
-          return SizedBox(height: 48, child: Center(child: body));
-        },
-      ),
-      controller: model.refreshController,
-      onRefresh: model.onRefresh,
-      onLoading: model.onLoading,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
+          model.loadMore();
+        }
+        return false;
+      },
       child: ListView.builder(
         itemExtent: rowH,
-        itemCount: model.books.length,
+        itemCount: model.books.length + (showFooter ? 1 : 0),
         itemBuilder: (context, i) {
+          if (i >= model.books.length) {
+            return SizedBox(
+              height: rowH,
+              child: Center(
+                child: model.loading
+                    ? const CupertinoActivityIndicator()
+                    : const Text(
+                        '没有更多了',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+              ),
+            );
+          }
           final item = model.books[i];
           return _BookRow(
             item: item,

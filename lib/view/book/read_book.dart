@@ -100,9 +100,10 @@ class _ReadBookState extends ConsumerState<ReadBook>
   void saveState({bool flush = false}) {
     final b = readModel.book;
     if (b == null) return;
-    // Snapshot after child ScrollContentReader.dispose has applied visible page
-    // (children dispose first). For lifecycle pause, scroll listener throttle
-    // + ScrollEnd should already have written cur/index.
+    // Force scroll mode to push the currently visible page into book indices
+    // before we snapshot/flush. Without this, continuous scroll can leave
+    // chapterIndex/pageIndex a page (or more) behind what the user sees.
+    readModel.syncScrollProgress();
     final id = b.id;
     final cur = b.chapterIndex;
     final idx = b.pageIndex;
