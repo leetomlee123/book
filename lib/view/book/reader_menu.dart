@@ -180,7 +180,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                   return;
                 }
                 _readModel.book!.chapterIndex -= 1;
-                await _readModel.initPageContent(_readModel.book!.chapterIndex, true);
+                await _readModel.openChapterAt(_readModel.book!.chapterIndex, true);
                 _readModel.scheduleProgressSave(delay: Duration.zero);
                 setState(() {});
               }),
@@ -200,7 +200,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                     onChangeEnd: max <= 0
                         ? null
                         : (newValue) {
-                            _readModel.initPageContent(newValue.round(), true);
+                            _readModel.openChapterAt(newValue.round(), true);
                             _readModel.scheduleProgressSave(
                                 delay: Duration.zero);
                           },
@@ -213,7 +213,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                   return;
                 }
                 _readModel.book!.chapterIndex += 1;
-                await _readModel.initPageContent(_readModel.book!.chapterIndex, true);
+                await _readModel.openChapterAt(_readModel.book!.chapterIndex, true);
                 _readModel.scheduleProgressSave(delay: Duration.zero);
                 setState(() {});
               }),

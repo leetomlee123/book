@@ -49,7 +49,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
       final b = readModel.book;
       if (b == null) return;
       readModel.resetPages();
-      readModel.initPageContent(b.chapterIndex, true);
+      readModel.openChapterAt(b.chapterIndex, true);
     });
 
     WidgetsBinding.instance.addObserver(this);

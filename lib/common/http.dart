@@ -17,7 +17,7 @@ class HttpUtil {
   HttpUtil._internal() {
     dio = Dio()
       ..options = BaseOptions(
-          // baseUrl: Common.domain,
+          // Local book-source engine; no remote API base URL.
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(hours: 24))
 

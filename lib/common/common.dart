@@ -1,24 +1,9 @@
-/// Shared constants (prefs keys + residual remote endpoints).
+/// Shared constants (prefs keys).
 class Common {
-  // Residual account endpoints (optional; reading does not require them).
-  static String domain = '';
-  static String login = '';
-  static String gitHubLogin = '';
-  static String freshToken = '';
-  static String info = '';
-  static String modifypassword = '';
-  static String register = '';
-  static String update = '';
-
-  static String page_height_pre = 'php';
-
-  static String listbookname = 'booklist';
-  static String toplist = 'toplist';
   static String bgIdx = PrefsKeys.bgIdx;
   static String turnPageAnima = PrefsKeys.pageTurnMode;
 
   static String book_search_history = PrefsKeys.bookSearchHistory;
-  static String notice_info = 'notice_info';
   static String reading_style = PrefsKeys.readingStyle;
   static String fonts = PrefsKeys.fonts;
   static String book_pic_width = PrefsKeys.bookPicWidth;

@@ -57,7 +57,7 @@ class ReadModel with ChangeNotifier {
   late final ChapterContentLoader _contentLoader = ChapterContentLoader(
     chaptersRepo: _chapters,
     paginator: _paginator,
-    fetchContent: getChapterContent,
+    fetchContent: fetchChapterBody,
   );
   BookSource? _activeSource;
 
@@ -92,7 +92,7 @@ class ReadModel with ChangeNotifier {
   bool showMenu = false;
 
   //背景色索引（legacy texture path; solid paper preferred）
-  String bgPath =
+  String backgroundImageName =
       SpUtil.getString(Common.bgIdx, defValue: ReadSetting.bgImg.first);
 
   PaperTheme paperTheme = ReadSetting.getPaperTheme();
@@ -265,7 +265,7 @@ class ReadModel with ChangeNotifier {
       b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
       // Skip loading flash when body + page layout are already cached.
       final canSkipLoading = await _hasPageCache(b.chapterIndex);
-      await initPageContent(b.chapterIndex, false, showLoading: !canSkipLoading);
+      await openChapterAt(b.chapterIndex, false, showLoading: !canSkipLoading);
       _restorePageIndex(savedIndex);
       sessionReady = true;
       chaptersLoading = false;
@@ -298,7 +298,7 @@ class ReadModel with ChangeNotifier {
           b.chapterIndex = savedCur;
         }
         b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-        await initPageContent(b.chapterIndex, false, showLoading: true);
+        await openChapterAt(b.chapterIndex, false, showLoading: true);
         _restorePageIndex(savedIndex);
       }
       sessionReady = true;
@@ -393,12 +393,12 @@ class ReadModel with ChangeNotifier {
   }
 
   void _hideTextLoading() {
-    // Content replacement (initPageContent / chapter load) clears the hint page.
+    // Content replacement (openChapterAt / chapter load) clears the hint page.
     // Bump token so any in-flight _showTextLoading paint is ignored.
     _loadingToken++;
   }
 
-  Future initPageContent(int idx, bool jump, {bool showLoading = true}) async {
+  Future openChapterAt(int idx, bool jump, {bool showLoading = true}) async {
     // Preserve in-chapter page across loading placeholder (jump still resets).
     final keepIndex = book?.pageIndex ?? 0;
     if (showLoading) {
@@ -440,7 +440,7 @@ class ReadModel with ChangeNotifier {
       }
       notifyListeners();
     } catch (e, st) {
-      AppLog.e('Read', 'initPageContent failed idx=$idx', error: e, stackTrace: st);
+      AppLog.e('Read', 'openChapterAt failed idx=$idx', error: e, stackTrace: st);
       curPage ??= await _messagePage('加载失败', '章节加载异常：$e');
       notifyListeners();
     } finally {
@@ -462,8 +462,8 @@ class ReadModel with ChangeNotifier {
 
   Future<void> setBackgroundImage(Object? i) async {
     // Legacy texture path.
-    final path = i?.toString() ?? bgPath;
-    bgPath = path;
+    final path = i?.toString() ?? backgroundImageName;
+    backgroundImageName = path;
     SpUtil.putString(Common.bgIdx, path);
     ReadSetting.setUseSolidPaper(false);
     await refreshThemePaint();
@@ -642,7 +642,7 @@ class ReadModel with ChangeNotifier {
     // 保留当前章；重分页后尽量夹紧页码，不强制回第 0 页。
     final b = book;
     final keepIndex = b?.pageIndex ?? 0;
-    await initPageContent(b?.chapterIndex ?? 0, false, showLoading: false);
+    await openChapterAt(b?.chapterIndex ?? 0, false, showLoading: false);
     if (b != null) {
       _restorePageIndex(keepIndex);
     }
@@ -1006,7 +1006,7 @@ class ReadModel with ChangeNotifier {
     return pictureCache.putIfAbsent(key, () => pic);
   }
 
-  Future<ui.Image> getAssetImage(String asset, {int? width, int? height}) async {
+  Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) async {
     ByteData data = await rootBundle.load(asset);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
         targetWidth: width, targetHeight: height);
@@ -1092,7 +1092,7 @@ class ReadModel with ChangeNotifier {
 
     var content = "";
     try {
-      content = await getChapterContent(chapter.id, idx: b.chapterIndex);
+      content = await fetchChapterBody(chapter.id, idx: b.chapterIndex);
     } catch (e) {
       content = "章节内容加载失败，请检查书源或换源后重试";
     }
@@ -1129,7 +1129,7 @@ class ReadModel with ChangeNotifier {
       ChapterTocEntry chapter = temp[i];
       var id = chapter.id;
       if (chapter.hasBody == false) {
-        String content = await getChapterContent(id, idx: i);
+        String content = await fetchChapterBody(id, idx: i);
         if (content.isNotEmpty) {
           cpNodes.add(ChapterNode(content, id));
           chapter.hasBody = true;
@@ -1147,7 +1147,7 @@ class ReadModel with ChangeNotifier {
     BotToast.showText(text: "${book?.name ?? ""}下载完成");
   }
 
-  Future<String> getChapterContent(String id, {int? idx}) async {
+  Future<String> fetchChapterBody(String id, {int? idx}) async {
     final b = book;
     if (b == null) return '';
     await _ensureSource();
@@ -1261,7 +1261,7 @@ class ReadModel with ChangeNotifier {
 
       resetPages();
       pictureCache.clear();
-      await initPageContent(b.chapterIndex, true);
+      await openChapterAt(b.chapterIndex, true);
       final name =
           (mapped >= 0 && mapped < chapters.length) ? chapters[mapped].title : '';
       BotToast.showText(text: '已切换至「${source.bookSourceName}」，定位到：$name');
@@ -1481,10 +1481,10 @@ class ReadModel with ChangeNotifier {
       return;
     }
     if (SpUtil.getBool(PrefsKeys.dark) || paperTheme == PaperTheme.night) {
-      bgUI = await getAssetImage("images/${ReadSetting.bgImg.last}",
+      bgUI = await loadAssetImage("images/${ReadSetting.bgImg.last}",
           width: Screen.width.ceil(), height: Screen.height.ceil());
     } else {
-      bgUI = await getAssetImage("images/$bgPath",
+      bgUI = await loadAssetImage("images/$backgroundImageName",
           width: Screen.width.ceil(), height: Screen.height.ceil());
     }
   }
