@@ -611,7 +611,7 @@ class ReadModel with ChangeNotifier {
     );
   }
 
-    /// True when chapter body + fingerprinted page layout are both on disk.
+  /// True when chapter body + fingerprinted page layout are both on disk.
   Future<bool> _hasPageCache(int idx) async {
     if (idx < 0 || idx >= chapters.length) return false;
     final chapterId = chapters[idx].id;
@@ -836,11 +836,14 @@ class ReadModel with ChangeNotifier {
 
   ui.Picture? paintNextPicture() => _pictures.paintNext();
 
-    Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) async {
-    ByteData data = await rootBundle.load(asset);
-    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
-        targetWidth: width, targetHeight: height);
-    ui.FrameInfo fi = await codec.getNextFrame();
+  Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) async {
+    final data = await rootBundle.load(asset);
+    final codec = await ui.instantiateImageCodec(
+      data.buffer.asUint8List(),
+      targetWidth: width,
+      targetHeight: height,
+    );
+    final fi = await codec.getNextFrame();
     return fi.image;
   }
 
