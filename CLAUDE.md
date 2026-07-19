@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Flutter novel reader app (爱看书). Package name: `book`. Application ID: `com.opensource.ikanshu`. Open-source (Apache-2.0).
+爱看书 — open-source Flutter novel reader. Package name: `book`. Application ID: `com.opensource.ikanshu`. License: Apache-2.0.
 
 Tech stack: Dart 3 / Flutter 3.44+, **Riverpod** (`flutter_riverpod` + `ChangeNotifierProvider`), event_bus, Dio 5, Fluro, sqflite, protobuf, shared_preferences (via local `SpUtil` facade).
 

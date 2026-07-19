@@ -145,7 +145,7 @@ class Me extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Center(
                     child: Text(
-                      '清阅揽胜  ·  ${SpUtil.getString(PrefsKeys.version, defValue: "")}',
+                      '爱看书  ·  ${SpUtil.getString(PrefsKeys.version, defValue: "")}',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textTertiary,
@@ -235,7 +235,7 @@ class Me extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '登录后可同步书架与阅读进度',
+                            '本地账号 · 进度保存在本机',
                             style: TextStyle(
                               fontSize: 13,
                               color: _secondary,
@@ -388,7 +388,7 @@ class Me extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('清阅揽胜 V${SpUtil.getString(PrefsKeys.version)}'),
+        title: Text('爱看书 V${SpUtil.getString(PrefsKeys.version)}'),
         content: Text(
           ReadSetting.poet,
           style: const TextStyle(fontSize: 15, height: 2.1),

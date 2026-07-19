@@ -4,7 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-/// Single SQLite database for the novel reader.
+/// Single SQLite database for 爱看书.
 ///
 /// Holds shelf (`books`), chapter cache (`chapters`), and book sources
 /// (`sources`). No forward migration from legacy multi-file DBs — those are
