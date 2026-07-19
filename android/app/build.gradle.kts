@@ -3,6 +3,8 @@ plugins {
     // Built-in Kotlin (AGP 9+): do not apply kotlin-android / org.jetbrains.kotlin.android.
     // The Flutter Gradle Plugin must be applied after the Android plugin.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 import java.util.Properties

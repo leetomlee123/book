@@ -6,6 +6,7 @@ import 'package:book/common/local_store.dart';
 import 'package:book/data/db/reader_database.dart';
 import 'package:book/main.dart';
 import 'package:book/route/routes.dart';
+import 'package:book/service/firebase_bootstrap.dart';
 import 'package:book/service/tel_and_sms_service.dart';
 import 'package:fluro/fluro.dart';
 import 'package:flutter/foundation.dart';
@@ -78,7 +79,10 @@ class AppInit {
   static Future init() async {
     WidgetsFlutterBinding.ensureInitialized();
     GestureBinding.instance.resamplingEnabled = true;
+    // Firebase first so Crashlytics can wrap subsequent FlutterError handlers.
+    await FirebaseBootstrap.init();
     // Cover CDN WebP/network failures are common; show placeholder, not red dump.
+    // Installed *after* Firebase so image noise is filtered before Crashlytics.
     _installQuietImageErrorFilter();
     if (Platform.isIOS || Platform.isAndroid) {
       // Prefer photos on modern Android; fall back to storage where available.

@@ -1,5 +1,6 @@
 import 'package:book/app_init.dart';
 import 'package:book/route/routes.dart';
+import 'package:book/service/firebase_bootstrap.dart';
 import 'package:book/store/providers.dart';
 import 'package:book/view/system/main_shell.dart';
 import 'package:bot_toast/bot_toast.dart';
@@ -39,6 +40,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       builder: BotToastInit(),
       navigatorObservers: [
         BotToastNavigatorObserver(),
+        ...FirebaseBootstrap.navigatorObservers,
       ],
       onGenerateRoute: Routes.router.generator,
       theme: model.theme,

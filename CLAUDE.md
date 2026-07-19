@@ -50,8 +50,8 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 ### Boot sequence
 
 1. `main()` → `AppInit.init()` then `runApp(const ProviderScope(child: MyApp()))`.
-2. `AppInit` (`lib/app_init.dart`) requests media/storage permission (mobile), initializes local `SpUtil` (`lib/common/local_store.dart`), registers `TelAndSmsService` on global `GetIt` (`locator` in `lib/main.dart`), configures Fluro (`Routes`), loads package version, and fetches remote parse/font config from `Common.config`.
-3. `MyApp` is a `ConsumerWidget` watching `colorModelProvider` for theming; home is `MainShell` (书架 / 发现 / 我); routes via `Routes.router.generator`; toasts via BotToast.
+2. `AppInit` (`lib/app_init.dart`) requests media/storage permission (mobile), initializes Firebase Analytics + Crashlytics (`FirebaseBootstrap` in `lib/service/firebase_bootstrap.dart`), initializes local `SpUtil` (`lib/common/local_store.dart`), registers `TelAndSmsService` on global `GetIt` (`locator` in `lib/main.dart`), configures Fluro (`Routes`), loads package version.
+3. `MyApp` is a `ConsumerWidget` watching `colorModelProvider` for theming; home is `MainShell` (书架 / 发现 / 我); routes via `Routes.router.generator`; toasts via BotToast; screen views via `FirebaseAnalyticsObserver`.
 
 ### State management
 
