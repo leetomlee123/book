@@ -1,19 +1,83 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
+import 'package:book/common/PicWidget.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/main.dart';
 import 'package:book/route/Routes.dart';
 import 'package:book/service/TelAndSmsService.dart';
 import 'package:fluro/fluro.dart';
-import 'package:book/common/local_store.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AppInit {
+  static FlutterExceptionHandler? _prevFlutterError;
+  static ui.ErrorCallback? _prevPlatformError;
+
+  /// Swallow image-resource / cover-load noise from FlutterError + platform dumps.
+  static void _installQuietImageErrorFilter() {
+    _prevFlutterError = FlutterError.onError;
+    FlutterError.onError = (FlutterErrorDetails details) {
+      if (_isImageNoise(details.exception, details.library, details.context)) {
+        // Keep a one-line breadcrumb in debug only.
+        assert(() {
+          debugPrint(
+            '[Cover] suppressed: ${details.exceptionAsString().split('\n').first}',
+          );
+          return true;
+        }());
+        return;
+      }
+      final prev = _prevFlutterError;
+      if (prev != null) {
+        prev(details);
+      } else {
+        FlutterError.presentError(details);
+      }
+    };
+
+    _prevPlatformError = ui.PlatformDispatcher.instance.onError;
+    ui.PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      if (PicWidget.isBenignCoverError(error) ||
+          error.toString().contains('Invalid image data')) {
+        assert(() {
+          debugPrint(
+            '[Cover] platform suppressed: ${error.toString().split('\n').first}',
+          );
+          return true;
+        }());
+        return true; // handled
+      }
+      final prev = _prevPlatformError;
+      if (prev != null) return prev(error, stack);
+      return false;
+    };
+  }
+
+  static bool _isImageNoise(
+    Object exception,
+    String? library,
+    DiagnosticsNode? context,
+  ) {
+    final lib = library ?? '';
+    final ctx = context?.toString() ?? '';
+    if (lib.contains('image resource') ||
+        ctx.contains('image resource') ||
+        ctx.contains('resolving an image') ||
+        ctx.contains('while resolving an image')) {
+      return true;
+    }
+    return PicWidget.isBenignCoverError(exception);
+  }
+
   static Future init() async {
     WidgetsFlutterBinding.ensureInitialized();
     GestureBinding.instance.resamplingEnabled = true;
+    // Cover CDN WebP/network failures are common; show placeholder, not red dump.
+    _installQuietImageErrorFilter();
     if (Platform.isIOS || Platform.isAndroid) {
       // Prefer photos on modern Android; fall back to storage where available.
       final status = await Permission.photos.request();

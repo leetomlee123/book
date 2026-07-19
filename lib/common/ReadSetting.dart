@@ -178,12 +178,13 @@ class ReadSetting {
     SpUtil.putString(fontPathKey, path);
   }
 
-  /// Page-turn mode: see [ReaderPageManager] TYPE_* constants.
+  /// Page-turn / scroll mode: 0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动.
+  /// See [ReaderPageManager] TYPE_* constants.
   static int getPageTurnMode() =>
       SpUtil.getInt(Common.turnPageAnima, defValue: 0);
 
   static void setPageTurnMode(int mode) {
-    SpUtil.putInt(Common.turnPageAnima, mode);
+    SpUtil.putInt(Common.turnPageAnima, mode.clamp(0, 3));
   }
 
   static double getLineHeight() {

@@ -8,6 +8,7 @@ import 'package:book/common/DbHelper.dart';
 import 'package:book/common/ReadSetting.dart';
 import 'package:book/common/Screen.dart';
 import 'package:book/common/app_log.dart';
+import 'package:book/common/book_pager.dart';
 import 'package:book/common/common.dart';
 import 'package:book/common/text_composition.dart';
 import 'package:book/entity/Book.dart';
@@ -46,9 +47,13 @@ class ReadModel with ChangeNotifier {
   TextPainter textPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
-  /// 翻页动画类型：0 无动画 / 1 仿真 / 2 覆盖（见 [ReaderPageManager]）
-  int currentAnimationMode =
-      ReadSetting.getPageTurnMode();
+  /// 翻页/阅读模式：0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动（见 [ReaderPageManager]）
+  int currentAnimationMode = () {
+    final m = ReadSetting.getPageTurnMode();
+    // Legacy unused slide id mapped to static none.
+    if (m == 3) return ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
+    return m.clamp(0, 3);
+  }();
 
   Book? book;
   List<LocalChapter> chapters = [];
@@ -525,17 +530,25 @@ class ReadModel with ChangeNotifier {
   Future getChapters({bool init = false}) async {
     final b = book;
     if (b == null) return;
+    // Capture id so a late network return cannot touch a different/closed book.
+    final bookId = b.Id;
     List<LocalChapter>? list = await reqChapters();
     if (list == null || list.isEmpty) return;
+    // Reader may have been closed (clear() sets book=null) while toc was in flight.
+    if (book?.Id != bookId) {
+      AppLog.i('Read', 'getChapters drop stale toc for $bookId');
+      return;
+    }
 
     if (init || chapters.isEmpty) {
       chapters = list;
       // Always persist TOC — previously only saved when book was already on
       // the shelf (SpUtil key), so first-open from detail lost the catalog.
-      await DbHelper.instance.clearChapters(b.Id);
+      await DbHelper.instance.clearChapters(bookId);
+      if (book?.Id != bookId) return;
       await DbHelper.instance
-          .addChapters(list, b.Id, sourceUrl: b.sourceUrl);
-      AppLog.i('Read', 'toc saved init=${list.length} id=${b.Id}');
+          .addChapters(list, bookId, sourceUrl: b.sourceUrl);
+      AppLog.i('Read', 'toc saved init=${list.length} id=$bookId');
     } else {
       // append only new urls
       final existing = chapters.map((e) => e.url).toSet();
@@ -546,19 +559,21 @@ class ReadModel with ChangeNotifier {
           chapters.add(c);
         }
         await DbHelper.instance
-            .addChapters(fresh, b.Id, sourceUrl: b.sourceUrl);
-        AppLog.i('Read', 'toc append ${fresh.length} id=${b.Id}');
+            .addChapters(fresh, bookId, sourceUrl: b.sourceUrl);
+        AppLog.i('Read', 'toc append ${fresh.length} id=$bookId');
       }
     }
+    if (book?.Id != bookId) return;
     if (list.isNotEmpty) {
-      b.LastChapter = list.last.chapterName;
+      book!.LastChapter = list.last.chapterName;
     }
     // Mark local reading history so "继续阅读" works even if not on shelf.
-    if (!SpUtil.containsKey(b.Id)) {
-      SpUtil.putString(b.Id, '');
+    if (!SpUtil.containsKey(bookId)) {
+      SpUtil.putString(bookId, '');
     }
     // Ensure a books-row exists so progress can be updated.
-    await _ensureBookRow(b);
+    await _ensureBookRow(book!);
+    if (book?.Id != bookId) return;
     notifyListeners();
   }
 
@@ -686,6 +701,17 @@ class ReadModel with ChangeNotifier {
 
     if (cachedPages != null && cachedPages.isNotEmpty) {
       r.pages = cachedPages;
+      // Cache hit skips re-layout — still report which engine is available now.
+      debugPrint(
+        '[PagerEngine] CACHE_HIT idx=$idx pages=${cachedPages.length} '
+        'nativeAvailable=${BookPager.isAvailable} '
+        '(layout not re-run; open a new chapter or change font to force paginate)',
+      );
+      AppLog.i(
+        'Pager',
+        'CACHE_HIT idx=$idx pages=${cachedPages.length} '
+            'native=${BookPager.isAvailable}',
+      );
     } else {
       // Always re-paginate with current layout metrics (Rust / Dart).
       try {
@@ -1071,12 +1097,29 @@ class ReadModel with ChangeNotifier {
     return true;
   }
 
-  /// Switch page-turn animation mode. [PageContentReader] rebinds the manager.
+  /// True when reader uses vertical page-stack scroll (mode 3).
+  bool get isScrollMode =>
+      currentAnimationMode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN;
+
+  /// True after [getBookRecord] finished hydrating and current chapter is ready.
+  /// Scroll surface must wait for this — [loadOk] alone is true during prepareOpen.
+  bool get contentReady =>
+      _progressReady &&
+      book != null &&
+      chapters.isNotEmpty &&
+      curPage != null &&
+      curPage!.pages.isNotEmpty &&
+      curPage!.chapterName != '加载中';
+
+  /// Switch page-turn / scroll mode.
+  /// 0 none / 1 simulation / 2 cover / 3 vertical scroll.
   void setAnimationMode(int mode) {
-    // 0 none / 1 simulation / 2 cover — keep in sync with ReaderPageManager.
-    final m = mode.clamp(0, 2);
+    final m = mode.clamp(0, 3);
+    if (currentAnimationMode == m) return;
     currentAnimationMode = m;
     ReadSetting.setPageTurnMode(m);
+    // Drop pictures so chrome / no-chrome caches do not mix.
+    widgets.clear();
     notifyListeners();
   }
 
@@ -1086,10 +1129,154 @@ class ReadModel with ChangeNotifier {
         return '仿真';
       case ReaderPageManager.TYPE_ANIMATION_COVER_TURN:
         return '覆盖';
+      case ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN:
+        return '滚动';
       case ReaderPageManager.TYPE_ANIMATION_NONE:
       default:
         return '无动画';
     }
+  }
+
+  /// Update progress from scroll list visible page.
+  void applyScrollProgress(int chapterIdx, int pageIdx) {
+    final b = book;
+    if (b == null || !_progressReady) return;
+    if (chapterIdx < 0 || chapterIdx >= chapters.length) return;
+    final idx = pageIdx < 0 ? 0 : pageIdx;
+    if (b.cur == chapterIdx && b.index == idx) return;
+    b.cur = chapterIdx;
+    b.index = idx;
+    final name = chapters[chapterIdx].chapterName;
+    if (name.isNotEmpty) b.ChapterName = name;
+    // Debounced disk write only — do NOT notifyListeners (scroll UI owns state).
+    scheduleProgressSave();
+    AppLog.i('Read', 'scroll progress cur=$chapterIdx idx=$idx name=$name');
+  }
+
+  /// Content-only picture for vertical scroll (no title/battery/page chrome).
+  /// Canvas height hugs body lines so stacked pages join without gaps.
+  ui.Picture? scrollPagePicture(int chapterIdx, int pageIdx, ReadPage readPage) {
+    final b = book;
+    if (b == null) return null;
+    if (pageIdx < 0 || pageIdx >= readPage.pages.length) return null;
+    final key = '${b.Id}${chapterIdx}${pageIdx}sc';
+    if (widgets.containsKey(key)) return widgets[key];
+    final pic = drawScrollContent(readPage, pageIdx);
+    return widgets.putIfAbsent(key, () => pic);
+  }
+
+  /// Natural height of a scroll tile (content only + tiny pad).
+  /// Uses line dy span (ignores bottom-justify empty space in page box).
+  double scrollPageHeight(ReadPage readPage, int pageIdx) {
+    if (pageIdx < 0 || pageIdx >= readPage.pages.length) {
+      return 120;
+    }
+    final page = readPage.pages[pageIdx];
+    final lineH =
+        ReadSetting.getFontSize() * ReadSetting.getLineHeight();
+    if (page.lines.isEmpty) {
+      return lineH + 4;
+    }
+    var minDy = double.infinity;
+    var maxDy = 0.0;
+    for (final line in page.lines) {
+      if (line.dy < minDy) minDy = line.dy;
+      if (line.dy > maxDy) maxDy = line.dy;
+    }
+    if (!minDy.isFinite) minDy = 0;
+    // Paint shifts by -minDy; height is the drawn span only.
+    final contentH = (maxDy - minDy) + lineH;
+    return (contentH < lineH ? lineH : contentH) + 2;
+  }
+
+  /// Paint body lines only into a tight-height picture for continuous scroll.
+  ui.Picture drawScrollContent(ReadPage readPage, int pageIdx) {
+    paperTheme = ReadSetting.getPaperTheme();
+    final bool night = paperTheme == PaperTheme.night ||
+        SpUtil.getBool('dark', defValue: false);
+    final effectivePaper = night ? PaperTheme.night : paperTheme;
+    final paper = ReadSetting.paperColor(effectivePaper);
+    final ink = ReadSetting.inkColor(effectivePaper);
+
+    final contentPadding = ReadSetting.getPageDis().toDouble();
+    final pageW = Screen.width;
+    final fontFamily = ReadSetting.getFontFamily();
+    final familyOrNull =
+        (fontFamily.isEmpty || fontFamily == 'Roboto') ? null : fontFamily;
+    final fontSize = ReadSetting.getFontSize();
+    final lineHeight = ReadSetting.getLineHeight();
+    final TextStyle style = TextStyle(
+      color: ink,
+      locale: const Locale('zh_CN'),
+      fontFamily: familyOrNull,
+      fontSize: fontSize,
+      height: lineHeight,
+    );
+
+    final tileH = scrollPageHeight(readPage, pageIdx);
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, pageW, tileH));
+    canvas.drawRect(Rect.fromLTWH(0, 0, pageW, tileH), Paint()..color = paper);
+
+    final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
+    final linePainter = TextPainter(textDirection: TextDirection.ltr);
+
+    if (pageIdx < 0 ||
+        pageIdx >= readPage.pages.length ||
+        readPage.pages[pageIdx].lines.isEmpty) {
+      final fallback = TextPainter(
+        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          text: readPage.chapterContent.isNotEmpty
+              ? readPage.chapterContent
+              : '内容为空',
+          style: style,
+        ),
+      );
+      fallback.layout(maxWidth: maxLineWidth);
+      fallback.paint(canvas, Offset(contentPadding, 0));
+      return recorder.endRecording();
+    }
+
+    final page = readPage.pages[pageIdx];
+    // Pager lays lines with dy relative to content box top (0..boxH).
+    // For continuous scroll we shift so first line starts near y=0.
+    var minDy = double.infinity;
+    for (final line in page.lines) {
+      if (line.dy < minDy) minDy = line.dy;
+    }
+    if (!minDy.isFinite) minDy = 0;
+
+    for (final line in page.lines) {
+      final ls = line.letterSpacing;
+      final TextStyle lineStyle =
+          (ls != null && (ls < -0.1 || ls > 0.1) && ls.isFinite)
+              ? style.copyWith(letterSpacing: ls)
+              : style;
+      linePainter.text = TextSpan(text: line.text, style: lineStyle);
+      linePainter.layout();
+      if (linePainter.width > maxLineWidth * 1.05) {
+        linePainter.layout(maxWidth: maxLineWidth);
+      }
+      // No bodyTop / title chrome offset — continuous body stream.
+      final y = (line.dy - minDy).clamp(0.0, tileH);
+      linePainter.paint(canvas, Offset(line.dx, y));
+    }
+    return recorder.endRecording();
+  }
+
+  /// Load a chapter for the scroll window (skips sentinel empty pages).
+  Future<ReadPage?> loadScrollChapter(int idx) async {
+    if (idx < 0 || idx >= chapters.length) return null;
+    final page = await loadChapter(idx);
+    if (page == null) return null;
+    if (page.chapterName == '加载中' ||
+        page.chapterName == '1' ||
+        page.chapterName == '-1') {
+      return null;
+    }
+    if (page.pages.isEmpty && page.chapterContent.isEmpty) return null;
+    return page;
   }
 
   ui.Picture? getPage({bool firstInit = false}) {
@@ -1207,7 +1394,11 @@ class ReadModel with ChangeNotifier {
     return fi.image;
   }
 
-  ui.Picture drawContent(ReadPage readPage, int i) {
+  /// Paint one page picture.
+  ///
+  /// [chrome]: when true (page-turn), bake chapter title + battery/time/page.
+  /// When false (vertical scroll), body only — chrome is a sticky overlay.
+  ui.Picture drawContent(ReadPage readPage, int i, {bool chrome = true}) {
     ui.PictureRecorder pageRecorder = ui.PictureRecorder();
 
     paperTheme = ReadSetting.getPaperTheme();
@@ -1278,20 +1469,21 @@ class ReadModel with ChangeNotifier {
       return pageRecorder.endRecording();
     }
 
-    //章节
-    textPainter.text = TextSpan(
-        text: "${readPage.chapterName}",
-        style: TextStyle(
-          fontSize: 12 / Screen.textScaleFactor,
-          color: meta,
-          fontFamily: familyOrNull,
-        ));
-    textPainter.layout();
-    //章节高30 画在中间
-    textPainter.paint(
-      pageCanvas,
-      Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
-    );
+    if (chrome) {
+      // Chapter title (page-turn only; scroll uses sticky overlay).
+      textPainter.text = TextSpan(
+          text: readPage.chapterName,
+          style: TextStyle(
+            fontSize: 12 / Screen.textScaleFactor,
+            color: meta,
+            fontFamily: familyOrNull,
+          ));
+      textPainter.layout();
+      textPainter.paint(
+        pageCanvas,
+        Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
+      );
+    }
     //正文
     // Per-line painter: shared maxLines:1 painter would clip overlong lines.
     final linePainter = TextPainter(textDirection: TextDirection.ltr);
@@ -1343,6 +1535,9 @@ class ReadModel with ChangeNotifier {
       }
       final offset = Offset(line.dx, line.dy + bodyTop);
       linePainter.paint(pageCanvas, offset);
+    }
+    if (!chrome) {
+      return pageRecorder.endRecording();
     }
     //画电池
     double batteryPaddingLeft = contentPadding - 5;

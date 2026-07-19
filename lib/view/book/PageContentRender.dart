@@ -64,7 +64,11 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
   void _applyMode(int mode, ReadModel viewModel) {
     final mgr = pageManager;
     if (mgr == null) return;
-    mgr.setCurrentAnimation(mode);
+    // Scroll mode (3) is a separate surface; treat as static if we ever land here.
+    final effective = mode == ReaderPageManager.TYPE_ANIMATION_SLIDE_TURN
+        ? ReaderPageManager.TYPE_ANIMATION_NONE
+        : mode;
+    mgr.setCurrentAnimation(effective);
     mgr.setCurrentCanvasContainerContext(canvasKey);
     mgr.setContentViewModel(viewModel);
     mgr.setAnimationController(animationController);

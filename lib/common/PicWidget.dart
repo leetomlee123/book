@@ -1,4 +1,5 @@
 import 'package:extended_image/extended_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class PicWidget extends StatelessWidget {
@@ -62,6 +63,21 @@ class PicWidget extends StatelessWidget {
     };
   }
 
+  /// True when [error] is a benign cover download/decode failure.
+  static bool isBenignCoverError(Object? error) {
+    if (error == null) return false;
+    final s = error.toString();
+    return s.contains('Failed to load') ||
+        s.contains('Invalid image data') ||
+        s.contains('ImageDecoder') ||
+        s.contains('unimplemented') ||
+        s.contains('HttpException') ||
+        s.contains('SocketException') ||
+        s.contains('HandshakeException') ||
+        s.contains('ClientException') ||
+        s.contains('NetworkImageLoadException');
+  }
+
   @override
   Widget build(BuildContext context) {
     final src = normalizeUrl(url);
@@ -77,14 +93,28 @@ class PicWidget extends StatelessWidget {
         height: height,
         fit: fit,
         cache: true,
+        // Cover CDNs often return broken/unsupported WebP — don't spam console.
+        printError: false,
         clearMemoryCacheWhenDispose: false,
+        clearMemoryCacheIfFailed: true,
+        retries: 1,
+        timeRetry: const Duration(milliseconds: 500),
         headers: _headersFor(src),
-        cacheWidth: cacheW,
+        cacheWidth: cacheW > 0 ? cacheW : null,
         loadStateChanged: (state) {
           switch (state.extendedImageLoadState) {
             case LoadState.loading:
               return _placeholder;
             case LoadState.failed:
+              // Quiet failure: keep placeholder; optional one-line debug only.
+              assert(() {
+                final err = state.lastException;
+                if (err != null && kDebugMode) {
+                  final first = err.toString().split('\n').first;
+                  debugPrint('[Cover] fail $src → $first');
+                }
+                return true;
+              }());
               return _placeholder;
             case LoadState.completed:
               return null; // use default decoded image

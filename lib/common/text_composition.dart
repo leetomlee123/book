@@ -300,16 +300,25 @@ class TextComposition {
     final fontFamily = p['fontFamily'] as String;
     final fontPath = p['fontPath'] as String? ?? '';
 
+    final nativeOk = BookPager.isAvailable;
+    // Always print engine probe so real-device logcat can filter "PagerEngine".
+    debugPrint(
+      '[PagerEngine] probe native=$nativeOk '
+      'err=${BookPager.lastError ?? "-"} '
+      'contentLen=${readPage.chapterContent.length} '
+      'box=${boxW.toStringAsFixed(0)}x${boxH.toStringAsFixed(0)} '
+      'font=$fontSize',
+    );
     AppLog.i(
       'Pager',
       'layout boxW=$boxW boxH=$boxH fontSize=$fontSize '
           'lineHeight=$lineHeight padH=$padH family=$fontFamily '
           'fontPath=${fontPath.isEmpty ? "-" : fontPath} '
           'contentLen=${readPage.chapterContent.length} '
-          'native=${BookPager.isAvailable}',
+          'native=$nativeOk err=${BookPager.lastError ?? "-"}',
     );
 
-    if (BookPager.isAvailable) {
+    if (nativeOk) {
       try {
         final pages = await BookPager.paginateAsync(
           text: readPage.chapterContent,
@@ -325,23 +334,42 @@ class TextComposition {
           fontFamily: fontFamily,
         );
         final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
-        AppLog.i(
-          'Pager',
-          'native result pages=${pages.length} totalLines=$totalLines '
-              'lines0=${pages.isEmpty ? 0 : pages.first.lines.length}',
-        );
         if (!_looksBrokenPagination(
             pages, readPage.chapterContent, boxW, fontSize)) {
+          debugPrint(
+            '[PagerEngine] ENGINE=RUST pages=${pages.length} '
+            'lines=$totalLines lines0=${pages.isEmpty ? 0 : pages.first.lines.length}',
+          );
+          AppLog.i(
+            'Pager',
+            'ENGINE=RUST pages=${pages.length} totalLines=$totalLines '
+                'lines0=${pages.isEmpty ? 0 : pages.first.lines.length}',
+          );
           return pages;
         }
+        debugPrint(
+          '[PagerEngine] ENGINE=DART reason=rust_broken_pagination '
+          'pages=${pages.length} lines=$totalLines',
+        );
         AppLog.w(
           'Pager',
-          'BookPager result looks broken (single overlong line); Dart fallback',
+          'ENGINE=DART reason=rust_broken (single overlong line) '
+              'pages=${pages.length} lines=$totalLines',
         );
       } catch (e, st) {
-        AppLog.w('Pager', 'BookPager async failed, Dart fallback', error: e);
+        debugPrint('[PagerEngine] ENGINE=DART reason=rust_exception $e');
+        AppLog.w('Pager', 'ENGINE=DART reason=rust_exception', error: e);
         debugPrint('BookPager async failed, falling back to Dart: $e\n$st');
       }
+    } else {
+      debugPrint(
+        '[PagerEngine] ENGINE=DART reason=native_unavailable '
+        'err=${BookPager.lastError ?? "-"}',
+      );
+      AppLog.i(
+        'Pager',
+        'ENGINE=DART reason=native_unavailable err=${BookPager.lastError ?? "-"}',
+      );
     }
 
     // Yield once so loading UI can paint before heavy TextPainter work.
@@ -359,9 +387,12 @@ class TextComposition {
       justRender: justRender,
     );
     final dartLines = dartPages.fold<int>(0, (n, p) => n + p.lines.length);
+    debugPrint(
+      '[PagerEngine] ENGINE=DART pages=${dartPages.length} lines=$dartLines',
+    );
     AppLog.i(
       'Pager',
-      'dart result pages=${dartPages.length} totalLines=$dartLines '
+      'ENGINE=DART pages=${dartPages.length} totalLines=$dartLines '
           'lines0=${dartPages.isEmpty ? 0 : dartPages.first.lines.length}',
     );
     return dartPages;

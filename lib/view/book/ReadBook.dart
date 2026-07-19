@@ -10,6 +10,7 @@ import 'package:book/store/Store.dart';
 import 'package:book/view/book/ChapterView.dart';
 import 'package:book/view/book/Menu.dart';
 import 'package:book/view/book/PageContentRender.dart';
+import 'package:book/view/book/ScrollContentReader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,6 +55,12 @@ class _ReadBookState extends ConsumerState<ReadBook>
     _chaptersSub = eventBus.on<OpenChapters>().listen((event) {
       _openChapterCatalog();
     });
+    // Enter immersive BEFORE content load so scroll metrics (boxH / padding)
+    // settle once — avoids restore jump then insets change (742→766) race.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // Let the engine apply inset change before pagination measures Screen.
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+    if (!mounted) return;
     try {
       await readModel.getBookRecord();
     } catch (e, st) {
@@ -63,8 +70,6 @@ class _ReadBookState extends ConsumerState<ReadBook>
         await readModel.failOpen(e);
       }
     }
-    if (!mounted) return;
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
 
   @override
@@ -92,6 +97,9 @@ class _ReadBookState extends ConsumerState<ReadBook>
   void saveState({bool flush = false}) {
     final b = readModel.book;
     if (b == null) return;
+    // Snapshot after child ScrollContentReader.dispose has applied visible page
+    // (children dispose first). For lifecycle pause, scroll listener throttle
+    // + ScrollEnd should already have written cur/index.
     final id = b.Id;
     final cur = b.cur;
     final idx = b.index;
@@ -168,8 +176,12 @@ class _ReadBookState extends ConsumerState<ReadBook>
               color: paper,
               child: const SizedBox.expand(),
             ),
-            // Always mount the canvas so load hints can be drawn as pages.
-            const RepaintBoundary(child: PageContentReader()),
+            // Page-turn canvas vs vertical scroll list.
+            RepaintBoundary(
+              child: model.isScrollMode
+                  ? const ScrollContentReader()
+                  : const PageContentReader(),
+            ),
             if (model.loadOk && model.showMenu) Menu(),
           ],
         ),

@@ -381,6 +381,7 @@ class _MenuState extends ConsumerState<Menu> {
       (0, '无动画', Icons.flash_on_outlined),
       (2, '覆盖', Icons.layers_outlined),
       (1, '仿真', Icons.auto_stories_outlined),
+      (3, '滚动', Icons.swap_vert),
     ];
     final current = _readModel.currentAnimationMode;
     return Row(
@@ -388,7 +389,7 @@ class _MenuState extends ConsumerState<Menu> {
         final selected = current == m.$1;
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 3),
             child: Material(
               color: selected ? AppColors.brandSoft : _chipBg,
               borderRadius: BorderRadius.circular(10),
@@ -399,19 +400,19 @@ class _MenuState extends ConsumerState<Menu> {
                   setState(() {});
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Column(
                     children: [
                       Icon(
                         m.$3,
-                        size: 20,
+                        size: 18,
                         color: selected ? AppColors.brand : _fg,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         m.$2,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight:
                               selected ? FontWeight.w600 : FontWeight.w400,
                           color: selected ? AppColors.brand : _fg,
