@@ -6,6 +6,7 @@ import 'package:book/entity/book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/read_model.dart';
 import 'package:book/model/shelf_model.dart';
+import 'package:book/service/firebase_bootstrap.dart';
 import 'package:book/store/providers.dart';
 import 'package:book/view/book/chapter_view.dart';
 import 'package:book/view/book/reader_menu.dart';
@@ -56,9 +57,19 @@ class _ReadBookState extends ConsumerState<ReadBook>
     if (!mounted) return;
     try {
       await readModel.hydrateReadingSession();
+      await FirebaseBootstrap.logEvent(
+        'open_reader',
+        parameters: {
+          'book_id': widget.book.id,
+          'source': widget.book.originName.isNotEmpty
+              ? widget.book.originName
+              : widget.book.sourceUrl,
+        },
+      );
     } catch (e, st) {
       // ignore: avoid_print
       print('hydrateReadingSession failed: $e\n$st');
+      await FirebaseBootstrap.recordError(e, st, reason: 'hydrateReadingSession');
       if (!readModel.sessionReady) {
         await readModel.failOpen(e);
       }
