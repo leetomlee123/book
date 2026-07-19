@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:book/common/read_setting.dart';
-import 'package:book/common/screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/common.dart';
 import 'package:book/data/repositories/book_repository.dart';
@@ -26,6 +25,7 @@ import 'package:book/model/reader/toc_service.dart';
 import 'package:book/model/reader/reader_input_controller.dart';
 import 'package:book/model/reader/reader_loading_presenter.dart';
 import 'package:book/model/reader/reader_painter.dart';
+import 'package:book/model/reader/reader_theme_controller.dart';
 import 'package:book/model/reader/text_paginator.dart';
 import 'package:book/source/engine/book_source_engine.dart';
 import 'package:book/source/model/book_source.dart';
@@ -35,7 +35,6 @@ import 'package:book/view/page_turn/reader_page_manager.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:book/common/local_store.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class ReadModel with ChangeNotifier {
   NovelPagePainter? pagePainter;
@@ -145,6 +144,12 @@ class ReadModel with ChangeNotifier {
     markNeedsPaint: _markNeedsPaint,
     notify: notifyListeners,
   );
+  late final ReaderThemeController _theme = ReaderThemeController(
+    setBgUI: (image) => bgUI = image,
+    clearPictures: pictureCache.clear,
+    markNeedsPaint: _markNeedsPaint,
+    notify: notifyListeners,
+  );
   BookSource? _activeSource;
 
   /// In-memory warm cache of disk chapter body + page layout (cur±1).
@@ -216,10 +221,11 @@ class ReadModel with ChangeNotifier {
   bool showMenu = false;
 
   //背景色索引（legacy texture path; solid paper preferred）
-  String backgroundImageName =
-      SpUtil.getString(PrefsKeys.bgIdx, defValue: ReadSetting.bgImg.first);
+  String get backgroundImageName => _theme.backgroundImageName;
+  set backgroundImageName(String value) => _theme.backgroundImageName = value;
 
-  PaperTheme paperTheme = ReadSetting.getPaperTheme();
+  PaperTheme get paperTheme => _theme.paperTheme;
+  set paperTheme(PaperTheme value) => _theme.paperTheme = value;
 
 //章节翻页标志
   bool sessionReady = false;
@@ -323,33 +329,12 @@ class ReadModel with ChangeNotifier {
     return _window.openAt(idx, jump, showLoadingUi: showLoading);
   }
 
-    Future<void> refreshThemePaint() async {
-    await reloadBackgroundImage();
-    pictureCache.clear();
+  Future<void> refreshThemePaint() => _theme.refreshPaint();
 
-    _markNeedsPaint();
-  }
-
-  Future<void> setBackgroundImage(Object? i) async {
-    // Legacy texture path.
-    final path = i?.toString() ?? backgroundImageName;
-    backgroundImageName = path;
-    SpUtil.putString(PrefsKeys.bgIdx, path);
-    ReadSetting.setUseSolidPaper(false);
-    await refreshThemePaint();
-    notifyListeners();
-  }
+  Future<void> setBackgroundImage(Object? i) => _theme.setBackgroundImage(i);
 
   /// WeChat-style solid paper swatch.
-  Future<void> setPaperTheme(PaperTheme theme) async {
-    paperTheme = theme;
-    ReadSetting.setPaperTheme(theme);
-    ReadSetting.setUseSolidPaper(true);
-    pictureCache.clear();
-    bgUI = null; // solid fill only
-    await refreshThemePaint();
-    notifyListeners();
-  }
+  Future<void> setPaperTheme(PaperTheme theme) => _theme.setPaperTheme(theme);
 
   Future<List<ChapterTocEntry>?> fetchRemoteToc() async {
     final b = book;
@@ -564,7 +549,7 @@ class ReadModel with ChangeNotifier {
 
   /// Paint body lines only into a tight-height picture for continuous scroll.
   ui.Picture drawScrollContent(ReadPage readPage, int pageIdx) {
-    paperTheme = ReadSetting.getPaperTheme();
+    _theme.syncPaperTheme();
     return _painter.drawScrollContent(
       readPage,
       pageIdx,
@@ -597,23 +582,15 @@ class ReadModel with ChangeNotifier {
 
   ui.Picture? paintNextPicture() => _pictures.paintNext();
 
-  Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) async {
-    final data = await rootBundle.load(asset);
-    final codec = await ui.instantiateImageCodec(
-      data.buffer.asUint8List(),
-      targetWidth: width,
-      targetHeight: height,
-    );
-    final fi = await codec.getNextFrame();
-    return fi.image;
-  }
+  Future<ui.Image> loadAssetImage(String asset, {int? width, int? height}) =>
+      _theme.loadAssetImage(asset, width: width, height: height);
 
   /// Paint one page picture.
   ///
   /// [chrome]: when true (page-turn), bake chapter title + battery/time/page.
   /// When false (vertical scroll), body only — chrome is a sticky overlay.
   ui.Picture drawContent(ReadPage readPage, int i, {bool chrome = true}) {
-    paperTheme = ReadSetting.getPaperTheme();
+    _theme.syncPaperTheme();
     return _painter.drawContent(
       readPage,
       i,
@@ -793,19 +770,5 @@ class ReadModel with ChangeNotifier {
 
   bool canTurnPrevious() => _input.canTurnPrevious();
 
-    Future<void> reloadBackgroundImage() async {
-    paperTheme = ReadSetting.getPaperTheme();
-    // Solid paper mode: no texture image.
-    if (ReadSetting.useSolidPaper()) {
-      bgUI = null;
-      return;
-    }
-    if (SpUtil.getBool(PrefsKeys.dark) || paperTheme == PaperTheme.night) {
-      bgUI = await loadAssetImage("images/${ReadSetting.bgImg.last}",
-          width: Screen.width.ceil(), height: Screen.height.ceil());
-    } else {
-      bgUI = await loadAssetImage("images/$backgroundImageName",
-          width: Screen.width.ceil(), height: Screen.height.ceil());
-    }
-  }
+  Future<void> reloadBackgroundImage() => _theme.reloadBackgroundImage();
 }
