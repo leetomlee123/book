@@ -33,93 +33,101 @@ class _MenuState extends ConsumerState<ReaderMenu> {
     _colorModel = ref.read(colorModelProvider);
   }
 
-  Color get _panelBg =>
-      _colorModel.dark ? AppColors.surfaceDark : AppColors.surface;
+  /// Match reader paper so chrome doesn't clash with the page underneath.
+  PaperTheme get _paper => _readModel.paperTheme;
 
-  Color get _fg =>
-      _colorModel.dark ? AppColors.textOnDark : AppColors.textPrimary;
+  Color get _panelBg => ReadSetting.paperColor(_paper);
 
-  Color get _muted => AppColors.textSecondary;
+  Color get _fg => ReadSetting.inkColor(_paper);
 
-  Color get _divider =>
-      _colorModel.dark ? AppColors.dividerDark : AppColors.divider;
+  Color get _muted => ReadSetting.metaColor(_paper);
 
-  Color get _chipBg =>
-      _colorModel.dark ? const Color(0xFF2A2A2A) : const Color(0xFFF2F2F2);
+  Color get _divider => _paper == PaperTheme.night
+      ? const Color(0x33FFFFFF)
+      : _fg.withValues(alpha: 0.12);
+
+  /// Subtle lift over paper for chips / outline buttons.
+  Color get _chipBg => _paper == PaperTheme.night
+      ? const Color(0xFF1C1C1C)
+      : Color.alphaBlend(_fg.withValues(alpha: 0.06), _panelBg);
 
   // ---------------------------------------------------------------------------
   // Top bar
   // ---------------------------------------------------------------------------
 
   Widget head() {
-    return SafeArea(
-      bottom: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _panelBg,
-          boxShadow: AppShadows.softBar,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(Icons.arrow_back_ios_new, size: 18, color: _fg),
-              onPressed: () => Navigator.maybePop(context),
-            ),
-            Expanded(
-              child: Text(
-                _readModel.book?.name ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  color: _fg,
+    // Color outside SafeArea so the bar fills status-bar / notch; content
+    // still respects the inset. Otherwise the page text peeks through above.
+    return Container(
+      decoration: BoxDecoration(
+        color: _panelBg,
+        boxShadow: AppShadows.softBar,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_ios_new, size: 18, color: _fg),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+              Expanded(
+                child: Text(
+                  _readModel.book?.name ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: _fg,
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              tooltip: '刷新',
-              icon: Icon(Icons.refresh, size: 22, color: _fg),
-              onPressed: () => _readModel.reloadCurrentPage(),
-            ),
-            // IconButton(
-            //   tooltip: '换源',
-            //   icon: Icon(Icons.swap_horiz, size: 22, color: _fg),
-            //   onPressed: () {
-            //     showModalBottomSheet(
-            //       context: context,
-            //       isScrollControlled: true,
-            //       backgroundColor: Colors.transparent,
-            //       builder: (_) => SourceSwitchSheet(readModel: _readModel),
-            //     );
-            //   },
-            // ),
-            IconButton(
-              tooltip: '详情',
-              icon: Icon(Icons.info_outline, size: 22, color: _fg),
-              onPressed: () async {
-                final b = _readModel.book;
-                if (b == null) return;
-                final info = BookInfo(
-                  id: b.id,
-                  name: b.name,
-                  author: b.author,
-                  coverUrl: b.coverUrl,
-                  category: b.category,
-                  description: b.description,
-                  latestChapter: b.latestChapter,
-                  updatedAt: b.updatedAt,
-                  sourceUrl: b.sourceUrl,
-                  bookUrl: b.bookUrl,
-                  originName: b.originName,
-                  tocUrl: b.tocUrl,
-                );
-                Routes.navigateTo(context, Routes.detail,
-                    params: {"detail": jsonEncode(info)}, replace: true);
-              },
-            ),
-          ],
+              IconButton(
+                tooltip: '刷新',
+                icon: Icon(Icons.refresh, size: 22, color: _fg),
+                onPressed: () => _readModel.reloadCurrentPage(),
+              ),
+              // IconButton(
+              //   tooltip: '换源',
+              //   icon: Icon(Icons.swap_horiz, size: 22, color: _fg),
+              //   onPressed: () {
+              //     showModalBottomSheet(
+              //       context: context,
+              //       isScrollControlled: true,
+              //       backgroundColor: Colors.transparent,
+              //       builder: (_) => SourceSwitchSheet(readModel: _readModel),
+              //     );
+              //   },
+              // ),
+              IconButton(
+                tooltip: '详情',
+                icon: Icon(Icons.info_outline, size: 22, color: _fg),
+                onPressed: () async {
+                  final b = _readModel.book;
+                  if (b == null) return;
+                  final info = BookInfo(
+                    id: b.id,
+                    name: b.name,
+                    author: b.author,
+                    coverUrl: b.coverUrl,
+                    category: b.category,
+                    description: b.description,
+                    latestChapter: b.latestChapter,
+                    updatedAt: b.updatedAt,
+                    sourceUrl: b.sourceUrl,
+                    bookUrl: b.bookUrl,
+                    originName: b.originName,
+                    tocUrl: b.tocUrl,
+                  );
+                  Routes.navigateTo(context, Routes.detail,
+                      params: {"detail": jsonEncode(info)}, replace: true);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
