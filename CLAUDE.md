@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Flutter novel reader app (爱看书). Package name: `book`. Application ID: `com.leetomlee.book`. Open-source (Apache-2.0).
+Flutter novel reader app (爱看书). Package name: `book`. Application ID: `com.opensource.ikanshu`. Open-source (Apache-2.0).
 
 Tech stack: Dart 3 / Flutter 3.44+, **Riverpod** (`flutter_riverpod` + `ChangeNotifierProvider`), event_bus, Dio 5, Fluro, sqflite, protobuf, shared_preferences (via local `SpUtil` facade).
 
@@ -133,7 +133,7 @@ Fluro paths are constants on `Routes` (e.g. `/read`, `/search`, `/detail`, `/log
 - **Android** uses declarative Flutter Gradle plugin (Kotlin DSL):
   - `android/settings.gradle.kts`, `android/build.gradle.kts`, `android/app/build.gradle.kts`
   - AGP / Kotlin versions follow the Flutter 3.44 template (currently AGP 9.0.1, Kotlin 2.3.20, Gradle 9.1.0)
-  - `namespace` / `applicationId`: `com.leetomlee.book`
+  - `namespace` / `applicationId`: `com.opensource.ikanshu`
   - Release signing loads `android/key.properties` only if present; keystore is `android/app/key.jks` (resolved as `app/key.jks` from project root). Without keystore, release falls back to debug signing.
 - Removed / not wired: JPush, flustars, keframe, flutter_swiper, flutter_statusbar_manager, flutter_xupdate.
 - Assets under `images/` (declared in `pubspec.yaml`).

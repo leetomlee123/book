@@ -6,7 +6,7 @@ An open-source **Flutter novel reader**. Local book sources, bookshelf managemen
 
 | Package | Application ID | License |
 |---------|----------------|---------|
-| `book` | `com.leetomlee.book` | [Apache-2.0](LICENSE) |
+| `book` | `com.opensource.ikanshu` | [Apache-2.0](LICENSE) |
 
 ---
 

@@ -6,7 +6,7 @@
 
 | 包名 | Application ID | 许可 |
 |------|----------------|------|
-| `book` | `com.leetomlee.book` | [Apache-2.0](LICENSE) |
+| `book` | `com.opensource.ikanshu` | [Apache-2.0](LICENSE) |
 
 ---
 

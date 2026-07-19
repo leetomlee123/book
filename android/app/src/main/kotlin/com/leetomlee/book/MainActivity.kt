@@ -1,4 +1,4 @@
-package com.leetomlee.book
+package com.opensource.ikanshu
 
 import io.flutter.embedding.android.FlutterActivity
 
