@@ -8,7 +8,21 @@
 //! - Optionally redistribute vertical space (bottom justify) per page
 
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+/// Shared font system — `FontSystem::new()` scans system fonts and is expensive.
+/// On Android, fontdb's `load_system_fonts` is a no-op, so we also load
+/// `/system/fonts` (and a few product paths) once.
+static FONT_SYSTEM: Lazy<Mutex<FontSystem>> = Lazy::new(|| {
+    let mut fs = FontSystem::new();
+    load_platform_fonts(fs.db_mut());
+    // Prefer a CJK-capable default family when present on Android devices.
+    prefer_cjk_defaults(fs.db_mut());
+    Mutex::new(fs)
+});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayoutInput {
@@ -44,7 +58,88 @@ pub struct TextPageOut {
     pub height: f32,
 }
 
+/// fontdb does not load fonts on Android (`target_os = "android"` is excluded
+/// from its unix branch). Without any faces, cosmic-text panics with
+/// `no default font found` — which aborts the whole Flutter process across FFI.
+fn load_platform_fonts(db: &mut fontdb::Database) {
+    #[cfg(target_os = "android")]
+    {
+        const DIRS: &[&str] = &[
+            "/system/fonts",
+            "/system/font",
+            "/system/product/fonts",
+            "/product/fonts",
+            "/system/product/fonts/google",
+            "/data/fonts",
+        ];
+        for dir in DIRS {
+            if Path::new(dir).is_dir() {
+                db.load_fonts_dir(dir);
+            }
+        }
+    }
+
+    // Also try common paths on other Unix targets when system scan found nothing.
+    #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
+    {
+        if db.is_empty() {
+            for dir in ["/usr/share/fonts", "/usr/local/share/fonts"] {
+                if Path::new(dir).is_dir() {
+                    db.load_fonts_dir(dir);
+                }
+            }
+        }
+    }
+
+    let _ = db;
+}
+
+fn prefer_cjk_defaults(db: &mut fontdb::Database) {
+    // Pick the first family that actually exists in the database.
+    const CANDIDATES: &[&str] = &[
+        "Noto Sans CJK SC",
+        "Noto Sans CJK",
+        "Noto Sans SC",
+        "Source Han Sans SC",
+        "Source Han Sans CN",
+        "DroidSansFallback",
+        "Droid Sans Fallback",
+        "Roboto",
+        "Noto Sans",
+        "sans-serif",
+    ];
+    for name in CANDIDATES {
+        let found = db.faces().any(|face| {
+            face.families
+                .iter()
+                .any(|(family, _)| family.eq_ignore_ascii_case(name))
+        });
+        if found {
+            db.set_sans_serif_family(*name);
+            return;
+        }
+    }
+    // Fallbacks often used as file-name-based families on Android.
+    // Even if family match fails, having faces loaded is enough for cosmic-text
+    // to pick *some* default; panic only happens when db is empty.
+}
+
+/// Max chars that can fit in [max_width] assuming ~1em CJK advance.
+fn estimated_max_chars(max_width: f32, font_size: f32) -> usize {
+    let em = font_size.max(1.0);
+    ((max_width / em).floor() as usize).max(1)
+}
+
+/// Byte offset after taking [n] Unicode scalars from [text].
+fn bytes_for_chars(text: &str, n: usize) -> usize {
+    text.chars().take(n).map(|c| c.len_utf8()).sum()
+}
+
 /// Measure how many UTF-8 bytes of `text` fit in `max_width` at the given style.
+///
+/// Hardened for Android/CJK: when the font has missing glyphs (0-width) or
+/// cosmic-text returns the whole paragraph as one run, fall back to em-based
+/// char truncation so we never emit a single TextLine longer than one visual row.
 fn measure_fit(
     font_system: &mut FontSystem,
     text: &str,
@@ -54,9 +149,14 @@ fn measure_fit(
     family: Family<'_>,
 ) -> (usize, f32, f32) {
     // Returns (byte_count, measured_width, line_height_px)
-    let metrics = Metrics::new(font_size, font_size * line_height);
+    let line_h = font_size * line_height.max(1.0);
+    if text.is_empty() {
+        return (0, 0.0, line_h);
+    }
+
+    let metrics = Metrics::new(font_size, line_h);
     let mut buffer = Buffer::new(font_system, metrics);
-    buffer.set_size(font_system, Some(max_width), None);
+    buffer.set_size(font_system, Some(max_width.max(1.0)), None);
     buffer.set_wrap(font_system, Wrap::WordOrGlyph);
     let attrs = Attrs::new().family(family);
     buffer.set_text(font_system, text, attrs, Shaping::Advanced);
@@ -64,43 +164,84 @@ fn measure_fit(
 
     // First layout line only — we re-feed remaining text each iteration
     let layout_lines: Vec<_> = buffer.layout_runs().collect();
-    if layout_lines.is_empty() {
-        return (0, 0.0, font_size * line_height);
-    }
-    let run = &layout_lines[0];
-    let line_h = if run.line_height > 0.0 {
-        run.line_height
-    } else {
-        font_size * line_height
-    };
-
-    // If everything fits on one layout line, consume all
-    if layout_lines.len() == 1 && run.glyphs.is_empty() && text.is_empty() {
-        return (0, 0.0, line_h);
-    }
-
-    // cosmic-text wraps for us when size is set; the first layout run is the first visual line.
-    // Byte range: use glyph end indices when available.
     let mut end_byte = 0usize;
     let mut width = 0.0f32;
-    for glyph in run.glyphs.iter() {
-        end_byte = glyph.end;
-        width = glyph.x + glyph.w;
+    let mut shaped_line_h = line_h;
+    if let Some(run) = layout_lines.first() {
+        if run.line_height > 0.0 {
+            shaped_line_h = run.line_height;
+        }
+        for glyph in run.glyphs.iter() {
+            end_byte = glyph.end;
+            width = glyph.x + glyph.w;
+        }
     }
-    if end_byte == 0 && !text.is_empty() {
-        // Fallback: take one char so we never infinite-loop
-        end_byte = text.chars().next().map(|c| c.len_utf8()).unwrap_or(1);
-        width = font_size; // rough
-    }
-    // Clamp to text length
+
     if end_byte > text.len() {
         end_byte = text.len();
     }
-    // Ensure we end on a char boundary
     while end_byte > 0 && !text.is_char_boundary(end_byte) {
         end_byte -= 1;
     }
-    (end_byte, width, line_h)
+
+    let max_chars = estimated_max_chars(max_width, font_size);
+    let char_count = if end_byte == 0 {
+        0
+    } else {
+        text[..end_byte].chars().count()
+    };
+
+    // Missing-glyph / broken shape: zero width but claimed many chars, or
+    // entire remaining paragraph as one "line" far beyond column capacity.
+    let broken = (width < font_size * 0.05 && char_count > 1)
+        || (char_count > max_chars.saturating_mul(2))
+        || (end_byte == 0 && !text.is_empty());
+
+    if broken {
+        let n = max_chars.min(text.chars().count()).max(1);
+        end_byte = bytes_for_chars(text, n);
+        width = (n as f32) * font_size;
+        return (end_byte, width.min(max_width), shaped_line_h);
+    }
+
+    if end_byte == 0 {
+        end_byte = text.chars().next().map(|c| c.len_utf8()).unwrap_or(1);
+        width = font_size;
+    }
+
+    // Full remainder claimed but still wider than column → force char wrap.
+    if end_byte >= text.len() && text.chars().count() > 1 {
+        let measured = measure_width(font_system, text, font_size, line_height, family);
+        if measured > max_width * 1.02 {
+            // Binary search largest char count that fits.
+            let total = text.chars().count();
+            let mut lo = 1usize;
+            let mut hi = total.min(max_chars.saturating_mul(2)).max(1);
+            while lo < hi {
+                let mid = (lo + hi + 1) / 2;
+                let b = bytes_for_chars(text, mid);
+                let w = measure_width(font_system, &text[..b], font_size, line_height, family);
+                if w <= max_width || mid == 1 {
+                    lo = mid;
+                } else {
+                    hi = mid - 1;
+                }
+            }
+            end_byte = bytes_for_chars(text, lo.max(1));
+            width = measure_width(
+                font_system,
+                &text[..end_byte],
+                font_size,
+                line_height,
+                family,
+            );
+            if width < font_size * 0.05 {
+                width = (lo as f32) * font_size;
+            }
+        }
+    }
+
+    (end_byte, width, shaped_line_h)
 }
 
 /// Measure width of an exact string (no wrap).
@@ -127,14 +268,20 @@ fn measure_width(
     width
 }
 
-pub fn paginate(input: &LayoutInput) -> Vec<TextPageOut> {
-    let mut font_system = FontSystem::new();
+pub fn paginate(input: &LayoutInput) -> Result<Vec<TextPageOut>, String> {
+    let mut font_system = FONT_SYSTEM.lock();
 
-    // Load optional custom font
+    // Load optional custom font (reader download path).
     if !input.font_path.is_empty() {
         if let Err(e) = font_system.db_mut().load_font_file(&input.font_path) {
             eprintln!("book_pager: failed to load font {}: {e}", input.font_path);
         }
+    }
+
+    if font_system.db().is_empty() {
+        return Err(
+            "no fonts available (Android: /system/fonts missing or empty)".into(),
+        );
     }
 
     let family_owned = input.font_family.clone();
@@ -243,12 +390,15 @@ pub fn paginate(input: &LayoutInput) -> Vec<TextPageOut> {
                 family,
             );
             let mut spacing = 0.0f32;
-            // full-justify when nearly full (matches Dart: tp.width > _width2)
-            if measured > _width2 && end > 0 {
-                // letterSpacing applied between glyphs; Dart uses (width - tp.width) / (textCount + 1)
-                // textCount was UTF-16-ish offset in Flutter; we use char count.
+            // full-justify when nearly full (matches Dart: tp.width > _width2).
+            // Skip when measured is nonsense (missing glyphs → 0 width).
+            if measured > _width2 && measured > size * 0.5 && end > 0 {
                 let text_count = text.chars().count().max(1) as f32;
                 spacing = (_width - measured) / (text_count + 1.0);
+                // Clamp pathological spacing from bad metrics.
+                if !spacing.is_finite() || spacing.abs() > size {
+                    spacing = 0.0;
+                }
             }
             lines.push(TextLineOut {
                 text,
@@ -279,7 +429,7 @@ pub fn paginate(input: &LayoutInput) -> Vec<TextPageOut> {
             height: 0.0,
         });
     }
-    pages
+    Ok(pages)
 }
 
 #[cfg(test)]
@@ -300,7 +450,8 @@ mod tests {
             should_justify_height: true,
             font_path: String::new(),
             font_family: "Roboto".into(),
-        });
+        })
+        .expect("paginate");
         assert_eq!(pages.len(), 1);
         assert!(pages[0].lines.is_empty());
     }
@@ -320,8 +471,51 @@ mod tests {
             should_justify_height: true,
             font_path: String::new(),
             font_family: "Roboto".into(),
-        });
+        })
+        .expect("paginate");
         assert!(pages.len() >= 1);
         assert!(!pages[0].lines.is_empty());
+        // Must soft-wrap: first visual line cannot be the entire chapter.
+        assert!(
+            pages[0].lines.len() > 1 || pages.len() > 1,
+            "expected multi-line or multi-page pagination"
+        );
+        let first = &pages[0].lines[0].text;
+        assert!(
+            first.chars().count() < 80,
+            "first line too long ({} chars): possible missing wrap",
+            first.chars().count()
+        );
+    }
+
+    #[test]
+    fn long_paragraph_wraps_to_many_lines() {
+        // Single paragraph without newlines — classic "only first line" repro.
+        let text = "山不在高有仙则名水不在深有龙则灵斯是陋室惟吾德馨苔痕上阶绿草色入帘青谈笑有鸿儒往来无白丁可以调素琴阅金经无丝竹之乱耳无案牍之劳形南阳诸葛庐西蜀子云亭孔子云何陋之有".repeat(10);
+        let pages = paginate(&LayoutInput {
+            text: text.clone(),
+            font_size: 19.0,
+            line_height: 1.7,
+            paragraph: 10.0,
+            box_width: 360.0,
+            box_height: 640.0,
+            padding_horizontal: 20.0,
+            padding_vertical: 0.0,
+            should_justify_height: true,
+            font_path: String::new(),
+            font_family: "Roboto".into(),
+        })
+        .expect("paginate");
+        let total_lines: usize = pages.iter().map(|p| p.lines.len()).sum();
+        assert!(total_lines > 5, "expected many lines, got {total_lines}");
+        for p in &pages {
+            for line in &p.lines {
+                assert!(
+                    line.text.chars().count() <= 40,
+                    "line too long: {} chars",
+                    line.text.chars().count()
+                );
+            }
+        }
     }
 }

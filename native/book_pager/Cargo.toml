@@ -2,7 +2,7 @@
 name = "book_pager"
 version = "0.1.0"
 edition = "2021"
-description = "Novel reader text pagination (TextComposition port) for Flutter"
+description = "爱看书 text pagination (TextComposition port) for Flutter"
 license = "Apache-2.0"
 
 [lib]

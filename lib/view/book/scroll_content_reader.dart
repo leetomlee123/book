@@ -1,0 +1,697 @@
+import 'dart:async';
+import 'dart:ui' as ui;
+
+import 'package:book/common/common.dart';
+import 'package:book/common/local_store.dart';
+import 'package:book/common/read_setting.dart';
+import 'package:book/entity/read_page.dart';
+import 'package:book/store/providers.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// One flattened page tile in the vertical scroll window.
+class _ScrollItem {
+  final int chapterIndex;
+  final int pageIndex;
+  final String chapterName;
+  final ReadPage readPage;
+  final double height;
+
+  const _ScrollItem({
+    required this.chapterIndex,
+    required this.pageIndex,
+    required this.chapterName,
+    required this.readPage,
+    required this.height,
+  });
+}
+
+/// Vertical continuous body reader (mode 3).
+///
+/// Open path loads cur±1 first, then attaches [ScrollController] with
+/// [initialScrollOffset] so restore never races maxScrollExtent clamping.
+/// Neighbor loads keep the same controller and correct the offset on prepend.
+class ScrollContentReader extends ConsumerStatefulWidget {
+  const ScrollContentReader({super.key});
+
+  @override
+  ConsumerState<ScrollContentReader> createState() =>
+      _ScrollContentReaderState();
+}
+
+class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
+  ScrollController? _controller;
+
+  final Map<int, ReadPage> _chapters = {};
+  List<_ScrollItem> _items = const [];
+  List<double> _offsets = const [];
+
+  int _windowStart = 0;
+  int _windowEnd = -1;
+
+  bool _bootstrapped = false;
+  bool _loadingNeighbor = false;
+  bool _disposed = false;
+  bool _restoreDone = false;
+
+  int _lastChapter = 0;
+  int _lastPage = 0;
+
+  /// Last model chapter we bootstrapped against; used to detect TOC jumps.
+  int? _syncedChapterIndex;
+
+  Offset? _downPos;
+  int? _activePointer;
+  static const double _tapSlop = 18;
+  static const double _edgePad = 20;
+
+  /// Pixels into the viewport used as the reading anchor when mapping
+  /// scroll offset → chapter/page.
+  static const double _progressInset = 96;
+
+  /// How far ahead the list builds (and thus paints) tiles.
+  // Prewarm handles ahead-of-viewport pictures; default ListView cache is fine.
+  static const int _prewarmRadius = 4;
+
+  int _prewarmToken = 0;
+
+  void _safeSetState(VoidCallback fn) {
+    if (_disposed || !mounted) return;
+    setState(fn);
+  }
+
+  void _log(String msg) {
+    if (kDebugMode) debugPrint('[ScrollRestore] $msg');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Allow ReadBook lifecycle save to force-sync visible page first.
+    ref.read(readModelProvider).scrollProgressSync = _forceSyncProgress;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  @override
+  void dispose() {
+    try {
+      final model = ref.read(readModelProvider);
+      if (identical(model.scrollProgressSync, _forceSyncProgress)) {
+        model.scrollProgressSync = null;
+      }
+      // Recompute while controller still has clients.
+      _applyVisibleProgress(force: true);
+      model.applyScrollProgress(_lastChapter, _lastPage);
+      model.scheduleProgressSave(delay: Duration.zero);
+      _log('dispose save cur=$_lastChapter page=$_lastPage');
+    } catch (_) {}
+    _disposed = true;
+    _prewarmToken++;
+    _controller?.removeListener(_onScroll);
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
+  void _forceSyncProgress() {
+    if (_disposed) {
+      try {
+        ref
+            .read(readModelProvider)
+            .applyScrollProgress(_lastChapter, _lastPage);
+      } catch (_) {}
+      return;
+    }
+    _applyVisibleProgress(force: true);
+  }
+
+  /// Drop local window so the next [_bootstrap] rebuilds around model progress.
+  void _resetForRebootstrap() {
+    _bootstrapped = false;
+    _syncedChapterIndex = null;
+    _restoreDone = false;
+    _loadingNeighbor = false;
+    _prewarmToken++;
+    _chapters.clear();
+    _items = const [];
+    _offsets = const [];
+    _windowStart = 0;
+    _windowEnd = -1;
+    _controller?.removeListener(_onScroll);
+    _controller?.dispose();
+    _controller = null;
+  }
+
+  Future<void> _bootstrap() async {
+    if (_disposed || !mounted || _bootstrapped) return;
+    final model = ref.read(readModelProvider);
+    final b = model.book;
+    if (b == null || !model.contentReady) {
+      _log(
+        'bootstrap wait contentReady=${model.contentReady} '
+        'sessionReady=${model.sessionReady} chapters=${model.chapters.length} '
+        'curPage=${model.curPage?.chapterName}',
+      );
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!_disposed && mounted && !_bootstrapped) _bootstrap();
+      });
+      return;
+    }
+
+    _bootstrapped = true;
+    final bookId = b.id;
+    final cur =
+        b.chapterIndex.clamp(0, model.chapters.isEmpty ? 0 : model.chapters.length - 1);
+    final pageIdx = b.pageIndex < 0 ? 0 : b.pageIndex;
+    _lastChapter = cur;
+    _lastPage = pageIdx;
+    _syncedChapterIndex = cur;
+    _restoreDone = false;
+    _log(
+      'bootstrap target cur=$cur page=$pageIdx chapters=${model.chapters.length}',
+    );
+
+    final live = model.curPage;
+    if (live != null &&
+        live.pages.isNotEmpty &&
+        live.chapterName != '加载中' &&
+        live.chapterName != '-1' &&
+        cur < model.chapters.length &&
+        live.chapterName == model.chapters[cur].title) {
+      _chapters[cur] = live;
+      _log('seeded live cur pages=${live.pages.length}');
+    }
+    if (!_chapters.containsKey(cur)) {
+      await _ensureChapter(cur);
+    }
+    if (_disposed || !mounted || model.book?.id != bookId) return;
+
+    // Load neighbors BEFORE first paint so initialScrollOffset is absolute
+    // against a stable window (no jumpTo / maxScrollExtent race).
+    if (cur > 0) {
+      await _ensureChapter(cur - 1);
+      if (_disposed || !mounted || model.book?.id != bookId) return;
+    }
+    if (cur + 1 < model.chapters.length) {
+      await _ensureChapter(cur + 1);
+      if (_disposed || !mounted || model.book?.id != bookId) return;
+    }
+
+    _rebuildItems();
+    if (_items.isEmpty) {
+      _log('bootstrap empty items — reset for retry');
+      _bootstrapped = false;
+      _chapters.clear();
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (!_disposed && mounted && !_bootstrapped) _bootstrap();
+      });
+      return;
+    }
+
+    final target = _indexOf(cur, pageIdx);
+    final initial = _scrollOffsetForItem(target);
+    _attachController(initial);
+    _lastChapter = cur;
+    _lastPage = pageIdx;
+    _restoreDone = true;
+    try {
+      model.applyScrollProgress(cur, pageIdx);
+      model.pruneScrollPictures(centerChapter: cur);
+    } catch (_) {}
+
+    _log(
+      'bootstrap ready items=${_items.length} '
+      'window=$_windowStart..$_windowEnd item=$target initial=$initial',
+    );
+    _safeSetState(() {});
+    _schedulePrewarm();
+  }
+
+  /// Create controller only for bootstrap / rebootstrap — never on neighbor load.
+  void _attachController(double initialOffset) {
+    _controller?.removeListener(_onScroll);
+    _controller?.dispose();
+    _controller = ScrollController(
+      initialScrollOffset: initialOffset < 0 ? 0 : initialOffset,
+    )..addListener(_onScroll);
+  }
+
+  Future<void> _ensureChapter(int idx) async {
+    if (_disposed || _chapters.containsKey(idx)) return;
+    final model = ref.read(readModelProvider);
+    _log('ensureChapter idx=$idx …');
+    final page = await model.loadScrollChapter(idx);
+    if (_disposed || !mounted) return;
+    if (page != null && page.pages.isNotEmpty) {
+      _chapters[idx] = page;
+      _log('ensureChapter idx=$idx pages=${page.pages.length}');
+    } else {
+      _log('ensureChapter idx=$idx FAILED page=${page?.chapterName}');
+    }
+  }
+
+  Future<void> _loadMore({required bool forward}) async {
+    if (_disposed || _loadingNeighbor || !_restoreDone) return;
+    _loadingNeighbor = true;
+    final holdChapter = _lastChapter;
+    final holdPage = _lastPage;
+    final c = _controller;
+    final oldOffset =
+        (c != null && c.hasClients) ? c.offset : 0.0;
+    // Content-space offset of the held page (excludes top padding).
+    final heldItemBefore = _indexOf(holdChapter, holdPage);
+    final heldContentBefore =
+        heldItemBefore >= 0 && heldItemBefore < _offsets.length
+            ? _offsets[heldItemBefore]
+            : 0.0;
+    try {
+      final model = ref.read(readModelProvider);
+      if (forward) {
+        final next = _windowEnd + 1;
+        if (next >= model.chapters.length) return;
+        await _ensureChapter(next);
+        if (_disposed || !mounted) return;
+        final drop = next - 2;
+        if (drop >= 0 && drop != holdChapter && _chapters.containsKey(drop)) {
+          _chapters.remove(drop);
+        }
+      } else {
+        final prev = _windowStart - 1;
+        if (prev < 0) return;
+        await _ensureChapter(prev);
+        if (_disposed || !mounted) return;
+        final drop = prev + 3;
+        if (drop != holdChapter && _chapters.containsKey(drop)) {
+          _chapters.remove(drop);
+        }
+      }
+
+      _rebuildItems();
+      final heldItemAfter = _indexOf(holdChapter, holdPage);
+      final heldContentAfter =
+          heldItemAfter >= 0 && heldItemAfter < _offsets.length
+              ? _offsets[heldItemAfter]
+              : 0.0;
+      final delta = heldContentAfter - heldContentBefore;
+
+      // Keep the same controller so fling/ballistics survive chapter edges.
+      // Prepend shifts content down → correctBy(delta). Append → delta≈0.
+      if (c != null && c.hasClients && delta.abs() > 0.5) {
+        c.position.correctBy(delta);
+      } else if (c != null && c.hasClients && !forward) {
+        // Fallback if held item vanished from window.
+        final target = _scrollOffsetForItem(heldItemAfter);
+        if ((c.offset - target).abs() > 1) {
+          c.jumpTo(target < 0 ? 0 : target);
+        }
+      } else if (c == null) {
+        // Should not happen mid-session; recover with a fresh controller.
+        final target = _scrollOffsetForItem(heldItemAfter);
+        _attachController(target);
+      } else {
+        // ignore unused oldOffset when delta is 0 (forward append)
+        assert(oldOffset >= 0);
+      }
+
+      _lastChapter = holdChapter;
+      _lastPage = holdPage;
+      try {
+        model.applyScrollProgress(holdChapter, holdPage);
+        model.pruneScrollPictures(centerChapter: holdChapter);
+      } catch (_) {}
+      _log(
+        'loadMore forward=$forward re-anchor cur=$holdChapter page=$holdPage '
+        'delta=$delta items=${_items.length}',
+      );
+      _safeSetState(() {});
+      _schedulePrewarm();
+    } finally {
+      _loadingNeighbor = false;
+    }
+  }
+
+  void _rebuildItems() {
+    final model = ref.read(readModelProvider);
+    if (_chapters.isEmpty) {
+      _items = const [];
+      _offsets = const [];
+      _windowStart = 0;
+      _windowEnd = -1;
+      return;
+    }
+    final keys = _chapters.keys.toList()..sort();
+    _windowStart = keys.first;
+    _windowEnd = keys.last;
+    final out = <_ScrollItem>[];
+    for (final c in keys) {
+      final rp = _chapters[c]!;
+      for (var p = 0; p < rp.pages.length; p++) {
+        out.add(_ScrollItem(
+          chapterIndex: c,
+          pageIndex: p,
+          chapterName: rp.chapterName,
+          readPage: rp,
+          height: model.scrollPageHeight(rp, p),
+        ));
+      }
+    }
+    _items = out;
+    final offsets = List<double>.filled(_items.length, 0);
+    var acc = 0.0;
+    for (var i = 0; i < _items.length; i++) {
+      offsets[i] = acc;
+      acc += _items[i].height;
+    }
+    _offsets = offsets;
+  }
+
+  int _indexOf(int chapter, int page) {
+    for (var i = 0; i < _items.length; i++) {
+      final it = _items[i];
+      if (it.chapterIndex == chapter && it.pageIndex == page) return i;
+    }
+    var first = -1;
+    var last = -1;
+    for (var i = 0; i < _items.length; i++) {
+      if (_items[i].chapterIndex == chapter) {
+        if (first < 0) first = i;
+        last = i;
+      }
+    }
+    if (first >= 0) {
+      return first + page.clamp(0, last - first);
+    }
+    return 0;
+  }
+
+  double _scrollOffsetForItem(int index) {
+    if (_items.isEmpty) return 0;
+    final i = index.clamp(0, _items.length - 1);
+    return _edgePad + _offsets[i];
+  }
+
+  /// Map a y position in list content space (padding excluded) to item index.
+  int _itemAtContentY(double contentY) {
+    if (_items.isEmpty) return 0;
+    final y = contentY.clamp(0.0, double.infinity);
+    var lo = 0;
+    var hi = _items.length - 1;
+    while (lo < hi) {
+      final mid = (lo + hi + 1) >> 1;
+      if (_offsets[mid] <= y) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return lo;
+  }
+
+  void _onScroll() {
+    final c = _controller;
+    if (_loadingNeighbor ||
+        !_restoreDone ||
+        c == null ||
+        !c.hasClients ||
+        _items.isEmpty) {
+      return;
+    }
+    _maybeLoadNeighbors();
+    // Keep model indices current every frame; disk write is still debounced
+    // in ReadingProgressStore (800ms).
+    _applyVisibleProgress();
+  }
+
+  void _maybeLoadNeighbors() {
+    final c = _controller;
+    if (_loadingNeighbor ||
+        !_restoreDone ||
+        c == null ||
+        !c.hasClients ||
+        _items.isEmpty) {
+      return;
+    }
+    final pos = c.position;
+    final model = ref.read(readModelProvider);
+    if (pos.maxScrollExtent - pos.pixels < 800 &&
+        _windowEnd + 1 < model.chapters.length) {
+      unawaited(_loadMore(forward: true));
+    } else if (pos.pixels < 800 && _windowStart > 0) {
+      unawaited(_loadMore(forward: false));
+    }
+  }
+
+  void _applyVisibleProgress({bool force = false}) {
+    final c = _controller;
+    if (_items.isEmpty || !_restoreDone) return;
+    // While neighbors load we re-anchor the controller; skip mid-rebuild noise
+    // unless caller is forcing a lifecycle/exit snapshot.
+    if (_loadingNeighbor && !force) return;
+    if (_disposed || c == null || !c.hasClients) return;
+
+    final contentY = c.offset - _edgePad + _progressInset;
+    final i = _itemAtContentY(contentY);
+    if (i < 0 || i >= _items.length) return;
+    final it = _items[i];
+    if (!force &&
+        it.chapterIndex == _lastChapter &&
+        it.pageIndex == _lastPage) {
+      return;
+    }
+    final chapterChanged = it.chapterIndex != _lastChapter;
+    _lastChapter = it.chapterIndex;
+    _lastPage = it.pageIndex;
+    _syncedChapterIndex = it.chapterIndex;
+    try {
+      final model = ref.read(readModelProvider);
+      model.applyScrollProgress(it.chapterIndex, it.pageIndex);
+      if (force) model.scheduleProgressSave(delay: Duration.zero);
+      if (chapterChanged) {
+        model.pruneScrollPictures(centerChapter: it.chapterIndex);
+      }
+    } catch (_) {}
+    if (!force) _schedulePrewarm();
+  }
+
+  /// Paint nearby tiles into picture cache off the critical path.
+  void _schedulePrewarm() {
+    if (_disposed || !_restoreDone || _items.isEmpty) return;
+    final token = ++_prewarmToken;
+    final center = _indexOf(_lastChapter, _lastPage);
+    final targets = <int>[];
+    for (var d = 1; d <= _prewarmRadius; d++) {
+      final next = center + d;
+      final prev = center - d;
+      if (next < _items.length) targets.add(next);
+      if (prev >= 0) targets.add(prev);
+    }
+    if (targets.isEmpty) return;
+
+    var i = 0;
+    void slice(Duration _) {
+      if (_disposed || token != _prewarmToken) return;
+      // Budget a few tiles per frame to avoid a long stall.
+      const budget = 2;
+      var painted = 0;
+      final model = ref.read(readModelProvider);
+      while (i < targets.length && painted < budget) {
+        final idx = targets[i++];
+        if (idx < 0 || idx >= _items.length) continue;
+        final it = _items[idx];
+        try {
+          model.scrollPagePicture(it.chapterIndex, it.pageIndex, it.readPage);
+        } catch (_) {}
+        painted++;
+      }
+      if (i < targets.length && !_disposed && token == _prewarmToken) {
+        SchedulerBinding.instance.scheduleFrameCallback(slice);
+      }
+    }
+
+    SchedulerBinding.instance.scheduleFrameCallback(slice);
+  }
+
+  void _onPointerDown(PointerDownEvent e) {
+    _activePointer = e.pointer;
+    _downPos = e.localPosition;
+  }
+
+  void _onPointerUp(PointerUpEvent e) {
+    if (e.pointer != _activePointer) return;
+    final down = _downPos;
+    _activePointer = null;
+    _downPos = null;
+    if (down == null) return;
+    if ((e.localPosition - down).distance > _tapSlop) return;
+    final size = MediaQuery.sizeOf(context);
+    final x = e.localPosition.dx;
+    final y = e.localPosition.dy;
+    if (x > size.width / 3 && x < 2 * size.width / 3 && y < size.height * 0.75) {
+      ref.read(readModelProvider).toggleShowMenu();
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent e) {
+    if (e.pointer != _activePointer) return;
+    _activePointer = null;
+    _downPos = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final paperTheme = ref.watch(
+      readModelProvider.select((m) => m.paperTheme),
+    );
+    final loadingHint = ref.watch(
+      readModelProvider.select((m) => m.loadingHint),
+    );
+    final contentReady = ref.watch(
+      readModelProvider.select((m) => m.contentReady),
+    );
+    final modelChapter = ref.watch(
+      readModelProvider.select((m) => m.book?.chapterIndex),
+    );
+    final dark = paperTheme == PaperTheme.night ||
+        SpUtil.getBool(PrefsKeys.dark, defValue: false);
+    final paper = ReadSetting.paperColor(
+      dark ? PaperTheme.night : paperTheme,
+    );
+    final meta = ReadSetting.metaColor(
+      dark ? PaperTheme.night : paperTheme,
+    );
+
+    // openChapterAt / switchSource update model chapterIndex without rebuilding
+    // this State; rebootstrap when the jump was not driven by our scroll progress.
+    if (_bootstrapped &&
+        contentReady &&
+        modelChapter != null &&
+        _syncedChapterIndex != null &&
+        modelChapter != _syncedChapterIndex) {
+      final jumpTo = modelChapter;
+      _log(
+        'chapter jump model=$jumpTo synced=$_syncedChapterIndex — rebootstrap',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_disposed || !mounted) return;
+        if (!_bootstrapped) return;
+        final still = ref.read(readModelProvider).book?.chapterIndex;
+        if (still != jumpTo) return;
+        if (still == _syncedChapterIndex) return;
+        _resetForRebootstrap();
+        _bootstrap();
+      });
+    }
+
+    if (contentReady && !_bootstrapped && !_disposed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_disposed && mounted && !_bootstrapped) _bootstrap();
+      });
+    }
+
+    final c = _controller;
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: ColoredBox(
+        color: paper,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (n) {
+            if (n is ScrollEndNotification && _restoreDone) {
+              _applyVisibleProgress(force: true);
+              _maybeLoadNeighbors();
+              _schedulePrewarm();
+            }
+            return false;
+          },
+          child: (_items.isEmpty || c == null)
+              ? Center(
+                  child: Text(
+                    loadingHint.isNotEmpty ? loadingHint : '正在加载…',
+                    style: TextStyle(color: meta, fontSize: 15),
+                  ),
+                )
+              : ListView.builder(
+                  controller: c,
+                  padding: const EdgeInsets.only(
+                    top: _edgePad,
+                    bottom: _edgePad,
+                  ),
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  itemCount: _items.length,
+                  itemExtentBuilder: (index, _) {
+                    if (index < 0 || index >= _items.length) return null;
+                    return _items[index].height;
+                  },
+                  findChildIndexCallback: (Key key) {
+                    if (key is! ValueKey<String>) return null;
+                    final parts = key.value.split(':');
+                    if (parts.length != 2) return null;
+                    final ch = int.tryParse(parts[0]);
+                    final pg = int.tryParse(parts[1]);
+                    if (ch == null || pg == null) return null;
+                    final idx = _indexOf(ch, pg);
+                    if (idx < 0 || idx >= _items.length) return null;
+                    final it = _items[idx];
+                    if (it.chapterIndex != ch || it.pageIndex != pg) return null;
+                    return idx;
+                  },
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    return _ScrollPageTile(
+                      key: ValueKey('${item.chapterIndex}:${item.pageIndex}'),
+                      item: item,
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScrollPageTile extends ConsumerWidget {
+  final _ScrollItem item;
+  const _ScrollPageTile({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final model = ref.read(readModelProvider);
+    final pic = model.scrollPagePicture(
+      item.chapterIndex,
+      item.pageIndex,
+      item.readPage,
+    );
+    return SizedBox(
+      height: item.height,
+      width: double.infinity,
+      child: pic == null
+          ? const SizedBox.shrink()
+          : CustomPaint(
+              painter: _PicturePainter(pic),
+              isComplex: true,
+              willChange: false,
+              child: const SizedBox.expand(),
+            ),
+    );
+  }
+}
+
+class _PicturePainter extends CustomPainter {
+  final ui.Picture picture;
+  _PicturePainter(this.picture);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPicture(picture);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PicturePainter oldDelegate) =>
+      oldDelegate.picture != picture;
+}

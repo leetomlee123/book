@@ -1,0 +1,214 @@
+# Build release APK and optionally publish a GitHub Release.
+#
+# Triggers:
+#   - Tag push: v1.2.3  → build + create release with APK
+#   - workflow_dispatch → manual build (version inputs)
+#   - repository_dispatch type "starred" → legacy compatibility
+#   - push to master/main → build artifact only (no release)
+#
+# Optional signing secrets (recommended for store builds):
+#   ANDROID_KEYSTORE_BASE64  — base64 of the .jks / .keystore file
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+# If any secret is missing, release falls back to debug signing (same as local).
+name: Build APK
+
+on:
+  push:
+    branches: [master, main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: 'versionName (e.g. 1.0.0)'
+        required: false
+        default: '1.0.0'
+      build_number:
+        description: 'versionCode (integer)'
+        required: false
+        default: '1'
+      abi:
+        description: 'Target ABI set'
+        required: false
+        default: 'arm64'
+        type: choice
+        options:
+          - arm64
+          - all
+      obfuscate:
+        description: 'Obfuscate Dart (writes symbols under HLQ_Struggle/)'
+        required: false
+        default: true
+        type: boolean
+  repository_dispatch:
+    types: [starred]
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            # Accept v1.2.3 or v1.2.3+45
+            NAME="${TAG%%+*}"
+            if [[ "${TAG}" == *+* ]]; then
+              NUMBER="${TAG##*+}"
+            else
+              # GitHub run number as monotonic build code for plain tags.
+              NUMBER="${GITHUB_RUN_NUMBER}"
+            fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            NAME="${{ github.event.inputs.build_name }}"
+            NUMBER="${{ github.event.inputs.build_number }}"
+          else
+            NAME="1.0.0"
+            NUMBER="${GITHUB_RUN_NUMBER}"
+          fi
+          echo "build_name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "build_number=${NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "Resolved versionName=${NAME} versionCode=${NUMBER}"
+
+      - name: Decode keystore (optional)
+        id: sign
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${KEYSTORE_BASE64:-}" && -n "${STORE_PASSWORD:-}" && -n "${KEY_ALIAS:-}" && -n "${KEY_PASSWORD:-}" ]]; then
+            echo "${KEYSTORE_BASE64}" | base64 -d > android/app/key.jks
+            {
+              echo "storePassword=${STORE_PASSWORD}"
+              echo "keyPassword=${KEY_PASSWORD}"
+              echo "keyAlias=${KEY_ALIAS}"
+              echo "storeFile=key.jks"
+            } > android/key.properties
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Release signing configured from secrets."
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "Signing secrets incomplete — APK will use debug signing fallback."
+          fi
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build APK
+        id: apk
+        shell: bash
+        env:
+          BUILD_NAME: ${{ steps.ver.outputs.build_name }}
+          BUILD_NUMBER: ${{ steps.ver.outputs.build_number }}
+          ABI: ${{ github.event.inputs.abi || 'arm64' }}
+          OBFUSCATE: ${{ github.event.inputs.obfuscate || 'true' }}
+        run: |
+          set -euo pipefail
+          ARGS=(apk --release --build-name="${BUILD_NAME}" --build-number="${BUILD_NUMBER}")
+
+          if [[ "${ABI}" == "arm64" ]]; then
+            ARGS+=(--target-platform android-arm64 --split-per-abi)
+          else
+            ARGS+=(--split-per-abi)
+          fi
+
+          if [[ "${OBFUSCATE}" == "true" ]]; then
+            mkdir -p HLQ_Struggle
+            ARGS+=(--obfuscate --split-debug-info=HLQ_Struggle)
+          fi
+
+          # Optional SKSL warm-up if present in repo.
+          if [[ -f flutter_01.sksl.json ]]; then
+            ARGS+=(--bundle-sksl-path flutter_01.sksl.json)
+          fi
+
+          echo "flutter build ${ARGS[*]}"
+          flutter build "${ARGS[@]}"
+
+          OUT_DIR=build/app/outputs/flutter-apk
+          ls -la "${OUT_DIR}"
+          # Prefer arm64 split artifact; fall back to fat APK.
+          if [[ -f "${OUT_DIR}/app-arm64-v8a-release.apk" ]]; then
+            echo "apk_path=${OUT_DIR}/app-arm64-v8a-release.apk" >> "$GITHUB_OUTPUT"
+            echo "apk_name=aikanshu-${BUILD_NAME}+${BUILD_NUMBER}-arm64-v8a.apk" >> "$GITHUB_OUTPUT"
+          elif [[ -f "${OUT_DIR}/app-release.apk" ]]; then
+            echo "apk_path=${OUT_DIR}/app-release.apk" >> "$GITHUB_OUTPUT"
+            echo "apk_name=aikanshu-${BUILD_NAME}+${BUILD_NUMBER}-release.apk" >> "$GITHUB_OUTPUT"
+          else
+            # Upload whatever APKs exist.
+            echo "apk_path=${OUT_DIR}" >> "$GITHUB_OUTPUT"
+            echo "apk_name=flutter-apk" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.apk_name }}
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            HLQ_Struggle/**
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Prepare release asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: asset
+        shell: bash
+        env:
+          SRC: ${{ steps.apk.outputs.apk_path }}
+          NAME: ${{ steps.apk.outputs.apk_name }}
+        run: |
+          set -euo pipefail
+          if [[ -d "${SRC}" ]]; then
+            # Multiple APKs — zip them.
+            ZIP="aikanshu-${{ steps.ver.outputs.build_name }}+${{ steps.ver.outputs.build_number }}.zip"
+            (cd build/app/outputs/flutter-apk && zip -9 "../../../../../${ZIP}" ./*.apk)
+            echo "path=${ZIP}" >> "$GITHUB_OUTPUT"
+            echo "name=${ZIP}" >> "$GITHUB_OUTPUT"
+          else
+            cp "${SRC}" "${NAME}"
+            echo "path=${NAME}" >> "$GITHUB_OUTPUT"
+            echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 爱看书 ${{ steps.ver.outputs.build_name }}
+          generate_release_notes: true
+          files: ${{ steps.asset.outputs.path }}
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -40,7 +40,18 @@ class AnalyzeRule {
   }
 
   /// Get a list of elements/nodes for list rules (bookList / chapterList).
+  /// Supports `||` alternatives: first non-empty wins.
   List<dynamic> getList(String rule) {
+    if (rule.isEmpty) return const [];
+
+    for (final alt in _splitAlternatives(rule)) {
+      final list = _getListSingle(alt);
+      if (list.isNotEmpty) return list;
+    }
+    return const [];
+  }
+
+  List<dynamic> _getListSingle(String rule) {
     if (rule.isEmpty) return const [];
 
     // Pure JS list rule
@@ -71,12 +82,23 @@ class AnalyzeRule {
     if (parsed.kind == _RuleKind.regex) {
       return RegexAnalyzer.getList(content, parsed.selector);
     }
-    // CSS default
+    // CSS / Jsoup-normalized default
     return CssAnalyzer.getElements(doc, parsed.selector);
   }
 
   /// Extract a single string from [scope] (Element, Map, String, or full content).
+  /// Supports `||` alternatives: first non-empty wins.
   String getString(String rule, {dynamic scope}) {
+    if (rule.isEmpty) return '';
+
+    for (final alt in _splitAlternatives(rule)) {
+      final v = _getStringSingle(alt, scope: scope);
+      if (v.isNotEmpty) return v;
+    }
+    return '';
+  }
+
+  String _getStringSingle(String rule, {dynamic scope}) {
     if (rule.isEmpty) return '';
 
     // All-in-one: rule##regex##replace  (but not inside JS code)
@@ -112,8 +134,9 @@ class AnalyzeRule {
     }
 
     // Hybrid: CSS/JSON first then trailing <js>
-    final jsEmbed = RegExp(r'([\s\S]*?)<js>([\s\S]*?)</js>', caseSensitive: false)
-        .firstMatch(r);
+    final jsEmbed =
+        RegExp(r'([\s\S]*?)<js>([\s\S]*?)</js>', caseSensitive: false)
+            .firstMatch(r);
     if (jsEmbed != null) {
       final head = (jsEmbed.group(1) ?? '').trim();
       final code = (jsEmbed.group(2) ?? '').trim();
@@ -141,6 +164,21 @@ class AnalyzeRule {
       );
     } else if (scope is Element) {
       result = CssAnalyzer.getString(scope, parsed.selector, parsed.attr);
+      // Bare attr on current element already handled (empty selector).
+      // If a *child* selector missed:
+      // - recover href/src from nested <a>/<img> (common toc/list rules)
+      // - do NOT fall back to scope.text for text/ownText — that dumps the
+      //   whole list-item (title+author+intro) and poisons author/name fields.
+      if (result.isEmpty && parsed.selector.isNotEmpty) {
+        if (parsed.attr == 'href' || parsed.attr == 'src') {
+          final a = scope.localName == 'a'
+              ? scope
+              : scope.querySelector('a');
+          if (a != null) {
+            result = a.attributes[parsed.attr] ?? '';
+          }
+        }
+      }
     } else if (scope is Map || scope is List || (isJson && scope == null)) {
       final root = scope ?? jsonRoot;
       result = JsonAnalyzer.getString(root, parsed.selector);
@@ -185,18 +223,27 @@ class AnalyzeRule {
     if (JsEngine.needsJs(rule)) {
       return getString(rule, scope: scope);
     }
-    final parsed = _parseRule(rule);
-    if (scope is Element) {
-      if (parsed.selector.isEmpty) {
-        return scope.innerHtml;
+    for (final alt in _splitAlternatives(rule)) {
+      final parsed = _parseRule(alt);
+      if (scope is Element) {
+        if (parsed.selector.isEmpty) {
+          final v = scope.innerHtml;
+          if (v.isNotEmpty) return v;
+          continue;
+        }
+        final els = CssAnalyzer.getElementsFrom(scope, parsed.selector);
+        if (els.isEmpty) continue;
+        return els.map((e) => e.innerHtml).join('\n');
       }
-      final els = scope.querySelectorAll(parsed.selector);
-      if (els.isEmpty) return '';
+      final els = CssAnalyzer.getElements(doc, parsed.selector);
+      if (els.isEmpty) {
+        final v = getString(alt, scope: scope);
+        if (v.isNotEmpty) return v;
+        continue;
+      }
       return els.map((e) => e.innerHtml).join('\n');
     }
-    final els = CssAnalyzer.getElements(doc, parsed.selector);
-    if (els.isEmpty) return getString(rule, scope: scope);
-    return els.map((e) => e.innerHtml).join('\n');
+    return '';
   }
 
   String _scopeToText(dynamic scope) {
@@ -213,12 +260,20 @@ class AnalyzeRule {
     return scope.toString();
   }
 
+  /// Split Legado `||` alternatives, ignoring `||` inside JS blocks.
+  List<String> _splitAlternatives(String rule) {
+    final r = rule.trim();
+    if (r.isEmpty) return const [];
+    if (JsEngine.needsJs(r) || !r.contains('||')) return [r];
+    return r
+        .split('||')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
   _ParsedRule _parseRule(String rule) {
     var r = rule.trim();
-    // Take first alternative after || (M1: first only) — skip if pure JS
-    if (!JsEngine.needsJs(r) && r.contains('||')) {
-      r = r.split('||').first.trim();
-    }
     if (r.startsWith('@js:')) {
       return _ParsedRule(_RuleKind.js, r.substring(4).trim(), '');
     }
@@ -240,22 +295,23 @@ class AnalyzeRule {
       // XPath not implemented — treat as empty
       return _ParsedRule(_RuleKind.css, '', '');
     }
-    // Bare attribute on current element: text / href / src / html
-    if (_knownAttrs.contains(r) || r.startsWith('data-')) {
-      final attr =
-          (r == 'text' || r == 'textNodes' || r == 'ownText') ? 'text' : r;
-      return _ParsedRule(isJson ? _RuleKind.json : _RuleKind.css, '', attr);
+    // Bare attribute on current element: text / href / @text / @href / data-xxx
+    final bare = r.startsWith('@') ? r.substring(1) : r;
+    if (_knownAttrs.contains(bare) || bare.startsWith('data-')) {
+      // Keep textNodes / ownText distinct — CssAnalyzer implements them
+      // differently from full descendant text.
+      return _ParsedRule(isJson ? _RuleKind.json : _RuleKind.css, '', bare);
     }
     // Default CSS; allow trailing @text / @href / @src / @html / @data-xxx
     return _splitAttr(r, isJson ? _RuleKind.json : _RuleKind.css);
   }
 
   _ParsedRule _splitAttr(String r, _RuleKind kind) {
-    // selector@href  or selector@text
+    // selector@href  or selector@text  (last segment only when it is an attr)
     final at = r.lastIndexOf('@');
     if (at > 0) {
       final attr = r.substring(at + 1).trim();
-      // avoid treating email-like as attr; common attrs only
+      // avoid treating email-like / tag.a as attr; common attrs only
       if (_knownAttrs.contains(attr) ||
           attr.startsWith('data-') ||
           attr == 'html') {

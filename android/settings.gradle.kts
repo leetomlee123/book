@@ -23,6 +23,9 @@ plugins {
     // Kotlin is built into AGP 9+; keep the plugin available for plugins that
     // still declare KGP, but the app module no longer applies it.
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
+    // Firebase (Analytics + Crashlytics)
+    id("com.google.gms.google-services") version "4.4.3" apply false
+    id("com.google.firebase.crashlytics") version "3.0.6" apply false
 }
 
 include(":app")

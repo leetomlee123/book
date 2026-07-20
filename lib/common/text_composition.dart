@@ -2,16 +2,13 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:ui' as ui;
 
-import 'package:book/common/ReadSetting.dart';
-import 'package:book/common/Screen.dart';
+import 'package:book/common/read_setting.dart';
+import 'package:book/common/screen.dart';
 import 'package:book/common/app_log.dart';
 import 'package:book/common/book_pager.dart';
-import 'package:book/common/common.dart';
-import 'package:book/entity/ReadPage.dart';
-import 'package:book/entity/TextLine.dart';
-import 'package:book/entity/TextPage.dart';
-import 'package:book/common/local_store.dart';
-import 'package:flutter/foundation.dart';
+import 'package:book/entity/read_page.dart';
+import 'package:book/entity/text_line.dart';
+import 'package:book/entity/text_page.dart';
 import 'package:flutter/material.dart';
 
 /// * 暂不支持图片
@@ -118,28 +115,28 @@ class TextComposition {
                         : const Size(360, 640)))
                 .width -
             (padding?.horizontal ?? 0)) {
-    // [_width2] [_height2] 用于调整判断
+    // [width2] [height2] 用于调整判断
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
     final offset = Offset(columnWidth, 1);
     final size = style?.fontSize ?? 14;
-    final _dx = padding?.left ?? 0;
-    final _dy = padding?.top ?? 0;
-    final _width = columnWidth;
-    final _width2 = _width - size;
-    final _height = this.boxSize.height - (padding?.vertical ?? 0);
-    final _height2 = _height - size * (style?.height ?? 1.0);
+    final originDx = padding?.left ?? 0;
+    final originDy = padding?.top ?? 0;
+    final width = columnWidth;
+    final width2 = width - size;
+    final height = this.boxSize.height - (padding?.vertical ?? 0);
+    final height2 = height - size * (style?.height ?? 1.0);
 
     var lines = <TextLine>[];
     var columnNum = 1;
-    var dx = _dx;
-    var dy = _dy;
+    var dx = originDx;
+    var dy = originDy;
     var startLine = 0;
 
-    /// 下一页 判断分页 依据: `_boxHeight` `_boxHeight2`是否可以容纳下一行
+    /// 下一页 判断分页 依据: height / height2 是否可以容纳下一行
     void newPage([bool shouldJustifyHeight = true, bool lastPage = false]) {
       if (shouldJustifyHeight && this.shouldJustifyHeight) {
         final len = lines.length - startLine;
-        double justify = (_height - dy) / (len - 1);
+        double justify = (height - dy) / (len - 1);
         for (var i = 0; i < len; i++) {
           lines[i + startLine].justifyDy(justify * i);
         }
@@ -148,18 +145,18 @@ class TextComposition {
         this.pages.add(TextPage(lines, dy));
         lines = <TextLine>[];
         columnNum = 1;
-        dx = _dx;
+        dx = originDx;
       } else {
         columnNum++;
         dx += columnWidth + 40;
       }
-      dy = _dy;
+      dy = originDy;
       startLine = lines.length;
     }
 
     /// 新段落
     void newParagraph() {
-      if (dy > _height2) {
+      if (dy > height2) {
         newPage();
       } else {
         dy += paragraph;
@@ -173,10 +170,10 @@ class TextComposition {
         final textCount = tp.getPositionForOffset(offset).offset;
         double? spacing;
         final text = p.substring(0, textCount);
-        if (tp.width > _width2) {
+        if (tp.width > width2) {
           // tp.text = TextSpan(text: text, style: style);
           // tp.layout();
-          spacing = (_width - tp.width) / (textCount + 1);
+          spacing = (width - tp.width) / (textCount + 1);
         }
         // if (tp.width > _width2) {
         //   tp.text = TextSpan(text: text, style: style);
@@ -190,7 +187,7 @@ class TextComposition {
           break;
         } else {
           p = p.substring(textCount);
-          if (dy > _height2) {
+          if (dy > height2) {
             newPage();
           }
         }
@@ -199,13 +196,9 @@ class TextComposition {
     if (lines.isNotEmpty) {
       newPage(false, true);
     }
-    if (this.pages.length == 0) {
+    if (this.pages.isEmpty) {
       this.pages.add(TextPage([], 0));
     }
-    print("_height $_height _height2 $_height2");
-    this.pages.forEach((element) {
-      print(element.height);
-    });
   }
 
   /// 调试模式 输出布局信息
@@ -261,16 +254,23 @@ class TextComposition {
   }) {
     final fontSize = ReadSetting.getFontSize();
     final lineHeight = ReadSetting.getLineHeight();
+    // Content box uses shared insets from ReadSetting so paint + paginate match.
+    // Never allow a non-positive height — that collapses pagination to one line.
+    final topPad = ReadSetting.contentTopInset();
+    final bottomPad = ReadSetting.contentBottomInset();
+    final rawH = Screen.height - topPad - bottomPad;
+    final boxH =
+        rawH > 120 ? rawH : (Screen.height * 0.7).clamp(200.0, 2000.0);
+    final boxW = Screen.width > 0 ? Screen.width : 360.0;
     return <String, dynamic>{
       'fontSize': fontSize,
       'lineHeight': lineHeight,
       'paragraph': ReadSetting.getParagraph() * fontSize * lineHeight,
       'padH': ReadSetting.getPageDis().toDouble(),
-      'boxW': Screen.width,
-      'boxH': Screen.height -
-          (30 + SpUtil.getDouble(Common.top_safe_height)) * 2 -
-          Screen.bottomSafeHeight,
-      'fontFamily': SpUtil.getString("fontName", defValue: "Roboto"),
+      'boxW': boxW,
+      'boxH': boxH,
+      'fontFamily': ReadSetting.getFontFamily(),
+      'fontPath': ReadSetting.getFontPath(),
       'shouldJustifyHeight': shouldJustifyHeight,
     };
   }
@@ -294,10 +294,29 @@ class TextComposition {
     final boxW = p['boxW'] as double;
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
+    final fontPath = p['fontPath'] as String? ?? '';
 
-    if (BookPager.isAvailable) {
+    final nativeOk = BookPager.isAvailable;
+    // Always print engine probe so real-device logcat can filter "PagerEngine".
+    debugPrint(
+      '[PagerEngine] probe native=$nativeOk '
+      'err=${BookPager.lastError ?? "-"} '
+      'contentLen=${readPage.chapterContent.length} '
+      'box=${boxW.toStringAsFixed(0)}x${boxH.toStringAsFixed(0)} '
+      'font=$fontSize',
+    );
+    AppLog.i(
+      'Pager',
+      'layout boxW=$boxW boxH=$boxH fontSize=$fontSize '
+          'lineHeight=$lineHeight padH=$padH family=$fontFamily '
+          'fontPath=${fontPath.isEmpty ? "-" : fontPath} '
+          'contentLen=${readPage.chapterContent.length} '
+          'native=$nativeOk err=${BookPager.lastError ?? "-"}',
+    );
+
+    if (nativeOk) {
       try {
-        return await BookPager.paginateAsync(
+        final pages = await BookPager.paginateAsync(
           text: readPage.chapterContent,
           fontSize: fontSize,
           lineHeight: lineHeight,
@@ -307,17 +326,51 @@ class TextComposition {
           paddingHorizontal: padH,
           paddingVertical: 0,
           shouldJustifyHeight: shouldJustifyHeight,
+          fontPath: fontPath,
           fontFamily: fontFamily,
         );
+        final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
+        if (!_looksBrokenPagination(
+            pages, readPage.chapterContent, boxW, fontSize)) {
+          debugPrint(
+            '[PagerEngine] ENGINE=RUST pages=${pages.length} '
+            'lines=$totalLines lines0=${pages.isEmpty ? 0 : pages.first.lines.length}',
+          );
+          AppLog.i(
+            'Pager',
+            'ENGINE=RUST pages=${pages.length} totalLines=$totalLines '
+                'lines0=${pages.isEmpty ? 0 : pages.first.lines.length}',
+          );
+          return pages;
+        }
+        debugPrint(
+          '[PagerEngine] ENGINE=DART reason=rust_broken_pagination '
+          'pages=${pages.length} lines=$totalLines',
+        );
+        AppLog.w(
+          'Pager',
+          'ENGINE=DART reason=rust_broken (single overlong line) '
+              'pages=${pages.length} lines=$totalLines',
+        );
       } catch (e, st) {
-        AppLog.w('Pager', 'BookPager async failed, Dart fallback', error: e);
+        debugPrint('[PagerEngine] ENGINE=DART reason=rust_exception $e');
+        AppLog.w('Pager', 'ENGINE=DART reason=rust_exception', error: e);
         debugPrint('BookPager async failed, falling back to Dart: $e\n$st');
       }
+    } else {
+      debugPrint(
+        '[PagerEngine] ENGINE=DART reason=native_unavailable '
+        'err=${BookPager.lastError ?? "-"}',
+      );
+      AppLog.i(
+        'Pager',
+        'ENGINE=DART reason=native_unavailable err=${BookPager.lastError ?? "-"}',
+      );
     }
 
     // Yield once so loading UI can paint before heavy TextPainter work.
     await Future<void>.delayed(Duration.zero);
-    return _dartParse(
+    final dartPages = _dartParse(
       readPage,
       fontSize: fontSize,
       lineHeight: lineHeight,
@@ -329,6 +382,38 @@ class TextComposition {
       shouldJustifyHeight: shouldJustifyHeight,
       justRender: justRender,
     );
+    final dartLines = dartPages.fold<int>(0, (n, p) => n + p.lines.length);
+    debugPrint(
+      '[PagerEngine] ENGINE=DART pages=${dartPages.length} lines=$dartLines',
+    );
+    AppLog.i(
+      'Pager',
+      'ENGINE=DART pages=${dartPages.length} totalLines=$dartLines '
+          'lines0=${dartPages.isEmpty ? 0 : dartPages.first.lines.length}',
+    );
+    return dartPages;
+  }
+
+  /// Detect "whole chapter as one TextLine" failure mode from native pager.
+  static bool _looksBrokenPagination(
+    List<TextPage> pages,
+    String content,
+    double boxW,
+    double fontSize,
+  ) {
+    if (content.trim().length < 40) return false;
+    if (pages.isEmpty) return true;
+    final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
+    if (totalLines == 0) return true;
+    // One visual line for a long chapter is always wrong.
+    if (totalLines == 1 && content.trim().length > 60) return true;
+    final maxChars = (boxW / (fontSize * 0.85)).floor().clamp(8, 200);
+    for (final p in pages) {
+      for (final line in p.lines) {
+        if (line.text.characters.length > maxChars * 2) return true;
+      }
+    }
+    return false;
   }
 
   static List<TextPage> _parseWithParams(
@@ -343,6 +428,7 @@ class TextComposition {
     final boxW = p['boxW'] as double;
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
+    final fontPath = p['fontPath'] as String? ?? '';
     final shouldJustifyHeight = p['shouldJustifyHeight'] as bool? ?? true;
 
     if (BookPager.isAvailable) {
@@ -357,6 +443,7 @@ class TextComposition {
           paddingHorizontal: padH,
           paddingVertical: 0,
           shouldJustifyHeight: shouldJustifyHeight,
+          fontPath: fontPath,
           fontFamily: fontFamily,
         );
       } catch (e, st) {
@@ -395,7 +482,9 @@ class TextComposition {
       readPage: readPage,
       style: TextStyle(
           locale: Locale('zh_CN'),
-          fontFamily: fontFamily,
+          fontFamily: (fontFamily.isEmpty || fontFamily == 'Roboto')
+              ? null
+              : fontFamily,
           fontSize: fontSize,
           height: lineHeight),
       paragraph: paragraph,
@@ -452,7 +541,7 @@ class TextComposition {
 //     }
 //   }
 class SelfForePainter extends CustomPainter {
-  ui.Image _imageFrame;
+  final ui.Image _imageFrame;
 
   SelfForePainter(this._imageFrame) : super();
 
@@ -481,7 +570,7 @@ class MyPagePainter extends CustomPaint {
   final TextPage page;
 
   MyPagePainter(this.pageIndex, this.readPage, this.style, this.forePainter,
-      [this.debug = false])
+      {super.key, this.debug = false})
       : page = readPage.pages[pageIndex],
         super(foregroundPainter: forePainter);
 }

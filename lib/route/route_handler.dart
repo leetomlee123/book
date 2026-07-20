@@ -1,0 +1,96 @@
+import 'dart:convert' as convert;
+
+import 'package:book/entity/book.dart';
+import 'package:book/entity/book_info.dart';
+import 'package:book/view/book/book_detail.dart';
+import 'package:book/view/book/book_shelf.dart';
+import 'package:book/view/book/chapter_view.dart';
+import 'package:book/view/book/read_book.dart';
+import 'package:book/view/book/search_page.dart';
+import 'package:book/view/book/sort_shelf.dart';
+import 'package:book/view/person/forget_password_page.dart';
+import 'package:book/view/person/login_page.dart';
+import 'package:book/view/person/register_page.dart';
+import 'package:book/view/person/source_manage_page.dart';
+import 'package:book/view/system/font_set_page.dart';
+import 'package:book/view/system/log_viewer_page.dart';
+import 'package:fluro/fluro.dart';
+import 'package:flutter/material.dart';
+
+// 根目录
+var rootHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return BookShelf();
+});
+// 根目录
+
+// 设置页 - 示例：不传参数
+var searchHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  String type = (params['type']![0]);
+  String name = (params['name']![0]);
+  return Search(type, name);
+});
+var loginHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return Login();
+});
+
+var registerHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return Register();
+});
+var modifyPasswordHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return ForgetPass();
+});
+var fontSetHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return FontSet();
+});
+
+var sortShelfHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return SortShelf();
+});
+
+//// 网页加载 - 示例：传多个字符串参数
+//var webViewHandler =
+//    Handler(handlerFunc: (BuildContext context, Map<String, dynamic> params) {
+//  // params内容为  {title: [我是标题哈哈哈], url: [https://www.baidu.com/]}
+//  String title = params['title']?.first;
+//  String url = params['url']?.first;
+//  return WebViewUrlPage(
+//    title: title,
+//    url: url,
+//  );
+//});
+
+// 示例：传多个model参数
+var readHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  Book bookInfo = Book.fromJson(convert.jsonDecode(params['read']![0]));
+  return ReadBook(bookInfo);
+});
+var chaptersHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return ChapterView();
+});
+
+var detailHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  BookInfo bookInfo =
+      BookInfo.fromJson(convert.jsonDecode(params['detail']![0]));
+
+  return BookDetail(bookInfo);
+});
+
+var sourcesHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return SourceManagePage();
+});
+
+var logsHandler =
+    Handler(handlerFunc: (BuildContext? context, Map<String, List<String>> params) {
+  return const LogViewer();
+});

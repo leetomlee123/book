@@ -1,5 +1,5 @@
 name: book
-description: A Flutter novel reader application.
+description: 爱看书 — 开源 Flutter 网络小说阅读器。
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -18,17 +18,13 @@ dependencies:
   event_bus: ^2.0.1
   get_it: ^8.0.3
   sqflite: ^2.4.2
-  path_provider: ^2.1.5
+  path_provider: ^2.1.6
   shared_preferences: ^2.5.3
   permission_handler: ^12.0.0+1
-  battery_plus: ^7.1.0
-  package_info_plus: ^10.2.0
   flutter_cache_manager: ^3.4.1
-  extended_image: ^10.0.0
-  pull_to_refresh: ^2.0.0
+  scrollable_positioned_list: ^0.3.8
   flex_color_scheme: ^8.2.0
   html: ^0.15.6
-  protobuf: ^4.0.0
   json_annotation: ^4.9.0
   convert: ^3.1.2
   url_launcher: ^6.3.1
@@ -45,7 +41,13 @@ dependencies:
     path: third_party/flutter_js
   # Force modern Android embedding (namespace) for AGP 8+/9
   flutter_plugin_android_lifecycle: ^2.0.28
+  extended_image: ^10.1.0
+  file_picker: ^11.0.2
 
+  vector_math: any
+  firebase_core: ^4.12.1
+  firebase_analytics: ^12.4.5
+  firebase_crashlytics: ^5.2.6
 dev_dependencies:
   flutter_test:
     sdk: flutter

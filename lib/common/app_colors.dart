@@ -54,7 +54,6 @@ class AppDimens {
   static const double cardRadius = 10;
   static const double searchBarHeight = 36;
   static const double ctaHeight = 44;
-  static const double bottomNavHeight = 56;
   static const double coverAspect = 0.72; // width / height
   static const int shelfColumns = 3;
   static const double shelfSpacing = 14;

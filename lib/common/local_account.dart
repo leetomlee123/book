@@ -57,7 +57,7 @@ class LocalAccount {
     SpUtil.putString(usernameKey, n);
     SpUtil.putString(emailKey, found['email']?.toString() ?? '');
     SpUtil.putString(
-        authKey, 'local:${n}:${DateTime.now().millisecondsSinceEpoch}');
+        authKey, 'local:$n:${DateTime.now().millisecondsSinceEpoch}');
     return null;
   }
 

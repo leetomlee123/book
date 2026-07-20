@@ -3,6 +3,8 @@ plugins {
     // Built-in Kotlin (AGP 9+): do not apply kotlin-android / org.jetbrains.kotlin.android.
     // The Flutter Gradle Plugin must be applied after the Android plugin.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 import java.util.Properties
@@ -16,7 +18,7 @@ if (hasKeystore) {
 }
 
 android {
-    namespace = "com.leetomlee.book"
+    namespace = "com.opensource.ikanshu"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.leetomlee.book"
+        applicationId = "com.opensource.ikanshu"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -61,6 +63,12 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+
+    // AGP 9 + FlutterActivity: Instantiatable is a false positive
+    // (lint can't resolve Kotlin MainActivity → FlutterActivity → Activity).
+    lint {
+        disable += "Instantiatable"
     }
 }
 
