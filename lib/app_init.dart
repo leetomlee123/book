@@ -116,10 +116,13 @@ class AppInit {
     if (!SpUtil.haveKey(PrefsKeys.version) || SpUtil.getString(PrefsKeys.version).isEmpty) {
       SpUtil.putString(PrefsKeys.version, '1.0.0');
     }
+    // Default: visible transparent status bar (edge-to-edge). Only the
+    // reader switches to immersiveSticky to hide system bars.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     if (Platform.isAndroid) {
-      SystemUiOverlayStyle systemUiOverlayStyle =
-          SystemUiOverlayStyle(statusBarColor: Colors.transparent);
-      SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
+      );
     }
   }
 

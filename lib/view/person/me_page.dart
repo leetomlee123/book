@@ -54,6 +54,7 @@ class Me extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _sectionCard([
                     _tile(
+                      context: context,
                       icon: Icons.campaign_outlined,
                       title: '公告',
                       onTap: () {
@@ -63,6 +64,7 @@ class Me extends ConsumerWidget {
                       },
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.gavel_outlined,
                       title: '免责声明',
                       onTap: () => _showLaw(context),
@@ -71,12 +73,14 @@ class Me extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _sectionCard([
                     _tile(
+                      context: context,
                       icon: Icons.library_books_outlined,
                       title: '书源管理',
                       onTap: () =>
                           Routes.navigateTo(context, Routes.sources),
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.storefront_outlined,
                       title: '源仓库',
                       onTap: () {
@@ -88,6 +92,7 @@ class Me extends ConsumerWidget {
                       },
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.palette_outlined,
                       title: '主题',
                       onTap: () {
@@ -97,6 +102,7 @@ class Me extends ConsumerWidget {
                       },
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.article_outlined,
                       title: '运行日志',
                       onTap: () => Routes.navigateTo(context, Routes.logs),
@@ -105,6 +111,7 @@ class Me extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _sectionCard([
                     _tile(
+                      context: context,
                       icon: Icons.mail_outline,
                       title: '意见反馈',
                       onTap: () {
@@ -113,6 +120,7 @@ class Me extends ConsumerWidget {
                       },
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.code,
                       title: '开源地址',
                       onTap: () {
@@ -122,6 +130,7 @@ class Me extends ConsumerWidget {
                       },
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.system_update_alt,
                       title: '应用更新',
                       onTap: () async {
@@ -132,6 +141,7 @@ class Me extends ConsumerWidget {
                       },
                     ),
                     _tile(
+                      context: context,
                       icon: Icons.info_outline,
                       title: '关于',
                       onTap: () => _showAbout(context),
@@ -269,6 +279,7 @@ class Me extends ConsumerWidget {
   }
 
   Widget _tile({
+    required BuildContext context,
     required IconData icon,
     required String title,
     String? subtitle,
@@ -292,7 +303,11 @@ class Me extends ConsumerWidget {
                       color: _iconBg,
                       borderRadius: BorderRadius.circular(9),
                     ),
-                    child: Icon(icon, size: 18, color: AppColors.brand),
+                    child: Icon(
+                      icon,
+                      size: 18,
+                      color: AppColors.accentOf(context),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

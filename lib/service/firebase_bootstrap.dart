@@ -21,10 +21,29 @@ class FirebaseBootstrap {
   static FirebaseAnalytics? get analytics => _ready ? _analytics : null;
 
   /// Navigator observer for automatic screen_view reporting (Fluro routes).
+  ///
+  /// Fluro packs large JSON into the route path (`/read?read={...book...}`),
+  /// which blows past Analytics' screen-name length limit. Strip query and
+  /// clamp to a short path segment.
   static List<NavigatorObserver> get navigatorObservers {
     final a = analytics;
     if (a == null) return const [];
-    return [FirebaseAnalyticsObserver(analytics: a)];
+    return [
+      FirebaseAnalyticsObserver(
+        analytics: a,
+        nameExtractor: _screenName,
+      ),
+    ];
+  }
+
+  static String? _screenName(RouteSettings settings) {
+    final raw = settings.name;
+    if (raw == null || raw.isEmpty) return null;
+    // Drop query string (book JSON etc.) — keep `/read`, `/detail`, …
+    final path = raw.split('?').first;
+    if (path.isEmpty) return '/';
+    // Analytics screen names should stay short.
+    return path.length <= 36 ? path : path.substring(0, 36);
   }
 
   /// Initialize Firebase and enable Crashlytics collection.

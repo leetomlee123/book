@@ -98,7 +98,7 @@ String cleanAuthor(String raw) {
 
   // Explicit "作者：xxx" somewhere in the blob (selector often returns parent).
   final labeled = RegExp(
-    r'作者[：:\s　]*([^\s/|｜,，;；>）\)]{1,30})',
+    r'作者[：:\s　]*([^\s/|｜,，;；>）\)\n\r]{1,30})',
   ).firstMatch(t);
   if (labeled != null) {
     t = (labeled.group(1) ?? '').trim();
@@ -110,13 +110,23 @@ String cleanAuthor(String raw) {
     );
   }
 
+  // Drop trailing "著" / "作品" markers common on CN novel sites.
+  t = t.replaceFirst(RegExp(r'(著|作品|大神|大佬)$'), '').trim();
+
   // Cut trailing site metadata often concatenated after the name.
   t = t
       .split(RegExp(
-        r'\s*(?:分类|类型|类别|状态|更新|字数|连载|完结|最新|简介|标签)[：:\s]',
+        r'\s*(?:分类|类型|类别|状态|更新|字数|连载|完结|最新|简介|标签|点击|人气)[：:\s]',
       ))
       .first
       .trim();
+
+  // Also cut on fullwidth/halfwidth separators after a short name.
+  // e.g. "张三/玄幻" "张三|连载"
+  final sep = RegExp(r'[/|｜]').firstMatch(t);
+  if (sep != null && sep.start >= 1 && sep.start <= 16) {
+    t = t.substring(0, sep.start).trim();
+  }
 
   // Strip wrapping brackets / punctuation leftovers.
   t = t.replaceAll(RegExp(r'^[【\[（(「『]+|[】\]）)」』]+$'), '').trim();

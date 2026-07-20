@@ -145,7 +145,7 @@ class BookSourceEngine {
       if (_isPlaceholderCover(cover)) cover = '';
       out.add(SearchBook(
         name: name,
-        author: cleanAuthor(rule.getString(authorRule, scope: item)),
+        author: _resolveAuthor(rule, ruleStr: authorRule, scope: item),
         kind: rule.getString(kindRule, scope: item),
         wordCount: rule.getString(wordCountRule, scope: item),
         lastChapter: rule.getString(lastChapterRule, scope: item),
@@ -209,7 +209,13 @@ class BookSourceEngine {
     if (tocUrl.isNotEmpty) tocUrl = urlJoin(resp.url, tocUrl);
 
     final name = pick(r.name, seed?.name ?? '');
-    final author = cleanAuthor(pick(r.author, seed?.author ?? ''));
+    // Author: never cleanAuthor(seed) through a failed rule — garbage detail
+    // rules used to wipe a good search-result author via pick() + cleanAuthor.
+    final author = _resolveAuthor(
+      rule,
+      ruleStr: r.author,
+      fallback: seed?.author ?? '',
+    );
     final intro = pick(r.intro, seed?.intro ?? '');
     final last = pick(r.lastChapter, seed?.lastChapter ?? '');
     final kind = pick(r.kind, seed?.kind ?? '');
@@ -482,5 +488,66 @@ class BookSourceEngine {
         u.contains('noimg') ||
         u.contains('no-cover') ||
         u.endsWith('/lazy.png');
+  }
+
+  /// Resolve author from rule + soft fallbacks. Never wipe a good [fallback]
+  /// (e.g. search seed) when the detail rule returns unusable text.
+  static String _resolveAuthor(
+    AnalyzeRule rule, {
+    String ruleStr = '',
+    dynamic scope,
+    String fallback = '',
+  }) {
+    if (ruleStr.isNotEmpty) {
+      final cleaned = cleanAuthor(rule.getString(ruleStr, scope: scope));
+      if (cleaned.isNotEmpty) return cleaned;
+    }
+
+    // Soft selectors — many sources omit / misconfigure author rules.
+    final selectors = scope is Element
+        ? const [
+            '.author@text',
+            'span.author@text',
+            'p.author@text',
+            'a.author@text',
+            '.writer@text',
+            '.book_author@text',
+            '.authorName@text',
+            '.s@text',
+            'p.meta@text',
+            '.btm@text',
+            '.bookinfo@text',
+            '.info@text',
+          ]
+        : const [
+            'meta[property="og:novel:author"]@content',
+            'meta[name="author"]@content',
+            'meta[property="og:author"]@content',
+            'meta[property="og:novel:author"]@content',
+            '#info p@text',
+            '.info .author@text',
+            '.book-info .author@text',
+            '.detail .author@text',
+            '.author@text',
+            'span.author@text',
+            'p.author@text',
+            'a.author@text',
+            '.writer@text',
+            '#bookinfo .author@text',
+            '.bookinfo@text',
+          ];
+
+    for (final sel in selectors) {
+      final cleaned = cleanAuthor(rule.getString(sel, scope: scope));
+      if (cleaned.isNotEmpty) return cleaned;
+    }
+
+    // Last resort: whole card / page text may still contain "作者：xxx".
+    if (scope is Element) {
+      final cleaned = cleanAuthor(scope.text);
+      if (cleaned.isNotEmpty) return cleaned;
+    }
+
+    return cleanAuthor(fallback);
   }
 }

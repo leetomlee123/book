@@ -80,9 +80,12 @@ class AnalyzeUrl {
     raw = fill(raw);
     if (body is String) body = fill(body);
 
-    // Relative path
-    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
-      raw = urlJoin(source.bookSourceUrl, raw);
+    // Drop leftover Legado JS snippets (cookie/js helpers we don't evaluate)
+    // e.g. `{{cookie.removeCookie(source.getKey())}}http://…`
+    raw = sanitizeUrl(raw, base: source.bookSourceUrl);
+    if (body is String) {
+      // body may also carry {{…}} noise; only strip, don't force URL join.
+      body = _stripJsTemplates(body);
     }
 
     return AnalyzeRequest(
@@ -102,11 +105,48 @@ class AnalyzeUrl {
   }) async {
     final req = absoluteUrl != null && absoluteUrl.isNotEmpty
         ? AnalyzeRequest(
-            url: absoluteUrl,
+            url: sanitizeUrl(absoluteUrl, base: source.bookSourceUrl),
             headers: _parseHeader(source.header),
           )
         : build(source, template, key: key, page: page);
     return SourceHttp.instance.fetch(req);
+  }
+
+  /// Make a Legado-style URL safe for Dio / Uri.parse.
+  ///
+  /// Strips unevaluated `{{…}}` JS helpers, recovers the first http(s) URL if
+  /// one is embedded, and joins relative paths against [base].
+  static String sanitizeUrl(String input, {String base = ''}) {
+    var raw = _stripJsTemplates(input.trim());
+    if (raw.isEmpty) return raw;
+
+    // Recover `…noise…https://host/path` left after failed JS evaluation.
+    if (!_looksAbsolute(raw)) {
+      final embedded = _firstHttpUrl(raw);
+      if (embedded != null) {
+        raw = embedded;
+      }
+    }
+
+    if (!_looksAbsolute(raw) && base.isNotEmpty) {
+      raw = urlJoin(base, raw);
+    }
+    return raw;
+  }
+
+  /// Remove `{{ … }}` blocks (non-greedy). Known placeholders are filled first.
+  static String _stripJsTemplates(String s) {
+    if (!s.contains('{{')) return s;
+    return s.replaceAll(RegExp(r'\{\{[\s\S]*?\}\}'), '').trim();
+  }
+
+  static bool _looksAbsolute(String s) =>
+      s.startsWith('http://') || s.startsWith('https://');
+
+  /// First http(s) URL substring, if any.
+  static String? _firstHttpUrl(String s) {
+    final m = RegExp(r'''https?://[^\s"'<>]+''').firstMatch(s);
+    return m?.group(0);
   }
 
   static Map<String, String> _parseHeader(String header) {

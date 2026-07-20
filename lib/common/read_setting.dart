@@ -304,32 +304,32 @@ class ReadSetting {
     SpUtil.putInt(pageDis, getPageDis() + s);
   }
 
-  /// Space reserved above body text: status/safe + chapter title chrome + breathing room.
-  /// Must stay in sync with [ReadModel.drawContent] body Y offset.
-  static const double contentTopChrome = 52;
-  static const double contentTopExtra = 18;
+  /// Height of the chapter-title chrome band (below the status / safe area).
+  /// Must stay in sync with [ReaderPainter.drawContent].
+  static const double contentTopChrome = 36;
 
-  /// Space reserved below body text: time/progress chrome + breathing room.
+  /// Height of the time / page-number chrome band (above the bottom safe area).
   static const double contentBottomChrome = 36;
-  static const double contentBottomExtra = 18;
 
-  /// Y where chapter title is painted (below status bar).
-  static double chapterTitleOffsetY() {
-    return 15 + SpUtil.getDouble(PrefsKeys.topSafeHeight);
+  /// Top of the chapter-title chrome band.
+  static double chapterTitleBandTop() {
+    return SpUtil.getDouble(PrefsKeys.topSafeHeight);
+  }
+
+  /// Top of the time / page-number chrome band.
+  static double bottomChromeBandTop() {
+    return Screen.height - Screen.bottomSafeHeight - contentBottomChrome;
   }
 
   /// Top inset of the paginated content box (and paint offset for body lines).
+  /// Body sits strictly between the two chrome bands.
   static double contentTopInset() {
-    return contentTopChrome +
-        SpUtil.getDouble(PrefsKeys.topSafeHeight) +
-        contentTopExtra;
+    return chapterTitleBandTop() + contentTopChrome;
   }
 
   /// Bottom inset of the paginated content box.
   static double contentBottomInset() {
-    return contentBottomChrome +
-        Screen.bottomSafeHeight +
-        contentBottomExtra;
+    return contentBottomChrome + Screen.bottomSafeHeight;
   }
 
   static double getTempH() {

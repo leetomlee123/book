@@ -80,7 +80,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                           '查看',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.brand,
+                            color: AppColors.accentOf(context),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -200,8 +200,8 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                     if (info.status.isNotEmpty)
                       _chip(
                         info.status,
-                        bg: AppColors.brandSoft,
-                        fg: AppColors.brand,
+                        bg: AppColors.accentSoftOf(context),
+                        fg: AppColors.accentOf(context),
                       ),
                     if (info.rating > 0)
                       _chip(
@@ -286,7 +286,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                 height: 14,
                 margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.brand,
+                  color: AppColors.accentOf(context),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -326,11 +326,12 @@ class _BookDetailState extends ConsumerState<BookDetail> {
         style: TextStyle(fontSize: 14, color: _secondary, height: 1.6),
       );
     }
+    final accent = AppColors.accentOf(context);
     return ReadMoreText(
       desc,
       trimLines: 4,
       trimMode: TrimMode.Line,
-      colorClickableText: AppColors.brand,
+      colorClickableText: accent,
       trimCollapsedText: ' 展开',
       trimExpandedText: ' 收起',
       style: TextStyle(
@@ -338,14 +339,14 @@ class _BookDetailState extends ConsumerState<BookDetail> {
         height: 1.7,
         color: _primary.withValues(alpha: 0.88),
       ),
-      moreStyle: const TextStyle(
+      moreStyle: TextStyle(
         fontSize: 14,
-        color: AppColors.brand,
+        color: accent,
         fontWeight: FontWeight.w500,
       ),
-      lessStyle: const TextStyle(
+      lessStyle: TextStyle(
         fontSize: 14,
-        color: AppColors.brand,
+        color: accent,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -369,13 +370,13 @@ class _BookDetailState extends ConsumerState<BookDetail> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.brandSoft,
+                color: AppColors.accentSoftOf(context),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.menu_book_outlined,
                 size: 18,
-                color: AppColors.brand,
+                color: AppColors.accentOf(context),
               ),
             ),
             const SizedBox(width: 12),
@@ -582,7 +583,7 @@ class _BookDetailState extends ConsumerState<BookDetail> {
                     final hasRead = snap.data == true;
                     return ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.brand,
+                        backgroundColor: AppColors.accentOf(context),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(

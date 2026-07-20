@@ -11,6 +11,7 @@ import 'package:book/store/providers.dart';
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ReaderMenu extends ConsumerStatefulWidget {
   const ReaderMenu({super.key});
@@ -90,18 +91,11 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                 icon: Icon(Icons.refresh, size: 22, color: _fg),
                 onPressed: () => _readModel.reloadCurrentPage(),
               ),
-              // IconButton(
-              //   tooltip: '换源',
-              //   icon: Icon(Icons.swap_horiz, size: 22, color: _fg),
-              //   onPressed: () {
-              //     showModalBottomSheet(
-              //       context: context,
-              //       isScrollControlled: true,
-              //       backgroundColor: Colors.transparent,
-              //       builder: (_) => SourceSwitchSheet(readModel: _readModel),
-              //     );
-              //   },
-              // ),
+              IconButton(
+                tooltip: '打开原网页',
+                icon: Icon(Icons.open_in_browser, size: 22, color: _fg),
+                onPressed: _openOriginalPage,
+              ),
               IconButton(
                 tooltip: '详情',
                 icon: Icon(Icons.info_outline, size: 22, color: _fg),
@@ -131,6 +125,37 @@ class _MenuState extends ConsumerState<ReaderMenu> {
         ),
       ),
     );
+  }
+
+  /// Open the source-site page in an external browser.
+  /// Prefer current chapter URL; fall back to book detail / toc.
+  Future<void> _openOriginalPage() async {
+    final b = _readModel.book;
+    if (b == null) {
+      BotToast.showText(text: '暂无书籍信息');
+      return;
+    }
+    final chapters = _readModel.chapters;
+    final idx = b.chapterIndex;
+    String raw = '';
+    if (idx >= 0 && idx < chapters.length) {
+      raw = chapters[idx].url.trim();
+    }
+    if (raw.isEmpty) raw = b.bookUrl.trim();
+    if (raw.isEmpty) raw = b.tocUrl.trim();
+    if (raw.isEmpty) {
+      BotToast.showText(text: '暂无原网页地址');
+      return;
+    }
+    final uri = Uri.tryParse(raw);
+    if (uri == null || !(uri.isScheme('http') || uri.isScheme('https'))) {
+      BotToast.showText(text: '原网页地址无效');
+      return;
+    }
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) {
+      BotToast.showText(text: '无法打开浏览器');
+    }
   }
 
   Widget midTransparent() {
@@ -359,7 +384,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                     height: 24,
                     child: Switch.adaptive(
                       value: _readModel.tapLeftToAdvance,
-                      activeTrackColor: AppColors.brand,
+                      activeTrackColor: AppColors.accentOf(context),
                       onChanged: (_) {
                         _readModel.toggleTapLeftToAdvance();
                         setState(() {});
@@ -387,6 +412,8 @@ class _MenuState extends ConsumerState<ReaderMenu> {
       (3, '滚动', Icons.swap_vert),
     ];
     final current = _readModel.currentAnimationMode;
+    final accent = AppColors.accentOf(context);
+    final accentSoft = AppColors.accentSoftOf(context);
     return Row(
       children: modes.map((m) {
         final selected = current == m.$1;
@@ -394,7 +421,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 3),
             child: Material(
-              color: selected ? AppColors.brandSoft : _chipBg,
+              color: selected ? accentSoft : _chipBg,
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
                 borderRadius: BorderRadius.circular(10),
@@ -409,7 +436,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                       Icon(
                         m.$3,
                         size: 18,
-                        color: selected ? AppColors.brand : _fg,
+                        color: selected ? accent : _fg,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -418,7 +445,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                           fontSize: 11,
                           fontWeight:
                               selected ? FontWeight.w600 : FontWeight.w400,
-                          color: selected ? AppColors.brand : _fg,
+                          color: selected ? accent : _fg,
                         ),
                       ),
                     ],
@@ -600,12 +627,13 @@ class _MenuState extends ConsumerState<ReaderMenu> {
   }
 
   SliderThemeData _sliderTheme() {
+    final accent = AppColors.accentOf(context);
     return SliderTheme.of(context).copyWith(
       trackHeight: 3,
-      activeTrackColor: AppColors.brand,
+      activeTrackColor: accent,
       inactiveTrackColor: _divider,
-      thumbColor: AppColors.brand,
-      overlayColor: AppColors.brandSoft,
+      thumbColor: accent,
+      overlayColor: AppColors.accentSoftOf(context, alpha: 0.12),
       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
       overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
     );
@@ -630,6 +658,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
 
   Widget _paperSwatchRow() {
     final current = ReadSetting.getPaperTheme();
+    final accent = AppColors.accentOf(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: ReadSetting.solidPapers.map((t) {
@@ -655,12 +684,12 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                   shape: BoxShape.circle,
                   border: Border.all(
                     width: selected ? 2.5 : 1,
-                    color: selected ? AppColors.brand : _divider,
+                    color: selected ? accent : _divider,
                   ),
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: AppColors.brand.withValues(alpha: 0.25),
+                            color: accent.withValues(alpha: 0.25),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -673,7 +702,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                         size: 18,
                         color: t == PaperTheme.night
                             ? Colors.white70
-                            : AppColors.brand,
+                            : accent,
                       )
                     : null,
               ),
@@ -682,7 +711,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                 ReadSetting.paperLabel(t),
                 style: TextStyle(
                   fontSize: 11,
-                  color: selected ? AppColors.brand : _muted,
+                  color: selected ? accent : _muted,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
@@ -892,7 +921,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
     required bool active,
     required VoidCallback onTap,
   }) {
-    final color = active ? AppColors.brand : _fg;
+    final color = active ? AppColors.accentOf(context) : _fg;
     return Expanded(
       child: InkWell(
         onTap: onTap,

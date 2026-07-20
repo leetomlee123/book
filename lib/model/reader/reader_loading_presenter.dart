@@ -27,13 +27,26 @@ class ReaderLoadingPresenter {
   int _token = 0;
 
   /// Lightweight sync placeholder (no paginator / isolate) for open/clear races.
-  static ReadPage syncPlaceholder(String hint) {
+  ///
+  /// [chapterTitle]: painted in the top chrome (prefer last reading chapter so
+  /// shelf re-open doesn't flash "加载中").
+  /// [hint]: body text. Empty keeps a blank paper page — preferred when local
+  /// cache is about to paint within a frame or two.
+  static ReadPage syncPlaceholder(
+    String hint, {
+    String chapterTitle = '加载中',
+  }) {
     final page = ReadPage.kong();
-    page.chapterName = '加载中';
+    page.chapterName = chapterTitle.isNotEmpty ? chapterTitle : '加载中';
     page.chapterContent = hint;
-    page.pages = [
-      TextPage([TextLine.simple(hint)], 24),
-    ];
+    if (hint.isEmpty) {
+      // Blank paper — no centered "正在加载" text. Real content replaces this.
+      page.pages = [TextPage(const [], 0)];
+    } else {
+      page.pages = [
+        TextPage([TextLine.simple(hint)], 24),
+      ];
+    }
     return page;
   }
 

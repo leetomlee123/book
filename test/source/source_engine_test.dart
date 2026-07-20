@@ -87,6 +87,28 @@ void main() {
       expect(req.headers.containsKey('@js'), isFalse);
       expect(req.headers['X-Ok'], 'yes');
     });
+
+    test('strips Legado {{cookie…}} prefix from searchUrl', () {
+      final source = BookSource(
+        bookSourceUrl: 'http://www.kkbiquge.net',
+        bookSourceName: 'kk',
+        searchUrl:
+            '{{cookie.removeCookie(source.getKey())}}http://www.kkbiquge.net/search2c.html?searchkey={{key}}',
+      );
+      final req = AnalyzeUrl.build(source, source.searchUrl, key: '斗破');
+      expect(req.url.startsWith('http://www.kkbiquge.net/search2c.html'), isTrue);
+      expect(req.url.contains('cookie'), isFalse);
+      expect(req.url.contains('{{'), isFalse);
+      expect(req.url, contains(Uri.encodeQueryComponent('斗破')));
+    });
+
+    test('sanitizeUrl recovers embedded absolute url', () {
+      final cleaned = AnalyzeUrl.sanitizeUrl(
+        '{{java.ajax("x")}}https://a.com/path?q=1',
+        base: 'https://fallback.com',
+      );
+      expect(cleaned, 'https://a.com/path?q=1');
+    });
   });
 
   group('AnalyzeRule CSS', () {
@@ -125,6 +147,27 @@ void main() {
       final ok = rule.getString('.meta@text', scope: list.first);
       expect(ok, contains('张三'));
       expect(cleanAuthor(ok), '张三');
+    });
+
+    test('author from nested span under label', () {
+      const html = '''
+<html><body>
+<div class="item">
+  <a href="/book/1">书名一</a>
+  <div class="author">作者：<span>王五</span></div>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final list = rule.getList('.item');
+      final raw = rule.getString('.author@text', scope: list.first);
+      expect(cleanAuthor(raw), '王五');
+    });
+
+    test('cleanAuthor keeps short name and strips trailing 著', () {
+      expect(cleanAuthor('作者：天蚕土豆著'), '天蚕土豆');
+      expect(cleanAuthor('张三/玄幻'), '张三');
+      expect(cleanAuthor(''), '');
     });
 
     test('ownText excludes descendant elements', () {

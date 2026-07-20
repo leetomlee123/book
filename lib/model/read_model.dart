@@ -301,7 +301,7 @@ class ReadModel with ChangeNotifier {
   bool chaptersLoading = false;
 
   /// Status text while [sessionReady] is false or chapters are refreshing.
-  String loadingHint = '正在加载目录…';
+  String loadingHint = '正在加载…';
 
   //点击上下页方式
   bool get tapLeftToAdvance => _chrome.tapLeftToAdvance;

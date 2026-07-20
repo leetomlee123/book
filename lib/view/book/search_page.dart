@@ -276,13 +276,15 @@ class _SearchState extends ConsumerState<Search> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.brandSoft,
+                                    color: AppColors.accentSoftOf(context),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     item.sourceName,
-                                    style: const TextStyle(
-                                        fontSize: 11, color: AppColors.brand),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.accentOf(context),
+                                    ),
                                   ),
                                 ),
                               Expanded(

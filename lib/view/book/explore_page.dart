@@ -101,6 +101,8 @@ class _SourceBar extends StatelessWidget {
     if (model.exploreSources.isEmpty) {
       return const SizedBox.shrink();
     }
+    final accent = AppColors.accentOf(context);
+    final accentSoft = AppColors.accentSoftOf(context);
     final unselected = dark ? AppColors.textOnDark : AppColors.textSecondary;
     return SizedBox(
       height: 44,
@@ -117,13 +119,13 @@ class _SourceBar extends StatelessWidget {
             label: Text(s.bookSourceName.isEmpty ? s.bookSourceUrl : s.bookSourceName),
             selected: selected,
             onSelected: (_) => model.selectSource(s),
-            selectedColor: AppColors.brandSoft,
+            selectedColor: accentSoft,
             backgroundColor:
                 dark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3),
             side: BorderSide.none,
             labelStyle: TextStyle(
               fontSize: 12,
-              color: selected ? AppColors.brand : unselected,
+              color: selected ? accent : unselected,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             ),
             visualDensity: VisualDensity.compact,
@@ -142,6 +144,8 @@ class _KindBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = AppColors.accentOf(context);
+    final accentSoft = AppColors.accentSoftOf(context);
     final unselected = dark ? AppColors.textOnDark : AppColors.textSecondary;
     return SizedBox(
       height: 40,
@@ -158,14 +162,14 @@ class _KindBar extends StatelessWidget {
             label: Text(k.title),
             selected: selected,
             onSelected: (_) => model.selectKind(k),
-            selectedColor: AppColors.brandSoft,
+            selectedColor: accentSoft,
             backgroundColor:
                 dark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3),
-            checkmarkColor: AppColors.brand,
+            checkmarkColor: accent,
             side: BorderSide.none,
             labelStyle: TextStyle(
               fontSize: 12,
-              color: selected ? AppColors.brand : unselected,
+              color: selected ? accent : unselected,
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -369,14 +373,14 @@ class _BookRow extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.brandSoft,
+                              color: AppColors.accentSoftOf(context),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               item.sourceName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.brand,
+                                color: AppColors.accentOf(context),
                               ),
                             ),
                           ),

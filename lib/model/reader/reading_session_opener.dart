@@ -64,8 +64,7 @@ class ReadingSessionOpener {
   Future<void> hydrate() async {
     setShowMenu(false);
     setChaptersLoading(true);
-    final hint = loadingHintOf();
-    setLoadingHint(hint.isEmpty ? '正在加载…' : hint);
+    setLoadingHint('正在加载…');
     setAllowProgressSave(true);
 
     final b = bookOf();
@@ -98,11 +97,6 @@ class ReadingSessionOpener {
       AppLog.w('Read', 'merge db progress failed', error: e);
     }
 
-    if (curPageOf() == null || curPageOf()!.chapterName != '加载中') {
-      setCurPage(await messagePage('加载中', loadingHintOf()));
-      notify();
-    }
-
     AppLog.i(
       'Read',
       'open id=${b.id} name=${b.name} cur=$savedCur index=$savedIndex '
@@ -125,7 +119,26 @@ class ReadingSessionOpener {
       return;
     }
 
-    await showLoading('正在准备书源…');
+    // Fast path: local TOC already on disk (typical for shelf books).
+    // Open the last chapter without painting "加载目录" / extra loading pages.
+    b.chapterIndex = savedCur;
+    b.pageIndex = savedIndex;
+    final localToc = await chapters.getToc(b.id);
+    setChapters(localToc);
+    AppLog.i('Read', 'local chapters=${localToc.length}');
+
+    if (localToc.isNotEmpty) {
+      await _openFromLocalToc(
+        b,
+        localToc,
+        savedCur: savedCur,
+        savedIndex: savedIndex,
+      );
+      return;
+    }
+
+    // Cold path: no local TOC — need source + remote catalog.
+    await showLoading('正在加载…');
     b.chapterIndex = savedCur;
     b.pageIndex = savedIndex;
     await ensureSource();
@@ -145,71 +158,102 @@ class ReadingSessionOpener {
       return;
     }
 
-    await showLoading('正在读取本地目录…');
+    await showLoading('正在加载…');
     b.chapterIndex = savedCur;
     b.pageIndex = savedIndex;
-    final localToc = await chapters.getToc(b.id);
-    setChapters(localToc);
-    AppLog.i('Read', 'local chapters=${localToc.length}');
-
-    if (localToc.isNotEmpty) {
-      loadToc();
-      if (savedCur < 0 || savedCur >= localToc.length) {
-        AppLog.w(
-          'Read',
-          'clamp cur $savedCur -> 0 (len=${localToc.length})',
-        );
+    await loadToc(init: true);
+    final toc = chaptersOf();
+    AppLog.i('Read', 'fetched toc chapters=${toc.length}');
+    if (toc.isEmpty) {
+      AppLog.e('Read', 'toc empty after fetch for ${b.bookUrl}');
+      setCurPage(await messagePage(
+        '目录为空',
+        '未能获取章节目录，请检查书源规则、网络，或尝试换源。',
+      ));
+      b.chapterIndex = savedCur < 0 ? 0 : savedCur;
+      b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
+    } else {
+      if (savedCur < 0 || savedCur >= toc.length) {
         b.chapterIndex = 0;
       } else {
         b.chapterIndex = savedCur;
       }
       b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      final canSkipLoading = await hasPageCache(b.chapterIndex);
-      await openChapterAt(
-        b.chapterIndex,
-        false,
-        showLoading: !canSkipLoading,
-      );
+      await openChapterAt(b.chapterIndex, false, showLoading: true);
       restorePageIndex(savedIndex);
-      setSessionReady(true);
-      setChaptersLoading(false);
-      setProgressReady(true);
-      AppLog.i(
-        'Read',
-        'ready cur=${b.chapterIndex} index=${b.pageIndex} '
-            'pages=${curPageOf()?.pageOffsets} '
-            'contentLen=${curPageOf()?.chapterContent.length}',
-      );
-      notify();
-    } else {
-      await showLoading('正在获取章节目录…');
-      b.chapterIndex = savedCur;
-      b.pageIndex = savedIndex;
-      await loadToc(init: true);
-      final toc = chaptersOf();
-      AppLog.i('Read', 'fetched toc chapters=${toc.length}');
-      if (toc.isEmpty) {
-        AppLog.e('Read', 'toc empty after fetch for ${b.bookUrl}');
-        setCurPage(await messagePage(
-          '目录为空',
-          '未能获取章节目录，请检查书源规则、网络，或尝试换源。',
-        ));
-        b.chapterIndex = savedCur < 0 ? 0 : savedCur;
-        b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-      } else {
-        if (savedCur < 0 || savedCur >= toc.length) {
-          b.chapterIndex = 0;
-        } else {
-          b.chapterIndex = savedCur;
-        }
-        b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
-        await openChapterAt(b.chapterIndex, false, showLoading: true);
-        restorePageIndex(savedIndex);
-      }
-      setSessionReady(true);
-      setChaptersLoading(false);
-      setProgressReady(true);
-      notify();
     }
+    setSessionReady(true);
+    setChaptersLoading(false);
+    setProgressReady(true);
+    notify();
+  }
+
+  /// Shelf / re-open path: local catalog already present.
+  Future<void> _openFromLocalToc(
+    Book b,
+    List<ChapterTocEntry> localToc, {
+    required int savedCur,
+    required int savedIndex,
+  }) async {
+    if (savedCur < 0 || savedCur >= localToc.length) {
+      AppLog.w(
+        'Read',
+        'clamp cur $savedCur -> 0 (len=${localToc.length})',
+      );
+      b.chapterIndex = 0;
+    } else {
+      b.chapterIndex = savedCur;
+    }
+    b.pageIndex = savedIndex < 0 ? 0 : savedIndex;
+
+    // Prefer painting cached body ASAP. Source is only required for network fetch.
+    final canSkipLoading = await hasPageCache(b.chapterIndex);
+    if (!canSkipLoading) {
+      await ensureSource();
+      if (activeSourceOf() == null) {
+        AppLog.e('Read', 'source not found: ${b.sourceUrl} (${b.originName})');
+        BotToast.showText(text: '书源不存在：${b.originName}');
+        setCurPage(await messagePage(
+          '书源不可用',
+          '未找到书源「${b.originName}」，请在书源管理中导入对应书源，或在阅读菜单中换源。',
+        ));
+        setSessionReady(true);
+        setChaptersLoading(false);
+        setProgressReady(false);
+        notify();
+        return;
+      }
+    }
+
+    // With page cache: open silently (prepareOpen showed last chapter title +
+    // blank paper). Without cache: openChapterAt paints one loading page.
+    await openChapterAt(
+      b.chapterIndex,
+      false,
+      showLoading: !canSkipLoading,
+    );
+    restorePageIndex(savedIndex);
+    setSessionReady(true);
+    setChaptersLoading(false);
+    setProgressReady(true);
+    AppLog.i(
+      'Read',
+      'ready localToc cur=${b.chapterIndex} index=${b.pageIndex} '
+          'cache=$canSkipLoading pages=${curPageOf()?.pageOffsets} '
+          'contentLen=${curPageOf()?.chapterContent.length}',
+    );
+    notify();
+
+    // Defer remote TOC refresh until after content is on screen so it cannot
+    // contend with SQLite / first paint. Fire-and-forget.
+    // ignore: unawaited_futures
+    Future<void>.delayed(const Duration(milliseconds: 600), () {
+      if (bookOf()?.id != b.id) return;
+      loadToc();
+      // Warm source for later network chapter turns when we skipped ensure above.
+      if (canSkipLoading && activeSourceOf() == null) {
+        ensureSource();
+      }
+    });
   }
 }

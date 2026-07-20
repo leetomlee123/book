@@ -8,10 +8,19 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Brand
+  // Brand (WeRead default green). Prefer [accentOf] / [accentSoftOf] in chrome
+  // UI so FlexColorScheme skins follow the active theme primary.
   static const Color brand = Color(0xFF1AAD19);
   static const Color brandPressed = Color(0xFF179B16);
   static const Color brandSoft = Color(0x1A1AAD19); // ~10% alpha
+
+  /// Active theme accent (skin / WeRead primary).
+  static Color accentOf(BuildContext context) =>
+      Theme.of(context).colorScheme.primary;
+
+  /// Soft fill of the active accent (~10% alpha by default).
+  static Color accentSoftOf(BuildContext context, {double alpha = 0.10}) =>
+      Theme.of(context).colorScheme.primary.withValues(alpha: alpha);
 
   // Surfaces
   static const Color scaffold = Color(0xFFF7F7F7);
@@ -182,10 +191,17 @@ ThemeData buildWeReadTheme({
     ),
     chipTheme: ChipThemeData(
       backgroundColor: dark ? AppColors.surfaceDark : AppColors.scaffold,
-      selectedColor: AppColors.brandSoft,
+      selectedColor: primary.withValues(alpha: 0.10),
+      checkmarkColor: primary,
       labelStyle: TextStyle(
         color: onSurface,
         fontSize: 13,
+        fontFamily: fontFamily,
+      ),
+      secondaryLabelStyle: TextStyle(
+        color: primary,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
         fontFamily: fontFamily,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),

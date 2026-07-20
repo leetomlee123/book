@@ -608,12 +608,14 @@ class _ScrollContentReaderState extends ConsumerState<ScrollContentReader> {
             return false;
           },
           child: (_items.isEmpty || c == null)
-              ? Center(
-                  child: Text(
-                    loadingHint.isNotEmpty ? loadingHint : '正在加载…',
-                    style: TextStyle(color: meta, fontSize: 15),
-                  ),
-                )
+              ? (loadingHint.isEmpty
+                  ? const SizedBox.expand()
+                  : Center(
+                      child: Text(
+                        loadingHint,
+                        style: TextStyle(color: meta, fontSize: 15),
+                      ),
+                    ))
               : ListView.builder(
                   controller: c,
                   padding: const EdgeInsets.only(

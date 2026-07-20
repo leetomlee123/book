@@ -255,10 +255,14 @@ class ReaderPainter {
     final bodyTop = ReadSetting.contentTopInset();
     final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
 
+    // Explicit loading page (chapterName == '加载中') with a non-empty hint.
+    // Blank reopen placeholders have real chapter titles + empty pages and
+    // fall through to normal paint (paper only, no centered "正在加载").
     if (readPage.chapterName == '加载中') {
-      final msg = readPage.chapterContent.isNotEmpty
-          ? readPage.chapterContent
-          : '正在加载…';
+      final msg = readPage.chapterContent.trim();
+      if (msg.isEmpty) {
+        return pageRecorder.endRecording();
+      }
       final centerPainter = TextPainter(
         textDirection: TextDirection.ltr,
         textAlign: TextAlign.center,
@@ -277,19 +281,24 @@ class ReaderPainter {
       return pageRecorder.endRecording();
     }
 
+    final chromeStyle = TextStyle(
+      fontSize: 12 / Screen.textScaleFactor,
+      color: meta,
+      fontFamily: familyOrNull,
+    );
+
     if (chrome) {
+      // Chapter title — vertically centered in the top chrome band.
       _labelPainter.text = TextSpan(
         text: readPage.chapterName,
-        style: TextStyle(
-          fontSize: 12 / Screen.textScaleFactor,
-          color: meta,
-          fontFamily: familyOrNull,
-        ),
+        style: chromeStyle,
       );
       _labelPainter.layout();
+      final titleY = ReadSetting.chapterTitleBandTop() +
+          (ReadSetting.contentTopChrome - _labelPainter.height) / 2;
       _labelPainter.paint(
         pageCanvas,
-        Offset(contentPadding, ReadSetting.chapterTitleOffsetY()),
+        Offset(contentPadding, titleY),
       );
     }
 
@@ -333,35 +342,30 @@ class ReaderPainter {
       return pageRecorder.endRecording();
     }
 
-    // Time + page number chrome (no battery).
-    final bottomTextH = Screen.height - 27 - Screen.bottomSafeHeight;
+    // Time + page number — vertically centered in the bottom chrome band.
+    // Body ends at band top (contentBottomInset), so they never overlap.
+    final bottomBandTop = ReadSetting.bottomChromeBandTop();
     _labelPainter.text = TextSpan(
       text: DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m),
-      style: TextStyle(
-        fontSize: 12 / Screen.textScaleFactor,
-        color: meta,
-        fontFamily: familyOrNull,
-      ),
+      style: chromeStyle,
     );
     _labelPainter.layout();
+    final bottomTextY =
+        bottomBandTop + (ReadSetting.contentBottomChrome - _labelPainter.height) / 2;
     _labelPainter.paint(
       pageCanvas,
-      Offset(contentPadding, bottomTextH),
+      Offset(contentPadding, bottomTextY),
     );
 
     final pageLabel = '${pageIndex + 1}/${readPage.pages.length}';
     _labelPainter.text = TextSpan(
       text: pageLabel,
-      style: TextStyle(
-        fontSize: 12 / Screen.textScaleFactor,
-        color: meta,
-        fontFamily: familyOrNull,
-      ),
+      style: chromeStyle,
     );
     _labelPainter.layout();
     _labelPainter.paint(
       pageCanvas,
-      Offset(pageW - contentPadding - _labelPainter.width, bottomTextH),
+      Offset(pageW - contentPadding - _labelPainter.width, bottomTextY),
     );
 
     return pageRecorder.endRecording();

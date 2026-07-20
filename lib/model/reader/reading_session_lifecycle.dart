@@ -60,13 +60,13 @@ class ReadingSessionLifecycle {
   final void Function() notify;
 
   /// Sync seed when opening a book from shelf — call before first paint.
-  /// Clears previous book state and plants a centered loading page so the
-  /// transition does not flash the last book or a blank scaffold.
+  /// Clears previous book state. Shelf re-open plants a blank paper page with
+  /// the last chapter title (no "加载中/加载目录" flash); cold open keeps a
+  /// short generic hint.
   void prepareOpen(Book b) {
     hideLoading();
     setShowMenu(false);
     setChaptersLoading(true);
-    setLoadingHint('正在加载…');
     setAllowProgressSave(true);
     setProgressReady(false);
     cancelProgress();
@@ -77,8 +77,22 @@ class ReadingSessionLifecycle {
     setCanvasKey(null);
     setChapters([]);
     setBook(b);
-    setCurPage(ReaderLoadingPresenter.syncPlaceholder(loadingHintOf()));
     b.pageIndex = b.pageIndex < 0 ? 0 : b.pageIndex;
+
+    // Prefer last reading chapter as chrome title so reopen looks continuous.
+    final lastChapter = b.readingChapter.trim();
+    final hasLastChapter =
+        lastChapter.isNotEmpty && lastChapter != '加载中' && lastChapter != '目录';
+    final title = hasLastChapter
+        ? lastChapter
+        : (b.name.isNotEmpty ? b.name : '阅读');
+    // Blank body for re-open (cache typically paints within ~1 frame).
+    // Cold open still gets a soft "正在加载…" until hydrate fills content.
+    final hint = hasLastChapter ? '' : '正在加载…';
+    setLoadingHint(hint);
+    setCurPage(
+      ReaderLoadingPresenter.syncPlaceholder(hint, chapterTitle: title),
+    );
     setSessionReady(true);
     // Do not notify: the upcoming ReadBook build will watch the model.
   }
