@@ -311,6 +311,10 @@ class ReadSetting {
   /// Height of the time / page-number chrome band (above the bottom safe area).
   static const double contentBottomChrome = 36;
 
+  /// Gap between chrome labels (chapter title / time+page) and body text.
+  /// Applied on both ends so body never crowds the header or footer.
+  static const double contentChromeGap = 12;
+
   /// Top of the chapter-title chrome band.
   static double chapterTitleBandTop() {
     return SpUtil.getDouble(PrefsKeys.topSafeHeight);
@@ -322,14 +326,14 @@ class ReadSetting {
   }
 
   /// Top inset of the paginated content box (and paint offset for body lines).
-  /// Body sits strictly between the two chrome bands.
+  /// Body sits between chrome bands with [contentChromeGap] breathing room.
   static double contentTopInset() {
-    return chapterTitleBandTop() + contentTopChrome;
+    return chapterTitleBandTop() + contentTopChrome + contentChromeGap;
   }
 
   /// Bottom inset of the paginated content box.
   static double contentBottomInset() {
-    return contentBottomChrome + Screen.bottomSafeHeight;
+    return contentBottomChrome + Screen.bottomSafeHeight + contentChromeGap;
   }
 
   static double getTempH() {

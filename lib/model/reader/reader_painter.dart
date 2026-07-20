@@ -343,7 +343,7 @@ class ReaderPainter {
     }
 
     // Time + page number — vertically centered in the bottom chrome band.
-    // Body ends at band top (contentBottomInset), so they never overlap.
+    // Body box ends contentChromeGap above this band (contentBottomInset).
     final bottomBandTop = ReadSetting.bottomChromeBandTop();
     _labelPainter.text = TextSpan(
       text: DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m),
