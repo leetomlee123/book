@@ -39,25 +39,76 @@ class SourceModel with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> enableMany(List<String> urls) async {
+    if (urls.isEmpty) return;
+    await _sources.setEnabledMany(urls, true);
+    final set = urls.toSet();
+    for (final s in sources) {
+      if (set.contains(s.bookSourceUrl)) s.enabled = true;
+    }
+    notifyListeners();
+  }
+
+  Future<void> disableMany(List<String> urls) async {
+    if (urls.isEmpty) return;
+    await _sources.setEnabledMany(urls, false);
+    final set = urls.toSet();
+    for (final s in sources) {
+      if (set.contains(s.bookSourceUrl)) s.enabled = false;
+    }
+    notifyListeners();
+  }
+
+  Future<void> removeMany(List<String> urls) async {
+    if (urls.isEmpty) return;
+    await _sources.deleteMany(urls);
+    final set = urls.toSet();
+    sources.removeWhere((e) => set.contains(e.bookSourceUrl));
+    notifyListeners();
+  }
+
+  String _importToast(
+    SourceUpsertStats stats, {
+    int skipped = 0,
+    int duplicatesInBatch = 0,
+  }) {
+    final parts = <String>[
+      '成功导入 ${stats.total} 个书源（新增 ${stats.inserted}，更新 ${stats.updated}）',
+    ];
+    if (duplicatesInBatch > 0) {
+      parts.add('合并重复 $duplicatesInBatch');
+    }
+    if (skipped > 0) {
+      parts.add('跳过 $skipped');
+    }
+    return parts.join('，');
+  }
+
   Future<int> importJsonText(String text, {bool agreed = false}) async {
     if (!agreed) {
       throw StateError('请先确认书源使用声明');
     }
-    final list = SourceImporter.parseJson(text);
-    if (list.isEmpty) {
+    final parsed = SourceImporter.parseJson(text);
+    if (parsed.sources.isEmpty) {
       BotToast.showText(text: '未解析到有效书源');
       return 0;
     }
-    // preserve order
     final base = sources.length;
-    for (var i = 0; i < list.length; i++) {
-      list[i].customOrder = base + i;
-      list[i].lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < parsed.sources.length; i++) {
+      parsed.sources[i].customOrder = base + i;
+      parsed.sources[i].lastUpdateTime = now;
     }
-    await _sources.upsertAll(list);
+    final stats = await _sources.upsertAllWithStats(parsed.sources);
     await load();
-    BotToast.showText(text: '成功导入 ${list.length} 个书源');
-    return list.length;
+    BotToast.showText(
+      text: _importToast(
+        stats,
+        skipped: parsed.skipped,
+        duplicatesInBatch: parsed.duplicatesInBatch,
+      ),
+    );
+    return stats.total;
   }
 
   Future<int> importFromUrl(String url, {bool agreed = false}) async {
@@ -65,20 +116,27 @@ class SourceModel with ChangeNotifier {
       throw StateError('请先确认书源使用声明');
     }
     BotToast.showText(text: '正在下载书源…');
-    final list = await SourceImporter.fromUrl(url);
-    if (list.isEmpty) {
+    final parsed = await SourceImporter.fromUrl(url);
+    if (parsed.sources.isEmpty) {
       BotToast.showText(text: '未解析到有效书源');
       return 0;
     }
     final base = sources.length;
-    for (var i = 0; i < list.length; i++) {
-      list[i].customOrder = base + i;
-      list[i].lastUpdateTime = DateTime.now().millisecondsSinceEpoch;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < parsed.sources.length; i++) {
+      parsed.sources[i].customOrder = base + i;
+      parsed.sources[i].lastUpdateTime = now;
     }
-    await _sources.upsertAll(list);
+    final stats = await _sources.upsertAllWithStats(parsed.sources);
     await load();
-    BotToast.showText(text: '成功导入 ${list.length} 个书源');
-    return list.length;
+    BotToast.showText(
+      text: _importToast(
+        stats,
+        skipped: parsed.skipped,
+        duplicatesInBatch: parsed.duplicatesInBatch,
+      ),
+    );
+    return stats.total;
   }
 
   String exportAll() => SourceImporter.exportJson(sources);

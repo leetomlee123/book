@@ -115,79 +115,115 @@ class TextComposition {
                         : const Size(360, 640)))
                 .width -
             (padding?.horizontal ?? 0)) {
-    // [width2] [height2] 用于调整判断
+    // ABI v3 Dart fallback: emit semantic lines (top/height/justify/targetWidth).
+    // letterSpacing is computed at paint time by Flutter TextPainter.
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
-    final offset = Offset(columnWidth, 1);
     final size = style?.fontSize ?? 14;
-    final originDx = padding?.left ?? 0;
-    final originDy = padding?.top ?? 0;
     final width = columnWidth;
     final width2 = width - size;
     final height = this.boxSize.height - (padding?.vertical ?? 0);
     final height2 = height - size * (style?.height ?? 1.0);
+    final lineBoxH = size * (style?.height ?? 1.0);
 
     var lines = <TextLine>[];
-    var columnNum = 1;
-    var dx = originDx;
-    var dy = originDy;
+    var top = 0.0;
     var startLine = 0;
+    var pageIndex = 0;
 
-    /// 下一页 判断分页 依据: height / height2 是否可以容纳下一行
     void newPage([bool shouldJustifyHeight = true, bool lastPage = false]) {
       if (shouldJustifyHeight && this.shouldJustifyHeight) {
         final len = lines.length - startLine;
-        double justify = (height - dy) / (len - 1);
-        for (var i = 0; i < len; i++) {
-          lines[i + startLine].justifyDy(justify * i);
+        if (len > 1) {
+          final justifyGap = (height - top) / (len - 1);
+          if (justifyGap.isFinite && justifyGap > 0) {
+            for (var i = 0; i < len; i++) {
+              lines[i + startLine].justifyDy(justifyGap * i);
+            }
+          }
         }
       }
-      if (columnNum == 1 || lastPage) {
-        this.pages.add(TextPage(lines, dy));
-        lines = <TextLine>[];
-        columnNum = 1;
-        dx = originDx;
-      } else {
-        columnNum++;
-        dx += columnWidth + 40;
-      }
-      dy = originDy;
-      startLine = lines.length;
+      final pageLines = lines;
+      final pageH = pageLines.isEmpty
+          ? 0.0
+          : pageLines.last.top + pageLines.last.height;
+      this.pages.add(TextPage(pageLines, pageH, pageIndex: pageIndex));
+      pageIndex++;
+      lines = <TextLine>[];
+      top = 0.0;
+      startLine = 0;
     }
 
-    /// 新段落
     void newParagraph() {
-      if (dy > height2) {
+      if (top > height2) {
         newPage();
       } else {
-        dy += paragraph;
+        top += paragraph;
       }
     }
+
+    // Leave 1% width slack so paint-side metrics don't overflow.
+    final measureWidth = width * 0.99;
+    final measureOffset = Offset(measureWidth, 1);
 
     for (var p in this.paragraphs) {
       while (true) {
         tp.text = TextSpan(text: p, style: style);
-        tp.layout(maxWidth: columnWidth);
-        final textCount = tp.getPositionForOffset(offset).offset;
-        double? spacing;
-        final text = p.substring(0, textCount);
-        if (tp.width > width2) {
-          // tp.text = TextSpan(text: text, style: style);
-          // tp.layout();
-          spacing = (width - tp.width) / (textCount + 1);
+        tp.layout(maxWidth: measureWidth);
+        final textCount = tp.getPositionForOffset(measureOffset).offset;
+        if (textCount <= 0) {
+          final forceEnd = p.isEmpty
+              ? 0
+              : (p.length > 1 &&
+                      p.codeUnitAt(0) >= 0xD800 &&
+                      p.codeUnitAt(0) <= 0xDBFF
+                  ? 2
+                  : 1)
+                  .clamp(1, p.length);
+          final text = p.substring(0, forceEnd);
+          final isEnd = p.length == forceEnd;
+          lines.add(TextLine(
+            text,
+            top: top,
+            height: lineBoxH,
+            justify: false,
+            isLastLine: isEnd,
+            isParagraphEnd: isEnd,
+            targetWidth: width,
+          ));
+          top += lineBoxH;
+          if (isEnd) {
+            newParagraph();
+            break;
+          }
+          p = p.substring(forceEnd);
+          if (top > height2) newPage();
+          continue;
         }
-        // if (tp.width > _width2) {
-        //   tp.text = TextSpan(text: text, style: style);
-        //   tp.layout();
-        //   spacing = (_width - tp.width) / textCount;
-        // }
-        lines.add(TextLine(text, dx, dy, spacing ?? 0));
-        dy += tp.height;
-        if (p.length == textCount) {
+        final text = p.substring(0, textCount);
+        tp.text = TextSpan(text: text, style: style);
+        tp.layout();
+        final measured = tp.width;
+        final isEnd = p.length == textCount;
+        final n = text.characters.length;
+        final nearlyFull = measured > width2 && measured > size * 0.5;
+        final doJustify = !isEnd && nearlyFull && n > 1;
+        final h = tp.height > 0 ? tp.height : lineBoxH;
+        lines.add(TextLine(
+          text,
+          top: top,
+          height: h,
+          justify: doJustify,
+          isLastLine: isEnd,
+          isParagraphEnd: isEnd,
+          targetWidth: width,
+        ));
+        top += h;
+        if (isEnd) {
           newParagraph();
           break;
         } else {
           p = p.substring(textCount);
-          if (dy > height2) {
+          if (top > height2) {
             newPage();
           }
         }
@@ -197,7 +233,7 @@ class TextComposition {
       newPage(false, true);
     }
     if (this.pages.isEmpty) {
-      this.pages.add(TextPage([], 0));
+      this.pages.add(const TextPage([], 0));
     }
   }
 
@@ -272,6 +308,9 @@ class TextComposition {
       'fontFamily': ReadSetting.getFontFamily(),
       'fontPath': ReadSetting.getFontPath(),
       'shouldJustifyHeight': shouldJustifyHeight,
+      // Bump cache when pager contract changes.
+      'abi': bookPagerAbiVersion,
+      'textAlign': 'justify',
     };
   }
 
@@ -314,7 +353,7 @@ class TextComposition {
           'native=$nativeOk err=${BookPager.lastError ?? "-"}',
     );
 
-    if (nativeOk) {
+    if (nativeOk && fontPath.isNotEmpty) {
       try {
         final pages = await BookPager.paginateAsync(
           text: readPage.chapterContent,
@@ -357,6 +396,12 @@ class TextComposition {
         AppLog.w('Pager', 'ENGINE=DART reason=rust_exception', error: e);
         debugPrint('BookPager async failed, falling back to Dart: $e\n$st');
       }
+    } else if (nativeOk && fontPath.isEmpty) {
+      debugPrint(
+        '[PagerEngine] ENGINE=DART reason=font_path_empty '
+        '(need assets/fonts/NotoSansSC-Regular.ttf or custom font)',
+      );
+      AppLog.i('Pager', 'ENGINE=DART reason=font_path_empty');
     } else {
       debugPrint(
         '[PagerEngine] ENGINE=DART reason=native_unavailable '
@@ -431,7 +476,7 @@ class TextComposition {
     final fontPath = p['fontPath'] as String? ?? '';
     final shouldJustifyHeight = p['shouldJustifyHeight'] as bool? ?? true;
 
-    if (BookPager.isAvailable) {
+    if (BookPager.isAvailable && fontPath.isNotEmpty) {
       try {
         return BookPager.paginate(
           text: readPage.chapterContent,
@@ -448,8 +493,15 @@ class TextComposition {
         );
       } catch (e, st) {
         AppLog.w('Pager', 'BookPager sync failed, Dart fallback', error: e);
+        debugPrint(
+          '[PagerEngine] ENGINE=DART reason=rust_exception $e',
+        );
         debugPrint('BookPager failed, falling back to Dart: $e\n$st');
       }
+    } else if (nativeOkMissingPath(fontPath)) {
+      debugPrint(
+        '[PagerEngine] ENGINE=DART reason=font_path_empty',
+      );
     }
     return _dartParse(
       readPage,
@@ -464,6 +516,9 @@ class TextComposition {
       justRender: justRender,
     );
   }
+
+  static bool nativeOkMissingPath(String fontPath) =>
+      BookPager.isAvailable && fontPath.isEmpty;
 
   static List<TextPage> _dartParse(
     ReadPage readPage, {
@@ -483,7 +538,7 @@ class TextComposition {
       style: TextStyle(
           locale: Locale('zh_CN'),
           fontFamily: (fontFamily.isEmpty || fontFamily == 'Roboto')
-              ? null
+              ? ReadSetting.defaultFontFamily
               : fontFamily,
           fontSize: fontSize,
           height: lineHeight),
@@ -591,18 +646,50 @@ class PagePainter extends CustomPainter {
 
     for (var i = 0; i < lineCount; i++) {
       final line = page.lines[i];
-      if (line.letterSpacing != null &&
-          (line.letterSpacing! < -0.1 || line.letterSpacing! > 0.1)) {
-        tp.text = TextSpan(
-          text: line.text,
-          style: style.copyWith(letterSpacing: line.letterSpacing),
-        );
-      } else {
-        tp.text = TextSpan(text: line.text, style: style);
+      // ABI v3: Flutter computes letterSpacing from justify + targetWidth.
+      final target = line.targetWidth > 0 ? line.targetWidth : size.width;
+      var ls = line.letterSpacing;
+      if (ls == null || !ls.isFinite) {
+        ls = 0;
+        if (line.justify && !line.isLastLine && target > 0) {
+          final n = line.text.characters.length;
+          if (n > 1) {
+            tp.text = TextSpan(text: line.text, style: style);
+            tp.layout();
+            final measured = tp.width;
+            if (measured > 0 &&
+                measured < target &&
+                measured > target - (style.fontSize ?? 14)) {
+              final v = (target - measured) / (n - 1);
+              if (v.isFinite && v.abs() <= (style.fontSize ?? 14) * 0.5) {
+                ls = v;
+              }
+            }
+          }
+        }
       }
-      final offset = Offset(line.dx, line.dy);
+      final lineStyle =
+          ls.abs() > 0.1 ? style.copyWith(letterSpacing: ls) : style;
+      tp.text = TextSpan(text: line.text, style: lineStyle);
       tp.layout();
-      tp.paint(canvas, offset);
+      if (ls != 0 && tp.width > size.width) {
+        final n = line.text.characters.length;
+        if (n > 1) {
+          final shrink = (tp.width - size.width) / (n - 1);
+          final adjusted = ls - shrink;
+          final clamped =
+              adjusted.isFinite && adjusted.abs() <= (style.fontSize ?? 14) * 0.5
+                  ? adjusted
+                  : 0.0;
+          tp.text = TextSpan(
+            text: line.text,
+            style: style.copyWith(letterSpacing: clamped),
+          );
+          tp.layout();
+        }
+      }
+      // x = padding is already baked into style box; page painter uses pad 0.
+      tp.paint(canvas, Offset(0, line.top));
     }
   }
 

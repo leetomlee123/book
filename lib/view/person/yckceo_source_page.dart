@@ -120,38 +120,49 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
     final model = ref.read(sourceModelProvider);
     final selectedItems =
         tab.items.where((e) => tab.selected.contains(e.id)).toList();
-    try {
-      if (tab.isCollection) {
-        var total = 0;
-        for (var i = 0; i < selectedItems.length; i++) {
-          final it = selectedItems[i];
-          BotToast.showText(
-            text: '正在导入合集 ${i + 1}/${selectedItems.length}：${it.title}',
-          );
-          total += await model.importFromUrl(it.jsonUrl, agreed: true);
-        }
+    var total = 0;
+    var failCount = 0;
+    if (tab.isCollection) {
+      for (var i = 0; i < selectedItems.length; i++) {
+        final it = selectedItems[i];
         BotToast.showText(
-          text: total == 0 ? '未解析到有效书源' : '完成，共写入 $total 个书源（含更新）',
+          text: '正在导入合集 ${i + 1}/${selectedItems.length}：${it.title}',
         );
-      } else {
-        const batch = 30;
-        var total = 0;
-        final ids = selectedItems.map((e) => e.id).toList();
-        for (var i = 0; i < ids.length; i += batch) {
-          final end = (i + batch > ids.length) ? ids.length : i + batch;
-          final chunk = ids.sublist(i, end);
-          BotToast.showText(text: '正在导入书源 ${i + 1}-$end/${ids.length}…');
+        try {
+          total += await model.importFromUrl(it.jsonUrl, agreed: true);
+        } catch (e) {
+          failCount++;
+          BotToast.showText(text: '合集「${it.title}」导入失败：$e');
+        }
+      }
+    } else {
+      const batch = 30;
+      final ids = selectedItems.map((e) => e.id).toList();
+      for (var i = 0; i < ids.length; i += batch) {
+        final end = (i + batch > ids.length) ? ids.length : i + batch;
+        final chunk = ids.sublist(i, end);
+        BotToast.showText(text: '正在导入书源 ${i + 1}-$end/${ids.length}…');
+        try {
           total += await model.importFromUrl(
             YckceoRepo.multiSourceJsonUrl(chunk),
             agreed: true,
           );
+        } catch (e) {
+          failCount++;
+          BotToast.showText(text: '第 ${i + 1}-$end 批导入失败：$e');
         }
-        if (total == 0) BotToast.showText(text: '未解析到有效书源');
       }
-      if (mounted) setState(() => tab.selected.clear());
-    } catch (e) {
-      BotToast.showText(text: '导入失败：$e');
     }
+    if (total == 0 && failCount == 0) {
+      BotToast.showText(text: '未解析到有效书源');
+    } else if (failCount > 0) {
+      BotToast.showText(
+        text: '完成：写入 $total 个书源，$failCount 批失败（已保留成功部分）',
+      );
+    } else {
+      BotToast.showText(text: '完成，共写入 $total 个书源（含更新）');
+    }
+    if (mounted) setState(() => tab.selected.clear());
   }
 
   Future<void> _importOne(YckItem item) async {

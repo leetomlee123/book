@@ -83,7 +83,7 @@ class ReadModel with ChangeNotifier {
   final BookRepository _books = BookRepository.instance;
   final ChapterRepository _chapters = ChapterRepository.instance;
   final BookSourceEngine _engine = BookSourceEngine();
-  final TextPaginator _paginator = const TextPaginator();
+  final TextPaginator _paginator = TextPaginator();
   late final ChapterContentLoader _contentLoader = ChapterContentLoader(
     chaptersRepo: _chapters,
     paginator: _paginator,
@@ -139,6 +139,7 @@ class ReadModel with ChangeNotifier {
     hideLoading: _hideTextLoading,
     markNeedsPaint: _markNeedsPaint,
     notify: notifyListeners,
+    cancelPagination: _paginator.cancelActive,
   );
   late final ChapterWindowController _window = ChapterWindowController(
     bookOf: () => book,

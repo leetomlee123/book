@@ -28,7 +28,7 @@ void main() {
   "ruleContent": {"content": "#content"}
 }
 ''';
-      final list = SourceImporter.parseJson(json);
+      final list = SourceImporter.parseJson(json).sources;
       expect(list.length, 1);
       expect(list.first.bookSourceName, '示例源');
       expect(list.first.ruleSearch.bookList, '.item');
@@ -42,9 +42,22 @@ void main() {
   {"bookSourceUrl":"https://b.com","bookSourceName":"B","searchUrl":"/s?q={{key}}","ruleSearch":{"bookList":".y"},"ruleBookInfo":{},"ruleToc":{},"ruleContent":{}}
 ]
 ''';
-      final list = SourceImporter.parseJson(json);
+      final list = SourceImporter.parseJson(json).sources;
       expect(list.length, 2);
       expect(list.map((e) => e.bookSourceName).toList(), ['A', 'B']);
+    });
+
+    test('dedupes same bookSourceUrl in batch', () {
+      const json = '''
+[
+  {"bookSourceUrl":"https://a.com","bookSourceName":"A1","searchUrl":"/s","ruleSearch":{},"ruleBookInfo":{},"ruleToc":{},"ruleContent":{}},
+  {"bookSourceUrl":"https://a.com","bookSourceName":"A2","searchUrl":"/s","ruleSearch":{},"ruleBookInfo":{},"ruleToc":{},"ruleContent":{}}
+]
+''';
+      final parsed = SourceImporter.parseJson(json);
+      expect(parsed.sources.length, 1);
+      expect(parsed.duplicatesInBatch, 1);
+      expect(parsed.sources.first.bookSourceName, 'A2');
     });
   });
 

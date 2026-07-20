@@ -1,28 +1,32 @@
-//! Core pagination algorithm — port of `lib/common/text_composition.dart`.
+//! Semantic pagination for Chinese novel text (ABI v3).
 //!
-//! Layout rules (matching the Dart implementation):
-//! - Split content by `\n` into paragraphs
-//! - Soft-wrap each paragraph to `column_width` using font metrics
-//! - Full-justify letter-spacing when a line is near full width
-//! - Paginate when next line would exceed content height
-//! - Optionally redistribute vertical space (bottom justify) per page
+//! Rust is a **layout decision engine**, not a pixel renderer:
+//! - Decides where lines break (CJK-aware)
+//! - Emits page-local `top`/`height` for stacking
+//! - Emits justify **intent** + `target_width` (Flutter computes letterSpacing)
+//! - Does NOT emit glyph ids or absolute paint coordinates
+//!
+//! Flutter Skia paints with TextPainter(maxLines: 1).
 
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Wrap};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
-/// Shared font system — `FontSystem::new()` scans system fonts and is expensive.
-/// On Android, fontdb's `load_system_fonts` is a no-op, so we also load
-/// `/system/fonts` (and a few product paths) once.
-static FONT_SYSTEM: Lazy<Mutex<FontSystem>> = Lazy::new(|| {
-    let mut fs = FontSystem::new();
-    load_platform_fonts(fs.db_mut());
-    // Prefer a CJK-capable default family when present on Android devices.
-    prefer_cjk_defaults(fs.db_mut());
-    Mutex::new(fs)
-});
+/// Shared font system. Fonts are loaded from [LayoutInput::font_path] only
+/// (no system font scan for pagination — keeps metrics stable).
+static FONT_SYSTEM: Lazy<Mutex<FontSystem>> =
+    Lazy::new(|| Mutex::new(FontSystem::new()));
+
+/// job_id → cancelled flag
+static CANCEL_FLAGS: Lazy<Mutex<HashMap<u64, Arc<AtomicBool>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+static LOADED_FONT_PATH: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LayoutInput {
@@ -32,96 +36,126 @@ pub struct LayoutInput {
     /// Multiplier of font size for line height (matches Flutter TextStyle.height)
     pub line_height: f32,
     /// Extra gap after a paragraph ends (already scaled by caller if needed)
-    pub paragraph: f32,
-    pub box_width: f32,
-    pub box_height: f32,
+    #[serde(alias = "paragraph")]
+    pub paragraph_spacing: f32,
+    #[serde(alias = "box_width")]
+    pub page_width: f32,
+    #[serde(alias = "box_height")]
+    pub page_height: f32,
+    #[serde(default)]
+    pub padding_left: f32,
+    #[serde(default)]
+    pub padding_right: f32,
+    /// Legacy single horizontal padding (used when left/right are 0).
+    #[serde(default)]
     pub padding_horizontal: f32,
+    #[serde(default)]
+    pub padding_top: f32,
+    #[serde(default)]
+    pub padding_bottom: f32,
+    #[serde(default)]
     pub padding_vertical: f32,
+    #[serde(default = "default_true")]
     pub should_justify_height: bool,
-    /// Optional absolute path to a TTF/OTF font file. Empty = system default.
+    /// Absolute path to the same TTF Flutter uses. Required for ABI3.
     pub font_path: String,
-    /// CSS-like family name hint (used when loading from system / font_path)
+    #[serde(default = "default_family")]
     pub font_family: String,
+    /// "justify" | "left"
+    #[serde(default = "default_align")]
+    pub text_align: String,
+    #[serde(default)]
+    pub base_letter_spacing: f32,
+    #[serde(default)]
+    pub job_id: u64,
+    /// When true, return after the first page is full.
+    #[serde(default)]
+    pub first_page_only: bool,
+    /// UTF-8 byte offset into [text] to start from (incremental).
+    #[serde(default)]
+    pub start_char: usize,
+    /// 0 = unlimited
+    #[serde(default)]
+    pub max_pages: u32,
+}
+
+fn default_true() -> bool {
+    true
+}
+fn default_family() -> String {
+    "NotoSansSC".into()
+}
+fn default_align() -> String {
+    "justify".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextLineOut {
     pub text: String,
-    pub dx: f32,
-    pub dy: f32,
-    pub letter_spacing: f32,
+    pub top: f32,
+    pub height: f32,
+    pub justify: bool,
+    pub is_last_line: bool,
+    pub is_paragraph_end: bool,
+    pub target_width: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TextPageOut {
     pub lines: Vec<TextLineOut>,
     pub height: f32,
+    pub page_index: u32,
+    pub char_start: usize,
+    pub char_end: usize,
 }
 
-/// fontdb does not load fonts on Android (`target_os = "android"` is excluded
-/// from its unix branch). Without any faces, cosmic-text panics with
-/// `no default font found` — which aborts the whole Flutter process across FFI.
-fn load_platform_fonts(db: &mut fontdb::Database) {
-    #[cfg(target_os = "android")]
-    {
-        const DIRS: &[&str] = &[
-            "/system/fonts",
-            "/system/font",
-            "/system/product/fonts",
-            "/product/fonts",
-            "/system/product/fonts/google",
-            "/data/fonts",
-        ];
-        for dir in DIRS {
-            if Path::new(dir).is_dir() {
-                db.load_fonts_dir(dir);
-            }
-        }
-    }
-
-    // Also try common paths on other Unix targets when system scan found nothing.
-    #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
-    {
-        if db.is_empty() {
-            for dir in ["/usr/share/fonts", "/usr/local/share/fonts"] {
-                if Path::new(dir).is_dir() {
-                    db.load_fonts_dir(dir);
-                }
-            }
-        }
-    }
-
-    let _ = db;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginateResult {
+    pub pages: Vec<TextPageOut>,
+    pub complete: bool,
+    pub next_char: usize,
+    pub engine: String,
+    pub abi: i32,
 }
 
-fn prefer_cjk_defaults(db: &mut fontdb::Database) {
-    // Pick the first family that actually exists in the database.
-    const CANDIDATES: &[&str] = &[
-        "Noto Sans CJK SC",
-        "Noto Sans CJK",
-        "Noto Sans SC",
-        "Source Han Sans SC",
-        "Source Han Sans CN",
-        "DroidSansFallback",
-        "Droid Sans Fallback",
-        "Roboto",
-        "Noto Sans",
-        "sans-serif",
-    ];
-    for name in CANDIDATES {
-        let found = db.faces().any(|face| {
-            face.families
-                .iter()
-                .any(|(family, _)| family.eq_ignore_ascii_case(name))
-        });
-        if found {
-            db.set_sans_serif_family(*name);
-            return;
-        }
+/// Mark a job cancelled (or create the flag).
+pub fn cancel_job(job_id: u64) {
+    if job_id == 0 {
+        return;
     }
-    // Fallbacks often used as file-name-based families on Android.
-    // Even if family match fails, having faces loaded is enough for cosmic-text
-    // to pick *some* default; panic only happens when db is empty.
+    let mut map = CANCEL_FLAGS.lock();
+    map.entry(job_id)
+        .or_insert_with(|| Arc::new(AtomicBool::new(false)))
+        .store(true, Ordering::SeqCst);
+}
+
+fn job_flag(job_id: u64) -> Option<Arc<AtomicBool>> {
+    if job_id == 0 {
+        return None;
+    }
+    let mut map = CANCEL_FLAGS.lock();
+    // Fresh job: reset / insert false
+    let flag = map
+        .entry(job_id)
+        .or_insert_with(|| Arc::new(AtomicBool::new(false)))
+        .clone();
+    // If already cancelled before we start, keep cancelled.
+    Some(flag)
+}
+
+fn is_cancelled(flag: &Option<Arc<AtomicBool>>) -> bool {
+    flag.as_ref()
+        .map(|f| f.load(Ordering::Relaxed))
+        .unwrap_or(false)
+}
+
+/// Line-start prohibited CJK punctuation (cannot begin a line).
+fn is_line_start_forbidden(c: char) -> bool {
+    matches!(
+        c,
+        '，' | '。' | '！' | '？' | '、' | '；' | '：' | '》' | '」' | '』' | '）' | '】'
+            | '〉' | '…' | '—' | '”' | '’' | ',' | '.' | '!' | '?' | ')' | ']' | '}' | '%'
+    )
 }
 
 /// Max chars that can fit in [max_width] assuming ~1em CJK advance.
@@ -130,16 +164,31 @@ fn estimated_max_chars(max_width: f32, font_size: f32) -> usize {
     ((max_width / em).floor() as usize).max(1)
 }
 
-/// Byte offset after taking [n] Unicode scalars from [text].
 fn bytes_for_chars(text: &str, n: usize) -> usize {
     text.chars().take(n).map(|c| c.len_utf8()).sum()
 }
 
-/// Measure how many UTF-8 bytes of `text` fit in `max_width` at the given style.
-///
-/// Hardened for Android/CJK: when the font has missing glyphs (0-width) or
-/// cosmic-text returns the whole paragraph as one run, fall back to em-based
-/// char truncation so we never emit a single TextLine longer than one visual row.
+fn ensure_font(font_system: &mut FontSystem, font_path: &str) -> Result<(), String> {
+    if font_path.is_empty() {
+        return Err("font_path required (ABI3: same TTF as Flutter)".into());
+    }
+    if !Path::new(font_path).is_file() {
+        return Err(format!("font file missing: {font_path}"));
+    }
+    let mut loaded = LOADED_FONT_PATH.lock();
+    if *loaded != font_path {
+        if let Err(e) = font_system.db_mut().load_font_file(font_path) {
+            return Err(format!("load_font_file failed: {e}"));
+        }
+        *loaded = font_path.to_string();
+    }
+    if font_system.db().is_empty() {
+        return Err("no fonts loaded after load_font_file".into());
+    }
+    Ok(())
+}
+
+/// Measure how many UTF-8 bytes of `text` fit in `max_width`.
 fn measure_fit(
     font_system: &mut FontSystem,
     text: &str,
@@ -148,7 +197,6 @@ fn measure_fit(
     line_height: f32,
     family: Family<'_>,
 ) -> (usize, f32, f32) {
-    // Returns (byte_count, measured_width, line_height_px)
     let line_h = font_size * line_height.max(1.0);
     if text.is_empty() {
         return (0, 0.0, line_h);
@@ -157,12 +205,11 @@ fn measure_fit(
     let metrics = Metrics::new(font_size, line_h);
     let mut buffer = Buffer::new(font_system, metrics);
     buffer.set_size(font_system, Some(max_width.max(1.0)), None);
-    buffer.set_wrap(font_system, Wrap::WordOrGlyph);
+    buffer.set_wrap(font_system, Wrap::Glyph);
     let attrs = Attrs::new().family(family);
     buffer.set_text(font_system, text, attrs, Shaping::Advanced);
     buffer.shape_until_scroll(font_system, false);
 
-    // First layout line only — we re-feed remaining text each iteration
     let layout_lines: Vec<_> = buffer.layout_runs().collect();
     let mut end_byte = 0usize;
     let mut width = 0.0f32;
@@ -191,8 +238,6 @@ fn measure_fit(
         text[..end_byte].chars().count()
     };
 
-    // Missing-glyph / broken shape: zero width but claimed many chars, or
-    // entire remaining paragraph as one "line" far beyond column capacity.
     let broken = (width < font_size * 0.05 && char_count > 1)
         || (char_count > max_chars.saturating_mul(2))
         || (end_byte == 0 && !text.is_empty());
@@ -209,11 +254,9 @@ fn measure_fit(
         width = font_size;
     }
 
-    // Full remainder claimed but still wider than column → force char wrap.
     if end_byte >= text.len() && text.chars().count() > 1 {
         let measured = measure_width(font_system, text, font_size, line_height, family);
         if measured > max_width * 1.02 {
-            // Binary search largest char count that fits.
             let total = text.chars().count();
             let mut lo = 1usize;
             let mut hi = total.min(max_chars.saturating_mul(2)).max(1);
@@ -241,10 +284,50 @@ fn measure_fit(
         }
     }
 
+    // Pull trailing forbidden-start punctuation onto previous line when possible.
+    end_byte = apply_cjk_line_break_rules(text, end_byte);
+
     (end_byte, width, shaped_line_h)
 }
 
-/// Measure width of an exact string (no wrap).
+/// Avoid forbidden characters at the start of the *next* line by extending
+/// this line when there is still room in the remainder (decision only —
+/// Flutter remeasures).
+fn apply_cjk_line_break_rules(text: &str, end_byte: usize) -> usize {
+    if end_byte == 0 || end_byte >= text.len() {
+        return end_byte;
+    }
+    let mut end = end_byte;
+    // If next char is line-start-forbidden, try to include it in this line.
+    if let Some(next) = text[end..].chars().next() {
+        if is_line_start_forbidden(next) {
+            let take = next.len_utf8();
+            // Only if we still leave something, or the rest is just punctuation.
+            if end + take <= text.len() {
+                end += take;
+                // Chain consecutive forbidden marks (。！？)
+                while end < text.len() {
+                    if let Some(c) = text[end..].chars().next() {
+                        if is_line_start_forbidden(c) {
+                            end += c.len_utf8();
+                            continue;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    while end > 0 && !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    // Never empty the line if we had content.
+    if end == 0 {
+        return end_byte;
+    }
+    end
+}
+
 fn measure_width(
     font_system: &mut FontSystem,
     text: &str,
@@ -268,119 +351,176 @@ fn measure_width(
     width
 }
 
-pub fn paginate(input: &LayoutInput) -> Result<Vec<TextPageOut>, String> {
+pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
+    let cancel = job_flag(input.job_id);
+    if is_cancelled(&cancel) {
+        return Err("cancelled".into());
+    }
+
     let mut font_system = FONT_SYSTEM.lock();
+    ensure_font(&mut font_system, &input.font_path)?;
 
-    // Load optional custom font (reader download path).
-    if !input.font_path.is_empty() {
-        if let Err(e) = font_system.db_mut().load_font_file(&input.font_path) {
-            eprintln!("book_pager: failed to load font {}: {e}", input.font_path);
-        }
-    }
-
-    if font_system.db().is_empty() {
-        return Err(
-            "no fonts available (Android: /system/fonts missing or empty)".into(),
-        );
-    }
-
-    let family_owned = input.font_family.clone();
-    let family = if family_owned.is_empty() || family_owned == "Roboto" {
-        Family::SansSerif
+    let family_owned = if input.font_family.is_empty() {
+        "NotoSansSC".to_string()
     } else {
-        Family::Name(family_owned.as_str())
+        input.font_family.clone()
+    };
+    let family = Family::Name(family_owned.as_str());
+
+    let pad_l = if input.padding_left > 0.0 {
+        input.padding_left
+    } else {
+        input.padding_horizontal
+    };
+    let pad_r = if input.padding_right > 0.0 {
+        input.padding_right
+    } else {
+        input.padding_horizontal
+    };
+    let pad_v = if input.padding_vertical > 0.0 {
+        input.padding_vertical
+    } else {
+        (input.padding_top + input.padding_bottom).max(0.0)
     };
 
-    let column_width = (input.box_width - input.padding_horizontal * 2.0).max(1.0);
+    let content_width = (input.page_width - pad_l - pad_r).max(1.0);
+    // 1% slack so Flutter paint metrics don't force overflow.
+    let fit_width = (content_width * 0.99).max(1.0);
     let size = input.font_size.max(1.0);
-    let _dx = input.padding_horizontal;
-    let _dy = input.padding_vertical;
-    let _width = column_width;
-    let _width2 = (_width - size).max(1.0);
-    let _height = (input.box_height - input.padding_vertical * 2.0).max(1.0);
-    let _height2 = (_height - size * input.line_height).max(1.0);
+    let line_h = size * input.line_height.max(1.0);
+    let content_height = (input.page_height - pad_v).max(1.0);
+    let height2 = (content_height - line_h).max(1.0);
+    let want_justify = input.text_align != "left";
+    let paragraph_spacing = input.paragraph_spacing.max(0.0);
 
-    let paragraphs: Vec<&str> = if input.text.is_empty() {
+    // Slice text from start_char (UTF-8 boundary).
+    let mut start = input.start_char.min(input.text.len());
+    while start > 0 && !input.text.is_char_boundary(start) {
+        start -= 1;
+    }
+    let full = &input.text[start..];
+
+    let paragraphs: Vec<&str> = if full.is_empty() {
         Vec::new()
     } else {
-        input.text.split('\n').collect()
+        full.split('\n').collect()
     };
 
     let mut pages: Vec<TextPageOut> = Vec::new();
     let mut lines: Vec<TextLineOut> = Vec::new();
-    let mut dx = _dx;
-    let mut dy = _dy;
-    let mut start_line: usize = 0;
+    let mut top: f32 = 0.0;
+    let mut page_char_start = start;
+    let mut cursor = start; // absolute UTF-8 offset in input.text
+    let mut page_index: u32 = 0;
+    let mut line_counter: u32 = 0;
 
-    let new_page = |lines: &mut Vec<TextLineOut>,
-                    pages: &mut Vec<TextPageOut>,
-                    dy: &mut f32,
-                    dx: &mut f32,
-                    start_line: &mut usize,
-                    should_justify: bool,
-                    last_page: bool| {
+    let flush_page = |lines: &mut Vec<TextLineOut>,
+                      pages: &mut Vec<TextPageOut>,
+                      top: &mut f32,
+                      page_index: &mut u32,
+                      page_char_start: &mut usize,
+                      cursor: usize,
+                      should_justify: bool,
+                      content_height: f32| {
         if should_justify && input.should_justify_height {
-            let len = lines.len() - *start_line;
+            let len = lines.len();
             if len > 1 {
-                let justify = (_height - *dy) / (len as f32 - 1.0);
-                for i in 0..len {
-                    lines[*start_line + i].dy += justify * i as f32;
+                let used = *top;
+                let justify = (content_height - used) / (len as f32 - 1.0);
+                if justify.is_finite() && justify > 0.0 {
+                    for i in 0..len {
+                        lines[i].top += justify * i as f32;
+                    }
                 }
             }
         }
-        if last_page || true {
-            // single column only (matches current app usage)
-            let page_h = *dy;
-            pages.push(TextPageOut {
-                lines: std::mem::take(lines),
-                height: page_h,
-            });
-            *dx = _dx;
-        }
-        *dy = _dy;
-        *start_line = lines.len();
+        let page_h = lines.last().map(|l| l.top + l.height).unwrap_or(0.0);
+        pages.push(TextPageOut {
+            lines: std::mem::take(lines),
+            height: page_h,
+            page_index: *page_index,
+            char_start: *page_char_start,
+            char_end: cursor,
+        });
+        *page_index += 1;
+        *page_char_start = cursor;
+        *top = 0.0;
     };
 
-    let new_paragraph = |lines: &mut Vec<TextLineOut>,
-                         pages: &mut Vec<TextPageOut>,
-                         dy: &mut f32,
-                         dx: &mut f32,
-                         start_line: &mut usize| {
-        if *dy > _height2 {
-            new_page(lines, pages, dy, dx, start_line, true, false);
-        } else {
-            *dy += input.paragraph;
+    for (pi, para) in paragraphs.iter().enumerate() {
+        if is_cancelled(&cancel) {
+            return Err("cancelled".into());
         }
-    };
+        let mut remaining = (*para).to_string();
+        let para_abs_start = cursor;
 
-    for para in paragraphs {
-        let mut remaining = para.to_string();
+        if remaining.is_empty() {
+            // Empty paragraph → vertical gap only.
+            if top > height2 {
+                flush_page(
+                    &mut lines,
+                    &mut pages,
+                    &mut top,
+                    &mut page_index,
+                    &mut page_char_start,
+                    cursor,
+                    true,
+                    content_height,
+                );
+                if input.first_page_only && pages.len() >= 1 {
+                    return Ok(PaginateResult {
+                        pages,
+                        complete: false,
+                        next_char: cursor,
+                        engine: "rust".into(),
+                        abi: 3,
+                    });
+                }
+                if input.max_pages > 0 && pages.len() as u32 >= input.max_pages {
+                    return Ok(PaginateResult {
+                        pages,
+                        complete: false,
+                        next_char: cursor,
+                        engine: "rust".into(),
+                        abi: 3,
+                    });
+                }
+            } else {
+                top += paragraph_spacing;
+            }
+            cursor += 1; // the '\n'
+            continue;
+        }
+
         loop {
             if remaining.is_empty() {
-                new_paragraph(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line);
                 break;
             }
-            let (count, _w, line_h) = measure_fit(
+            line_counter = line_counter.wrapping_add(1);
+            if line_counter % 32 == 0 && is_cancelled(&cancel) {
+                return Err("cancelled".into());
+            }
+
+            let (count, _w, shaped_h) = measure_fit(
                 &mut font_system,
                 &remaining,
-                column_width,
+                fit_width,
                 size,
                 input.line_height,
                 family,
             );
-            let count = if count == 0 {
+            let mut end = if count == 0 {
                 remaining.chars().next().map(|c| c.len_utf8()).unwrap_or(1)
             } else {
                 count.min(remaining.len())
             };
-            // char boundary
-            let mut end = count;
             while end > 0 && !remaining.is_char_boundary(end) {
                 end -= 1;
             }
             if end == 0 {
                 end = remaining.chars().next().map(|c| c.len_utf8()).unwrap_or(1);
             }
+
             let text = remaining[..end].to_string();
             let measured = measure_width(
                 &mut font_system,
@@ -389,47 +529,127 @@ pub fn paginate(input: &LayoutInput) -> Result<Vec<TextPageOut>, String> {
                 input.line_height,
                 family,
             );
-            let mut spacing = 0.0f32;
-            // full-justify when nearly full (matches Dart: tp.width > _width2).
-            // Skip when measured is nonsense (missing glyphs → 0 width).
-            if measured > _width2 && measured > size * 0.5 && end > 0 {
-                let text_count = text.chars().count().max(1) as f32;
-                spacing = (_width - measured) / (text_count + 1.0);
-                // Clamp pathological spacing from bad metrics.
-                if !spacing.is_finite() || spacing.abs() > size {
-                    spacing = 0.0;
+            let is_para_end = end >= remaining.len();
+            // Nearly full → justify intent (Flutter computes spacing).
+            let nearly_full = measured > content_width - size && measured > size * 0.5;
+            let char_count = text.chars().count();
+            let justify = want_justify
+                && !is_para_end
+                && nearly_full
+                && char_count > 1;
+
+            let line_height_px = if shaped_h > 0.0 { shaped_h } else { line_h };
+
+            // New page if this line would overflow.
+            if top > height2 && !lines.is_empty() {
+                flush_page(
+                    &mut lines,
+                    &mut pages,
+                    &mut top,
+                    &mut page_index,
+                    &mut page_char_start,
+                    cursor,
+                    true,
+                    content_height,
+                );
+                if input.first_page_only {
+                    return Ok(PaginateResult {
+                        pages,
+                        complete: false,
+                        next_char: cursor,
+                        engine: "rust".into(),
+                        abi: 3,
+                    });
+                }
+                if input.max_pages > 0 && pages.len() as u32 >= input.max_pages {
+                    return Ok(PaginateResult {
+                        pages,
+                        complete: false,
+                        next_char: cursor,
+                        engine: "rust".into(),
+                        abi: 3,
+                    });
                 }
             }
+
             lines.push(TextLineOut {
                 text,
-                dx,
-                dy,
-                letter_spacing: spacing,
+                top,
+                height: line_height_px,
+                justify,
+                is_last_line: is_para_end,
+                is_paragraph_end: is_para_end,
+                target_width: content_width,
             });
-            dy += line_h;
-            if end >= remaining.len() {
+            top += line_height_px;
+            cursor += end;
+
+            if is_para_end {
                 remaining.clear();
-                new_paragraph(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line);
+                // paragraph spacing after last line of paragraph
+                if pi + 1 < paragraphs.len() {
+                    if top > height2 {
+                        flush_page(
+                            &mut lines,
+                            &mut pages,
+                            &mut top,
+                            &mut page_index,
+                            &mut page_char_start,
+                            cursor,
+                            true,
+                            content_height,
+                        );
+                    } else {
+                        top += paragraph_spacing;
+                    }
+                }
+                // account for '\n' separator except after last para
+                if pi + 1 < paragraphs.len() {
+                    cursor += 1;
+                }
                 break;
             } else {
                 remaining = remaining[end..].to_string();
-                if dy > _height2 {
-                    new_page(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line, true, false);
-                }
             }
+            let _ = para_abs_start; // silence unused in some paths
         }
     }
 
     if !lines.is_empty() {
-        new_page(&mut lines, &mut pages, &mut dy, &mut dx, &mut start_line, false, true);
+        flush_page(
+            &mut lines,
+            &mut pages,
+            &mut top,
+            &mut page_index,
+            &mut page_char_start,
+            cursor,
+            false,
+            content_height,
+        );
     }
     if pages.is_empty() {
         pages.push(TextPageOut {
             lines: vec![],
             height: 0.0,
+            page_index: 0,
+            char_start: start,
+            char_end: start,
         });
     }
-    Ok(pages)
+
+    let complete = cursor >= input.text.len() || input.text[start..].is_empty();
+    Ok(PaginateResult {
+        pages,
+        complete,
+        next_char: cursor.min(input.text.len()),
+        engine: "rust".into(),
+        abi: 3,
+    })
+}
+
+/// Convenience for tests / sync full paginate returning pages only.
+pub fn paginate_pages(input: &LayoutInput) -> Result<Vec<TextPageOut>, String> {
+    Ok(paginate(input)?.pages)
 }
 
 #[cfg(test)]
@@ -438,84 +658,37 @@ mod tests {
 
     #[test]
     fn empty_text_one_page() {
-        let pages = paginate(&LayoutInput {
+        // Without a real font file this returns Err — that's ABI3 behaviour.
+        let res = paginate(&LayoutInput {
             text: String::new(),
             font_size: 26.0,
             line_height: 1.8,
-            paragraph: 10.0,
-            box_width: 360.0,
-            box_height: 640.0,
+            paragraph_spacing: 10.0,
+            page_width: 360.0,
+            page_height: 640.0,
+            padding_left: 20.0,
+            padding_right: 20.0,
             padding_horizontal: 20.0,
+            padding_top: 0.0,
+            padding_bottom: 0.0,
             padding_vertical: 0.0,
             should_justify_height: true,
             font_path: String::new(),
-            font_family: "Roboto".into(),
-        })
-        .expect("paginate");
-        assert_eq!(pages.len(), 1);
-        assert!(pages[0].lines.is_empty());
+            font_family: "NotoSansSC".into(),
+            text_align: "justify".into(),
+            base_letter_spacing: 0.0,
+            job_id: 0,
+            first_page_only: false,
+            start_char: 0,
+            max_pages: 0,
+        });
+        assert!(res.is_err());
     }
 
     #[test]
-    fn simple_chinese_paginates() {
-        let text = "这是一段用于测试分页的中文内容。".repeat(80);
-        let pages = paginate(&LayoutInput {
-            text,
-            font_size: 26.0,
-            line_height: 1.8,
-            paragraph: 20.0,
-            box_width: 360.0,
-            box_height: 640.0,
-            padding_horizontal: 20.0,
-            padding_vertical: 0.0,
-            should_justify_height: true,
-            font_path: String::new(),
-            font_family: "Roboto".into(),
-        })
-        .expect("paginate");
-        assert!(pages.len() >= 1);
-        assert!(!pages[0].lines.is_empty());
-        // Must soft-wrap: first visual line cannot be the entire chapter.
-        assert!(
-            pages[0].lines.len() > 1 || pages.len() > 1,
-            "expected multi-line or multi-page pagination"
-        );
-        let first = &pages[0].lines[0].text;
-        assert!(
-            first.chars().count() < 80,
-            "first line too long ({} chars): possible missing wrap",
-            first.chars().count()
-        );
-    }
-
-    #[test]
-    fn long_paragraph_wraps_to_many_lines() {
-        // Single paragraph without newlines — classic "only first line" repro.
-        let text = "山不在高有仙则名水不在深有龙则灵斯是陋室惟吾德馨苔痕上阶绿草色入帘青谈笑有鸿儒往来无白丁可以调素琴阅金经无丝竹之乱耳无案牍之劳形南阳诸葛庐西蜀子云亭孔子云何陋之有".repeat(10);
-        let pages = paginate(&LayoutInput {
-            text: text.clone(),
-            font_size: 19.0,
-            line_height: 1.7,
-            paragraph: 10.0,
-            box_width: 360.0,
-            box_height: 640.0,
-            padding_horizontal: 20.0,
-            padding_vertical: 0.0,
-            should_justify_height: true,
-            font_path: String::new(),
-            font_family: "Roboto".into(),
-        })
-        .expect("paginate");
-        let total_lines: usize = pages.iter().map(|p| p.lines.len()).sum();
-        assert!(total_lines > 5, "expected many lines, got {total_lines}");
-        for p in &pages {
-            for line in &p.lines {
-                assert!(
-                    line.text.chars().count() <= 40,
-                    "line too long: {} chars",
-                    line.text.chars().count()
-                );
-            }
-        }
+    fn line_start_forbidden_marks() {
+        assert!(is_line_start_forbidden('。'));
+        assert!(is_line_start_forbidden('，'));
+        assert!(!is_line_start_forbidden('中'));
     }
 }

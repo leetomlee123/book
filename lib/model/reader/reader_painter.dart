@@ -1,17 +1,19 @@
 import 'dart:ui' as ui;
 
-import 'package:book/common/app_log.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:book/common/screen.dart';
 import 'package:book/entity/read_page.dart';
+import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:flutter/material.dart';
 import 'package:book/common/common.dart';
 
 /// Canvas painter for reader pages (page-turn chrome + scroll body tiles).
 ///
-/// Keeps paint math out of [ReadModel] so layout/theme changes stay local.
+/// ABI v3: Rust/Dart pagination emits **semantic** lines
+/// (`text` / `top` / `justify` / `targetWidth`). This painter is the **only**
+/// place that turns justify intent into Skia `letterSpacing` and paints.
 class ReaderPainter {
   ReaderPainter();
 
@@ -19,6 +21,82 @@ class ReaderPainter {
 
   final TextPainter _labelPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+
+  /// Compute final letterSpacing from justify intent using Flutter metrics.
+  static double resolveLetterSpacing({
+    required String text,
+    required TextStyle style,
+    required bool justify,
+    required double targetWidth,
+    required double fontSize,
+    double? cached,
+  }) {
+    if (cached != null && cached.isFinite && cached.abs() > 0.1) {
+      return cached;
+    }
+    if (!justify || targetWidth <= 0 || text.isEmpty) return 0;
+    final n = text.characters.length;
+    if (n <= 1) return 0;
+
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    final measured = tp.width;
+    if (measured <= 0 || measured >= targetWidth) return 0;
+    // Only expand when the line is near-full (matches paginator intent).
+    if (measured < targetWidth - fontSize) return 0;
+    final ls = (targetWidth - measured) / (n - 1);
+    if (!ls.isFinite || ls.abs() > fontSize * 0.5) return 0;
+    return ls;
+  }
+
+  /// Paint a single composed line. Never multi-line-wraps.
+  void _paintLine(
+    TextPainter painter,
+    Canvas canvas,
+    TextLine line,
+    TextStyle style,
+    double fontSize,
+    double contentWidth,
+    double padLeft,
+    double y,
+  ) {
+    final target =
+        line.targetWidth > 0 ? line.targetWidth : contentWidth;
+    var ls = resolveLetterSpacing(
+      text: line.text,
+      style: style,
+      justify: line.justify && !line.isLastLine,
+      targetWidth: target,
+      fontSize: fontSize,
+      cached: line.letterSpacing,
+    );
+
+    TextStyle lineStyle =
+        ls.abs() > 0.1 ? style.copyWith(letterSpacing: ls) : style;
+    painter.text = TextSpan(text: line.text, style: lineStyle);
+    // Unconstrained single-line layout — never re-wrap.
+    painter.layout();
+
+    if (ls != 0 && painter.width > contentWidth && nChars(line.text) > 1) {
+      final n = nChars(line.text);
+      final shrink = (painter.width - contentWidth) / (n - 1);
+      final adjusted = ls - shrink;
+      final clamped =
+          adjusted.isFinite && adjusted.abs() <= fontSize * 0.5 ? adjusted : 0.0;
+      painter.text = TextSpan(
+        text: line.text,
+        style: style.copyWith(letterSpacing: clamped),
+      );
+      painter.layout();
+    }
+
+    painter.paint(canvas, Offset(padLeft, y));
+  }
+
+  static int nChars(String text) => text.characters.length;
 
   /// Natural height of a scroll tile (content only + tiny pad).
   double scrollPageHeight(ReadPage readPage, int pageIdx) {
@@ -30,14 +108,19 @@ class ReaderPainter {
     if (page.lines.isEmpty) {
       return lineH + 4;
     }
-    var minDy = double.infinity;
-    var maxDy = 0.0;
-    for (final line in page.lines) {
-      if (line.dy < minDy) minDy = line.dy;
-      if (line.dy > maxDy) maxDy = line.dy;
+    // Prefer paginator-provided page height (ABI v3).
+    if (page.height > lineH) {
+      return page.height + 2;
     }
-    if (!minDy.isFinite) minDy = 0;
-    final contentH = (maxDy - minDy) + lineH;
+    var minTop = double.infinity;
+    var maxBottom = 0.0;
+    for (final line in page.lines) {
+      if (line.top < minTop) minTop = line.top;
+      final bottom = line.top + (line.height > 0 ? line.height : lineH);
+      if (bottom > maxBottom) maxBottom = bottom;
+    }
+    if (!minTop.isFinite) minTop = 0;
+    final contentH = maxBottom - minTop;
     return (contentH < lineH ? lineH : contentH) + 2;
   }
 
@@ -47,8 +130,8 @@ class ReaderPainter {
     int pageIdx, {
     required PaperTheme paperTheme,
   }) {
-    final bool night =
-        paperTheme == PaperTheme.night || SpUtil.getBool(PrefsKeys.dark, defValue: false);
+    final bool night = paperTheme == PaperTheme.night ||
+        SpUtil.getBool(PrefsKeys.dark, defValue: false);
     final effectivePaper = night ? PaperTheme.night : paperTheme;
     final paper = ReadSetting.paperColor(effectivePaper);
     final ink = ReadSetting.inkColor(effectivePaper);
@@ -74,7 +157,8 @@ class ReaderPainter {
     canvas.drawRect(Rect.fromLTWH(0, 0, pageW, tileH), Paint()..color = paper);
 
     final maxLineWidth = (pageW - contentPadding * 2).clamp(1.0, pageW);
-    final linePainter = TextPainter(textDirection: TextDirection.ltr);
+    final linePainter =
+        TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
     if (pageIdx < 0 ||
         pageIdx >= readPage.pages.length ||
@@ -94,25 +178,24 @@ class ReaderPainter {
     }
 
     final page = readPage.pages[pageIdx];
-    var minDy = double.infinity;
+    var minTop = double.infinity;
     for (final line in page.lines) {
-      if (line.dy < minDy) minDy = line.dy;
+      if (line.top < minTop) minTop = line.top;
     }
-    if (!minDy.isFinite) minDy = 0;
+    if (!minTop.isFinite) minTop = 0;
 
     for (final line in page.lines) {
-      final ls = line.letterSpacing;
-      final TextStyle lineStyle =
-          (ls != null && (ls < -0.1 || ls > 0.1) && ls.isFinite)
-              ? style.copyWith(letterSpacing: ls)
-              : style;
-      linePainter.text = TextSpan(text: line.text, style: lineStyle);
-      linePainter.layout();
-      if (linePainter.width > maxLineWidth * 1.05) {
-        linePainter.layout(maxWidth: maxLineWidth);
-      }
-      final y = (line.dy - minDy).clamp(0.0, tileH);
-      linePainter.paint(canvas, Offset(line.dx, y));
+      final y = (line.top - minTop).clamp(0.0, tileH);
+      _paintLine(
+        linePainter,
+        canvas,
+        line,
+        style,
+        fontSize,
+        maxLineWidth,
+        contentPadding,
+        y,
+      );
     }
     return recorder.endRecording();
   }
@@ -129,8 +212,8 @@ class ReaderPainter {
   }) {
     final pageRecorder = ui.PictureRecorder();
 
-    final bool night =
-        paperTheme == PaperTheme.night || SpUtil.getBool(PrefsKeys.dark, defValue: false);
+    final bool night = paperTheme == PaperTheme.night ||
+        SpUtil.getBool(PrefsKeys.dark, defValue: false);
     final effectivePaper = night ? PaperTheme.night : paperTheme;
     final paper = ReadSetting.paperColor(effectivePaper);
     final ink = ReadSetting.inkColor(effectivePaper);
@@ -210,7 +293,8 @@ class ReaderPainter {
       );
     }
 
-    final linePainter = TextPainter(textDirection: TextDirection.ltr);
+    final linePainter =
+        TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
     if (readPage.pages.isEmpty) {
       final fallbackPainter = TextPainter(
@@ -234,29 +318,16 @@ class ReaderPainter {
     final lineCount = page.lines.length;
     for (var li = 0; li < lineCount; li++) {
       final line = page.lines[li];
-      final ls = line.letterSpacing;
-      final TextStyle lineStyle =
-          (ls != null && (ls < -0.1 || ls > 0.1) && ls.isFinite)
-              ? style.copyWith(letterSpacing: ls)
-              : style;
-      final charCount = line.text.characters.length;
-      final roughMaxChars =
-          (maxLineWidth / (fontSize * 0.9)).floor().clamp(1, 500);
-      final needsWrap = charCount > roughMaxChars;
-      linePainter.text = TextSpan(text: line.text, style: lineStyle);
-      if (needsWrap) {
-        AppLog.w(
-          'Read',
-          'overlong line li=$li chars=$charCount — wrapping in drawContent',
-        );
-        linePainter.layout(maxWidth: maxLineWidth);
-      } else {
-        linePainter.layout();
-        if (linePainter.width > maxLineWidth * 1.05) {
-          linePainter.layout(maxWidth: maxLineWidth);
-        }
-      }
-      linePainter.paint(pageCanvas, Offset(line.dx, line.dy + bodyTop));
+      _paintLine(
+        linePainter,
+        pageCanvas,
+        line,
+        style,
+        fontSize,
+        maxLineWidth,
+        contentPadding,
+        line.top + bodyTop,
+      );
     }
     if (!chrome) {
       return pageRecorder.endRecording();
@@ -267,9 +338,9 @@ class ReaderPainter {
     _labelPainter.text = TextSpan(
       text: DateUtil.formatDate(DateTime.now(), format: DateFormats.h_m),
       style: TextStyle(
-        fontFamily: familyOrNull,
         fontSize: 12 / Screen.textScaleFactor,
         color: meta,
+        fontFamily: familyOrNull,
       ),
     );
     _labelPainter.layout();
@@ -277,19 +348,22 @@ class ReaderPainter {
       pageCanvas,
       Offset(contentPadding, bottomTextH),
     );
+
+    final pageLabel = '${pageIndex + 1}/${readPage.pages.length}';
     _labelPainter.text = TextSpan(
-      text: '${i + 1}/${readPage.pages.length}',
+      text: pageLabel,
       style: TextStyle(
         fontSize: 12 / Screen.textScaleFactor,
-        fontFamily: familyOrNull,
         color: meta,
+        fontFamily: familyOrNull,
       ),
     );
     _labelPainter.layout();
     _labelPainter.paint(
       pageCanvas,
-      Offset(Screen.width - contentPadding - 40, bottomTextH),
+      Offset(pageW - contentPadding - _labelPainter.width, bottomTextH),
     );
+
     return pageRecorder.endRecording();
   }
 }

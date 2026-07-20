@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:book/data/db/reader_database.dart';
+import 'package:book/source/import/source_importer.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -53,10 +54,50 @@ class SourceRepository {
   }
 
   Future<void> upsertAll(List<BookSource> sources) async {
-    if (sources.isEmpty) return;
+    await upsertAllWithStats(sources);
+  }
+
+  /// Upsert sources and report how many rows were newly inserted vs replaced.
+  ///
+  /// Existing `enabled` flags are preserved on update so re-importing a source
+  /// the user disabled does not re-enable it.
+  Future<SourceUpsertStats> upsertAllWithStats(List<BookSource> sources) async {
+    if (sources.isEmpty) {
+      return const SourceUpsertStats(inserted: 0, updated: 0);
+    }
     final db = await _database;
+    final urls = sources.map((s) => s.bookSourceUrl).toList();
+    final existingEnabled = <String, bool>{};
+    // Query in chunks to stay under SQLite variable limits.
+    const chunk = 400;
+    for (var i = 0; i < urls.length; i += chunk) {
+      final part = urls.sublist(
+        i,
+        i + chunk > urls.length ? urls.length : i + chunk,
+      );
+      final placeholders = List.filled(part.length, '?').join(',');
+      final rows = await db.rawQuery(
+        'SELECT book_source_url, enabled FROM sources '
+        'WHERE book_source_url IN ($placeholders)',
+        part,
+      );
+      for (final r in rows) {
+        final u = r['book_source_url'] as String? ?? '';
+        if (u.isEmpty) continue;
+        existingEnabled[u] = (r['enabled'] as int? ?? 1) == 1;
+      }
+    }
+
+    var inserted = 0;
+    var updated = 0;
     final batch = db.batch();
     for (final s in sources) {
+      if (existingEnabled.containsKey(s.bookSourceUrl)) {
+        s.enabled = existingEnabled[s.bookSourceUrl]!;
+        updated++;
+      } else {
+        inserted++;
+      }
       batch.insert(
         'sources',
         _toRow(s),
@@ -64,6 +105,7 @@ class SourceRepository {
       );
     }
     await batch.commit(noResult: true);
+    return SourceUpsertStats(inserted: inserted, updated: updated);
   }
 
   Future<void> setEnabled(String url, bool enabled) async {
@@ -74,6 +116,35 @@ class SourceRepository {
       where: 'book_source_url = ?',
       whereArgs: [url],
     );
+  }
+
+  Future<void> setEnabledMany(List<String> urls, bool enabled) async {
+    if (urls.isEmpty) return;
+    final db = await _database;
+    final batch = db.batch();
+    for (final url in urls) {
+      batch.update(
+        'sources',
+        {'enabled': enabled ? 1 : 0},
+        where: 'book_source_url = ?',
+        whereArgs: [url],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> deleteMany(List<String> urls) async {
+    if (urls.isEmpty) return;
+    final db = await _database;
+    final batch = db.batch();
+    for (final url in urls) {
+      batch.delete(
+        'sources',
+        where: 'book_source_url = ?',
+        whereArgs: [url],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 
   Future<void> updateOrder(String url, int order) async {

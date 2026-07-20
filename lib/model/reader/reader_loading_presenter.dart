@@ -32,7 +32,7 @@ class ReaderLoadingPresenter {
     page.chapterName = '加载中';
     page.chapterContent = hint;
     page.pages = [
-      TextPage([TextLine(hint, 0, 0, 0)], 24),
+      TextPage([TextLine.simple(hint)], 24),
     ];
     return page;
   }
@@ -51,7 +51,7 @@ class ReaderLoadingPresenter {
       // Absolute fallback so drawContent never paints a blank canvas.
       page.pages = [
         TextPage([
-          TextLine(message, 16, 0, 0),
+          TextLine.simple(message, height: 24),
         ], 24),
       ];
     }

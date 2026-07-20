@@ -150,16 +150,22 @@ class _SearchState extends ConsumerState<Search> {
   ) {
     // First-page search in flight — show spinner, not "empty".
     if (model.loading && model.bks.isEmpty) {
+      final progress = model.totalSources > 0
+          ? '正在搜索书源…(${model.searchedSources}/${model.totalSources})'
+          : '正在搜索书源…';
       return ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          SizedBox(height: 140),
-          Center(child: CupertinoActivityIndicator(radius: 14)),
-          SizedBox(height: 16),
+        children: [
+          const SizedBox(height: 140),
+          const Center(child: CupertinoActivityIndicator(radius: 14)),
+          const SizedBox(height: 16),
           Center(
             child: Text(
-              '正在搜索书源…',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              progress,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],

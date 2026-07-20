@@ -16,22 +16,46 @@ typedef _FreeNative = Void Function(Pointer<Utf8> ptr);
 typedef _FreeDart = void Function(Pointer<Utf8> ptr);
 typedef _AbiVersionNative = Int32 Function();
 typedef _AbiVersionDart = int Function();
+typedef _CancelNative = Void Function(Uint64 jobId);
+typedef _CancelDart = void Function(int jobId);
 
-/// Minimum native ABI we accept. Older packaged `.so` files (pre-Android font
-/// load) panic with `no default font found` and abort the process — refuse them.
-const int _minAbiVersion = 2;
-
-/// FFI bridge to the Rust `book_pager` library.
+/// Minimum native ABI we accept.
 ///
-/// Safe to call from any isolate: each isolate loads the dynamic library once.
-/// Prefer [paginateAsync] from the UI isolate so long chapters do not jank frames.
+/// ABI 3: semantic lines (top/height/justify/target_width), required font_path,
+/// PaginateResult envelope, cancel/range.
+const int bookPagerAbiVersion = 3;
+const int _minAbiVersion = 3;
+
+/// Result of a native (or mapped) paginate call.
+class PaginateResult {
+  final List<TextPage> pages;
+  final bool complete;
+  final int nextChar;
+  final String engine;
+  final int abi;
+
+  const PaginateResult({
+    required this.pages,
+    this.complete = true,
+    this.nextChar = 0,
+    this.engine = 'rust',
+    this.abi = bookPagerAbiVersion,
+  });
+}
+
+/// FFI bridge to the Rust `book_pager` library (ABI v3).
+///
+/// Rust decides line breaks + justify **intent**. Flutter paints with Skia.
 class BookPager {
   BookPager._();
 
   static _PaginateDart? _paginate;
+  static _PaginateDart? _paginateRange;
   static _FreeDart? _free;
+  static _CancelDart? _cancel;
   static bool _initAttempted = false;
   static String? lastError;
+  static int loadedAbi = 0;
 
   static bool get isAvailable {
     _ensureInit();
@@ -43,8 +67,6 @@ class BookPager {
     _initAttempted = true;
     try {
       final lib = _open();
-      // Reject pre-v2 libs: they crash the whole process on Android when
-      // cosmic-text has no system fonts loaded (fontdb skips Android).
       int abi = 0;
       try {
         final abiFn = lib.lookupFunction<_AbiVersionNative, _AbiVersionDart>(
@@ -54,6 +76,7 @@ class BookPager {
       } catch (_) {
         abi = 0;
       }
+      loadedAbi = abi;
       if (abi < _minAbiVersion) {
         lastError =
             'native book_pager ABI $abi < $_minAbiVersion (rebuild with build_book_pager.bat --android)';
@@ -67,14 +90,25 @@ class BookPager {
       }
       _paginate = lib
           .lookupFunction<_PaginateNative, _PaginateDart>('book_pager_paginate');
+      try {
+        _paginateRange = lib.lookupFunction<_PaginateNative, _PaginateDart>(
+          'book_pager_paginate_range',
+        );
+      } catch (_) {
+        _paginateRange = _paginate;
+      }
       _free =
           lib.lookupFunction<_FreeNative, _FreeDart>('book_pager_free_string');
+      try {
+        _cancel =
+            lib.lookupFunction<_CancelNative, _CancelDart>('book_pager_cancel');
+      } catch (_) {
+        _cancel = null;
+      }
       debugPrint('[PagerEngine] loaded libbook_pager abi=$abi OK');
       AppLog.i('BookPager', 'loaded native book_pager abi=$abi');
     } catch (e, st) {
       lastError = '$e';
-      // Missing ABI is expected on emulators until jniLibs/<abi>/ is built.
-      // TextComposition falls back to Dart TextPainter — not a hard failure.
       final msg = '$e';
       final missing = msg.contains('not found') ||
           msg.contains('Failed to load dynamic library');
@@ -85,8 +119,7 @@ class BookPager {
         );
         AppLog.i(
           'BookPager',
-          'native lib not packaged for this ABI; using Dart pager '
-          '(build with build_book_pager.bat --android for arm64+x86_64)',
+          'native lib not packaged for this ABI; using Dart pager',
         );
       } else {
         debugPrint('[PagerEngine] native load failed → DART pager: $e');
@@ -130,6 +163,201 @@ class BookPager {
     throw UnsupportedError('BookPager: unsupported platform');
   }
 
+  /// Cancel a native job (no-op if unsupported / jobId==0).
+  static void cancel(int jobId) {
+    if (jobId == 0) return;
+    _ensureInit();
+    _cancel?.call(jobId);
+  }
+
+  static Map<String, dynamic> _inputMap({
+    required String text,
+    required double fontSize,
+    required double lineHeight,
+    required double paragraph,
+    required double boxWidth,
+    required double boxHeight,
+    required double paddingHorizontal,
+    double paddingVertical = 0,
+    bool shouldJustifyHeight = true,
+    String fontPath = '',
+    String fontFamily = 'NotoSansSC',
+    String textAlign = 'justify',
+    double baseLetterSpacing = 0,
+    int jobId = 0,
+    bool firstPageOnly = false,
+    int startChar = 0,
+    int maxPages = 0,
+  }) {
+    return <String, dynamic>{
+      'text': text,
+      'font_size': fontSize,
+      'line_height': lineHeight,
+      'paragraph': paragraph,
+      'paragraph_spacing': paragraph,
+      'box_width': boxWidth,
+      'box_height': boxHeight,
+      'page_width': boxWidth,
+      'page_height': boxHeight,
+      'padding_horizontal': paddingHorizontal,
+      'padding_left': paddingHorizontal,
+      'padding_right': paddingHorizontal,
+      'padding_vertical': paddingVertical,
+      'should_justify_height': shouldJustifyHeight,
+      'font_path': fontPath,
+      'font_family': fontFamily,
+      'text_align': textAlign,
+      'base_letter_spacing': baseLetterSpacing,
+      'job_id': jobId,
+      'first_page_only': firstPageOnly,
+      'start_char': startChar,
+      'max_pages': maxPages,
+    };
+  }
+
+  static TextLine _lineFromMap(Map<String, dynamic> lm) {
+    return TextLine(
+      lm['text'] as String? ?? '',
+      top: (lm['top'] as num?)?.toDouble() ??
+          (lm['dy'] as num?)?.toDouble() ??
+          0,
+      height: (lm['height'] as num?)?.toDouble() ?? 0,
+      justify: lm['justify'] as bool? ?? false,
+      isLastLine: lm['is_last_line'] as bool? ??
+          lm['isLastLine'] as bool? ??
+          false,
+      isParagraphEnd: lm['is_paragraph_end'] as bool? ??
+          lm['isParagraphEnd'] as bool? ??
+          false,
+      targetWidth: (lm['target_width'] as num?)?.toDouble() ??
+          (lm['targetWidth'] as num?)?.toDouble() ??
+          0,
+      // ABI3: prefer paint-time spacing; ignore rust letter_spacing if present.
+      letterSpacing: null,
+    );
+  }
+
+  static TextPage _pageFromMap(Map<String, dynamic> m, {int fallbackIndex = 0}) {
+    final lines = (m['lines'] as List? ?? [])
+        .map((l) => _lineFromMap(Map<String, dynamic>.from(l as Map)))
+        .toList();
+    return TextPage(
+      lines,
+      (m['height'] as num?)?.toDouble() ?? 0,
+      pageIndex: m['page_index'] as int? ??
+          m['pageIndex'] as int? ??
+          fallbackIndex,
+      charStart: m['char_start'] as int? ?? m['charStart'] as int? ?? 0,
+      charEnd: m['char_end'] as int? ?? m['charEnd'] as int? ?? 0,
+    );
+  }
+
+  static PaginateResult _decodeResult(String out) {
+    final decoded = jsonDecode(out);
+    if (decoded is Map && decoded.containsKey('error')) {
+      throw StateError('BookPager error: ${decoded['error']}');
+    }
+    // ABI3 envelope
+    if (decoded is Map && decoded['pages'] is List) {
+      final pages = <TextPage>[];
+      final list = decoded['pages'] as List;
+      for (var i = 0; i < list.length; i++) {
+        pages.add(
+          _pageFromMap(Map<String, dynamic>.from(list[i] as Map),
+              fallbackIndex: i),
+        );
+      }
+      return PaginateResult(
+        pages: pages,
+        complete: decoded['complete'] as bool? ?? true,
+        nextChar: decoded['next_char'] as int? ??
+            decoded['nextChar'] as int? ??
+            0,
+        engine: decoded['engine'] as String? ?? 'rust',
+        abi: decoded['abi'] as int? ?? loadedAbi,
+      );
+    }
+    // Legacy bare list (should not happen with ABI3)
+    if (decoded is List) {
+      final pages = <TextPage>[];
+      for (var i = 0; i < decoded.length; i++) {
+        pages.add(
+          _pageFromMap(Map<String, dynamic>.from(decoded[i] as Map),
+              fallbackIndex: i),
+        );
+      }
+      return PaginateResult(pages: pages, complete: true, engine: 'rust');
+    }
+    throw StateError('BookPager: unexpected payload ${decoded.runtimeType}');
+  }
+
+  static PaginateResult paginateResult({
+    required String text,
+    required double fontSize,
+    required double lineHeight,
+    required double paragraph,
+    required double boxWidth,
+    required double boxHeight,
+    required double paddingHorizontal,
+    double paddingVertical = 0,
+    bool shouldJustifyHeight = true,
+    String fontPath = '',
+    String fontFamily = 'NotoSansSC',
+    String textAlign = 'justify',
+    double baseLetterSpacing = 0,
+    int jobId = 0,
+    bool firstPageOnly = false,
+    int startChar = 0,
+    int maxPages = 0,
+    bool useRange = false,
+  }) {
+    _ensureInit();
+    final paginateFn = useRange ? (_paginateRange ?? _paginate) : _paginate;
+    final freeFn = _free;
+    if (paginateFn == null || freeFn == null) {
+      throw StateError(
+          'BookPager native library not loaded: ${lastError ?? "unknown"}');
+    }
+    if (fontPath.isEmpty) {
+      throw StateError('BookPager ABI3 requires font_path');
+    }
+
+    final input = _inputMap(
+      text: text,
+      fontSize: fontSize,
+      lineHeight: lineHeight,
+      paragraph: paragraph,
+      boxWidth: boxWidth,
+      boxHeight: boxHeight,
+      paddingHorizontal: paddingHorizontal,
+      paddingVertical: paddingVertical,
+      shouldJustifyHeight: shouldJustifyHeight,
+      fontPath: fontPath,
+      fontFamily: fontFamily,
+      textAlign: textAlign,
+      baseLetterSpacing: baseLetterSpacing,
+      jobId: jobId,
+      firstPageOnly: firstPageOnly,
+      startChar: startChar,
+      maxPages: maxPages,
+    );
+
+    final inputPtr = jsonEncode(input).toNativeUtf8();
+    Pointer<Utf8>? outPtr;
+    try {
+      outPtr = paginateFn(inputPtr);
+      if (outPtr == nullptr) {
+        throw StateError('BookPager returned null');
+      }
+      return _decodeResult(outPtr.toDartString());
+    } finally {
+      malloc.free(inputPtr);
+      if (outPtr != null && outPtr != nullptr) {
+        freeFn(outPtr);
+      }
+    }
+  }
+
   /// Layout [text] into pages on the **current** isolate (sync / may block).
   static List<TextPage> paginate({
     required String text,
@@ -142,73 +370,26 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'Roboto',
+    String fontFamily = 'NotoSansSC',
+    int jobId = 0,
   }) {
-    _ensureInit();
-    final paginateFn = _paginate;
-    final freeFn = _free;
-    if (paginateFn == null || freeFn == null) {
-      throw StateError(
-          'BookPager native library not loaded: ${lastError ?? "unknown"}');
-    }
-
-    final input = <String, dynamic>{
-      'text': text,
-      'font_size': fontSize,
-      'line_height': lineHeight,
-      'paragraph': paragraph,
-      'box_width': boxWidth,
-      'box_height': boxHeight,
-      'padding_horizontal': paddingHorizontal,
-      'padding_vertical': paddingVertical,
-      'should_justify_height': shouldJustifyHeight,
-      'font_path': fontPath,
-      'font_family': fontFamily,
-    };
-
-    final inputPtr = jsonEncode(input).toNativeUtf8();
-    Pointer<Utf8>? outPtr;
-    try {
-      outPtr = paginateFn(inputPtr);
-      if (outPtr == nullptr) {
-        throw StateError('BookPager returned null');
-      }
-      final out = outPtr.toDartString();
-      final decoded = jsonDecode(out);
-      if (decoded is Map && decoded.containsKey('error')) {
-        throw StateError('BookPager error: ${decoded['error']}');
-      }
-      if (decoded is! List) {
-        throw StateError('BookPager: expected list, got ${decoded.runtimeType}');
-      }
-      return decoded.map<TextPage>((e) {
-        final m = Map<String, dynamic>.from(e as Map);
-        final lines = (m['lines'] as List? ?? []).map((l) {
-          final lm = Map<String, dynamic>.from(l as Map);
-          return TextLine(
-            lm['text'] as String? ?? '',
-            (lm['dx'] as num?)?.toDouble() ?? 0,
-            (lm['dy'] as num?)?.toDouble() ?? 0,
-            (lm['letter_spacing'] as num?)?.toDouble() ?? 0,
-          );
-        }).toList();
-        return TextPage(
-          lines,
-          (m['height'] as num?)?.toDouble() ?? 0,
-        );
-      }).toList();
-    } finally {
-      malloc.free(inputPtr);
-      if (outPtr != null && outPtr != nullptr) {
-        freeFn(outPtr);
-      }
-    }
+    return paginateResult(
+      text: text,
+      fontSize: fontSize,
+      lineHeight: lineHeight,
+      paragraph: paragraph,
+      boxWidth: boxWidth,
+      boxHeight: boxHeight,
+      paddingHorizontal: paddingHorizontal,
+      paddingVertical: paddingVertical,
+      shouldJustifyHeight: shouldJustifyHeight,
+      fontPath: fontPath,
+      fontFamily: fontFamily,
+      jobId: jobId,
+    ).pages;
   }
 
   /// Paginate on a **background isolate** so the UI isolate stays responsive.
-  ///
-  /// Each worker isolate loads `libbook_pager` itself (static state is
-  /// per-isolate). Prefer this from UI code for full chapters.
   static Future<List<TextPage>> paginateAsync({
     required String text,
     required double fontSize,
@@ -220,9 +401,9 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'Roboto',
+    String fontFamily = 'NotoSansSC',
+    int jobId = 0,
   }) {
-    // Short / empty text: avoid isolate spawn overhead.
     if (text.length < 800) {
       return Future.value(paginate(
         text: text,
@@ -236,39 +417,96 @@ class BookPager {
         shouldJustifyHeight: shouldJustifyHeight,
         fontPath: fontPath,
         fontFamily: fontFamily,
+        jobId: jobId,
       ));
     }
 
-    final payload = <String, dynamic>{
-      'text': text,
-      'font_size': fontSize,
-      'line_height': lineHeight,
-      'paragraph': paragraph,
-      'box_width': boxWidth,
-      'box_height': boxHeight,
-      'padding_horizontal': paddingHorizontal,
-      'padding_vertical': paddingVertical,
-      'should_justify_height': shouldJustifyHeight,
-      'font_path': fontPath,
-      'font_family': fontFamily,
-    };
+    final payload = _inputMap(
+      text: text,
+      fontSize: fontSize,
+      lineHeight: lineHeight,
+      paragraph: paragraph,
+      boxWidth: boxWidth,
+      boxHeight: boxHeight,
+      paddingHorizontal: paddingHorizontal,
+      paddingVertical: paddingVertical,
+      shouldJustifyHeight: shouldJustifyHeight,
+      fontPath: fontPath,
+      fontFamily: fontFamily,
+      jobId: jobId,
+    );
     return Isolate.run(() => _paginateFromPayload(payload));
   }
 
-  /// Top-level-friendly entry for [Isolate.run] / [compute].
+  /// First-page-first + optional continuation (still one shot for now;
+  /// caller may loop with [startChar] / [firstPageOnly]).
+  static Future<PaginateResult> paginateRangeAsync({
+    required String text,
+    required double fontSize,
+    required double lineHeight,
+    required double paragraph,
+    required double boxWidth,
+    required double boxHeight,
+    required double paddingHorizontal,
+    double paddingVertical = 0,
+    bool shouldJustifyHeight = true,
+    String fontPath = '',
+    String fontFamily = 'NotoSansSC',
+    int jobId = 0,
+    bool firstPageOnly = false,
+    int startChar = 0,
+    int maxPages = 0,
+  }) {
+    final payload = _inputMap(
+      text: text,
+      fontSize: fontSize,
+      lineHeight: lineHeight,
+      paragraph: paragraph,
+      boxWidth: boxWidth,
+      boxHeight: boxHeight,
+      paddingHorizontal: paddingHorizontal,
+      paddingVertical: paddingVertical,
+      shouldJustifyHeight: shouldJustifyHeight,
+      fontPath: fontPath,
+      fontFamily: fontFamily,
+      jobId: jobId,
+      firstPageOnly: firstPageOnly,
+      startChar: startChar,
+      maxPages: maxPages,
+    );
+    return Isolate.run(() => _paginateResultFromPayload(payload));
+  }
+
   static List<TextPage> _paginateFromPayload(Map<String, dynamic> p) {
-    return paginate(
+    return _paginateResultFromPayload(p).pages;
+  }
+
+  static PaginateResult _paginateResultFromPayload(Map<String, dynamic> p) {
+    return paginateResult(
       text: p['text'] as String? ?? '',
       fontSize: (p['font_size'] as num?)?.toDouble() ?? 26,
       lineHeight: (p['line_height'] as num?)?.toDouble() ?? 1.8,
-      paragraph: (p['paragraph'] as num?)?.toDouble() ?? 10,
-      boxWidth: (p['box_width'] as num?)?.toDouble() ?? 360,
-      boxHeight: (p['box_height'] as num?)?.toDouble() ?? 640,
+      paragraph: (p['paragraph'] as num?)?.toDouble() ??
+          (p['paragraph_spacing'] as num?)?.toDouble() ??
+          10,
+      boxWidth: (p['box_width'] as num?)?.toDouble() ??
+          (p['page_width'] as num?)?.toDouble() ??
+          360,
+      boxHeight: (p['box_height'] as num?)?.toDouble() ??
+          (p['page_height'] as num?)?.toDouble() ??
+          640,
       paddingHorizontal: (p['padding_horizontal'] as num?)?.toDouble() ?? 20,
       paddingVertical: (p['padding_vertical'] as num?)?.toDouble() ?? 0,
       shouldJustifyHeight: p['should_justify_height'] as bool? ?? true,
       fontPath: p['font_path'] as String? ?? '',
-      fontFamily: p['font_family'] as String? ?? 'Roboto',
+      fontFamily: p['font_family'] as String? ?? 'NotoSansSC',
+      textAlign: p['text_align'] as String? ?? 'justify',
+      baseLetterSpacing: (p['base_letter_spacing'] as num?)?.toDouble() ?? 0,
+      jobId: p['job_id'] as int? ?? 0,
+      firstPageOnly: p['first_page_only'] as bool? ?? false,
+      startChar: p['start_char'] as int? ?? 0,
+      maxPages: p['max_pages'] as int? ?? 0,
+      useRange: true,
     );
   }
 }

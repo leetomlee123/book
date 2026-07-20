@@ -63,3 +63,10 @@ flutter:
   uses-material-design: true
   assets:
     - images/
+    # Optional: drop NotoSansSC-Regular.ttf into assets/fonts/ then uncomment
+    # the fonts: block below so Flutter + Rust share one face (ABI v3).
+    # - assets/fonts/NotoSansSC-Regular.ttf
+  # fonts:
+  #   - family: NotoSansSC
+  #     fonts:
+  #       - asset: assets/fonts/NotoSansSC-Regular.ttf

@@ -150,9 +150,20 @@ class ChapterContentLoader {
       );
     } else {
       try {
-        r.pages = await _paginator.paginate(r);
+        final outcome = await _paginator.paginateProgressive(r);
+        r.pages = outcome.pages;
+        debugPrint(
+          '[PagerEngine] progressive engine=${outcome.engine} '
+          'pages=${r.pages.length} complete=${outcome.complete} '
+          'reason=${outcome.fallbackReason ?? "-"}',
+        );
+        AppLog.i(
+          'Pager',
+          'progressive engine=${outcome.engine} pages=${r.pages.length} '
+              'complete=${outcome.complete} reason=${outcome.fallbackReason ?? "-"}',
+        );
       } catch (e, st) {
-        AppLog.e('Read', 'parseContentAsync failed idx=$idx',
+        AppLog.e('Read', 'paginateProgressive failed idx=$idx',
             error: e, stackTrace: st);
         r.pages = const [];
       }
@@ -208,7 +219,7 @@ class ChapterContentLoader {
   List<TextPage> fallbackPages(String content) {
     final text = content.trim();
     if (text.isEmpty) {
-      return [TextPage([TextLine('内容为空', 16, 0, 0)], 24)];
+      return [TextPage([TextLine.simple('内容为空')], 24)];
     }
     try {
       final pages = _paginator.paginateSync(
@@ -218,7 +229,7 @@ class ChapterContentLoader {
       if (pages.isNotEmpty) return pages;
     } catch (_) {}
     // Absolute last resort: one long line page.
-    return [TextPage([TextLine(text, 16, 0, 0)], 24)];
+    return [TextPage([TextLine.simple(text)], 24)];
   }
 
   void _logContentDiag(

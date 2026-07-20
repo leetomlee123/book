@@ -166,14 +166,37 @@ class ReadSetting {
 
   // ---- Font family / path (reader pagination + paint) ----
 
-  static String getFontFamily() =>
-      SpUtil.getString(fontNameKey, defValue: 'Roboto');
+  /// Bundled CJK face used when the user has not picked a custom font.
+  /// Keep in sync with `pubspec.yaml` fonts entry and assets/fonts/*.
+  static const String defaultFontFamily = 'NotoSansSC';
+  static const String defaultFontAsset = 'assets/fonts/NotoSansSC-Regular.ttf';
 
-  static void setFontFamily(String name) {
-    SpUtil.putString(fontNameKey, name.isEmpty ? 'Roboto' : name);
+  /// Absolute path of the extracted default TTF (filled by bootstrap).
+  static String _bundledFontPath = '';
+
+  static void setBundledFontPath(String path) {
+    _bundledFontPath = path;
   }
 
-  static String getFontPath() => SpUtil.getString(fontPathKey, defValue: '');
+  static String getFontFamily() {
+    final name = SpUtil.getString(fontNameKey, defValue: '');
+    if (name.isEmpty || name == 'Roboto') return defaultFontFamily;
+    return name;
+  }
+
+  static void setFontFamily(String name) {
+    SpUtil.putString(
+      fontNameKey,
+      name.isEmpty ? defaultFontFamily : name,
+    );
+  }
+
+  /// Prefer user custom path; else extracted bundled TTF for Rust ABI3.
+  static String getFontPath() {
+    final custom = SpUtil.getString(fontPathKey, defValue: '');
+    if (custom.isNotEmpty) return custom;
+    return _bundledFontPath;
+  }
 
   static void setFontPath(String path) {
     SpUtil.putString(fontPathKey, path);

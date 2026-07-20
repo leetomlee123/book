@@ -27,6 +27,7 @@ class ReaderContentReloader {
     required this.hideLoading,
     required this.markNeedsPaint,
     required this.notify,
+    this.cancelPagination,
   });
 
   final ChapterRepository chaptersRepo;
@@ -47,6 +48,9 @@ class ReaderContentReloader {
   final void Function() hideLoading;
   final void Function() markNeedsPaint;
   final void Function() notify;
+
+  /// Cancel in-flight Rust/Dart progressive pagination (ABI v3).
+  final void Function()? cancelPagination;
 
   Future<void> reloadChapters() async {
     final b = bookOf();
@@ -101,6 +105,7 @@ class ReaderContentReloader {
   }
 
   Future<void> relayoutPages() async {
+    cancelPagination?.call();
     clearPictures();
     // Font/metrics changed — drop disk page layouts for the active book only.
     final b = bookOf();

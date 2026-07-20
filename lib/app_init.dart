@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:book/common/pic_widget.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/reader_font_bootstrap.dart';
 import 'package:book/data/db/reader_database.dart';
 import 'package:book/main.dart';
 import 'package:book/route/routes.dart';
@@ -96,6 +97,8 @@ class AppInit {
     }
 
     await SpUtil.getInstance();
+    // Extract bundled CJK TTF so Rust book_pager uses the same face as Flutter.
+    await ReaderFontBootstrap.ensure();
     // Single-file reader.db — drop legacy multi-DB files (no migration).
     await ReaderDatabase.wipeLegacyDatabases();
     // Drop pre-reader.db SpUtil page-layout keys (`*pages*`).
