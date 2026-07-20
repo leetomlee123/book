@@ -136,10 +136,16 @@ class ColorModel with ChangeNotifier {
     final n = name.isEmpty ? 'Roboto' : name;
     final ok = await ensureFontLoaded(n);
     if (!ok) return false;
-    final path = await FontCatalog.resolvePath(n);
     font = n;
     ReadSetting.setFontFamily(n);
-    ReadSetting.setFontPath(path);
+    if (n == 'Roboto') {
+      // System face — clear SpUtil path so Rust/Dart don't keep the previous TTF.
+      ReadSetting.clearFontPath();
+    } else {
+      final path = await FontCatalog.resolvePath(n);
+      // Bundled default may already be ready via pubspec with path filled later.
+      ReadSetting.setFontPath(path);
+    }
     notifyListeners();
     return true;
   }
@@ -147,11 +153,21 @@ class ColorModel with ChangeNotifier {
   bool isFontLoaded(String fontName) =>
       fontName.isEmpty ||
       fontName == 'Roboto' ||
+      fontName == ReadSetting.defaultFontFamily ||
       _loadedFamilies.contains(fontName);
 
   /// Ensure [fontName] is registered with Flutter's [FontLoader].
   Future<bool> ensureFontLoaded(String fontName) async {
     if (fontName.isEmpty || fontName == 'Roboto') return true;
+    // pubspec.yaml already registers the bundled family — no FontLoader needed.
+    if (fontName == ReadSetting.defaultFontFamily) {
+      _loadedFamilies.add(fontName);
+      // Still prefer an extracted path for Rust.
+      if (ReadSetting.bundledFontPath.isEmpty) {
+        // Bootstrap may not have finished; resolvePath handles empty.
+      }
+      return true;
+    }
     if (_loadedFamilies.contains(fontName)) return true;
 
     var path = await FontCatalog.resolvePath(fontName);

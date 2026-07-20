@@ -399,7 +399,7 @@ class TextComposition {
     } else if (nativeOk && fontPath.isEmpty) {
       debugPrint(
         '[PagerEngine] ENGINE=DART reason=font_path_empty '
-        '(need assets/fonts/NotoSansSC-Regular.ttf or custom font)',
+        '(need assets/fonts/HarmonyOS_Sans_SC_Regular.ttf or custom font)',
       );
       AppLog.i('Pager', 'ENGINE=DART reason=font_path_empty');
     } else {

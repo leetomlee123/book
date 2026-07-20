@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:book/common/app_log.dart';
+import 'package:book/common/local_store.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -25,21 +26,26 @@ class ReaderFontBootstrap {
       if (!fontsDir.existsSync()) {
         fontsDir.createSync(recursive: true);
       }
-      final outPath = p.join(fontsDir.path, 'NotoSansSC-Regular.ttf');
+      // File name must match the asset basename so cache paths stay stable.
+      final outPath =
+          p.join(fontsDir.path, p.basename(ReadSetting.defaultFontAsset));
       final outFile = File(outPath);
 
-      if (!outFile.existsSync() || outFile.lengthSync() < 1024) {
+      // Re-extract if missing or suspiciously small (corrupt / partial write).
+      if (!outFile.existsSync() || outFile.lengthSync() < 1024 * 100) {
         try {
-          final data =
-              await rootBundle.load(ReadSetting.defaultFontAsset);
+          final data = await rootBundle.load(ReadSetting.defaultFontAsset);
           final bytes = data.buffer.asUint8List(
             data.offsetInBytes,
             data.lengthInBytes,
           );
           await outFile.writeAsBytes(bytes, flush: true);
-          AppLog.i('Font', 'extracted bundled font → $outPath');
+          AppLog.i(
+            'Font',
+            'extracted bundled font (${bytes.length} bytes) → $outPath',
+          );
         } catch (e) {
-          // Asset not packaged yet — Rust will require font_path and fall back.
+          // Asset not packaged — Rust will require font_path and fall back.
           AppLog.w(
             'Font',
             'bundled font asset missing (${ReadSetting.defaultFontAsset}); '
@@ -50,14 +56,26 @@ class ReaderFontBootstrap {
         }
       }
 
-      if (outFile.existsSync() && outFile.lengthSync() > 1024) {
+      if (outFile.existsSync() && outFile.lengthSync() > 1024 * 100) {
         ReadSetting.setBundledFontPath(outPath);
-        // Default family to bundled face when user never chose one.
-        final fam = ReadSetting.getFontFamily();
-        if (fam.isEmpty || fam == 'Roboto') {
+        // Only seed default family when user has never chosen one.
+        final stored = SpUtil.getString(ReadSetting.fontNameKey, defValue: '');
+        if (stored.isEmpty) {
           ReadSetting.setFontFamily(ReadSetting.defaultFontFamily);
         }
-        AppLog.i('Font', 'bundled font ready path=$outPath');
+        // If current selection is the bundled face (or legacy Noto default name
+        // with no custom path), keep SpUtil path pointing at extracted file.
+        final family = ReadSetting.getFontFamily();
+        final custom = SpUtil.getString(ReadSetting.fontPathKey, defValue: '');
+        if (custom.isEmpty &&
+            (family == ReadSetting.defaultFontFamily ||
+                family == 'NotoSansSC')) {
+          if (family == 'NotoSansSC') {
+            ReadSetting.setFontFamily(ReadSetting.defaultFontFamily);
+          }
+          ReadSetting.setFontPath(outPath);
+        }
+        AppLog.i('Font', 'bundled font ready path=$outPath family=$family');
       }
     } catch (e, st) {
       AppLog.w('Font', 'bootstrap failed', error: e);

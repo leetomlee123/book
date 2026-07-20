@@ -94,7 +94,8 @@ class SourceImporter {
     final byUrl = <String, BookSource>{};
     var duplicates = 0;
     for (final m in list) {
-      final s = BookSource.fromLegadoJson(m);
+      final normalized = _normalizeLegadoMap(m);
+      final s = BookSource.fromLegadoJson(normalized);
       if (s.bookSourceUrl.isEmpty && s.bookSourceName.isEmpty) {
         skipped++;
         continue;
@@ -104,6 +105,7 @@ class SourceImporter {
         final name = s.bookSourceName.isEmpty ? 'unnamed' : s.bookSourceName;
         s.bookSourceUrl = 'local://${name}_${stableHash(raw).toRadixString(16)}';
       }
+      // Keep original JSON (including RSS fields) for export fidelity.
       s.rawJson = jsonEncode(m);
       if (byUrl.containsKey(s.bookSourceUrl)) {
         duplicates++;
@@ -115,6 +117,36 @@ class SourceImporter {
       skipped: skipped,
       duplicatesInBatch: duplicates,
     );
+  }
+
+  /// Map Legado RSS subscription objects onto book-source field names so they
+  /// can be stored in the same table. Original payload stays in [rawJson].
+  ///
+  /// RSS sample keys: sourceName / sourceUrl / sourceGroup / header / enabled…
+  static Map<String, dynamic> _normalizeLegadoMap(Map<String, dynamic> m) {
+    final out = Map<String, dynamic>.from(m);
+    final hasBook =
+        (out['bookSourceUrl']?.toString().isNotEmpty ?? false) ||
+            (out['bookSourceName']?.toString().isNotEmpty ?? false);
+    final hasRss = (out['sourceUrl']?.toString().isNotEmpty ?? false) ||
+        (out['sourceName']?.toString().isNotEmpty ?? false);
+    if (!hasBook && hasRss) {
+      out['bookSourceUrl'] ??= out['sourceUrl'];
+      out['bookSourceName'] ??= out['sourceName'];
+      // Prefer explicit sourceGroup; tag as 订阅源 for filtering.
+      final g = (out['sourceGroup'] ?? out['bookSourceGroup'] ?? '')
+          .toString()
+          .trim();
+      out['bookSourceGroup'] =
+          g.isEmpty ? '订阅源' : (g.contains('订阅') ? g : '订阅源,$g');
+      // RSS is not a novel search source; keep type distinct if absent.
+      out['bookSourceType'] ??= 1;
+      if (out['enabled'] == null) out['enabled'] = true;
+      if (out['header'] == null && out['sourceHeader'] != null) {
+        out['header'] = out['sourceHeader'];
+      }
+    }
+    return out;
   }
 
   static Future<SourceParseResult> fromUrl(

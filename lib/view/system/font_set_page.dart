@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/font_catalog.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/model/color_model.dart';
 import 'package:book/service/custom_cache_manager.dart';
 import 'package:book/store/providers.dart';
@@ -68,9 +69,11 @@ class _FontSetState extends ConsumerState<FontSet> {
     }
     next.sort((a, b) {
       int rank(_FontRow r) {
-        if (r.key == 'Roboto') return 0;
-        if (r.key.startsWith(FontCatalog.localPrefix)) return 2;
-        return 1;
+        // Bundled default first, then system, then online, then local imports.
+        if (r.key == ReadSetting.defaultFontFamily) return 0;
+        if (r.key == 'Roboto') return 1;
+        if (r.key.startsWith(FontCatalog.localPrefix)) return 3;
+        return 2;
       }
 
       final c = rank(a).compareTo(rank(b));
@@ -87,12 +90,16 @@ class _FontSetState extends ConsumerState<FontSet> {
     });
   }
 
-  List<_FontRow> get _systemRows =>
-      _rows.where((r) => r.key == 'Roboto').toList();
+  List<_FontRow> get _systemRows => _rows
+      .where((r) =>
+          r.key == 'Roboto' || r.key == ReadSetting.defaultFontFamily)
+      .toList();
 
   List<_FontRow> get _onlineRows => _rows
       .where((r) =>
-          r.key != 'Roboto' && !r.key.startsWith(FontCatalog.localPrefix))
+          r.key != 'Roboto' &&
+          r.key != ReadSetting.defaultFontFamily &&
+          !r.key.startsWith(FontCatalog.localPrefix))
       .toList();
 
   List<_FontRow> get _localRows =>
@@ -177,6 +184,11 @@ class _FontSetState extends ConsumerState<FontSet> {
     if (_downloading) return;
     if (row.key == 'Roboto') {
       await _applyFont('Roboto');
+      return;
+    }
+    // Bundled default — already in the APK, never hit CDN download.
+    if (row.key == ReadSetting.defaultFontFamily) {
+      await _applyFont(row.key);
       return;
     }
     if (row.key.startsWith(FontCatalog.localPrefix)) {
@@ -541,6 +553,8 @@ class _FontSetState extends ConsumerState<FontSet> {
     String statusLabel;
     if (row.key == 'Roboto') {
       statusLabel = '系统';
+    } else if (row.key == ReadSetting.defaultFontFamily) {
+      statusLabel = '内置';
     } else if (isLocal) {
       statusLabel = '本地';
     } else if (row.ready) {

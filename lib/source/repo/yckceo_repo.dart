@@ -1,13 +1,27 @@
 import 'package:dio/dio.dart';
 
+/// Kind of yckceo catalog entry.
+enum YckKind {
+  /// Legado book source (`/yuedu/shuyuan/`).
+  source,
+
+  /// Book-source collection (`/yuedu/shuyuans/`).
+  collection,
+
+  /// Legado RSS subscription source (`/yuedu/rss/`).
+  rss,
+}
+
 /// 源仓库 (yckceo) 列表项。
 ///
 /// 站点页面：
+/// - 订阅源：`/yuedu/rss/index.html`
 /// - 书源：`/yuedu/shuyuan/index.html`
 /// - 书源合集：`/yuedu/shuyuans/index.html`
 ///
-/// JSON 直链（Legado 兼容数组）：
-/// - 单/多书源：`/yuedu/shuyuan/json/id/{id}.json` 或 `id1,id2`
+/// JSON 直链：
+/// - 订阅源：`/yuedu/rss/json/id/{id}.json`（Legado RSS 对象数组）
+/// - 书源：`/yuedu/shuyuan/json/id/{id}.json`
 /// - 合集：`/yuedu/shuyuans/json/id/{id}.json`
 class YckItem {
   final String id;
@@ -15,7 +29,7 @@ class YckItem {
   final String? host;
   final String? updated;
   final int? downloads;
-  final bool isCollection;
+  final YckKind kind;
 
   const YckItem({
     required this.id,
@@ -23,15 +37,22 @@ class YckItem {
     this.host,
     this.updated,
     this.downloads,
-    this.isCollection = false,
+    this.kind = YckKind.source,
   });
+
+  bool get isCollection => kind == YckKind.collection;
+  bool get isRss => kind == YckKind.rss;
 
   /// 可直接交给 [SourceImporter.fromUrl] 的 JSON 地址。
   String get jsonUrl {
-    if (isCollection) {
-      return '${YckceoRepo.base}/yuedu/shuyuans/json/id/$id.json';
+    switch (kind) {
+      case YckKind.collection:
+        return '${YckceoRepo.base}/yuedu/shuyuans/json/id/$id.json';
+      case YckKind.rss:
+        return '${YckceoRepo.base}/yuedu/rss/json/id/$id.json';
+      case YckKind.source:
+        return '${YckceoRepo.base}/yuedu/shuyuan/json/id/$id.json';
     }
-    return '${YckceoRepo.base}/yuedu/shuyuan/json/id/$id.json';
   }
 }
 
@@ -71,19 +92,27 @@ class YckceoRepo {
 
   static const String base = 'https://www.yckceo.com';
 
-  /// 站点「订阅源」页（用户给的链接）；本 App 导入的是「书源」。
   static const String rssIndexUrl = '$base/yuedu/rss/index.html';
   static const String shuyuanIndexUrl = '$base/yuedu/shuyuan/index.html';
   static const String shuyuansIndexUrl = '$base/yuedu/shuyuans/index.html';
 
   final Dio _dio;
 
+  /// 订阅源列表（Legado RSS）。
+  Future<YckListResult> fetchRss({int page = 1, String keys = ''}) {
+    return _fetchList(
+      path: '/yuedu/rss/index.html',
+      kind: YckKind.rss,
+      page: page,
+      keys: keys,
+    );
+  }
+
   /// 书源列表。
   Future<YckListResult> fetchSources({int page = 1, String keys = ''}) {
     return _fetchList(
       path: '/yuedu/shuyuan/index.html',
-      contentPath: '/yuedu/shuyuan/content/id/',
-      isCollection: false,
+      kind: YckKind.source,
       page: page,
       keys: keys,
     );
@@ -93,23 +122,26 @@ class YckceoRepo {
   Future<YckListResult> fetchCollections({int page = 1, String keys = ''}) {
     return _fetchList(
       path: '/yuedu/shuyuans/index.html',
-      contentPath: '/yuedu/shuyuans/content/id/',
-      isCollection: true,
+      kind: YckKind.collection,
       page: page,
       keys: keys,
     );
   }
 
-  /// 多选书源合并 JSON 地址（站点支持 `id1,id2`）。
+  /// @Deprecated Server only honors a single id in the path segment.
+  ///
+  /// Prefer per-id [YckItem.jsonUrl] and import concurrently.
   static String multiSourceJsonUrl(Iterable<String> ids) {
-    final joined = ids.where((e) => e.isNotEmpty).join(',');
-    return '$base/yuedu/shuyuan/json/id/$joined';
+    final list = ids.where((e) => e.isNotEmpty).toList();
+    if (list.isEmpty) {
+      return '$base/yuedu/shuyuan/json/id/0.json';
+    }
+    return '$base/yuedu/shuyuan/json/id/${list.first}.json';
   }
 
   Future<YckListResult> _fetchList({
     required String path,
-    required String contentPath,
-    required bool isCollection,
+    required YckKind kind,
     required int page,
     required String keys,
   }) async {
@@ -121,9 +153,15 @@ class YckceoRepo {
       },
     );
     final html = res.data ?? '';
-    final items = isCollection
-        ? parseCollectionsHtml(html)
-        : parseSourcesHtml(html);
+    final List<YckItem> items;
+    switch (kind) {
+      case YckKind.collection:
+        items = parseCollectionsHtml(html);
+      case YckKind.rss:
+        items = parseRssHtml(html);
+      case YckKind.source:
+        items = parseSourcesHtml(html);
+    }
     final total = _parseTotal(html) ?? items.length;
     return YckListResult(items: items, total: total, page: page);
   }
@@ -135,18 +173,36 @@ class YckceoRepo {
   }
 
   /// 书源卡片：checkbox id + 标题链接 + 更新时间 + 下载量。
-  ///
-  /// 用宽松分块解析，避免站点微调 HTML 后整页解析为 0。
   static List<YckItem> parseSourcesHtml(String html) {
+    return _parseYlistCards(
+      html,
+      contentPath: '/yuedu/shuyuan/content/id/',
+      kind: YckKind.source,
+    );
+  }
+
+  /// 订阅源卡片：与书源同结构，路径为 `/yuedu/rss/content/id/`。
+  static List<YckItem> parseRssHtml(String html) {
+    return _parseYlistCards(
+      html,
+      contentPath: '/yuedu/rss/content/id/',
+      kind: YckKind.rss,
+    );
+  }
+
+  /// 通用 ylist 卡片解析（书源 / 订阅源共用 HTML 骨架）。
+  static List<YckItem> _parseYlistCards(
+    String html, {
+    required String contentPath,
+    required YckKind kind,
+  }) {
     final out = <YckItem>[];
     final seen = <String>{};
 
-    // 优先按 ylist 卡片切块（站点实际结构）。
     var chunks = RegExp(
       r'<div class="ylist"[\s\S]*?</div>\s*</div>',
       caseSensitive: false,
     ).allMatches(html).map((m) => m.group(0)!).toList();
-    // 单层 </div> 的简化 HTML（单测 / 精简片段）也能切。
     if (chunks.isEmpty) {
       chunks = RegExp(
         r'<div class="ylist"[\s\S]*?</div>',
@@ -154,9 +210,10 @@ class YckceoRepo {
       ).allMatches(html).map((m) => m.group(0)!).toList();
     }
 
-    final idRe = RegExp(r'name="ids\[\]"\s+value="(\d+)"', caseSensitive: false);
+    final idRe =
+        RegExp(r'name="ids\[\]"\s+value="(\d+)"', caseSensitive: false);
     final titleRe = RegExp(
-      r'href="/yuedu/shuyuan/content/id/\d+\.html">([^<]+)</a>',
+      'href="${RegExp.escape(contentPath)}\\d+\\.html">([^<]+)</a>',
       caseSensitive: false,
     );
     final updatedRe = RegExp(
@@ -181,7 +238,7 @@ class YckceoRepo {
         host: split.$2,
         updated: updated == null ? null : _decodeHtml(updated).trim(),
         downloads: dl == null ? null : int.tryParse(dl),
-        isCollection: false,
+        kind: kind,
       ));
     }
 
@@ -190,7 +247,6 @@ class YckceoRepo {
         addFromChunk(chunk);
       }
     } else {
-      // 最后兜底：按 id 全局扫描，标题取同 id 后最近的 content 链接。
       for (final m in idRe.allMatches(html)) {
         final rest = html.substring(m.end);
         final titleM = titleRe.firstMatch(rest);
@@ -219,7 +275,7 @@ class YckceoRepo {
         id: id,
         title: title,
         updated: _decodeHtml(m.group(3) ?? '').trim(),
-        isCollection: true,
+        kind: YckKind.collection,
       ));
     }
     return out;
@@ -227,7 +283,8 @@ class YckceoRepo {
 
   /// 标题里常带 `名称 https://host`。
   static (String, String?) _splitTitleHost(String raw) {
-    final m = RegExp(r'^(.*?)(\s+https?://\S+|\s+\S+\.\S+)\s*$').firstMatch(raw);
+    final m =
+        RegExp(r'^(.*?)(\s+https?://\S+|\s+\S+\.\S+)\s*$').firstMatch(raw);
     if (m != null) {
       final name = (m.group(1) ?? '').trim();
       final host = (m.group(2) ?? '').trim();

@@ -83,7 +83,8 @@ fn default_true() -> bool {
     true
 }
 fn default_family() -> String {
-    "NotoSansSC".into()
+    // Must match the TTF name table (not the Flutter pubspec family alias).
+    "HarmonyOS Sans SC".into()
 }
 fn default_align() -> String {
     "justify".into()
@@ -360,10 +361,11 @@ pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
     let mut font_system = FONT_SYSTEM.lock();
     ensure_font(&mut font_system, &input.font_path)?;
 
-    let family_owned = if input.font_family.is_empty() {
-        "NotoSansSC".to_string()
-    } else {
-        input.font_family.clone()
+    // Map Flutter pubspec aliases → TTF name-table families.
+    let family_owned = match input.font_family.as_str() {
+        "" | "HarmonyOSSansSC" => "HarmonyOS Sans SC".to_string(),
+        "NotoSansSC" => "Noto Sans SC".to_string(),
+        other => other.to_string(),
     };
     let family = Family::Name(family_owned.as_str());
 
@@ -674,7 +676,7 @@ mod tests {
             padding_vertical: 0.0,
             should_justify_height: true,
             font_path: String::new(),
-            font_family: "NotoSansSC".into(),
+            font_family: "HarmonyOS Sans SC".into(),
             text_align: "justify".into(),
             base_letter_spacing: 0.0,
             job_id: 0,

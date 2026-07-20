@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// 源仓库（yckceo）书源 / 合集浏览，支持多选一键导入。
+/// 源仓库（yckceo）：订阅源 / 书源 / 合集，支持多选一键导入。
 ///
-/// 站点「订阅源」(`/yuedu/rss/`) 与本 App 阅读引擎不匹配；
-/// 本页导入「书源」(`/yuedu/shuyuan/`) 与「书源合集」。
+/// Tab 顺序：订阅源（第一）→ 书源 → 合集。
+/// 订阅源为 Legado RSS JSON（sourceName/sourceUrl），导入时映射进 sources 表。
 class YckceoSourcePage extends ConsumerStatefulWidget {
   const YckceoSourcePage({super.key});
 
@@ -27,12 +27,13 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
   @override
   void initState() {
     super.initState();
+    // Order: 订阅源 first, then 书源, then 合集.
     _tabsState = [
-      _TabState(isCollection: false),
-      _TabState(isCollection: true),
+      _TabState(kind: YckKind.rss),
+      _TabState(kind: YckKind.source),
+      _TabState(kind: YckKind.collection),
     ];
     _tabs = TabController(length: _tabsState.length, vsync: this);
-    // 首帧后拉列表，避免和 Tab 动画打架
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTab(0, refresh: true);
     });
@@ -73,9 +74,15 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
     try {
       final page = refresh ? 1 : tab.page + 1;
       final keys = tab.searchCtrl.text.trim();
-      final res = tab.isCollection
-          ? await _repo.fetchCollections(page: page, keys: keys)
-          : await _repo.fetchSources(page: page, keys: keys);
+      final YckListResult res;
+      switch (tab.kind) {
+        case YckKind.rss:
+          res = await _repo.fetchRss(page: page, keys: keys);
+        case YckKind.source:
+          res = await _repo.fetchSources(page: page, keys: keys);
+        case YckKind.collection:
+          res = await _repo.fetchCollections(page: page, keys: keys);
+      }
       if (!mounted) return;
       setState(() {
         tab.page = page;
@@ -120,47 +127,56 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
     final model = ref.read(sourceModelProvider);
     final selectedItems =
         tab.items.where((e) => tab.selected.contains(e.id)).toList();
+
+    // Always import per-item JSON URL (multi-id merge is broken server-side).
+    const pool = 6;
     var total = 0;
     var failCount = 0;
-    if (tab.isCollection) {
-      for (var i = 0; i < selectedItems.length; i++) {
-        final it = selectedItems[i];
-        BotToast.showText(
-          text: '正在导入合集 ${i + 1}/${selectedItems.length}：${it.title}',
-        );
+    final n = selectedItems.length;
+    final kindLabel = switch (tab.kind) {
+      YckKind.rss => '订阅源',
+      YckKind.source => '书源',
+      YckKind.collection => '合集',
+    };
+    BotToast.showText(text: '正在导入$kindLabel 0/$n…');
+
+    for (var i = 0; i < selectedItems.length; i += pool) {
+      final end =
+          (i + pool > selectedItems.length) ? selectedItems.length : i + pool;
+      final chunk = selectedItems.sublist(i, end);
+      BotToast.showText(text: '正在导入$kindLabel ${i + 1}-$end/$n…');
+      final results = await Future.wait(chunk.map((it) async {
         try {
-          total += await model.importFromUrl(it.jsonUrl, agreed: true);
-        } catch (e) {
-          failCount++;
-          BotToast.showText(text: '合集「${it.title}」导入失败：$e');
-        }
-      }
-    } else {
-      const batch = 30;
-      final ids = selectedItems.map((e) => e.id).toList();
-      for (var i = 0; i < ids.length; i += batch) {
-        final end = (i + batch > ids.length) ? ids.length : i + batch;
-        final chunk = ids.sublist(i, end);
-        BotToast.showText(text: '正在导入书源 ${i + 1}-$end/${ids.length}…');
-        try {
-          total += await model.importFromUrl(
-            YckceoRepo.multiSourceJsonUrl(chunk),
+          final c = await model.importFromUrl(
+            it.jsonUrl,
             agreed: true,
+            silent: true,
           );
+          return (ok: true, count: c, title: it.title, error: null);
         } catch (e) {
+          return (ok: false, count: 0, title: it.title, error: e);
+        }
+      }));
+      for (final r in results) {
+        if (r.ok) {
+          total += r.count;
+        } else {
           failCount++;
-          BotToast.showText(text: '第 ${i + 1}-$end 批导入失败：$e');
+          debugPrint('Yckceo import fail 「${r.title}」: ${r.error}');
         }
       }
     }
+
+    await model.load();
+
     if (total == 0 && failCount == 0) {
-      BotToast.showText(text: '未解析到有效书源');
+      BotToast.showText(text: '未解析到有效项');
     } else if (failCount > 0) {
       BotToast.showText(
-        text: '完成：写入 $total 个书源，$failCount 批失败（已保留成功部分）',
+        text: '完成：写入 $total 条，$failCount 项失败（已保留成功部分）',
       );
     } else {
-      BotToast.showText(text: '完成，共写入 $total 个书源（含更新）');
+      BotToast.showText(text: '完成，共写入 $total 条（含更新）');
     }
     if (mounted) setState(() => tab.selected.clear());
   }
@@ -180,15 +196,21 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
   }
 
   Future<void> _openSite() async {
-    final uri = Uri.parse(
-      _cur.isCollection
-          ? YckceoRepo.shuyuansIndexUrl
-          : YckceoRepo.shuyuanIndexUrl,
-    );
+    final uri = Uri.parse(switch (_cur.kind) {
+      YckKind.rss => YckceoRepo.rssIndexUrl,
+      YckKind.source => YckceoRepo.shuyuanIndexUrl,
+      YckKind.collection => YckceoRepo.shuyuansIndexUrl,
+    });
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       BotToast.showText(text: '无法打开浏览器');
     }
   }
+
+  String get _hintText => switch (_cur.kind) {
+        YckKind.rss => '搜索订阅源',
+        YckKind.source => '搜索书源',
+        YckKind.collection => '搜索合集',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -202,12 +224,14 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
           IconButton(
             tooltip: '刷新',
             icon: const Icon(Icons.refresh),
-            onPressed: tab.loading ? null : () => _loadTab(_tabs.index, refresh: true),
+            onPressed:
+                tab.loading ? null : () => _loadTab(_tabs.index, refresh: true),
           ),
         ],
         bottom: TabBar(
           controller: _tabs,
           tabs: const [
+            Tab(text: '订阅源'),
             Tab(text: '书源'),
             Tab(text: '合集'),
           ],
@@ -223,15 +247,19 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    '来自 yckceo 源仓库 · 仅导入书源（非订阅源）',
+                    tab.kind == YckKind.rss
+                        ? '来自 yckceo · 订阅源（Legado RSS，入库分组「订阅源」）'
+                        : '来自 yckceo 源仓库 · 书源 / 合集',
                     style: TextStyle(fontSize: 12, color: theme.hintColor),
                   ),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                     visualDensity: VisualDensity.compact,
-                    title: const Text('我已阅读并同意：书源自行导入、责任自负',
-                        style: TextStyle(fontSize: 13)),
+                    title: const Text(
+                      '我已阅读并同意：书源/订阅源自行导入、责任自负',
+                      style: TextStyle(fontSize: 13),
+                    ),
                     value: _agreed,
                     onChanged: (v) => setState(() => _agreed = v ?? false),
                   ),
@@ -243,8 +271,7 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText:
-                                tab.isCollection ? '搜索合集' : '搜索书源',
+                            hintText: _hintText,
                             border: const OutlineInputBorder(),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -303,8 +330,7 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
             child: TabBarView(
               controller: _tabs,
               children: [
-                for (var i = 0; i < _tabsState.length; i++)
-                  _buildList(i),
+                for (var i = 0; i < _tabsState.length; i++) _buildList(i),
               ],
             ),
           ),
@@ -314,9 +340,8 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           child: FilledButton.icon(
-            onPressed: (!_agreed || tab.selected.isEmpty)
-                ? null
-                : _importSelected,
+            onPressed:
+                (!_agreed || tab.selected.isEmpty) ? null : _importSelected,
             icon: const Icon(Icons.download_done),
             label: Text(
               tab.selected.isEmpty
@@ -409,6 +434,7 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
               if (it.host != null && it.host!.isNotEmpty) it.host!,
               if (it.updated != null && it.updated!.isNotEmpty) it.updated!,
               if (it.downloads != null) '↓${it.downloads}',
+              if (it.isRss) '订阅源',
               if (it.isCollection) '合集',
             ].join(' · ');
             return CheckboxListTile(
@@ -445,9 +471,9 @@ class _YckceoSourcePageState extends ConsumerState<YckceoSourcePage>
 }
 
 class _TabState {
-  _TabState({required this.isCollection});
+  _TabState({required this.kind});
 
-  final bool isCollection;
+  final YckKind kind;
   final searchCtrl = TextEditingController();
   final selected = <String>{};
   List<YckItem> items = [];

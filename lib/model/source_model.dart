@@ -84,13 +84,17 @@ class SourceModel with ChangeNotifier {
     return parts.join('，');
   }
 
-  Future<int> importJsonText(String text, {bool agreed = false}) async {
+  Future<int> importJsonText(
+    String text, {
+    bool agreed = false,
+    bool silent = false,
+  }) async {
     if (!agreed) {
       throw StateError('请先确认书源使用声明');
     }
     final parsed = SourceImporter.parseJson(text);
     if (parsed.sources.isEmpty) {
-      BotToast.showText(text: '未解析到有效书源');
+      if (!silent) BotToast.showText(text: '未解析到有效书源');
       return 0;
     }
     final base = sources.length;
@@ -100,25 +104,31 @@ class SourceModel with ChangeNotifier {
       parsed.sources[i].lastUpdateTime = now;
     }
     final stats = await _sources.upsertAllWithStats(parsed.sources);
-    await load();
-    BotToast.showText(
-      text: _importToast(
-        stats,
-        skipped: parsed.skipped,
-        duplicatesInBatch: parsed.duplicatesInBatch,
-      ),
-    );
+    if (!silent) {
+      await load();
+      BotToast.showText(
+        text: _importToast(
+          stats,
+          skipped: parsed.skipped,
+          duplicatesInBatch: parsed.duplicatesInBatch,
+        ),
+      );
+    }
     return stats.total;
   }
 
-  Future<int> importFromUrl(String url, {bool agreed = false}) async {
+  Future<int> importFromUrl(
+    String url, {
+    bool agreed = false,
+    bool silent = false,
+  }) async {
     if (!agreed) {
       throw StateError('请先确认书源使用声明');
     }
-    BotToast.showText(text: '正在下载书源…');
+    if (!silent) BotToast.showText(text: '正在下载书源…');
     final parsed = await SourceImporter.fromUrl(url);
     if (parsed.sources.isEmpty) {
-      BotToast.showText(text: '未解析到有效书源');
+      if (!silent) BotToast.showText(text: '未解析到有效书源');
       return 0;
     }
     final base = sources.length;
@@ -128,14 +138,16 @@ class SourceModel with ChangeNotifier {
       parsed.sources[i].lastUpdateTime = now;
     }
     final stats = await _sources.upsertAllWithStats(parsed.sources);
-    await load();
-    BotToast.showText(
-      text: _importToast(
-        stats,
-        skipped: parsed.skipped,
-        duplicatesInBatch: parsed.duplicatesInBatch,
-      ),
-    );
+    if (!silent) {
+      await load();
+      BotToast.showText(
+        text: _importToast(
+          stats,
+          skipped: parsed.skipped,
+          duplicatesInBatch: parsed.duplicatesInBatch,
+        ),
+      );
+    }
     return stats.total;
   }
 

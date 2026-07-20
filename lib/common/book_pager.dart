@@ -181,7 +181,7 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'NotoSansSC',
+    String fontFamily = 'HarmonyOSSansSC',
     String textAlign = 'justify',
     double baseLetterSpacing = 0,
     int jobId = 0,
@@ -302,7 +302,7 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'NotoSansSC',
+    String fontFamily = 'HarmonyOSSansSC',
     String textAlign = 'justify',
     double baseLetterSpacing = 0,
     int jobId = 0,
@@ -370,7 +370,7 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'NotoSansSC',
+    String fontFamily = 'HarmonyOSSansSC',
     int jobId = 0,
   }) {
     return paginateResult(
@@ -401,7 +401,7 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'NotoSansSC',
+    String fontFamily = 'HarmonyOSSansSC',
     int jobId = 0,
   }) {
     if (text.length < 800) {
@@ -451,7 +451,7 @@ class BookPager {
     double paddingVertical = 0,
     bool shouldJustifyHeight = true,
     String fontPath = '',
-    String fontFamily = 'NotoSansSC',
+    String fontFamily = 'HarmonyOSSansSC',
     int jobId = 0,
     bool firstPageOnly = false,
     int startChar = 0,
@@ -499,7 +499,7 @@ class BookPager {
       paddingVertical: (p['padding_vertical'] as num?)?.toDouble() ?? 0,
       shouldJustifyHeight: p['should_justify_height'] as bool? ?? true,
       fontPath: p['font_path'] as String? ?? '',
-      fontFamily: p['font_family'] as String? ?? 'NotoSansSC',
+      fontFamily: p['font_family'] as String? ?? 'HarmonyOSSansSC',
       textAlign: p['text_align'] as String? ?? 'justify',
       baseLetterSpacing: (p['base_letter_spacing'] as num?)?.toDouble() ?? 0,
       jobId: p['job_id'] as int? ?? 0,

@@ -168,19 +168,27 @@ class ReadSetting {
 
   /// Bundled CJK face used when the user has not picked a custom font.
   /// Keep in sync with `pubspec.yaml` fonts entry and assets/fonts/*.
-  static const String defaultFontFamily = 'NotoSansSC';
-  static const String defaultFontAsset = 'assets/fonts/NotoSansSC-Regular.ttf';
+  static const String defaultFontFamily = 'HarmonyOSSansSC';
+  static const String defaultFontAsset =
+      'assets/fonts/HarmonyOS_Sans_SC_Regular.ttf';
 
   /// Absolute path of the extracted default TTF (filled by bootstrap).
+  /// Separate from user-selected [fontPathKey] so switching fonts cannot
+  /// permanently hide the bundled face.
   static String _bundledFontPath = '';
 
   static void setBundledFontPath(String path) {
     _bundledFontPath = path;
   }
 
+  /// Extracted bundled TTF only (may be empty before bootstrap).
+  static String get bundledFontPath => _bundledFontPath;
+
   static String getFontFamily() {
     final name = SpUtil.getString(fontNameKey, defValue: '');
-    if (name.isEmpty || name == 'Roboto') return defaultFontFamily;
+    // Empty / legacy unset → bundled default. Explicit "Roboto" stays Roboto
+    // so 设置 → 系统默认 still works.
+    if (name.isEmpty) return defaultFontFamily;
     return name;
   }
 
@@ -191,15 +199,27 @@ class ReadSetting {
     );
   }
 
-  /// Prefer user custom path; else extracted bundled TTF for Rust ABI3.
+  /// Path used by Rust book_pager + paint.
+  /// 1) User / selected face path in SpUtil when set
+  /// 2) Else bundled face when current family is the default
+  /// 3) Else empty (Dart/system)
   static String getFontPath() {
     final custom = SpUtil.getString(fontPathKey, defValue: '');
     if (custom.isNotEmpty) return custom;
-    return _bundledFontPath;
+    final family = getFontFamily();
+    if (family == defaultFontFamily || family.isEmpty) {
+      return _bundledFontPath;
+    }
+    return '';
   }
 
   static void setFontPath(String path) {
     SpUtil.putString(fontPathKey, path);
+  }
+
+  /// Clear the selected path (e.g. switching to system Roboto).
+  static void clearFontPath() {
+    SpUtil.putString(fontPathKey, '');
   }
 
   /// Page-turn / scroll mode: 0 无动画 / 1 仿真 / 2 覆盖 / 3 滚动.

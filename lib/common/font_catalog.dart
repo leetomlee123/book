@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/read_setting.dart';
 import 'package:book/service/custom_cache_manager.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -20,8 +21,10 @@ class FontCatalog {
   /// name → absolute path for CDN fonts that finished downloading.
   static const String downloadedFontsKey = 'downloaded_fonts';
 
-  /// Free/open Chinese fonts (CDN). Roboto is always the system default.
+  /// Free/open Chinese fonts (CDN) + bundled default.
+  /// Empty URL = no download (system or asset-bundled).
   static const Map<String, String> builtIn = {
+    'HarmonyOSSansSC': '', // bundled under assets/fonts/ (default reader face)
     'Roboto': '',
     'NotoSansSC':
         'https://cdn.jsdelivr.net/gh/googlefonts/noto-cjk@main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf',
@@ -32,6 +35,7 @@ class FontCatalog {
   };
 
   static const Map<String, String> displayNames = {
+    'HarmonyOSSansSC': '鸿蒙黑体',
     'Roboto': '系统默认',
     'NotoSansSC': '思源黑体',
     'NotoSerifSC': '思源宋体',
@@ -106,6 +110,13 @@ class FontCatalog {
   /// Whether the face file is available on disk (no re-download needed).
   static Future<bool> isReady(String fontName) async {
     if (fontName.isEmpty || fontName == 'Roboto') return true;
+    // Bundled asset face — registered in pubspec + extracted by bootstrap.
+    if (fontName == ReadSetting.defaultFontFamily) {
+      final bundled = ReadSetting.bundledFontPath;
+      if (bundled.isNotEmpty && await File(bundled).exists()) return true;
+      // pubspec fonts: still "ready" for Flutter paint even before extract.
+      return true;
+    }
     final path = await resolvePath(fontName);
     return path.isNotEmpty;
   }
@@ -113,6 +124,16 @@ class FontCatalog {
   /// Resolve absolute path for [fontName] (local / persisted download / cache).
   static Future<String> resolvePath(String fontName) async {
     if (fontName.isEmpty || fontName == 'Roboto') return '';
+
+    // Bundled default face — always use bootstrap path, never the SpUtil
+    // "current selection" path (that may still point at the previous font).
+    if (fontName == ReadSetting.defaultFontFamily) {
+      final bundled = ReadSetting.bundledFontPath;
+      if (bundled.isNotEmpty && await File(bundled).exists()) {
+        return bundled;
+      }
+      return '';
+    }
 
     // 1) Local import
     final localMap = _readMap(localFontsKey);
