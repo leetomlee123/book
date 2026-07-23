@@ -51,7 +51,7 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
 
     animationController = AnimationControllerWithListenerNumber(
       vsync: this,
-      duration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 220),
     );
 
     pageManager = ReaderPageManager()..onTurnSettled = _onTurnSettled;
@@ -78,8 +78,13 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
 
   void _onTurnSettled() {
     if (!mounted) return;
+    // Keep an in-flight finger (settle-tap candidate) so its UP can still queue
+    // the next page — do not wipe _activePointer mid-gesture.
+    if (_activePointer != null) {
+      _log('settled (pointer held) → keep finger for queue-tap');
+      return;
+    }
     _phase = _PointerPhase.idle;
-    _activePointer = null;
     _log('settled → idle');
   }
 
@@ -133,8 +138,14 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
       _log('DOWN ignored (menu)');
       return;
     }
+    // While a turn animation is running we still accept the down so that a
+    // quick tap-up can queue the next page (跟手). Drag tracking stays blocked.
     if (_animating || _phase == _PointerPhase.settling) {
-      _log('DOWN ignored (animating)');
+      _activePointer = e.pointer;
+      _downPos = e.localPosition;
+      _lastPos = e.localPosition;
+      _phase = _PointerPhase.settling; // only queue on UP, no drag paint
+      _log('DOWN during anim → settle-tap candidate');
       return;
     }
 
@@ -147,6 +158,11 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
 
   void _onPointerMove(PointerMoveEvent e) {
     if (e.pointer != _activePointer) return;
+    // Taps queued during settle never become drags.
+    if (_phase == _PointerPhase.settling) {
+      _lastPos = e.localPosition;
+      return;
+    }
     if (_phase != _PointerPhase.down && _phase != _PointerPhase.dragging) {
       return;
     }
@@ -185,13 +201,13 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
       _log('UP ignored (menu)');
       return;
     }
-    if (_animating) {
-      _log('UP ignored (animating)');
-      return;
-    }
 
     switch (phase) {
       case _PointerPhase.dragging:
+        if (_animating) {
+          _log('UP swipe ignored (animating)');
+          return;
+        }
         _log('UP as SWIPE end=${e.localPosition}');
         final started = pageManager?.finishSwipe(e.localPosition) ?? false;
         if (started) {
@@ -211,6 +227,21 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
         break;
 
       case _PointerPhase.settling:
+        // Tap that began during an in-flight turn — queue next page.
+        // Only treat as tap if finger barely moved (not a mid-anim drag).
+        final dist = (_lastPos - _downPos).distance;
+        if (dist <= _dragSlop) {
+          _log('UP settle-tap → queue pos=${e.localPosition}');
+          final size = _canvasSize(context);
+          final started = vm.tapPageAt(e.localPosition, size);
+          if (started || pageManager?.isAnimating == true) {
+            _phase = _PointerPhase.settling;
+          }
+        } else {
+          _log('UP settle ignored (moved ${dist.toStringAsFixed(1)})');
+        }
+        break;
+
       case _PointerPhase.idle:
         _log('UP ignored (phase=$phase)');
         break;

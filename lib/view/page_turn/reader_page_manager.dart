@@ -6,20 +6,27 @@ import 'package:book/model/read_model.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Page-turn orchestrator.
 ///
 /// **Single commit rule:** the only place that advances the page is
 /// [_commitTurn] → [ReadModel.commitPageTurn]. Cover / Simulation / Static
 /// paint only; they never call commitPageTurn themselves.
+///
+/// Rapid taps while animating are queued (capped) and drained as soon as the
+/// current turn settles so consecutive clicks feel responsive.
 class ReaderPageManager {
   static const int TYPE_ANIMATION_NONE = 0;
   static const int TYPE_ANIMATION_SIMULATION_TURN = 1;
   static const int TYPE_ANIMATION_COVER_TURN = 2;
   static const int TYPE_ANIMATION_SLIDE_TURN = 3;
 
-  /// Short anti double-submit window only (not a hard UI lock).
-  static const Duration _cooldown = Duration(milliseconds: 220);
+  /// Anti double-submit only — short enough that queued taps drain quickly.
+  static const Duration _cooldown = Duration(milliseconds: 70);
+
+  /// Max queued tap directions (prevents runaway multi-page jump).
+  static const int _maxQueued = 2;
 
   late BaseAnimationPage currentAnimationPage;
   TouchEvent currentTouchData = TouchEvent(TouchEvent.ACTION_UP, Offset.zero);
@@ -41,6 +48,10 @@ class ReaderPageManager {
   int _turnEpoch = 0;
   DateTime? _lastCommitAt;
 
+  /// Directions accepted while busy; drained after settle.
+  final List<int> _queuedDirs = <int>[];
+  bool _drainScheduled = false;
+
   /// True only while confirm/cancel animation is running.
   bool get isAnimating => currentState == PageTurnState.animating;
 
@@ -53,13 +64,23 @@ class ReaderPageManager {
     return DateTime.now().difference(t) < _cooldown;
   }
 
+  Duration get _cooldownRemaining {
+    final t = _lastCommitAt;
+    if (t == null) return Duration.zero;
+    final left = _cooldown - DateTime.now().difference(t);
+    return left.isNegative ? Duration.zero : left;
+  }
+
   bool get _needsController =>
       currentAnimationType == TYPE_ANIMATION_COVER_TURN ||
       currentAnimationType == TYPE_ANIMATION_SIMULATION_TURN;
 
   void _log(String msg) {
     if (kDebugMode) {
-      debugPrint('[PageTurn] $msg state=$currentState epoch=$_turnEpoch');
+      debugPrint(
+        '[PageTurn] $msg state=$currentState epoch=$_turnEpoch '
+        'q=$_queuedDirs',
+      );
     }
   }
 
@@ -131,26 +152,53 @@ class ReaderPageManager {
     _markPaint();
   }
 
+  /// Start (or queue) a tap-driven turn. Returns true if accepted or queued.
   bool triggerTapTurn(int direction) {
+    if (direction == 0) return false;
+    final dir = direction > 0 ? 1 : -1;
+
+    // While a turn is in flight / cooling down, keep the latest intents so
+    // rapid clicks still advance instead of being dropped.
     if (isBusy) {
-      _log('triggerTapTurn ignored (busy animating=$isAnimating cd=$_inCooldown)');
-      return false;
+      return _enqueueTap(dir);
     }
 
-    final goNext = direction > 0;
+    return _startTapTurn(dir);
+  }
+
+  bool _enqueueTap(int dir) {
+    if (_queuedDirs.length >= _maxQueued) {
+      // Replace tail with latest intent (keeps 跟手 without multi-page jump).
+      _queuedDirs[_queuedDirs.length - 1] = dir;
+      _log('triggerTapTurn queue full → replace tail dir=$dir');
+      _scheduleDrain();
+      return true;
+    }
+    // Collapse consecutive same-direction spam into one extra step max is
+    // already capped by _maxQueued; still allow stacking up to the cap.
+    _queuedDirs.add(dir);
+    _log('triggerTapTurn queued dir=$dir');
+    _scheduleDrain();
+    return true;
+  }
+
+  bool _startTapTurn(int dir) {
+    final goNext = dir > 0;
     if (goNext && !currentAnimationPage.canTurnNext()) {
       _log('triggerTapTurn blocked: cannot go next');
+      _queuedDirs.clear();
       return false;
     }
     if (!goNext && !currentAnimationPage.canTurnPrevious()) {
       _log('triggerTapTurn blocked: cannot go pre');
+      _queuedDirs.clear();
       return false;
     }
 
     if (currentAnimationType == TYPE_ANIMATION_NONE ||
         animationController == null) {
-      _log('triggerTapTurn static dir=${goNext ? 1 : -1}');
-      _commitTurn(goNext ? 1 : -1);
+      _log('triggerTapTurn static dir=$dir');
+      _commitTurn(dir);
       return true;
     }
 
@@ -167,7 +215,7 @@ class ReaderPageManager {
     final h2 = currentAnimationPage.currentSize.height;
     if (w2 <= 0 || h2 <= 0) {
       _log('triggerTapTurn fallback static (no size)');
-      _commitTurn(goNext ? 1 : -1);
+      _commitTurn(dir);
       return true;
     }
 
@@ -190,15 +238,47 @@ class ReaderPageManager {
     currentAnimationPage.onTouchEvent(TouchEvent(TouchEvent.ACTION_MOVE, end));
     currentTouchData = TouchEvent(TouchEvent.ACTION_MOVE, end);
 
-    _log('triggerTapTurn anim dir=${goNext ? 1 : -1} size=${w2}x$h2');
-    final ok = startConfirmAnimation(goNext ? 1 : -1);
+    _log('triggerTapTurn anim dir=$dir size=${w2}x$h2');
+    final ok = startConfirmAnimation(dir);
     if (!ok) {
       // Animation failed to start — still advance page so taps never "die".
       _log('triggerTapTurn anim failed → instant commit');
-      _commitTurn(goNext ? 1 : -1);
+      _commitTurn(dir);
       return true;
     }
     return true;
+  }
+
+  void _scheduleDrain() {
+    if (_drainScheduled || _queuedDirs.isEmpty) return;
+    _drainScheduled = true;
+    final wait = _cooldownRemaining;
+    void run() {
+      _drainScheduled = false;
+      _drainQueue();
+    }
+
+    if (wait > Duration.zero) {
+      Future<void>.delayed(wait, run);
+    } else {
+      // Defer out of animation status / commit re-entrancy.
+      SchedulerBinding.instance.addPostFrameCallback((_) => run());
+    }
+  }
+
+  void _drainQueue() {
+    if (_queuedDirs.isEmpty) return;
+    if (isAnimating) {
+      // Will retry after current turn settles.
+      return;
+    }
+    if (_inCooldown) {
+      _scheduleDrain();
+      return;
+    }
+    final dir = _queuedDirs.removeAt(0);
+    _log('drain queue dir=$dir remaining=$_queuedDirs');
+    _startTapTurn(dir);
   }
 
   void setPageSize(Size size) {
@@ -215,6 +295,7 @@ class ReaderPageManager {
 
   void setCurrentAnimation(int animationType) {
     _abortAnimation();
+    _queuedDirs.clear();
     currentAnimationType = animationType;
     switch (animationType) {
       case TYPE_ANIMATION_SIMULATION_TURN:
@@ -360,6 +441,8 @@ class ReaderPageManager {
       );
       _markPaint();
       onTurnSettled?.call();
+      // Kick off any taps that arrived during this animation.
+      _scheduleDrain();
     };
 
     animation.addListener(_tickListener!);
@@ -377,6 +460,7 @@ class ReaderPageManager {
     // Instant (static) turns settle immediately.
     if (currentState != PageTurnState.animating) {
       onTurnSettled?.call();
+      _scheduleDrain();
     }
   }
 
@@ -386,6 +470,7 @@ class ReaderPageManager {
 
   void interruptCancelAnimation() {
     _abortAnimation();
+    _queuedDirs.clear();
     _markPaint();
     onTurnSettled?.call();
   }
@@ -397,7 +482,8 @@ class ReaderPageManager {
   }
 
   void setAnimationController(AnimationController controller) {
-    controller.duration ??= const Duration(milliseconds: 280);
+    // Slightly snappier default so queued taps feel closer to 跟手.
+    controller.duration ??= const Duration(milliseconds: 220);
     animationController = controller;
     if (_needsController) {
       currentAnimationPage.setAnimationController(controller);
