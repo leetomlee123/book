@@ -344,15 +344,17 @@ class ReaderPainter {
     final pageIndex = i.clamp(0, readPage.pages.length - 1);
     final TextPage page = readPage.pages[pageIndex];
     final lineCount = page.lines.length;
-    // Vertically center the body block in the content box when measured
-    // content height is shorter than the available box (e.g. 560 in 600).
+    // Vertically center short middle pages in the content box (e.g. 560 in
+    // 600). Chapter last page stays top-aligned so trailing space is empty.
+    final isLastPage = pageIndex >= readPage.pages.length - 1;
     final contentBoxH = (pageH -
             ReadSetting.contentTopInset() -
             ReadSetting.contentBottomInset())
         .clamp(0.0, pageH);
     final contentH = _measuredContentHeight(page, fontSize);
-    final centerOffset =
-        contentBoxH > contentH ? (contentBoxH - contentH) / 2.0 : 0.0;
+    final centerOffset = !isLastPage && contentBoxH > contentH
+        ? (contentBoxH - contentH) / 2.0
+        : 0.0;
     for (var li = 0; li < lineCount; li++) {
       final line = page.lines[li];
       _paintLine(
