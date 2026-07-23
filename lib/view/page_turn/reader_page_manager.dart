@@ -71,6 +71,13 @@ class ReaderPageManager {
     return left.isNegative ? Duration.zero : left;
   }
 
+  /// Drop any queued rapid-tap intents (e.g. on chapter boundary).
+  void clearQueuedTurns() {
+    if (_queuedDirs.isEmpty) return;
+    _log('clearQueuedTurns dropped=$_queuedDirs');
+    _queuedDirs.clear();
+  }
+
   bool get _needsController =>
       currentAnimationType == TYPE_ANIMATION_COVER_TURN ||
       currentAnimationType == TYPE_ANIMATION_SIMULATION_TURN;

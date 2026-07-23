@@ -66,10 +66,42 @@ class PagePictureResolver {
 
   /// Eagerly paint current page (if missing) then schedule prev/next on the
   /// next frame so the first gesture never cold-records mid-drag.
-  void warmAroundCurrent({bool includeNeighbors = true}) {
+  ///
+  /// When [deferHeavy] is true, recording is postponed to the next frame so
+  /// chapter-boundary commits (animation status callbacks) stay jank-free.
+  /// Cache hits are still free either way.
+  void warmAroundCurrent({
+    bool includeNeighbors = true,
+    bool deferHeavy = false,
+  }) {
     final b = bookOf();
     final current = curPageOf();
     if (b == null || current == null || current.pages.isEmpty) return;
+    final key = _key(b.id, b.chapterIndex, b.pageIndex.clamp(0, current.pageOffsets - 1));
+    final cached = cache.containsKey(key);
+    if (cached) {
+      if (includeNeighbors) scheduleNeighborWarm();
+      return;
+    }
+    if (deferHeavy) {
+      final gen = ++_warmGeneration;
+      final bookId = b.id;
+      final chapter = b.chapterIndex;
+      final page = b.pageIndex;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (gen != _warmGeneration) return;
+        if (activeBookId() != bookId) return;
+        final now = bookOf();
+        if (now == null ||
+            now.chapterIndex != chapter ||
+            now.pageIndex != page) {
+          return;
+        }
+        paintCurrent();
+        if (includeNeighbors) preloadNeighbors();
+      });
+      return;
+    }
     paintCurrent();
     if (includeNeighbors) {
       scheduleNeighborWarm();

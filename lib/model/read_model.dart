@@ -63,11 +63,13 @@ class ReadModel with ChangeNotifier {
     showLoading: _showTextLoading,
     hideLoading: _hideTextLoading,
     prunePictures: _prunePictureCache,
-    warmPictures: () => _pictures.warmAroundCurrent(),
+    warmPictures: ({bool deferHeavy = false}) =>
+        _pictures.warmAroundCurrent(deferHeavy: deferHeavy),
     scheduleProgressSave: () => scheduleProgressSave(),
     notify: notifyListeners,
     markNeedsPaint: _markNeedsPaint,
     activeBookId: () => book?.id,
+    clearQueuedTurns: () => pagePainter?.pageManager?.clearQueuedTurns(),
   );
   GlobalKey? canvasKey;
   final ReaderPainter _painter = ReaderPainter();
