@@ -42,6 +42,28 @@ var java = {
     return { body: function(){ return ''; }, url: String(url||'') };
   }
 };
+// Legado helpers used by many searchUrl @js snippets.
+function getArguments(vars, key) {
+  if (vars == null || key == null) return '';
+  var s = String(vars);
+  var k = String(key);
+  try {
+    var o = JSON.parse(s);
+    if (o && o[k] != null) return String(o[k]);
+  } catch (e) {}
+  // query / comma form: key=value&… or key=value,…
+  var re = new RegExp('(?:^|[,;&\\s])' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^,;&\\s]*)');
+  var m = s.match(re);
+  if (m) {
+    try { return decodeURIComponent(m[1]); } catch (e2) { return m[1]; }
+  }
+  return '';
+}
+var source = source || {
+  getVariable: function(){ return ''; },
+  getKey: function(){ return ''; },
+  bookSourceUrl: ''
+};
 if (typeof String.prototype.endsWith !== 'function') {
   String.prototype.endsWith = function(s) {
     s = String(s);
@@ -139,6 +161,28 @@ var java = java || {
   startBrowserAwait: function(url, title){
     return { body: function(){ return ''; }, url: String(url||'') };
   }
+};
+if (typeof getArguments !== 'function') {
+  function getArguments(vars, key) {
+    if (vars == null || key == null) return '';
+    var s = String(vars);
+    var k = String(key);
+    try {
+      var o = JSON.parse(s);
+      if (o && o[k] != null) return String(o[k]);
+    } catch (e) {}
+    var re = new RegExp('(?:^|[,;&\\\\s])' + k.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\\$&') + '=([^,;&\\\\s]*)');
+    var m = s.match(re);
+    if (m) {
+      try { return decodeURIComponent(m[1]); } catch (e2) { return m[1]; }
+    }
+    return '';
+  }
+}
+var source = {
+  getVariable: function(){ return ''; },
+  getKey: function(){ return baseUrl; },
+  bookSourceUrl: baseUrl
 };
 if (typeof cfCheck !== 'function') {
   function cfCheck(html, targetUrl){ return String(html==null?'':html); }

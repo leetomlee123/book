@@ -110,6 +110,36 @@ void main() {
       );
       expect(cleaned, 'https://a.com/path?q=1');
     });
+
+    test('sanitizeUrl rejects leftover JS statements', () {
+      final cleaned = AnalyzeUrl.sanitizeUrl(
+        "let base_url = getArguments(source.getVariable(), 'server');",
+        base: 'https://example.com',
+      );
+      expect(cleaned, isEmpty);
+    });
+
+    test('urlJoin does not throw on JS-looking relative path', () {
+      final out = urlJoin(
+        'https://example.com',
+        "let base_url = getArguments(source.getVariable(), 'server');",
+      );
+      // Must not throw FormatException; returns path untouched when rejected.
+      expect(out.contains('let base_url'), isTrue);
+      expect(out.startsWith('https://example.com/let'), isFalse);
+    });
+
+    test('build leaves empty url when @js searchUrl fails to resolve', () {
+      final source = BookSource(
+        bookSourceUrl: 'https://example.com',
+        bookSourceName: 'js-fail',
+        searchUrl:
+            "@js:\nlet base_url = getArguments(source.getVariable(), 'server');\nbase_url;",
+      );
+      final req = AnalyzeUrl.build(source, source.searchUrl, key: '斗破');
+      // No absolute URL produced — empty rather than crashing Uri.parse.
+      expect(req.url, isEmpty);
+    });
   });
 
   group('AnalyzeRule CSS', () {

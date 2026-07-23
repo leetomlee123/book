@@ -27,6 +27,16 @@ class SourceHttp {
   late final Dio _dio;
 
   Future<SourceResponse> fetch(AnalyzeRequest req) async {
+    final url = req.url.trim();
+    if (url.isEmpty ||
+        !(url.startsWith('http://') || url.startsWith('https://'))) {
+      throw ArgumentError.value(
+        req.url,
+        'url',
+        'book-source request needs an absolute http(s) URL '
+            '(JS searchUrl may have failed to resolve)',
+      );
+    }
     final options = Options(
       method: req.method,
       headers: req.headers,
@@ -34,7 +44,7 @@ class SourceHttp {
           req.method == 'POST' ? Headers.formUrlEncodedContentType : null,
     );
     final response = await _dio.request<List<int>>(
-      req.url,
+      url,
       data: req.body,
       options: options,
     );

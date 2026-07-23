@@ -78,9 +78,23 @@ class AnalyzeUrl {
           src: '',
           jsLib: source.jsLib,
         );
-        raw = evaluated.trim().isEmpty ? raw : evaluated.trim();
-        if (raw.contains('<js>') || raw.startsWith('@js:')) {
-          raw = JsEngine.extractCode(raw) ?? raw;
+        final out = evaluated.trim();
+        // On failure JS returns empty / leftover statements — never treat the
+        // original script body as a URL (Uri.resolve would throw).
+        if (out.isEmpty || _looksLikeJsStatement(out)) {
+          if (kDebugMode) {
+            debugPrint(
+              '[AnalyzeUrl] JS searchUrl/exploreUrl did not yield a URL '
+              'for "${source.bookSourceName}" '
+              '(out="${_clip(out.isEmpty ? code : out)}")',
+            );
+          }
+          raw = '';
+        } else {
+          raw = out;
+          if (raw.contains('<js>') || raw.startsWith('@js:')) {
+            raw = JsEngine.extractCode(raw) ?? raw;
+          }
         }
       }
     }
@@ -176,6 +190,9 @@ class AnalyzeUrl {
   ///
   /// Strips unevaluated `{{…}}` JS helpers, recovers the first http(s) URL if
   /// one is embedded, and joins relative paths against [base].
+  ///
+  /// Returns empty when the input cannot be turned into an absolute http(s)
+  /// URL (e.g. leftover JS after a failed `@js` evaluation).
   static String sanitizeUrl(String input, {String base = ''}) {
     final original = input.trim();
     var raw = _stripJsTemplates(original);
@@ -189,17 +206,48 @@ class AnalyzeUrl {
       }
     }
 
+    // Do not join JS statements / non-paths onto the host.
+    if (!_looksAbsolute(raw) && _looksLikeJsStatement(raw)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[AnalyzeUrl] reject non-URL "${_clip(original)}"',
+        );
+      }
+      return '';
+    }
+
     if (!_looksAbsolute(raw) && base.isNotEmpty) {
       raw = urlJoin(base, raw);
     }
     // Drop control chars / whitespace that break Dio Uri.parse.
     raw = raw.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '').trim();
+    if (!_looksAbsolute(raw)) {
+      // Relative without a usable base, or join still failed / rejected.
+      return '';
+    }
     if (kDebugMode && original.contains('{{') && original != raw) {
       debugPrint(
         '[AnalyzeUrl] sanitized "${_clip(original)}" → "${_clip(raw)}"',
       );
     }
     return raw;
+  }
+
+  /// Detect leftover Legado JS that must never be fed to [Uri.resolve].
+  static bool _looksLikeJsStatement(String s) {
+    final t = s.trim();
+    if (t.isEmpty) return false;
+    if (t.contains('<js>') || t.startsWith('@js:')) return true;
+    if (t.contains('\n')) return true;
+    if (RegExp(r'^\s*(let|var|const|function|return)\b').hasMatch(t)) {
+      return true;
+    }
+    if (t.contains(';') &&
+        RegExp(r'\b(let|var|const|function|getArguments|getVariable)\b')
+            .hasMatch(t)) {
+      return true;
+    }
+    return false;
   }
 
   static String _clip(String s, [int n = 120]) =>
