@@ -6,6 +6,7 @@ import 'package:book/entity/search_item.dart';
 import 'package:book/model/explore_model.dart';
 import 'package:book/route/routes.dart';
 import 'package:book/store/providers.dart';
+import 'package:book/view/book/explore_source_picker_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,7 +79,7 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SourceBar(model: model, dark: dark),
+          _ExploreSourceTrigger(model: model, dark: dark),
           if (model.kinds.length > 1) _KindBar(model: model, dark: dark),
           Divider(
             height: 1,
@@ -91,10 +92,11 @@ class _ExplorePageState extends ConsumerState<ExplorePage>
   }
 }
 
-class _SourceBar extends StatelessWidget {
+/// Compact bar: current explore source + count; opens picker sheet.
+class _ExploreSourceTrigger extends StatelessWidget {
   final ExploreModel model;
   final bool dark;
-  const _SourceBar({required this.model, required this.dark});
+  const _ExploreSourceTrigger({required this.model, required this.dark});
 
   @override
   Widget build(BuildContext context) {
@@ -103,35 +105,83 @@ class _SourceBar extends StatelessWidget {
     }
     final accent = AppColors.accentOf(context);
     final accentSoft = AppColors.accentSoftOf(context);
-    final unselected = dark ? AppColors.textOnDark : AppColors.textSecondary;
+    final primary = dark ? AppColors.textOnDark : AppColors.textPrimary;
+    final secondary = AppColors.textSecondary;
+    final active = model.activeSource;
+    final name = (active?.bookSourceName.trim().isNotEmpty ?? false)
+        ? active!.bookSourceName
+        : (active?.bookSourceUrl ?? '选择书源');
+    final count = model.exploreSources.length;
+
     return SizedBox(
       height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
+      child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        itemCount: model.exploreSources.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final s = model.exploreSources[i];
-          final selected =
-              model.activeSource?.bookSourceUrl == s.bookSourceUrl;
-          return ChoiceChip(
-            label: Text(s.bookSourceName.isEmpty ? s.bookSourceUrl : s.bookSourceName),
-            selected: selected,
-            onSelected: (_) => model.selectSource(s),
-            selectedColor: accentSoft,
-            backgroundColor:
-                dark ? const Color(0xFF2A2A2A) : const Color(0xFFF3F3F3),
-            side: BorderSide.none,
-            labelStyle: TextStyle(
-              fontSize: 12,
-              color: selected ? accent : unselected,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        child: Material(
+          color: accentSoft,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              final sources = List.of(model.exploreSources);
+              ExploreSourcePickerSheet.show(
+                context,
+                sources: sources,
+                activeUrl: active?.bookSourceUrl,
+                onSelected: (s) => model.selectSource(s),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Text(
+                    '书源',
+                    style: TextStyle(fontSize: 12, color: secondary),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: primary,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: dark
+                          ? const Color(0xFF2A2A2A)
+                          : const Color(0xFFFFFFFF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: accent,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 20,
+                    color: secondary,
+                  ),
+                ],
+              ),
             ),
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          );
-        },
+          ),
+        ),
       ),
     );
   }
