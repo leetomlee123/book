@@ -54,24 +54,49 @@ class PageTurnCommitter {
     final dir = (offsetDifference is num)
         ? offsetDifference.toDouble()
         : double.tryParse(offsetDifference?.toString() ?? '') ?? 0;
+    if (dir == 0) return;
     final beforeCur = b.chapterIndex;
     final beforeIdx = b.pageIndex;
     final idx = b.pageIndex;
     final chapters = chaptersOf();
     final curLen = curPageOf()?.pageOffsets ?? 0;
 
-    if (idx == curLen - 1 && dir > 0) {
-      _turnToNextChapter(b, chapters, beforeCur, beforeIdx, dir, curLen);
+    // No laid-out pages yet — never treat as "last page → next chapter".
+    if (curLen <= 0) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ReadModel] commitPageTurn ignored (no pages) '
+          '$beforeCur:$beforeIdx dir=$dir',
+        );
+      }
       return;
     }
-    if (idx == 0 && dir < 0) {
-      _turnToPreviousChapter(b, beforeCur, beforeIdx, dir);
-      return;
+
+    // Clamp a stale index before deciding chapter vs in-chapter turn.
+    final safeIdx = idx < 0 ? 0 : (idx >= curLen ? curLen - 1 : idx);
+    if (safeIdx != idx) {
+      b.pageIndex = safeIdx;
+      if (kDebugMode) {
+        debugPrint(
+          '[ReadModel] commitPageTurn clamp index $idx → $safeIdx '
+          '(pages=$curLen)',
+        );
+      }
     }
+
     if (dir > 0) {
-      b.pageIndex += 1;
+      // Only leave the chapter from its real last page.
+      if (safeIdx >= curLen - 1) {
+        _turnToNextChapter(b, chapters, beforeCur, safeIdx, dir, curLen);
+        return;
+      }
+      b.pageIndex = safeIdx + 1;
     } else {
-      b.pageIndex -= 1;
+      if (safeIdx <= 0) {
+        _turnToPreviousChapter(b, beforeCur, safeIdx, dir);
+        return;
+      }
+      b.pageIndex = safeIdx - 1;
     }
     if (kDebugMode) {
       debugPrint(

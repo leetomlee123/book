@@ -118,18 +118,25 @@ class PagePictureResolver {
     final current = curPageOf();
     if (b == null || current == null) return null;
     final i = b.pageIndex - 1;
-    final key = _key(b.id, b.chapterIndex, i);
-    if (cache.containsKey(key)) return cache[key];
+    final inChapter = i >= 0;
 
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
-    final ui.Picture pic;
-    if (i < 0) {
-      final previous = prePageOf();
+    final String key;
+    final previous = inChapter ? null : prePageOf();
+    if (inChapter) {
+      key = _key(b.id, b.chapterIndex, i);
+    } else {
       if (previous == null || previous.pages.isEmpty) {
         _log('miss previous (no pre chapter)');
         return null;
       }
-      pic = drawContent(previous, previous.pageOffsets - 1);
+      key = _key(b.id, b.chapterIndex - 1, previous.pageOffsets - 1);
+    }
+    if (cache.containsKey(key)) return cache[key];
+
+    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    final ui.Picture pic;
+    if (!inChapter) {
+      pic = drawContent(previous!, previous.pageOffsets - 1);
     } else {
       pic = drawContent(current, i);
     }
@@ -171,12 +178,21 @@ class PagePictureResolver {
     final current = curPageOf();
     if (b == null || current == null) return null;
     final i = b.pageIndex + 1;
-    final key = _key(b.id, b.chapterIndex, i);
+    final inChapter = i >= 0 && i < current.pageOffsets;
+
+    // Cross-chapter next must use the next chapter's key — never store chapter
+    // N+1 page 0 under `book|N|pageOffsets` (pollutes cache / confuses warm).
+    final String key;
+    if (inChapter) {
+      key = _key(b.id, b.chapterIndex, i);
+    } else {
+      key = _key(b.id, b.chapterIndex + 1, 0);
+    }
     if (cache.containsKey(key)) return cache[key];
 
     final sw = kDebugMode ? (Stopwatch()..start()) : null;
     final ui.Picture pic;
-    if (i >= current.pageOffsets) {
+    if (!inChapter) {
       final following = nextPageOf();
       if (following == null) {
         final target = b.chapterIndex + 1;

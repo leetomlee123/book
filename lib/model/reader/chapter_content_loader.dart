@@ -149,9 +149,15 @@ class ChapterContentLoader {
             'native=${BookPager.isAvailable}',
       );
     } else {
+      var layoutComplete = false;
       try {
-        final outcome = await _paginator.paginateProgressive(r);
+        // Neighbor preloads must not cancel each other / the open chapter.
+        final outcome = await _paginator.paginateProgressive(
+          r,
+          cancelPrevious: false,
+        );
         r.pages = outcome.pages;
+        layoutComplete = outcome.complete;
         debugPrint(
           '[PagerEngine] progressive engine=${outcome.engine} '
           'pages=${r.pages.length} complete=${outcome.complete} '
@@ -162,25 +168,41 @@ class ChapterContentLoader {
           'progressive engine=${outcome.engine} pages=${r.pages.length} '
               'complete=${outcome.complete} reason=${outcome.fallbackReason ?? "-"}',
         );
+        // Incomplete progressive results (cancelled mid-chapter) must not be
+        // treated as final layout — one-page leftovers make "next" jump chapters.
+        if (!outcome.complete) {
+          AppLog.w(
+            'Pager',
+            'progressive incomplete idx=$idx pages=${r.pages.length} '
+                '→ full re-paginate',
+          );
+          r.pages = await _paginator.paginate(r);
+          layoutComplete = r.pages.isNotEmpty;
+        }
       } catch (e, st) {
         AppLog.e('Read', 'paginateProgressive failed idx=$idx',
             error: e, stackTrace: st);
         r.pages = const [];
+        layoutComplete = false;
       }
 
       if (r.pages.isEmpty) {
         try {
           r.pages = await _paginator.paginate(r);
+          layoutComplete = r.pages.isNotEmpty;
         } catch (e, st) {
           AppLog.e('Read', 'parseContentAsync retry failed idx=$idx',
               error: e, stackTrace: st);
         }
         if (r.pages.isEmpty) {
           r.pages = fallbackPages(r.chapterContent);
+          layoutComplete = r.pages.isNotEmpty;
         }
       }
 
-      if (r.pages.isNotEmpty &&
+      // Only persist complete layouts — never cache a truncated first page.
+      if (layoutComplete &&
+          r.pages.isNotEmpty &&
           contentSource != 'fail' &&
           contentSource != 'network-error-text' &&
           !r.chapterContent.startsWith('章节内容加载失败')) {

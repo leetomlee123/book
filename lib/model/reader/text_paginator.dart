@@ -75,9 +75,17 @@ class TextPaginator {
     bool shouldJustifyHeight = false,
     void Function(List<TextPage> pages, bool complete)? onProgress,
     bool firstPageFirst = true,
+    /// When true (default for explicit user actions like font change), cancel
+    /// any in-flight progressive job. Neighbor preloads pass false so they
+    /// do not abort the chapter currently being laid out.
+    bool cancelPrevious = true,
   }) async {
-    cancelActive();
+    if (cancelPrevious) {
+      cancelActive();
+    }
     final jobId = _nextJobId++;
+    // Track latest job for cancelActive(); concurrent neighbor jobs keep their
+    // own jobId and only stop if explicitly cancelled or superseded.
     _activeJobId = jobId;
 
     final p = layoutParams(shouldJustifyHeight: shouldJustifyHeight);
