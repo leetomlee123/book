@@ -80,7 +80,8 @@ pub struct LayoutInput {
 }
 
 fn default_true() -> bool {
-    true
+    // Vertical center is applied at paint time; do not stretch line gaps by default.
+    false
 }
 fn default_family() -> String {
     // Must match the TTF name table (not the Flutter pubspec family alias).
@@ -674,7 +675,7 @@ mod tests {
             padding_top: 0.0,
             padding_bottom: 0.0,
             padding_vertical: 0.0,
-            should_justify_height: true,
+            should_justify_height: false,
             font_path: String::new(),
             font_family: "HarmonyOS Sans SC".into(),
             text_align: "justify".into(),

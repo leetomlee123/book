@@ -344,6 +344,15 @@ class ReaderPainter {
     final pageIndex = i.clamp(0, readPage.pages.length - 1);
     final TextPage page = readPage.pages[pageIndex];
     final lineCount = page.lines.length;
+    // Vertically center the body block in the content box when measured
+    // content height is shorter than the available box (e.g. 560 in 600).
+    final contentBoxH = (pageH -
+            ReadSetting.contentTopInset() -
+            ReadSetting.contentBottomInset())
+        .clamp(0.0, pageH);
+    final contentH = _measuredContentHeight(page, fontSize);
+    final centerOffset =
+        contentBoxH > contentH ? (contentBoxH - contentH) / 2.0 : 0.0;
     for (var li = 0; li < lineCount; li++) {
       final line = page.lines[li];
       _paintLine(
@@ -354,7 +363,7 @@ class ReaderPainter {
         fontSize,
         maxLineWidth,
         contentPadding,
-        line.top + bodyTop,
+        line.top + bodyTop + centerOffset,
       );
     }
     if (!chrome) {
@@ -406,5 +415,21 @@ class ReaderPainter {
       '[PaintPage] chapter=${readPage.chapterName} page=$pageIndex '
       'lines=$lineCount ms=${sw.elapsedMilliseconds}',
     );
+  }
+
+  /// Natural height of a page's body lines (content-local coords).
+  ///
+  /// Prefers paginator [TextPage.height]; falls back to last-line bottom.
+  static double _measuredContentHeight(TextPage page, double fontSize) {
+    if (page.lines.isEmpty) return 0;
+    final lineH = fontSize * ReadSetting.getLineHeight();
+    if (page.height > lineH * 0.5) return page.height;
+    var maxBottom = 0.0;
+    for (final line in page.lines) {
+      final h = line.height > 0 ? line.height : lineH;
+      final bottom = line.top + h;
+      if (bottom > maxBottom) maxBottom = bottom;
+    }
+    return maxBottom;
   }
 }

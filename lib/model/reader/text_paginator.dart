@@ -44,7 +44,7 @@ class TextPaginator {
 
   Future<List<TextPage>> paginate(
     ReadPage readPage, {
-    bool shouldJustifyHeight = true,
+    bool shouldJustifyHeight = false,
   }) {
     return TextComposition.parseContentAsync(
       readPage,
@@ -54,7 +54,7 @@ class TextPaginator {
 
   List<TextPage> paginateSync(
     ReadPage readPage, {
-    bool shouldJustifyHeight = true,
+    bool shouldJustifyHeight = false,
   }) {
     return TextComposition.parseContent(
       readPage,
@@ -72,7 +72,7 @@ class TextPaginator {
   /// Falls back to full Dart/Rust one-shot when progressive path is unavailable.
   Future<PaginateOutcome> paginateProgressive(
     ReadPage readPage, {
-    bool shouldJustifyHeight = true,
+    bool shouldJustifyHeight = false,
     void Function(List<TextPage> pages, bool complete)? onProgress,
     bool firstPageFirst = true,
   }) async {
@@ -255,7 +255,7 @@ class TextPaginator {
     }
   }
 
-  Map<String, dynamic> layoutParams({bool shouldJustifyHeight = true}) {
+  Map<String, dynamic> layoutParams({bool shouldJustifyHeight = false}) {
     return TextComposition.layoutParams(
       shouldJustifyHeight: shouldJustifyHeight,
     );

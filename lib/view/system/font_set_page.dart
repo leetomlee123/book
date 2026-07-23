@@ -4,6 +4,7 @@ import 'package:book/common/app_colors.dart';
 import 'package:book/common/font_catalog.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/common/read_setting.dart';
+import 'package:book/common/system_ui.dart';
 import 'package:book/model/color_model.dart';
 import 'package:book/service/custom_cache_manager.dart';
 import 'package:book/store/providers.dart';
@@ -47,7 +48,8 @@ class _FontSetState extends ConsumerState<FontSet> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Font picker is never immersive — always show the status bar.
+    SystemUiHelper.showSystemBars();
     WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
   }
 
@@ -657,7 +659,8 @@ class _FontSetState extends ConsumerState<FontSet> {
 
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // If opened from the reader menu, re-hide bars; otherwise stay visible.
+    SystemUiHelper.restoreAfterOverlay();
     super.dispose();
   }
 }

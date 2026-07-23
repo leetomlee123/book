@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:book/common/pic_widget.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/common/reader_font_bootstrap.dart';
+import 'package:book/common/system_ui.dart';
 import 'package:book/data/db/reader_database.dart';
 import 'package:book/main.dart';
 import 'package:book/route/routes.dart';
@@ -13,7 +14,6 @@ import 'package:fluro/fluro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:book/common/common.dart';
 
@@ -116,14 +116,8 @@ class AppInit {
     if (!SpUtil.haveKey(PrefsKeys.version) || SpUtil.getString(PrefsKeys.version).isEmpty) {
       SpUtil.putString(PrefsKeys.version, '1.0.0');
     }
-    // Default: visible transparent status bar (edge-to-edge). Only the
-    // reader switches to immersiveSticky to hide system bars.
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    if (Platform.isAndroid) {
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-      );
-    }
+    // Default: visible system bars. Only the reader body goes immersive.
+    await SystemUiHelper.showSystemBars();
   }
 
   static bool loginState() {

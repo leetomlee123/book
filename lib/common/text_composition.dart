@@ -43,7 +43,8 @@ class TextComposition {
   /// 内部边距
   final EdgeInsets? padding;
 
-  /// 是否底栏对齐
+  /// When true, stretch line gaps to fill the content box (bottom-align look).
+  /// Prefer false so short pages can be **vertically centered** at paint time.
   final bool shouldJustifyHeight;
 
   /// 前景 页眉页脚 菜单等
@@ -88,7 +89,7 @@ class TextComposition {
     this.justRender,
     Size? boxSize,
     this.padding,
-    this.shouldJustifyHeight = true,
+    this.shouldJustifyHeight = false,
     this.paragraph = 10.0,
     this.getForeground,
     this.getBackground,
@@ -273,7 +274,7 @@ class TextComposition {
         justRender: true,
         boxSize: Size(w, h),
         padding: EdgeInsets.symmetric(horizontal: dis),
-        shouldJustifyHeight: true,
+        shouldJustifyHeight: false,
         debug: false,
       );
       List<TextPage> parseContent2 = textComposition.pages;
@@ -286,7 +287,7 @@ class TextComposition {
 
   /// Collect layout metrics on the UI isolate (SpUtil / Screen are main-only).
   static Map<String, dynamic> layoutParams({
-    bool shouldJustifyHeight = true,
+    bool shouldJustifyHeight = false,
   }) {
     final fontSize = ReadSetting.getFontSize();
     final lineHeight = ReadSetting.getLineHeight();

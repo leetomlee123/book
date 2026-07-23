@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:book/common/read_setting.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/system_ui.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/event/event.dart';
 import 'package:book/model/read_model.dart';
@@ -13,7 +14,6 @@ import 'package:book/view/book/reader_menu.dart';
 import 'package:book/view/book/page_content_reader.dart';
 import 'package:book/view/book/scroll_content_reader.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:book/common/common.dart';
 
@@ -51,7 +51,7 @@ class _ReadBookState extends ConsumerState<ReadBook>
     });
     // Enter immersive BEFORE content load so scroll metrics (boxH / padding)
     // settle once — avoids restore jump then insets change (742→766) race.
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    await SystemUiHelper.enterReaderImmersive();
     // Let the engine apply inset change before pagination measures Screen.
     await Future<void>.delayed(const Duration(milliseconds: 16));
     if (!mounted) return;
@@ -83,7 +83,9 @@ class _ReadBookState extends ConsumerState<ReadBook>
     // Flush progress (cancels debounce, snapshots cur/index) before clear().
     saveState(flush: true);
     readModel.clear();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Always restore visible system bars when leaving the reader body.
+    // Fire-and-forget is fine; helper is synchronous after the first await.
+    SystemUiHelper.exitReaderImmersive();
     super.dispose();
   }
 

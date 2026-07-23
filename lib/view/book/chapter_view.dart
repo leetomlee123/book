@@ -1,5 +1,6 @@
 import 'package:book/common/app_colors.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/system_ui.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/store/providers.dart';
 import 'package:flutter/material.dart';
@@ -39,9 +40,8 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
   @override
   void initState() {
     super.initState();
-    // Catalog is opened on top of the reader (immersiveSticky). Show the
-    // status bar for this page; restore immersive when popping back.
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // Catalog sits on top of the reader — show status bar here only.
+    SystemUiHelper.showSystemBars();
     _itemPositionsListener.itemPositions.addListener(_onPositionsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _centerCurrentChapter();
@@ -53,8 +53,8 @@ class _ChapterViewState extends ConsumerState<ChapterView> {
     _itemPositionsListener.itemPositions.removeListener(_onPositionsChanged);
     _searchCtrl.dispose();
     _searchFocus.dispose();
-    // Back under ReadBook — hide system bars again.
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // Back under ReadBook → immersive; otherwise keep bars visible.
+    SystemUiHelper.restoreAfterOverlay();
     super.dispose();
   }
 

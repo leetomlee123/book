@@ -224,7 +224,7 @@ class ChapterContentLoader {
     try {
       final pages = _paginator.paginateSync(
         ReadPage(text, '', 0, const []),
-        shouldJustifyHeight: true,
+        shouldJustifyHeight: false,
       );
       if (pages.isNotEmpty) return pages;
     } catch (_) {}
