@@ -1,6 +1,7 @@
 import 'package:book/animation/base_animation_page.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:bot_toast/bot_toast.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// 覆盖翻页：拖动时顶页平移露出底页，松手确认/取消。
@@ -16,6 +17,17 @@ class CoverPageAnimation extends BaseAnimationPage {
   Animation<Offset>? currentAnimation;
 
   AnimationType? animationType;
+
+  /// Reused across frames — only the shader/rect changes with drag position.
+  final Paint _shadowPaint = Paint()
+    ..isAntiAlias = false
+    ..style = PaintingStyle.fill;
+
+  static const LinearGradient _shadowGradient = LinearGradient(
+    colors: [Colors.black54, Colors.transparent],
+  );
+
+  int _drawSample = 0;
 
   void _ensureAnimation(AnimationController controller) {
     if (currentAnimation != null) return;
@@ -68,6 +80,7 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   @override
   void onDraw(Canvas canvas) {
+    final sw = kDebugMode ? (Stopwatch()..start()) : null;
     // Draw animated layers while dragging OR while confirm/cancel runs.
     final animating = animationType != null;
     if ((isDragging || animating) && (mTouch.dx != 0 || mTouch.dy != 0)) {
@@ -76,6 +89,16 @@ class CoverPageAnimation extends BaseAnimationPage {
       drawTopPage(canvas);
     } else {
       drawStatic(canvas);
+    }
+    if (sw != null) {
+      sw.stop();
+      // Sample every 12th frame to keep logs quiet during continuous drag.
+      if ((_drawSample++ % 12) == 0 && sw.elapsedMicroseconds > 500) {
+        debugPrint(
+          '[CoverDraw] us=${sw.elapsedMicroseconds} '
+          'drag=$isDragging anim=$animating',
+        );
+      }
     }
   }
 
@@ -119,7 +142,9 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   void drawBottomPage(Canvas canvas) {
     canvas.save();
-    final pic = isTurnNext ? readerViewModel.paintNextPicture() : readerViewModel.paintCurrentPicture();
+    final pic = isTurnNext
+        ? readerViewModel.paintNextPicture()
+        : readerViewModel.paintCurrentPicture();
     if (pic != null) canvas.drawPicture(pic);
     canvas.restore();
   }
@@ -140,34 +165,16 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   void drawCurrentShadow(Canvas canvas) {
     canvas.save();
-    const shadowGradient = LinearGradient(
-      colors: [Colors.black54, Colors.transparent],
-    );
+    final Rect rect;
     if (isTurnNext) {
-      final rect = Rect.fromLTRB(
-        currentSize.width + mTouch.dx - mStartPoint.dx,
-        0,
-        currentSize.width + mTouch.dx - mStartPoint.dx + 15,
-        currentSize.height,
-      );
-      final shadowPaint = Paint()
-        ..isAntiAlias = false
-        ..style = PaintingStyle.fill
-        ..shader = shadowGradient.createShader(rect);
-      canvas.drawRect(rect, shadowPaint);
+      final edge = currentSize.width + mTouch.dx - mStartPoint.dx;
+      rect = Rect.fromLTRB(edge, 0, edge + 15, currentSize.height);
     } else {
-      final rect = Rect.fromLTRB(
-        mTouch.dx - mStartPoint.dx,
-        0,
-        (mTouch.dx - mStartPoint.dx) + 15,
-        currentSize.height,
-      );
-      final shadowPaint = Paint()
-        ..isAntiAlias = false
-        ..style = PaintingStyle.fill
-        ..shader = shadowGradient.createShader(rect);
-      canvas.drawRect(rect, shadowPaint);
+      final edge = mTouch.dx - mStartPoint.dx;
+      rect = Rect.fromLTRB(edge, 0, edge + 15, currentSize.height);
     }
+    _shadowPaint.shader = _shadowGradient.createShader(rect);
+    canvas.drawRect(rect, _shadowPaint);
     canvas.restore();
   }
 

@@ -164,10 +164,10 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
     }
 
     if (_phase == _PointerPhase.dragging) {
+      // setCurrentTouchEvent → Manager already markNeedsPaint; avoid double.
       pagePainter?.setCurrentTouchEvent(
         TouchEvent(TouchEvent.ACTION_MOVE, e.localPosition),
       );
-      _repaint();
     }
   }
 

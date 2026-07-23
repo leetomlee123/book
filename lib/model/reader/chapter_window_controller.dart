@@ -16,6 +16,7 @@ class ChapterWindowController {
     required this.setPrePage,
     required this.setNextPage,
     required this.clearPictures,
+    required this.warmPictures,
     required this.restorePageIndex,
     required this.markNeedsPaint,
     required this.notify,
@@ -32,6 +33,8 @@ class ChapterWindowController {
   final void Function(ReadPage? page) setPrePage;
   final void Function(ReadPage? page) setNextPage;
   final void Function() clearPictures;
+  /// Record current page picture + schedule prev/next after chapter open.
+  final void Function() warmPictures;
   final void Function(int savedIndex) restorePageIndex;
   final void Function() markNeedsPaint;
   final void Function() notify;
@@ -80,12 +83,15 @@ class ChapterWindowController {
         if (bookOf()?.id != centerBookId) return;
         if (bookOf()?.chapterIndex != center) return;
         setNextPage(page);
+        // Cross-chapter cover bottom layer becomes available — warm now.
+        warmPictures();
       });
       loadChapter(center - 1).then((page) {
         if (gen != _openGeneration) return;
         if (bookOf()?.id != centerBookId) return;
         if (bookOf()?.chapterIndex != center) return;
         setPrePage(page);
+        warmPictures();
       });
 
       if (jump) {
@@ -93,6 +99,8 @@ class ChapterWindowController {
       } else {
         restorePageIndex(keepIndex);
       }
+      // Eager current picture + post-frame neighbors (cover first gesture).
+      warmPictures();
       markNeedsPaint();
       notify();
     } catch (e, st) {

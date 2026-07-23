@@ -22,6 +22,7 @@ class PageTurnCommitter {
     required this.showLoading,
     required this.hideLoading,
     required this.prunePictures,
+    required this.warmPictures,
     required this.scheduleProgressSave,
     required this.notify,
     required this.markNeedsPaint,
@@ -40,6 +41,8 @@ class PageTurnCommitter {
   final Future<void> Function(String text) showLoading;
   final void Function() hideLoading;
   final void Function() prunePictures;
+  /// Warm current + schedule prev/next after page/chapter advance.
+  final void Function() warmPictures;
   final void Function() scheduleProgressSave;
   final void Function() notify;
   final void Function() markNeedsPaint;
@@ -77,6 +80,8 @@ class PageTurnCommitter {
         'dir=$offsetDifference pages=$curLen',
       );
     }
+    // New current may already be cached from neighbor warm; schedule next ±1.
+    warmPictures();
     markNeedsPaint();
     notify();
     scheduleProgressSave();
@@ -104,6 +109,7 @@ class PageTurnCommitter {
       loadChapter(b.chapterIndex).then((value) {
         if (activeBookId() == b.id) {
           setCurPage(value);
+          warmPictures();
           markNeedsPaint();
           notify();
         }
@@ -122,11 +128,15 @@ class PageTurnCommitter {
       );
     }
     prunePictures();
+    warmPictures();
     scheduleProgressSave();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (activeBookId() == b.id) {
         loadChapter(b.chapterIndex + 1).then((value) {
-          if (activeBookId() == b.id) setNextPage(value);
+          if (activeBookId() == b.id) {
+            setNextPage(value);
+            warmPictures();
+          }
         });
       }
     });
@@ -156,13 +166,17 @@ class PageTurnCommitter {
         b.chapterIndex = tempCur;
         b.pageIndex = (curPageOf()?.pageOffsets ?? 1) - 1;
         setPrePage(null);
+        warmPictures();
         markNeedsPaint();
         notify();
         hideLoading();
         prunePictures();
         scheduleProgressSave();
         loadChapter(b.chapterIndex - 1).then((v) {
-          if (activeBookId() == b.id) setPrePage(v);
+          if (activeBookId() == b.id) {
+            setPrePage(v);
+            warmPictures();
+          }
         });
       });
       return;
@@ -181,11 +195,15 @@ class PageTurnCommitter {
       );
     }
     prunePictures();
+    warmPictures();
     scheduleProgressSave();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (activeBookId() == b.id) {
         loadChapter(b.chapterIndex - 1).then((value) {
-          if (activeBookId() == b.id) setPrePage(value);
+          if (activeBookId() == b.id) {
+            setPrePage(value);
+            warmPictures();
+          }
         });
       }
     });

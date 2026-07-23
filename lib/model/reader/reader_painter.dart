@@ -6,6 +6,7 @@ import 'package:book/common/screen.dart';
 import 'package:book/entity/read_page.dart';
 import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:book/common/common.dart';
 
@@ -31,7 +32,8 @@ class ReaderPainter {
     required double fontSize,
     double? cached,
   }) {
-    if (cached != null && cached.isFinite && cached.abs() > 0.1) {
+    // Any finite cached value (including 0) skips the measure pass.
+    if (cached != null && cached.isFinite) {
       return cached;
     }
     if (!justify || targetWidth <= 0 || text.isEmpty) return 0;
@@ -53,6 +55,9 @@ class ReaderPainter {
   }
 
   /// Paint a single composed line. Never multi-line-wraps.
+  ///
+  /// Writes the final [TextLine.letterSpacing] so a later re-record of the same
+  /// semantic line skips the justify measure pass.
   void _paintLine(
     TextPainter painter,
     Canvas canvas,
@@ -86,11 +91,18 @@ class ReaderPainter {
       final adjusted = ls - shrink;
       final clamped =
           adjusted.isFinite && adjusted.abs() <= fontSize * 0.5 ? adjusted : 0.0;
+      ls = clamped;
       painter.text = TextSpan(
         text: line.text,
         style: style.copyWith(letterSpacing: clamped),
       );
       painter.layout();
+    }
+
+    // Cache for the next record of this same TextLine instance.
+    final prev = line.letterSpacing;
+    if (prev == null || (prev - ls).abs() > 0.05) {
+      line.letterSpacing = ls;
     }
 
     painter.paint(canvas, Offset(padLeft, y));
@@ -210,6 +222,9 @@ class ReaderPainter {
     bool chrome = true,
     required PaperTheme paperTheme,
   }) {
+    final sw = kDebugMode ? Stopwatch() : null;
+    sw?.start();
+
     final pageRecorder = ui.PictureRecorder();
 
     final bool night = paperTheme == PaperTheme.night ||
@@ -278,7 +293,9 @@ class ReaderPainter {
       final dx = (pageW - centerPainter.width) / 2;
       final dy = (pageH - centerPainter.height) / 2;
       centerPainter.paint(pageCanvas, Offset(dx, dy));
-      return pageRecorder.endRecording();
+      final pic = pageRecorder.endRecording();
+      _logPaintPage(readPage, i, 0, sw);
+      return pic;
     }
 
     final chromeStyle = TextStyle(
@@ -320,7 +337,9 @@ class ReaderPainter {
         pageCanvas,
         Offset(contentPadding, bodyTop),
       );
-      return pageRecorder.endRecording();
+      final pic = pageRecorder.endRecording();
+      _logPaintPage(readPage, i, 0, sw);
+      return pic;
     }
     final pageIndex = i.clamp(0, readPage.pages.length - 1);
     final TextPage page = readPage.pages[pageIndex];
@@ -339,7 +358,9 @@ class ReaderPainter {
       );
     }
     if (!chrome) {
-      return pageRecorder.endRecording();
+      final pic = pageRecorder.endRecording();
+      _logPaintPage(readPage, i, lineCount, sw);
+      return pic;
     }
 
     // Time + page number — vertically centered in the bottom chrome band.
@@ -368,6 +389,22 @@ class ReaderPainter {
       Offset(pageW - contentPadding - _labelPainter.width, bottomTextY),
     );
 
-    return pageRecorder.endRecording();
+    final pic = pageRecorder.endRecording();
+    _logPaintPage(readPage, i, lineCount, sw);
+    return pic;
+  }
+
+  void _logPaintPage(
+    ReadPage readPage,
+    int pageIndex,
+    int lineCount,
+    Stopwatch? sw,
+  ) {
+    if (!kDebugMode || sw == null) return;
+    sw.stop();
+    debugPrint(
+      '[PaintPage] chapter=${readPage.chapterName} page=$pageIndex '
+      'lines=$lineCount ms=${sw.elapsedMilliseconds}',
+    );
   }
 }
