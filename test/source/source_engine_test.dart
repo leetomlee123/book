@@ -1,4 +1,5 @@
 import 'package:book/source/analyzer/js_analyzer.dart';
+import 'package:book/source/analyzer/regex_analyzer.dart';
 import 'package:book/source/engine/progress_mapper.dart';
 import 'package:book/source/import/source_importer.dart';
 import 'package:book/source/model/book_source.dart';
@@ -263,6 +264,136 @@ void main() {
         '/novel/cangxian/1273628667947255006',
       );
     });
+
+    test('supports :eq(n) index pseudo', () {
+      const html = '''
+<html><body>
+<ul class="list">
+  <li><a href="/0">零</a></li>
+  <li><a href="/1">一</a></li>
+  <li><a href="/2">二</a></li>
+</ul>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final first = rule.getList('ul.list li:eq(0)');
+      expect(first.length, 1);
+      expect(rule.getString('a@text', scope: first.first), '零');
+      final second = rule.getList('ul.list li:eq(1) a');
+      expect(second.length, 1);
+      expect(rule.getString('text', scope: second.first), '一');
+      expect(rule.getString('href', scope: second.first), '/1');
+    });
+
+    test('supports :gt(n) and :lt(n)', () {
+      const html = '''
+<html><body>
+<div class="item">A</div>
+<div class="item">B</div>
+<div class="item">C</div>
+<div class="item">D</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final gt0 = rule.getList('.item:gt(0)');
+      expect(gt0.length, 3);
+      expect(rule.getString('text', scope: gt0.first), 'B');
+      final lt2 = rule.getList('.item:lt(2)');
+      expect(lt2.length, 2);
+      expect(rule.getString('text', scope: lt2.last), 'B');
+    });
+
+    test('supports :contains(text)', () {
+      const html = '''
+<html><body>
+<div id="pager">
+  <a href="/prev">上一章</a>
+  <a href="/next">下一章</a>
+  <a href="/catalog">目录</a>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final next = rule.getList('a:contains(下一章)');
+      expect(next.length, 1);
+      expect(rule.getString('href', scope: next.first), '/next');
+      // Jsoup-style with class + contains
+      final again = rule.getList('#pager a:contains(上一章)');
+      expect(again.length, 1);
+      expect(rule.getString('@text', scope: again.first), '上一章');
+    });
+
+    test('Jsoup class. + :eq combination', () {
+      const html = '''
+<html><body>
+<div class="chapter_list">
+  <dd><a href="/c1">第1章</a></dd>
+  <dd><a href="/c2">第2章</a></dd>
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final list = rule.getList('class.chapter_list@tag.dd:eq(1)@tag.a');
+      expect(list.length, 1);
+      expect(rule.getString('text', scope: list.first), '第2章');
+      expect(rule.getString('href', scope: list.first), '/c2');
+    });
+  });
+
+  group('sourceRegex / init helpers', () {
+    test('sourceRegex extracts chapter body from full page', () {
+      const page = '''
+<html><body>
+<div class="wrap">广告广告</div>
+<div id="content">第一章正文内容这里有足够的字数用于测试抽取是否成功。</div>
+<script>var x=1</script>
+</body></html>
+''';
+      // Simulate ruleContent.sourceRegex (first capture group).
+      final body = RegexAnalyzer.getString(
+        page,
+        r'id="content"[^>]*>([\s\S]*?)</div>',
+      );
+      expect(body, contains('第一章正文'));
+      expect(body.contains('广告'), isFalse);
+    });
+
+    test('init CSS narrows page then field rules work', () {
+      const page = '''
+<html><body>
+<div class="side">垃圾侧栏 书名侧栏</div>
+<div class="detail">
+  <h1 class="title">真正书名</h1>
+  <p class="author">作者：测试</p>
+</div>
+</body></html>
+''';
+      // Emulate bookInfo.init = `.detail` then name = `h1@text`
+      final full = AnalyzeRule(content: page, baseUrl: 'https://ex.com');
+      final narrowed = full.getHtmlString('.detail');
+      expect(narrowed, contains('真正书名'));
+      final rule = AnalyzeRule(content: narrowed, baseUrl: 'https://ex.com');
+      expect(rule.getString('h1@text'), '真正书名');
+      expect(rule.getString('.author@text'), contains('测试'));
+    });
+
+    test('init regex extracts JSON blob from HTML wrapper', () {
+      const page = '''
+<html><script>var data={"name":"书A","author":"甲"};</script></html>
+''';
+      final json = RegexAnalyzer.getString(
+        page,
+        r'var data=(\{[\s\S]*?\});',
+      );
+      expect(json, contains('"name":"书A"'));
+      final rule = AnalyzeRule(
+        content: json,
+        baseUrl: 'https://ex.com',
+        isJson: true,
+      );
+      expect(rule.getString(r'$.name'), '书A');
+      expect(rule.getString(r'$.author'), '甲');
+    });
   });
 
   group('AnalyzeRule JSON', () {
@@ -271,9 +402,180 @@ void main() {
 {"data":[{"name":"N1","url":"/1"},{"name":"N2","url":"/2"}]}
 ''';
       final rule = AnalyzeRule(content: body, baseUrl: 'https://ex.com', isJson: true);
-      final list = rule.getList('\$.data');
+      final list = rule.getList(r'$.data');
       expect(list.length, 2);
-      expect(rule.getString('\$.name', scope: list.first), 'N1');
+      expect(rule.getString(r'$.name', scope: list.first), 'N1');
+    });
+  });
+
+  group('69shuba-shaped rules', () {
+    test('xpath meta property extract', () {
+      const html = '''
+<html><head>
+<meta property="og:novel:book_name" content="剑来"/>
+<meta property="og:novel:author" content="烽火戏诸侯"/>
+<meta property="og:image" content="https://cdn.example.com/cover.jpg"/>
+<meta property="og:description" content="简介一段"/>
+<meta property="og:novel:category" content="玄幻"/>
+<meta property="og:novel:status" content="连载"/>
+<meta property="og:novel:update_time" content="2026-01-01"/>
+<meta property="og:novel:latest_chapter_name" content="1234.第1234章 终局"/>
+</head><body></body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://www.69shuba.com');
+      expect(
+        rule.getString("//meta[@property='og:novel:book_name']/@content"),
+        '剑来',
+      );
+      expect(
+        rule.getString("//meta[@property='og:novel:author']/@content"),
+        '烽火戏诸侯',
+      );
+      expect(
+        rule.getString("//meta[@property='og:image']/@content"),
+        'https://cdn.example.com/cover.jpg',
+      );
+      final kind = rule.getString(
+        "//meta[@property='og:novel:category' or @property='og:novel:status' or @property='og:novel:update_time']/@content",
+      );
+      expect(kind, contains('玄幻'));
+      expect(kind, contains('连载'));
+      final last = rule.getString(
+        "//meta[@property='og:novel:latest_chapter_name']/@content##\\d+\\.(?=第)",
+      );
+      expect(last, '第1234章 终局');
+    });
+
+    test('Jsoup a.0 / label.1 index and && join', () {
+      const html = '''
+<html><body>
+<li class="item">
+  <a href="/book/1"><img data-src="/c.jpg" alt="书名图"/></a>
+  <h3><a href="/book/1">占位</a><a href="/book/1">真正书名</a></h3>
+  <label>作者甲</label>
+  <label>玄幻</label>
+  <label>连载</label>
+  <div class="ellipsis_2">简介内容</div>
+</li>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final items = rule.getList('li.item');
+      expect(items.length, 1);
+      final item = items.first;
+      expect(rule.getString('a.0@href', scope: item), '/book/1');
+      expect(rule.getString('h3 a.1@text', scope: item), '真正书名');
+      expect(rule.getString('label.0@text', scope: item), '作者甲');
+      expect(
+        rule.getString('label.1@text&&label.2@text', scope: item),
+        '玄幻 连载',
+      );
+      expect(rule.getString('img@data-src||img@src', scope: item), '/c.jpg');
+    });
+
+    test('list reverse range a[-1:0]', () {
+      const html = '''
+<html><body>
+<div id="catalog"><ul>
+  <a href="/c/3">第3章</a>
+  <a href="/c/2">第2章</a>
+  <a href="/c/1">第1章</a>
+</ul></div>
+</body></html>
+''';
+      final rule = AnalyzeRule(content: html, baseUrl: 'https://ex.com');
+      final items = rule.getList('#catalog ul a[-1:0]');
+      expect(items.length, 3);
+      expect(rule.getString('text', scope: items.first), '第1章');
+      expect(rule.getString('href', scope: items.first), '/c/1');
+      expect(rule.getString('text', scope: items.last), '第3章');
+    });
+
+    test('hybrid <js>…</js> then CSS list (cfCheck pass-through)', () {
+      const html = '''
+<html><body>
+<ul id="article_list_content">
+  <li><h3><a href="/x">A</a><a href="/x">书A</a></h3></li>
+  <li><h3><a href="/y">B</a><a href="/y">书B</a></h3></li>
+</ul>
+</body></html>
+''';
+      const jsLib = '''
+function cfCheck(html, targetUrl) {
+  var text = String(html || '');
+  if (/Just a moment|cf-turnstile/i.test(text)) {
+    return '';
+  }
+  return html;
+}
+''';
+      final rule = AnalyzeRule(
+        content: html,
+        baseUrl: 'https://www.69shuba.com/novels/hot',
+        jsLib: jsLib,
+      );
+      final items = rule.getList(
+        '<js>cfCheck(result, baseUrl);</js>#article_list_content li',
+      );
+      expect(items.length, 2);
+      expect(rule.getString('h3 a.1@text', scope: items.first), '书A');
+    });
+
+    test('hybrid content rule .txtnav@textNodes after js', () {
+      const html = '''
+<html><body>
+<div class="txtnav">第一段
+第二段
+</div>
+</body></html>
+''';
+      final rule = AnalyzeRule(
+        content: html,
+        baseUrl: 'https://www.69shuba.com/txt/1',
+      );
+      final body = rule.getString(
+        '<js>cfCheck(result, baseUrl);</js>.txtnav@textNodes',
+      );
+      expect(body, contains('第一段'));
+      expect(body, contains('第二段'));
+    });
+
+    test('JS searchUrl quirk becomes POST with gbk charset', () {
+      final source = BookSource(
+        bookSourceUrl: 'https://www.69shuba.com',
+        bookSourceName: '69',
+        searchUrl:
+            "<js>/modules/article/search.php,{'charset':'gbk','body':'searchkey={{key}}&searchtype=all','method':'POST'};result='';result;</js>",
+      );
+      final req = AnalyzeUrl.build(source, source.searchUrl, key: '剑来');
+      expect(req.method, 'POST');
+      expect(req.charset.toLowerCase(), 'gbk');
+      expect(req.url, contains('www.69shuba.com/modules/article/search.php'));
+      expect(req.body.toString(), contains(Uri.encodeQueryComponent('剑来')));
+    });
+
+    test('tocUrl @js relative transform', () {
+      final out = JsEngine.instance.eval(
+        "baseUrl.endsWith('/') ? baseUrl : baseUrl.replace('.htm','/')",
+        result: '',
+        baseUrl: 'https://www.69shuba.com/book/123.htm',
+        src: '',
+      );
+      if (out.isEmpty || out == '<html></html>') {
+        // Pure-JS path needs native runtime; skip on hosts without flutter_js.
+        // ignore: avoid_print
+        print('SKIP tocUrl @js — JsEngine unavailable');
+        return;
+      }
+      expect(out, 'https://www.69shuba.com/book/123/');
+      final rule = AnalyzeRule(
+        content: '<html></html>',
+        baseUrl: 'https://www.69shuba.com/book/123.htm',
+      );
+      final toc = rule.getString(
+        "@js:baseUrl.endsWith('/') ? baseUrl : baseUrl.replace('.htm','/')",
+      );
+      expect(toc, 'https://www.69shuba.com/book/123/');
     });
   });
 
@@ -414,8 +716,28 @@ void main() {
         result: 'hello',
         baseUrl: 'https://ex.com',
       );
-      // If native runtime unavailable in test env, falls back to input.
-      expect(out == 'hello-ok' || out == 'hello', true);
+      // flutter_js may be unavailable in some unit-test hosts (no native lib).
+      // On device/Android it should evaluate; host fallback returns input.
+      if (out == 'hello') {
+        // ignore: avoid_print
+        print('SKIP JsEngine runtime unavailable in this test host');
+        return;
+      }
+      expect(out, 'hello-ok');
+    });
+
+    test('evaluates baseUrl ternary expression', () {
+      final out = JsEngine.instance.eval(
+        "baseUrl.endsWith('/') ? baseUrl : baseUrl.replace('.htm','/')",
+        result: '',
+        baseUrl: 'https://www.69shuba.com/book/123.htm',
+      );
+      if (out.isEmpty) {
+        // ignore: avoid_print
+        print('SKIP JsEngine runtime unavailable in this test host');
+        return;
+      }
+      expect(out, 'https://www.69shuba.com/book/123/');
     });
   });
 }

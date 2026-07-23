@@ -11,6 +11,8 @@ class BookSource {
   String header;
   String searchUrl;
   String exploreUrl;
+  /// Shared JS helpers (Legado `jsLib`) injected before rule evaluation.
+  String jsLib;
   int customOrder;
   int weight;
   int lastUpdateTime;
@@ -32,6 +34,7 @@ class BookSource {
     this.header = '',
     this.searchUrl = '',
     this.exploreUrl = '',
+    this.jsLib = '',
     this.customOrder = 0,
     this.weight = 0,
     this.lastUpdateTime = 0,
@@ -83,6 +86,7 @@ class BookSource {
       header: (json['header'] ?? '').toString(),
       searchUrl: (json['searchUrl'] ?? '').toString(),
       exploreUrl: (json['exploreUrl'] ?? '').toString(),
+      jsLib: (json['jsLib'] ?? '').toString(),
       customOrder: asInt(json['customOrder']),
       weight: asInt(json['weight']),
       lastUpdateTime: asInt(json['lastUpdateTime']),
@@ -107,6 +111,7 @@ class BookSource {
       'header': header,
       'searchUrl': searchUrl,
       'exploreUrl': exploreUrl,
+      'jsLib': jsLib,
       'customOrder': customOrder,
       'weight': weight,
       'lastUpdateTime': lastUpdateTime,
@@ -129,6 +134,7 @@ class BookSource {
     String? header,
     String? searchUrl,
     String? exploreUrl,
+    String? jsLib,
     int? customOrder,
     int? weight,
     int? lastUpdateTime,
@@ -150,6 +156,7 @@ class BookSource {
       header: header ?? this.header,
       searchUrl: searchUrl ?? this.searchUrl,
       exploreUrl: exploreUrl ?? this.exploreUrl,
+      jsLib: jsLib ?? this.jsLib,
       customOrder: customOrder ?? this.customOrder,
       weight: weight ?? this.weight,
       lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,

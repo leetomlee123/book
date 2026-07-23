@@ -1,5 +1,7 @@
 import 'package:book/common/app_log.dart';
 import 'package:book/entity/book_info.dart';
+import 'package:book/source/analyzer/js_analyzer.dart';
+import 'package:book/source/analyzer/regex_analyzer.dart';
 import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/source/net/analyze_url.dart';
@@ -45,7 +47,7 @@ class BookSourceEngine {
       );
     } catch (e, st) {
       AppLog.e(
-        'Source',
+        'SourceNet',
         'search fail "${source.bookSourceName}" key=$key',
         error: e,
         stackTrace: st,
@@ -91,7 +93,7 @@ class BookSourceEngine {
       );
     } catch (e, st) {
       AppLog.e(
-        'Source',
+        'SourceNet',
         'explore fail "${source.bookSourceName}" url=$url',
         error: e,
         stackTrace: st,
@@ -118,12 +120,25 @@ class BookSourceEngine {
       content: resp.body,
       baseUrl: resp.url,
       isJson: resp.isJson,
+      jsLib: source.jsLib,
     );
     final items = listRule.isEmpty ? const <dynamic>[] : rule.getList(listRule);
+    if (listRule.isNotEmpty && items.isEmpty) {
+      AppLog.w(
+        'RuleMiss',
+        '$logTag list empty "${source.bookSourceName}" '
+            'rule="$listRule" bodyLen=${resp.body.length}',
+      );
+    }
     final out = <SearchBook>[];
+    final checkKey = source.ruleSearch.checkKeyWord.trim();
     for (final item in items) {
       final name = rule.getString(nameRule, scope: item);
       if (name.isEmpty) continue;
+      if (checkKey.isNotEmpty && name.contains(checkKey)) {
+        // Legado checkKeyWord: drop captcha / soft-404 result rows.
+        continue;
+      }
       var bookUrl = rule.getString(bookUrlRule, scope: item);
       if (bookUrl.isEmpty && item is Element) {
         bookUrl = item.attributes['href'] ?? '';
@@ -173,10 +188,19 @@ class BookSourceEngine {
       '',
       absoluteUrl: bookUrl,
     ).timeout(sourceTimeout);
-    final rule = AnalyzeRule(
-      content: resp.body,
+    // Legado ruleBookInfo.init may narrow/transform the page before field rules.
+    final body = _applyInitRule(
+      resp.body,
+      source.ruleBookInfo.init,
       baseUrl: resp.url,
       isJson: resp.isJson,
+      jsLib: source.jsLib,
+    );
+    final rule = AnalyzeRule(
+      content: body,
+      baseUrl: resp.url,
+      isJson: resp.isJson || _looksJson(body),
+      jsLib: source.jsLib,
     );
     final r = source.ruleBookInfo;
     String pick(String ruleStr, String fallback) {
@@ -258,6 +282,7 @@ class BookSourceEngine {
           content: resp.body,
           baseUrl: resp.url,
           isJson: resp.isJson,
+          jsLib: source.jsLib,
         );
         final listRule = source.ruleToc.chapterList;
         var items = listRule.isEmpty
@@ -277,7 +302,7 @@ class BookSourceEngine {
             items = rule.getList(fb);
             if (items.isNotEmpty) {
               AppLog.w(
-                'Source',
+                'RuleMiss',
                 'toc rule miss, fallback selector="$fb" hits=${items.length}',
               );
               break;
@@ -342,7 +367,7 @@ class BookSourceEngine {
       return all;
     } catch (e, st) {
       AppLog.e(
-        'Source',
+        'SourceNet',
         'toc fail "${source.bookSourceName}" url=$tocUrl',
         error: e,
         stackTrace: st,
@@ -370,10 +395,16 @@ class BookSourceEngine {
           content: resp.body,
           baseUrl: resp.url,
           isJson: resp.isJson,
+          jsLib: source.jsLib,
         );
         String raw = '';
         final contentRule = source.ruleContent.content;
-        if (resp.isJson) {
+        final sourceRegex = source.ruleContent.sourceRegex.trim();
+        // Prefer sourceRegex (Legado full-page regex extract) when set and
+        // content CSS rule is empty or fails.
+        if (sourceRegex.isNotEmpty && contentRule.isEmpty) {
+          raw = RegexAnalyzer.getString(resp.body, sourceRegex);
+        } else if (resp.isJson) {
           raw = rule.getString(contentRule);
         } else {
           if (contentRule.isNotEmpty) {
@@ -423,13 +454,31 @@ class BookSourceEngine {
             }
             if (bestLen > primaryLen) {
               AppLog.w(
-                'Source',
+                'RuleMiss',
                 'content rule weak/miss, fallback="$bestSel" '
                     'rawLen=$primaryLen fbLen=$bestLen',
               );
               raw = best;
             }
           }
+        }
+        // sourceRegex as secondary extract when CSS returned little/nothing.
+        if (sourceRegex.isNotEmpty && _plainLen(raw) < 80) {
+          final viaRe = RegexAnalyzer.getString(resp.body, sourceRegex);
+          if (_plainLen(viaRe) > _plainLen(raw)) {
+            AppLog.d(
+              'Source',
+              'content sourceRegex used plainLen=${_plainLen(viaRe)}',
+            );
+            raw = viaRe;
+          }
+        }
+        if (raw.isEmpty) {
+          AppLog.w(
+            'RuleMiss',
+            'content empty "${source.bookSourceName}" '
+                'rule="$contentRule" re="$sourceRegex"',
+          );
         }
         final part = finalizeContent(raw, source.ruleContent.replaceRegex);
         AppLog.d(
@@ -457,13 +506,87 @@ class BookSourceEngine {
       return text;
     } catch (e, st) {
       AppLog.e(
-        'Source',
+        'SourceNet',
         'content fail "${source.bookSourceName}" url=$chapterUrl',
         error: e,
         stackTrace: st,
       );
       rethrow;
     }
+  }
+
+  /// Apply Legado `ruleBookInfo.init` to narrow/transform page content.
+  ///
+  /// Supported:
+  /// - `@js:` / `<js>` → eval, use string result as new body
+  /// - `@regex:` / leading `:` → first capture / match as new body
+  /// - CSS / default → first match `innerHtml` (or text) as new body
+  /// Empty / failed init leaves [body] unchanged.
+  static String _applyInitRule(
+    String body,
+    String init, {
+    required String baseUrl,
+    required bool isJson,
+    String jsLib = '',
+  }) {
+    final ruleStr = init.trim();
+    if (ruleStr.isEmpty || body.isEmpty) return body;
+    try {
+      if (JsEngine.needsJs(ruleStr)) {
+        final code = JsEngine.extractCode(ruleStr) ?? '';
+        if (code.isEmpty) return body;
+        final out = JsEngine.instance.eval(
+          code,
+          result: body,
+          baseUrl: baseUrl,
+          src: body,
+          jsLib: jsLib,
+        );
+        // cfCheck stubs return original body unchanged — still OK.
+        if (out.isNotEmpty) {
+          AppLog.d('Source', 'bookInfo.init js applied len=${out.length}');
+          return out;
+        }
+        return body;
+      }
+      final rule = AnalyzeRule(
+        content: body,
+        baseUrl: baseUrl,
+        isJson: isJson,
+        jsLib: jsLib,
+      );
+      // Regex init
+      final trimmed = ruleStr.trim();
+      if (trimmed.startsWith('@regex:') ||
+          trimmed.startsWith(':') ||
+          trimmed.startsWith('@Regex:')) {
+        final pat = trimmed.startsWith('@regex:') || trimmed.startsWith('@Regex:')
+            ? trimmed.substring(trimmed.indexOf(':') + 1)
+            : trimmed.substring(1);
+        final out = RegexAnalyzer.getString(body, pat);
+        if (out.isNotEmpty) {
+          AppLog.d('Source', 'bookInfo.init regex applied len=${out.length}');
+          return out;
+        }
+        return body;
+      }
+      // CSS / JSON path — prefer HTML fragment so child rules still work.
+      var out = rule.getHtmlString(ruleStr);
+      if (out.isEmpty) out = rule.getString(ruleStr);
+      if (out.isNotEmpty) {
+        AppLog.d('Source', 'bookInfo.init css/json applied len=${out.length}');
+        return out;
+      }
+      AppLog.w('RuleMiss', 'bookInfo.init produced empty rule="$ruleStr"');
+    } catch (e) {
+      AppLog.w('RuleMiss', 'bookInfo.init error rule="$ruleStr"', error: e);
+    }
+    return body;
+  }
+
+  static bool _looksJson(String s) {
+    final t = s.trimLeft();
+    return t.startsWith('{') || t.startsWith('[');
   }
 
   /// Cheap length of text after stripping tags (for fallback ranking).

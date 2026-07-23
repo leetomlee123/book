@@ -4,6 +4,7 @@ import 'package:book/source/analyzer/css_analyzer.dart';
 import 'package:book/source/analyzer/json_analyzer.dart';
 import 'package:book/source/analyzer/js_analyzer.dart';
 import 'package:book/source/analyzer/regex_analyzer.dart';
+import 'package:book/source/analyzer/xpath_analyzer.dart';
 import 'package:book/source/util/text_clean.dart';
 import 'package:html/dom.dart';
 
@@ -12,6 +13,8 @@ class AnalyzeRule {
   final String content;
   final String baseUrl;
   final bool isJson;
+  /// Optional Legado jsLib helpers for this evaluation.
+  final String jsLib;
   Document? _doc;
   dynamic _json;
 
@@ -19,7 +22,12 @@ class AnalyzeRule {
     required this.content,
     required this.baseUrl,
     bool? isJson,
-  }) : isJson = isJson ?? _detectJson(content);
+    this.jsLib = '',
+  }) : isJson = isJson ?? _detectJson(content) {
+    if (jsLib.isNotEmpty) {
+      JsEngine.instance.ensureJsLib(jsLib);
+    }
+  }
 
   static bool _detectJson(String c) {
     final t = c.trimLeft();
@@ -54,8 +62,37 @@ class AnalyzeRule {
   List<dynamic> _getListSingle(String rule) {
     if (rule.isEmpty) return const [];
 
+    // Prefix JS transform then CSS/XPath list:
+    //   <js>cfCheck(result, baseUrl);</js>#catalog ul a[-1:0]
+    final hybrid = _splitLeadingJs(rule);
+    if (hybrid != null) {
+      final transformed = JsEngine.instance.eval(
+        hybrid.js,
+        result: content,
+        baseUrl: baseUrl,
+        src: content,
+      );
+      final tail = hybrid.tail.trim();
+      if (tail.isEmpty) {
+        return JsEngine.instance.evalList(
+          hybrid.js,
+          result: content,
+          baseUrl: baseUrl,
+          src: content,
+          jsLib: jsLib,
+        );
+      }
+      // Re-run list rule against transformed body.
+      return AnalyzeRule(
+        content: transformed.isEmpty ? content : transformed,
+        baseUrl: baseUrl,
+        isJson: _detectJson(transformed),
+        jsLib: jsLib,
+      )._getListSingle(tail);
+    }
+
     // Pure JS list rule
-    if (JsEngine.needsJs(rule)) {
+    if (JsEngine.needsJs(rule) && !_hasTrailingCssAfterJs(rule)) {
       final code = JsEngine.extractCode(rule);
       if (code != null && code.isNotEmpty) {
         return JsEngine.instance.evalList(
@@ -63,6 +100,7 @@ class AnalyzeRule {
           result: content,
           baseUrl: baseUrl,
           src: content,
+          jsLib: jsLib,
         );
       }
     }
@@ -74,7 +112,11 @@ class AnalyzeRule {
         result: content,
         baseUrl: baseUrl,
         src: content,
+        jsLib: jsLib,
       );
+    }
+    if (parsed.kind == _RuleKind.xpath) {
+      return XpathAnalyzer.getList(doc, parsed.selector);
     }
     if (parsed.kind == _RuleKind.json || isJson) {
       return JsonAnalyzer.getList(jsonRoot, parsed.selector);
@@ -87,9 +129,23 @@ class AnalyzeRule {
   }
 
   /// Extract a single string from [scope] (Element, Map, String, or full content).
-  /// Supports `||` alternatives: first non-empty wins.
+  ///
+  /// Supports:
+  /// - `||` alternatives: first non-empty wins
+  /// - `&&` field join: non-empty parts joined with space (outside JS / ##)
   String getString(String rule, {dynamic scope}) {
     if (rule.isEmpty) return '';
+
+    // `&&` multi-part join (Legado): kind = "label.1@text&&label.2@text"
+    if (_hasJoin(rule)) {
+      final parts = _splitJoin(rule);
+      final out = <String>[];
+      for (final p in parts) {
+        final v = getString(p, scope: scope);
+        if (v.isNotEmpty) out.add(v);
+      }
+      return out.join(' ').trim();
+    }
 
     for (final alt in _splitAlternatives(rule)) {
       final v = _getStringSingle(alt, scope: scope);
@@ -112,7 +168,37 @@ class AnalyzeRule {
       if (parts.length >= 3) postReplace = parts[2];
     }
 
-    // JS rule on full content / prior result
+    // Prefix JS then CSS/attr:
+    //   <js>cfCheck(result, baseUrl);</js>.txtnav@textNodes
+    final hybrid = _splitLeadingJs(r);
+    if (hybrid != null) {
+      final input = _scopeToText(scope);
+      final transformed = JsEngine.instance.eval(
+        hybrid.js,
+        result: input.isEmpty ? content : input,
+        baseUrl: baseUrl,
+        src: content,
+        jsLib: jsLib,
+      );
+      final tail = hybrid.tail.trim();
+      String result;
+      if (tail.isEmpty) {
+        result = transformed;
+      } else {
+        result = AnalyzeRule(
+          content: transformed.isEmpty ? content : transformed,
+          baseUrl: baseUrl,
+          isJson: _detectJson(transformed),
+          jsLib: jsLib,
+        ).getString(tail);
+      }
+      if (postRegex != null && postRegex.isNotEmpty) {
+        result = _applyPost(result, postRegex, postReplace);
+      }
+      return result.trim();
+    }
+
+    // Pure JS rule on full content / prior result
     if (JsEngine.needsJs(r)) {
       final input = _scopeToText(scope);
       final code = JsEngine.extractCode(r) ?? '';
@@ -121,21 +207,17 @@ class AnalyzeRule {
         result: input.isEmpty ? content : input,
         baseUrl: baseUrl,
         src: content,
+        jsLib: jsLib,
       );
       if (postRegex != null && postRegex.isNotEmpty) {
-        try {
-          result = result.replaceAll(
-            RegExp(postRegex, multiLine: true, dotAll: true),
-            postReplace ?? '',
-          );
-        } catch (_) {}
+        result = _applyPost(result, postRegex, postReplace);
       }
       return result.trim();
     }
 
     // Hybrid: CSS/JSON first then trailing <js>
     final jsEmbed =
-        RegExp(r'([\s\S]*?)<js>([\s\S]*?)</js>', caseSensitive: false)
+        RegExp(r'([\s\S]*?)<js>([\s\S]*?)</js>\s*$', caseSensitive: false)
             .firstMatch(r);
     if (jsEmbed != null) {
       final head = (jsEmbed.group(1) ?? '').trim();
@@ -148,7 +230,7 @@ class AnalyzeRule {
         if (prior.isEmpty) prior = content;
       }
       return JsEngine.instance
-          .eval(code, result: prior, baseUrl: baseUrl, src: content)
+          .eval(code, result: prior, baseUrl: baseUrl, src: content, jsLib: jsLib)
           .trim();
     }
 
@@ -161,7 +243,16 @@ class AnalyzeRule {
         result: _scopeToText(scope).isEmpty ? content : _scopeToText(scope),
         baseUrl: baseUrl,
         src: content,
+        jsLib: jsLib,
       );
+    } else if (parsed.kind == _RuleKind.xpath) {
+      if (scope is Element) {
+        // Scope element: wrap as fragment document.
+        final frag = CssAnalyzer.parse(scope.outerHtml);
+        result = XpathAnalyzer.getString(frag, parsed.selector);
+      } else {
+        result = XpathAnalyzer.getString(doc, parsed.selector);
+      }
     } else if (scope is Element) {
       result = CssAnalyzer.getString(scope, parsed.selector, parsed.attr);
       // Bare attr on current element already handled (empty selector).
@@ -207,24 +298,58 @@ class AnalyzeRule {
     }
 
     if (postRegex != null && postRegex.isNotEmpty) {
-      try {
-        result = result.replaceAll(
-          RegExp(postRegex, multiLine: true, dotAll: true),
-          postReplace ?? '',
-        );
-      } catch (_) {}
+      result = _applyPost(result, postRegex, postReplace);
     }
     return result.trim();
+  }
+
+  String _applyPost(String result, String postRegex, String? postReplace) {
+    try {
+      return result.replaceAll(
+        RegExp(postRegex, multiLine: true, dotAll: true),
+        postReplace ?? '',
+      );
+    } catch (_) {
+      return result;
+    }
   }
 
   /// Content rule often wants HTML then plain text.
   String getHtmlString(String rule, {dynamic scope}) {
     if (rule.isEmpty) return '';
+
+    // Prefix JS then CSS html:
+    final hybrid = _splitLeadingJs(rule);
+    if (hybrid != null) {
+      final input = _scopeToText(scope);
+      final transformed = JsEngine.instance.eval(
+        hybrid.js,
+        result: input.isEmpty ? content : input,
+        baseUrl: baseUrl,
+        src: content,
+        jsLib: jsLib,
+      );
+      final tail = hybrid.tail.trim();
+      if (tail.isEmpty) return transformed;
+      return AnalyzeRule(
+        content: transformed.isEmpty ? content : transformed,
+        baseUrl: baseUrl,
+        isJson: _detectJson(transformed),
+        jsLib: jsLib,
+      ).getHtmlString(tail);
+    }
+
     if (JsEngine.needsJs(rule)) {
       return getString(rule, scope: scope);
     }
     for (final alt in _splitAlternatives(rule)) {
       final parsed = _parseRule(alt);
+      if (parsed.kind == _RuleKind.xpath) {
+        // XPath typically returns attr text; fall back to getString.
+        final v = getString(alt, scope: scope);
+        if (v.isNotEmpty) return v;
+        continue;
+      }
       if (scope is Element) {
         if (parsed.selector.isEmpty) {
           final v = scope.innerHtml;
@@ -260,16 +385,94 @@ class AnalyzeRule {
     return scope.toString();
   }
 
+  /// Split leading `<js>...</js>` + optional trailing CSS/XPath.
+  /// Returns null if rule is not of that shape.
+  static ({String js, String tail})? _splitLeadingJs(String rule) {
+    final r = rule.trim();
+    final m = RegExp(
+      r'^<js>([\s\S]*?)</js>([\s\S]*)$',
+      caseSensitive: false,
+    ).firstMatch(r);
+    if (m == null) return null;
+    return (js: (m.group(1) ?? '').trim(), tail: m.group(2) ?? '');
+  }
+
+  static bool _hasTrailingCssAfterJs(String rule) {
+    final h = _splitLeadingJs(rule);
+    return h != null && h.tail.trim().isNotEmpty;
+  }
+
+  /// True when rule uses `&&` join outside of JS / ## replace.
+  static bool _hasJoin(String rule) {
+    final r = rule.trim();
+    if (!r.contains('&&')) return false;
+    if (JsEngine.needsJs(r) && !_hasTrailingCssAfterJs(r) && !r.contains('##')) {
+      // Pure JS may contain && as operator — don't split.
+      if (r.startsWith('@js:') || r.startsWith('<js>')) return false;
+    }
+    // Heuristic: field rules look like `a@text&&b@text` or `label.1@text&&…`
+    return RegExp(r'&&').hasMatch(r) &&
+        !r.trimLeft().startsWith('@js:') &&
+        !(r.trimLeft().startsWith('<js>') && !_hasTrailingCssAfterJs(r));
+  }
+
+  static List<String> _splitJoin(String rule) {
+    return rule
+        .split('&&')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
   /// Split Legado `||` alternatives, ignoring `||` inside JS blocks.
   List<String> _splitAlternatives(String rule) {
     final r = rule.trim();
     if (r.isEmpty) return const [];
-    if (JsEngine.needsJs(r) || !r.contains('||')) return [r];
-    return r
-        .split('||')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    if (!r.contains('||')) return [r];
+    // Don't split pure JS or mid-JS ||.
+    if (r.startsWith('@js:') ||
+        (r.startsWith('<js>') && !_hasTrailingCssAfterJs(r))) {
+      return [r];
+    }
+    // Hybrid: only split the CSS tail after </js>
+    final hybrid = _splitLeadingJs(r);
+    if (hybrid != null && hybrid.tail.contains('||')) {
+      // Alternatives apply to whole hybrid prefix+each alt? Legado usually puts
+      // || outside. Keep simple: split full string only outside <js>.
+    }
+    // Split ignoring || that appear inside <js>...</js>
+    final out = <String>[];
+    final buf = StringBuffer();
+    var inJs = false;
+    for (var i = 0; i < r.length; i++) {
+      if (!inJs &&
+          i + 4 <= r.length &&
+          r.substring(i, i + 4).toLowerCase() == '<js>') {
+        inJs = true;
+        buf.write(r.substring(i, i + 4));
+        i += 3;
+        continue;
+      }
+      if (inJs &&
+          i + 5 <= r.length &&
+          r.substring(i, i + 5).toLowerCase() == '</js>') {
+        inJs = false;
+        buf.write(r.substring(i, i + 5));
+        i += 4;
+        continue;
+      }
+      if (!inJs && i + 2 <= r.length && r.substring(i, i + 2) == '||') {
+        final part = buf.toString().trim();
+        if (part.isNotEmpty) out.add(part);
+        buf.clear();
+        i += 1;
+        continue;
+      }
+      buf.write(r[i]);
+    }
+    final last = buf.toString().trim();
+    if (last.isNotEmpty) out.add(last);
+    return out.isEmpty ? [r] : out;
   }
 
   _ParsedRule _parseRule(String rule) {
@@ -292,8 +495,8 @@ class AnalyzeRule {
       return _ParsedRule(_RuleKind.regex, r, '');
     }
     if (r.startsWith('@xpath:') || r.startsWith('//') || r.startsWith('./')) {
-      // XPath not implemented — treat as empty
-      return _ParsedRule(_RuleKind.css, '', '');
+      if (r.startsWith('@xpath:')) r = r.substring(7).trim();
+      return _ParsedRule(_RuleKind.xpath, r, '');
     }
     // Bare attribute on current element: text / href / @text / @href / data-xxx
     final bare = r.startsWith('@') ? r.substring(1) : r;
@@ -337,7 +540,7 @@ class AnalyzeRule {
   };
 }
 
-enum _RuleKind { css, json, regex, js }
+enum _RuleKind { css, json, regex, js, xpath }
 
 class _ParsedRule {
   final _RuleKind kind;

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_js/flutter_js.dart';
 
 /// Minimal Legado-style JS host for book-source rules.
@@ -12,7 +13,8 @@ import 'package:flutter_js/flutter_js.dart';
 /// - `result`  previous stage text / current content
 /// - `baseUrl` page url
 /// - `src`     full page body (alias of result when not chained)
-/// - `java`    tiny helper object: `ajax` not implemented; `getString`/`get` passthrough
+/// - `java`    tiny helper object (stubs for CF / browser APIs)
+/// - optional [jsLib] helpers (`cfCheck`, etc.) loaded per source
 ///
 /// Returns string, or JSON-encoded list/map when JS returns array/object.
 class JsEngine {
@@ -21,6 +23,7 @@ class JsEngine {
 
   JavascriptRuntime? _rt;
   bool _failed = false;
+  String _loadedJsLib = '';
 
   JavascriptRuntime? get _runtime {
     if (_failed) return null;
@@ -28,16 +31,63 @@ class JsEngine {
     try {
       _rt = getJavascriptRuntime(forceJavascriptCoreOnAndroid: false);
       // Lightweight polyfills commonly expected by source snippets.
-      _rt!.evaluate('''
+      // java.startBrowserAwait / longToast are stubs: return original body
+      // so CF-gated sources degrade to "no challenge rewrite" instead of crash.
+      final init = _rt!.evaluate(r'''
 var java = {
   getString: function(x){ return String(x==null?'':x); },
-  ajax: function(){ return ''; }
+  ajax: function(){ return ''; },
+  longToast: function(msg){},
+  startBrowserAwait: function(url, title){
+    return { body: function(){ return ''; }, url: String(url||'') };
+  }
 };
+if (typeof String.prototype.endsWith !== 'function') {
+  String.prototype.endsWith = function(s) {
+    s = String(s);
+    return this.length >= s.length && this.substring(this.length - s.length) === s;
+  };
+}
+if (typeof String.prototype.startsWith !== 'function') {
+  String.prototype.startsWith = function(s) {
+    s = String(s);
+    return this.substring(0, s.length) === s;
+  };
+}
+function cfCheck(html, targetUrl){ return String(html==null?'':html); }
+1
 ''');
+      if (init.isError) {
+        if (kDebugMode) {
+          debugPrint('[JsEngine] init error: ${init.stringResult}');
+        }
+      }
       return _rt;
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[JsEngine] runtime unavailable: $e');
+      }
       _failed = true;
       return null;
+    }
+  }
+
+  /// Install Legado `jsLib` helpers for the active source (idempotent per text).
+  void ensureJsLib(String jsLib) {
+    final lib = jsLib.trim();
+    if (lib.isEmpty || lib == _loadedJsLib) return;
+    final rt = _runtime;
+    if (rt == null) return;
+    try {
+      rt.evaluate(lib);
+      _loadedJsLib = lib;
+      if (kDebugMode) {
+        debugPrint('[JsEngine] jsLib loaded (${lib.length} chars)');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[JsEngine] jsLib failed: $e');
+      }
     }
   }
 
@@ -71,7 +121,9 @@ var java = {
     String result = '',
     String baseUrl = '',
     String src = '',
+    String jsLib = '',
   }) {
+    if (jsLib.isNotEmpty) ensureJsLib(jsLib);
     final rt = _runtime;
     if (rt == null || code.isEmpty) return result;
     try {
@@ -80,20 +132,68 @@ var java = {
 var result = ${jsonEncode(result)};
 var baseUrl = ${jsonEncode(baseUrl)};
 var src = ${jsonEncode(src.isEmpty ? result : src)};
-var java = java || { getString: function(x){ return String(x==null?'':x); }, ajax: function(){ return ''; } };
+var java = java || {
+  getString: function(x){ return String(x==null?'':x); },
+  ajax: function(){ return ''; },
+  longToast: function(){},
+  startBrowserAwait: function(url, title){
+    return { body: function(){ return ''; }, url: String(url||'') };
+  }
+};
+if (typeof cfCheck !== 'function') {
+  function cfCheck(html, targetUrl){ return String(html==null?'':html); }
+}
 ''';
-      final wrapped = '''
+      // Bare expressions (Legado `@js: baseUrl.endsWith(...) ? …`) need `return (…)`.
+      // Single expression-statements (`cfCheck(result, baseUrl);`) also need return.
+      // Multi-statement scripts run as-is (should assign `result` if they need output).
+      final trimmedCode = code.trim();
+      final singleExprStmt = RegExp(r'^([^;{}\n]+);\s*$').firstMatch(trimmedCode);
+      final looksExpr = !trimmedCode.contains(';') &&
+          !trimmedCode.contains('{') &&
+          !RegExp(
+            r'\b(var|let|const|function|return|if|for|while|class)\b',
+          ).hasMatch(trimmedCode);
+      final String wrapped;
+      if (looksExpr) {
+        wrapped = '''
 (function(){
 $prelude
-$code
+return ($trimmedCode);
 })()
 ''';
+      } else if (singleExprStmt != null) {
+        final expr = singleExprStmt.group(1)!.trim();
+        wrapped = '''
+(function(){
+$prelude
+return ($expr);
+})()
+''';
+      } else {
+        wrapped = '''
+(function(){
+$prelude
+$trimmedCode
+return (typeof result === 'undefined' || result === null) ? '' : result;
+})()
+''';
+      }
       final jsResult = rt.evaluate(wrapped);
       if (jsResult.isError) {
+        if (kDebugMode) {
+          debugPrint(
+            '[JsEngine] eval error: ${jsResult.stringResult} '
+            'code=${code.length > 80 ? '${code.substring(0, 80)}…' : code}',
+          );
+        }
         return result;
       }
       return _stringify(jsResult.stringResult, jsResult.rawResult);
-    } catch (_) {
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[JsEngine] eval exception: $e');
+      }
       return result;
     }
   }
@@ -103,11 +203,18 @@ $code
     String rule, {
     required String input,
     required String baseUrl,
+    String jsLib = '',
   }) {
     if (!needsJs(rule)) return null;
     final code = extractCode(rule);
     if (code == null || code.isEmpty) return null;
-    return eval(code, result: input, baseUrl: baseUrl, src: input);
+    return eval(
+      code,
+      result: input,
+      baseUrl: baseUrl,
+      src: input,
+      jsLib: jsLib,
+    );
   }
 
   /// Parse JS list output into List (of Map or String).
@@ -116,8 +223,15 @@ $code
     String result = '',
     String baseUrl = '',
     String src = '',
+    String jsLib = '',
   }) {
-    final out = eval(code, result: result, baseUrl: baseUrl, src: src);
+    final out = eval(
+      code,
+      result: result,
+      baseUrl: baseUrl,
+      src: src,
+      jsLib: jsLib,
+    );
     if (out.isEmpty) return const [];
     try {
       final decoded = jsonDecode(out);
@@ -158,5 +272,6 @@ $code
       _rt?.dispose();
     } catch (_) {}
     _rt = null;
+    _loadedJsLib = '';
   }
 }
