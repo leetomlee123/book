@@ -1,3 +1,4 @@
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/entity/chapter_toc_entry.dart';
 import 'package:book/entity/read_page.dart';
@@ -68,6 +69,7 @@ class PageTurnCommitter {
     final idx = b.pageIndex;
     final chapters = chaptersOf();
     final curLen = curPageOf()?.pageOffsets ?? 0;
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
 
     // No laid-out pages yet — never treat as "last page → next chapter".
     if (curLen <= 0) {
@@ -77,6 +79,10 @@ class PageTurnCommitter {
           '$beforeCur:$beforeIdx dir=$dir',
         );
       }
+      PageTurnPerf.log(
+        'commit.ignored',
+        'reason=no_pages pos=$beforeCur:$beforeIdx dir=$dir',
+      );
       return;
     }
 
@@ -114,7 +120,18 @@ class PageTurnCommitter {
       );
     }
     // New current may already be cached from neighbor warm; schedule next ±1.
+    final warmSw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     warmPictures(deferHeavy: false);
+    if (warmSw != null) {
+      warmSw.stop();
+      PageTurnPerf.log(
+        'commit.page',
+        'from=$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
+            'dir=$dir pages=$curLen warmMs=${warmSw.elapsedMilliseconds} '
+            'warmUs=${warmSw.elapsedMicroseconds} '
+            'totalMs=${sw?.elapsedMilliseconds ?? -1}',
+      );
+    }
     markNeedsPaint();
     notify();
     scheduleProgressSave();
@@ -123,13 +140,23 @@ class PageTurnCommitter {
   /// Prune + warm after the current frame so animation-complete stays smooth.
   void _deferChapterHousekeeping({required int chapterAfter}) {
     final bookId = activeBookId();
+    PageTurnPerf.log('commit.chapter.housekeeping.schedule', 'ch=$chapterAfter');
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (activeBookId() != bookId) return;
       final b = bookOf();
       if (b == null || b.chapterIndex != chapterAfter) return;
+      final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
       prunePictures();
       // Cache hit for page 0 is free; miss records next frame (already post-frame).
       warmPictures(deferHeavy: false);
+      if (sw != null) {
+        sw.stop();
+        PageTurnPerf.log(
+          'commit.chapter.housekeeping.done',
+          'ch=$chapterAfter ms=${sw.elapsedMilliseconds} '
+              'us=${sw.elapsedMicroseconds}',
+        );
+      }
     });
   }
 
@@ -188,6 +215,11 @@ class PageTurnCommitter {
         'dir=$dir pages=$curLen ready=${!needsLoad}',
       );
     }
+    PageTurnPerf.log(
+      'commit.chapter.next',
+      'from=$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} '
+          'dir=$dir pages=$curLen ready=${!needsLoad}',
+    );
     // Swap first; prune/paint after this frame (avoids anim-callback jank).
     markNeedsPaint();
     notify();
@@ -265,6 +297,10 @@ class PageTurnCommitter {
         'dir=$dir',
       );
     }
+    PageTurnPerf.log(
+      'commit.chapter.prev',
+      'from=$beforeCur:$beforeIdx → ${b.chapterIndex}:${b.pageIndex} dir=$dir',
+    );
     markNeedsPaint();
     notify();
     scheduleProgressSave();

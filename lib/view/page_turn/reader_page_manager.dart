@@ -2,6 +2,7 @@ import 'package:book/animation/base_animation_page.dart';
 import 'package:book/animation/simulation_turn_page_animation.dart';
 import 'package:book/animation/static_page_turn.dart';
 import 'package:book/animation/turn_page_animation.dart';
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/model/read_model.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/foundation.dart';
@@ -52,6 +53,10 @@ class ReaderPageManager {
   final List<int> _queuedDirs = <int>[];
   bool _drainScheduled = false;
 
+  /// Correlates anim start → commit for [PageTurnPerf] logs.
+  int _activeTurnId = 0;
+  Stopwatch? _activeTurnSw;
+
   /// True only while confirm/cancel animation is running.
   bool get isAnimating => currentState == PageTurnState.animating;
 
@@ -91,6 +96,14 @@ class ReaderPageManager {
     }
   }
 
+  String get _modeTag => PageTurnPerf.modeName(currentAnimationType);
+
+  void _perf(String event, [String detail = '']) {
+    final base =
+        'mode=$_modeTag state=$currentState turn=$_activeTurnId q=$_queuedDirs';
+    PageTurnPerf.log(event, detail.isEmpty ? base : '$base $detail');
+  }
+
   /// Feed pointer events while the user is still interacting (down/move only).
   /// Swipe completion must go through [finishSwipe]; taps through [triggerTapTurn].
   void setCurrentTouchEvent(TouchEvent event) {
@@ -111,6 +124,7 @@ class ReaderPageManager {
   bool finishSwipe(Offset endPos) {
     if (isBusy) {
       _log('finishSwipe ignored (busy)');
+      _perf('swipe.ignored', 'reason=busy');
       return false;
     }
 
@@ -124,6 +138,7 @@ class ReaderPageManager {
         final dir = page.consumeSwipeDirection();
         if (dir != 0) {
           _log('finishSwipe static dir=$dir');
+          _perf('swipe.static', 'dir=$dir');
           _commitTurn(dir);
           return true;
         }
@@ -135,10 +150,12 @@ class ReaderPageManager {
     if (currentAnimationPage.isConfirmArea()) {
       final dir = _inferDirectionFromPage() ? 1 : -1;
       _log('finishSwipe confirm dir=$dir');
+      _perf('swipe.confirm', 'dir=$dir');
       return startConfirmAnimation(dir);
     }
     if (currentAnimationPage.isCancelArea()) {
       _log('finishSwipe cancel');
+      _perf('swipe.cancel');
       return startCancelAnimation();
     }
     _markPaint();
@@ -178,6 +195,7 @@ class ReaderPageManager {
       // Replace tail with latest intent (keeps 跟手 without multi-page jump).
       _queuedDirs[_queuedDirs.length - 1] = dir;
       _log('triggerTapTurn queue full → replace tail dir=$dir');
+      _perf('tap.queue.replace', 'dir=$dir');
       _scheduleDrain();
       return true;
     }
@@ -185,6 +203,7 @@ class ReaderPageManager {
     // already capped by _maxQueued; still allow stacking up to the cap.
     _queuedDirs.add(dir);
     _log('triggerTapTurn queued dir=$dir');
+    _perf('tap.queue', 'dir=$dir');
     _scheduleDrain();
     return true;
   }
@@ -193,11 +212,13 @@ class ReaderPageManager {
     final goNext = dir > 0;
     if (goNext && !currentAnimationPage.canTurnNext()) {
       _log('triggerTapTurn blocked: cannot go next');
+      _perf('tap.blocked', 'dir=$dir reason=no_next');
       _queuedDirs.clear();
       return false;
     }
     if (!goNext && !currentAnimationPage.canTurnPrevious()) {
       _log('triggerTapTurn blocked: cannot go pre');
+      _perf('tap.blocked', 'dir=$dir reason=no_pre');
       _queuedDirs.clear();
       return false;
     }
@@ -205,6 +226,7 @@ class ReaderPageManager {
     if (currentAnimationType == TYPE_ANIMATION_NONE ||
         animationController == null) {
       _log('triggerTapTurn static dir=$dir');
+      _perf('tap.static', 'dir=$dir');
       _commitTurn(dir);
       return true;
     }
@@ -246,10 +268,12 @@ class ReaderPageManager {
     currentTouchData = TouchEvent(TouchEvent.ACTION_MOVE, end);
 
     _log('triggerTapTurn anim dir=$dir size=${w2}x$h2');
+    _perf('tap.anim', 'dir=$dir size=${w2.toStringAsFixed(0)}x${h2.toStringAsFixed(0)}');
     final ok = startConfirmAnimation(dir);
     if (!ok) {
       // Animation failed to start — still advance page so taps never "die".
       _log('triggerTapTurn anim failed → instant commit');
+      _perf('tap.anim.fallback', 'dir=$dir');
       _commitTurn(dir);
       return true;
     }
@@ -285,6 +309,7 @@ class ReaderPageManager {
     }
     final dir = _queuedDirs.removeAt(0);
     _log('drain queue dir=$dir remaining=$_queuedDirs');
+    _perf('queue.drain', 'dir=$dir remaining=$_queuedDirs');
     _startTapTurn(dir);
   }
 
@@ -326,6 +351,7 @@ class ReaderPageManager {
       currentAnimationPage.setAnimationController(c);
     }
     currentState = PageTurnState.idle;
+    _perf('mode.set', 'type=$animationType effective=$_modeTag');
   }
 
   int getCurrentAnimation() => currentAnimationType;
@@ -340,6 +366,10 @@ class ReaderPageManager {
       _log(
         'startConfirm ignored cNull=${c == null} busy=$isBusy dir=$direction',
       );
+      _perf(
+        'anim.confirm.ignored',
+        'dir=$direction cNull=${c == null} busy=$isBusy',
+      );
       return false;
     }
 
@@ -350,6 +380,7 @@ class ReaderPageManager {
     final animation = currentAnimationPage.getConfirmAnimation(c, canvasKey);
     if (animation == null) {
       _log('startConfirm getConfirmAnimation=null');
+      _perf('anim.confirm.null', 'dir=$direction');
       currentState = PageTurnState.idle;
       return false;
     }
@@ -358,9 +389,16 @@ class ReaderPageManager {
     _committed = false;
     currentState = PageTurnState.animating;
     final epoch = ++_turnEpoch;
+    _activeTurnId = PageTurnPerf.nextTurnId();
+    _activeTurnSw = Stopwatch()..start();
+    final durMs = c.duration?.inMilliseconds ?? -1;
     _bindAnimation(animation, commitOnComplete: true, epoch: epoch);
     c.forward();
     _log('startConfirm dir=$_pendingDirection epoch=$epoch');
+    _perf(
+      'anim.confirm.start',
+      'dir=$_pendingDirection epoch=$epoch durMs=$durMs',
+    );
     return true;
   }
 
@@ -382,8 +420,11 @@ class ReaderPageManager {
     _committed = false;
     currentState = PageTurnState.animating;
     final epoch = ++_turnEpoch;
+    _activeTurnId = PageTurnPerf.nextTurnId();
+    _activeTurnSw = Stopwatch()..start();
     _bindAnimation(animation, commitOnComplete: false, epoch: epoch);
     c.forward();
+    _perf('anim.cancel.start', 'epoch=$epoch');
     return true;
   }
 
@@ -431,15 +472,18 @@ class ReaderPageManager {
       if (status != AnimationStatus.completed) return;
       if (currentState != PageTurnState.animating) return;
 
+      final animMs = _activeTurnSw?.elapsedMilliseconds;
       if (commitOnComplete && !_committed && _pendingDirection != 0) {
         _committed = true;
         final dir = _pendingDirection;
         _pendingDirection = 0;
         _log('anim completed → commit dir=$dir');
+        _perf('anim.completed', 'dir=$dir animMs=${animMs ?? -1}');
         _commitTurn(dir);
       } else {
         _pendingDirection = 0;
         _log('anim completed → no commit');
+        _perf('anim.completed.nocommit', 'animMs=${animMs ?? -1}');
       }
 
       currentState = PageTurnState.idle;
@@ -462,7 +506,22 @@ class ReaderPageManager {
     // Start cooldown BEFORE mutating page so any re-entrant busy check sees it.
     _lastCommitAt = DateTime.now();
     _log('COMMIT dir=$direction');
+    final turnId =
+        _activeTurnId == 0 ? PageTurnPerf.nextTurnId() : _activeTurnId;
+    if (_activeTurnId == 0) _activeTurnId = turnId;
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     currentAnimationPage.readerViewModel.commitPageTurn(direction);
+    if (sw != null) {
+      sw.stop();
+      final totalMs = _activeTurnSw?.elapsedMilliseconds;
+      PageTurnPerf.log(
+        'commit',
+        'mode=$_modeTag turn=$turnId dir=$direction '
+            'commitMs=${sw.elapsedMilliseconds} '
+            'commitUs=${sw.elapsedMicroseconds} '
+            'totalMs=${totalMs ?? -1} q=$_queuedDirs',
+      );
+    }
     _markPaint();
     // Instant (static) turns settle immediately.
     if (currentState != PageTurnState.animating) {

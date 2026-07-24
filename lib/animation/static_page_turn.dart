@@ -1,4 +1,5 @@
 import 'package:book/animation/base_animation_page.dart';
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
 
@@ -13,9 +14,20 @@ class StaticPageTurn extends BaseAnimationPage {
 
   @override
   void onDraw(Canvas canvas) {
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     final pic = readerViewModel.paintCurrentPicture();
     if (pic != null) {
       canvas.drawPicture(pic);
+    }
+    if (sw != null) {
+      sw.stop();
+      PageTurnPerf.frameDraw(
+        'static',
+        us: sw.elapsedMicroseconds,
+        animating: false,
+        dragging: _moved,
+        extra: pic == null ? 'pic=null' : 'pic=ok',
+      );
     }
   }
 

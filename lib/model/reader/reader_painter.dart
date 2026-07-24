@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 
+import 'package:book/common/common.dart';
 import 'package:book/common/local_store.dart';
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:book/common/screen.dart';
 import 'package:book/entity/read_page.dart';
@@ -8,7 +10,6 @@ import 'package:book/entity/text_line.dart';
 import 'package:book/entity/text_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:book/common/common.dart';
 
 /// Canvas painter for reader pages (page-turn chrome + scroll body tiles).
 ///
@@ -222,8 +223,8 @@ class ReaderPainter {
     bool chrome = true,
     required PaperTheme paperTheme,
   }) {
-    final sw = kDebugMode ? Stopwatch() : null;
-    sw?.start();
+    // Profile + debug: this is the expensive path behind pic.miss.
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
 
     final pageRecorder = ui.PictureRecorder();
 
@@ -411,12 +412,21 @@ class ReaderPainter {
     int lineCount,
     Stopwatch? sw,
   ) {
-    if (!kDebugMode || sw == null) return;
+    if (sw == null) return;
     sw.stop();
-    debugPrint(
-      '[PaintPage] chapter=${readPage.chapterName} page=$pageIndex '
-      'lines=$lineCount ms=${sw.elapsedMilliseconds}',
+    // Always emit under the unified prefix so one filter covers paint cost.
+    PageTurnPerf.log(
+      'paint.page',
+      'chapter=${readPage.chapterName} page=$pageIndex '
+          'lines=$lineCount ms=${sw.elapsedMilliseconds} '
+          'us=${sw.elapsedMicroseconds}',
     );
+    if (kDebugMode) {
+      debugPrint(
+        '[PaintPage] chapter=${readPage.chapterName} page=$pageIndex '
+        'lines=$lineCount ms=${sw.elapsedMilliseconds}',
+      );
+    }
   }
 
   /// Natural height of a page's body lines (content-local coords).

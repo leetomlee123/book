@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:book/animation/base_animation_page.dart';
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
@@ -282,10 +283,12 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
 
   @override
   void onDraw(Canvas canvas) {
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     // Draw curl while user is dragging or confirm/cancel animation is running.
     // Do NOT require mTouch.dy != 0 — top-corner curls end with y≈0.
     final animating = isConfirmAnimation || isStartAnimation;
-    if (animating && mTouch != Offset.zero) {
+    final layered = animating && mTouch != Offset.zero;
+    if (layered) {
       // Order: bottom (revealed) → top (remaining) → back of flipped flap.
       drawBottomPageCanvas(canvas);
       drawTopPageCanvas(canvas);
@@ -295,6 +298,18 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       if (targetPicture != null) {
         canvas.drawPicture(targetPicture);
       }
+    }
+    if (sw != null) {
+      sw.stop();
+      PageTurnPerf.frameDraw(
+        'simulation',
+        us: sw.elapsedMicroseconds,
+        animating: animating,
+        dragging: isStartAnimation && !isConfirmAnimation,
+        extra: layered
+            ? 'layers=3 dir=${isTurnToNext ? "next" : "pre"}'
+            : 'layers=1',
+      );
     }
   }
 

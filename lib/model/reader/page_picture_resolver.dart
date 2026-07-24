@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/entity/book.dart';
 import 'package:book/entity/read_page.dart';
 import 'package:book/model/reader/page_picture_cache.dart';
@@ -46,7 +47,15 @@ class PagePictureResolver {
       '$bookId|$chapterIndex|$pageIndex|sc';
 
   void _log(String msg) {
+    // Keep legacy prefix for old filters; also emit unified probe.
     if (kDebugMode) debugPrint('[PictureCache] $msg');
+    PageTurnPerf.log('pic.$msg');
+  }
+
+  /// Hit path is called every animation frame — stay silent unless verbose.
+  void _logHit(String role, String key) {
+    if (!PageTurnPerf.enabled || !PageTurnPerf.verboseHits) return;
+    PageTurnPerf.log('pic.hit', 'role=$role key=$key');
   }
 
   ui.Picture? resolveCurrent({bool firstInit = false}) {
@@ -77,8 +86,14 @@ class PagePictureResolver {
     final b = bookOf();
     final current = curPageOf();
     if (b == null || current == null || current.pages.isEmpty) return;
-    final key = _key(b.id, b.chapterIndex, b.pageIndex.clamp(0, current.pageOffsets - 1));
+    final pageIdx = b.pageIndex.clamp(0, current.pageOffsets - 1);
+    final key = _key(b.id, b.chapterIndex, pageIdx);
     final cached = cache.containsKey(key);
+    PageTurnPerf.log(
+      'warm.begin',
+      'pos=${b.chapterIndex}:$pageIdx hit=$cached '
+          'defer=$deferHeavy neighbors=$includeNeighbors',
+    );
     if (cached) {
       if (includeNeighbors) scheduleNeighborWarm();
       return;
@@ -97,6 +112,7 @@ class PagePictureResolver {
             now.pageIndex != page) {
           return;
         }
+        PageTurnPerf.log('warm.deferred.fire', 'pos=$chapter:$page');
         paintCurrent();
         if (includeNeighbors) preloadNeighbors();
       });
@@ -112,6 +128,7 @@ class PagePictureResolver {
   void scheduleNeighborWarm() {
     final gen = ++_warmGeneration;
     final bookId = bookOf()?.id;
+    PageTurnPerf.log('warm.neighbors.schedule');
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (gen != _warmGeneration) return;
       if (activeBookId() != bookId) return;
@@ -123,7 +140,7 @@ class PagePictureResolver {
     final b = bookOf();
     final current = curPageOf();
     if (b == null || current == null) return;
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     if (prePageOf() != null || b.pageIndex > 0) {
       paintPrevious();
     }
@@ -132,9 +149,10 @@ class PagePictureResolver {
     }
     if (sw != null) {
       sw.stop();
-      _log(
-        'preloadNeighbors cur=${b.chapterIndex}:${b.pageIndex} '
-        'ms=${sw.elapsedMilliseconds}',
+      PageTurnPerf.log(
+        'warm.neighbors.done',
+        'pos=${b.chapterIndex}:${b.pageIndex} '
+            'ms=${sw.elapsedMilliseconds} us=${sw.elapsedMicroseconds}',
       );
     }
   }
@@ -163,9 +181,12 @@ class PagePictureResolver {
       }
       key = _key(b.id, b.chapterIndex - 1, previous.pageOffsets - 1);
     }
-    if (cache.containsKey(key)) return cache[key];
+    if (cache.containsKey(key)) {
+      _logHit('previous', key);
+      return cache[key];
+    }
 
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     final ui.Picture pic;
     if (!inChapter) {
       pic = drawContent(previous!, previous.pageOffsets - 1);
@@ -175,7 +196,11 @@ class PagePictureResolver {
     final out = cache.putIfAbsent(key, () => pic);
     if (sw != null) {
       sw.stop();
-      _log('miss previous $key drawMs=${sw.elapsedMilliseconds}');
+      PageTurnPerf.log(
+        'pic.miss',
+        'role=previous key=$key ms=${sw.elapsedMilliseconds} '
+            'us=${sw.elapsedMicroseconds}',
+      );
     }
     return out;
   }
@@ -192,13 +217,20 @@ class PagePictureResolver {
       pageIdx = current.pageOffsets - 1;
     }
     final key = _key(b.id, b.chapterIndex, pageIdx);
-    if (cache.containsKey(key)) return cache[key];
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    if (cache.containsKey(key)) {
+      _logHit('current', key);
+      return cache[key];
+    }
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     final pic = drawContent(current, pageIdx);
     final out = cache.putIfAbsent(key, () => pic);
     if (sw != null) {
       sw.stop();
-      _log('miss current $key drawMs=${sw.elapsedMilliseconds}');
+      PageTurnPerf.log(
+        'pic.miss',
+        'role=current key=$key ms=${sw.elapsedMilliseconds} '
+            'us=${sw.elapsedMicroseconds}',
+      );
     }
     // Neighbors on next frame — not during the current paint stack.
     scheduleNeighborWarm();
@@ -220,9 +252,12 @@ class PagePictureResolver {
     } else {
       key = _key(b.id, b.chapterIndex + 1, 0);
     }
-    if (cache.containsKey(key)) return cache[key];
+    if (cache.containsKey(key)) {
+      _logHit('next', key);
+      return cache[key];
+    }
 
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     final ui.Picture pic;
     if (!inChapter) {
       final following = nextPageOf();
@@ -230,7 +265,10 @@ class PagePictureResolver {
         final target = b.chapterIndex + 1;
         if (_loadingNextChapter != target) {
           _loadingNextChapter = target;
-          _log('miss next (loading chapter $target)');
+          PageTurnPerf.log(
+            'pic.miss',
+            'role=next key=$key reason=loading_chapter target=$target',
+          );
           loadChapter(target).then((value) {
             if (_loadingNextChapter == target) _loadingNextChapter = null;
             if (activeBookId() == b.id) {
@@ -242,7 +280,13 @@ class PagePictureResolver {
         }
         return null;
       }
-      if (following.pages.isEmpty) return null;
+      if (following.pages.isEmpty) {
+        PageTurnPerf.log(
+          'pic.miss',
+          'role=next key=$key reason=empty_pages',
+        );
+        return null;
+      }
       pic = drawContent(following, 0);
     } else {
       pic = drawContent(current, i);
@@ -250,7 +294,11 @@ class PagePictureResolver {
     final out = cache.putIfAbsent(key, () => pic);
     if (sw != null) {
       sw.stop();
-      _log('miss next $key drawMs=${sw.elapsedMilliseconds}');
+      PageTurnPerf.log(
+        'pic.miss',
+        'role=next key=$key ms=${sw.elapsedMilliseconds} '
+            'us=${sw.elapsedMicroseconds}',
+      );
     }
     return out;
   }

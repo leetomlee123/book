@@ -1,7 +1,7 @@
 import 'package:book/animation/base_animation_page.dart';
+import 'package:book/common/page_turn_perf.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:bot_toast/bot_toast.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// 覆盖翻页：拖动时顶页平移露出底页，松手确认/取消。
@@ -26,8 +26,6 @@ class CoverPageAnimation extends BaseAnimationPage {
   static const LinearGradient _shadowGradient = LinearGradient(
     colors: [Colors.black54, Colors.transparent],
   );
-
-  int _drawSample = 0;
 
   void _ensureAnimation(AnimationController controller) {
     if (currentAnimation != null) return;
@@ -80,10 +78,12 @@ class CoverPageAnimation extends BaseAnimationPage {
 
   @override
   void onDraw(Canvas canvas) {
-    final sw = kDebugMode ? (Stopwatch()..start()) : null;
+    final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     // Draw animated layers while dragging OR while confirm/cancel runs.
     final animating = animationType != null;
-    if ((isDragging || animating) && (mTouch.dx != 0 || mTouch.dy != 0)) {
+    final layered =
+        (isDragging || animating) && (mTouch.dx != 0 || mTouch.dy != 0);
+    if (layered) {
       drawBottomPage(canvas);
       drawCurrentShadow(canvas);
       drawTopPage(canvas);
@@ -92,13 +92,15 @@ class CoverPageAnimation extends BaseAnimationPage {
     }
     if (sw != null) {
       sw.stop();
-      // Sample every 12th frame to keep logs quiet during continuous drag.
-      if ((_drawSample++ % 12) == 0 && sw.elapsedMicroseconds > 500) {
-        debugPrint(
-          '[CoverDraw] us=${sw.elapsedMicroseconds} '
-          'drag=$isDragging anim=$animating',
-        );
-      }
+      PageTurnPerf.frameDraw(
+        'cover',
+        us: sw.elapsedMicroseconds,
+        animating: animating,
+        dragging: isDragging,
+        extra: layered
+            ? 'layers=2 dir=${isTurnNext ? "next" : "pre"}'
+            : 'layers=1',
+      );
     }
   }
 
