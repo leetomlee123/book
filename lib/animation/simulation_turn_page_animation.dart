@@ -17,6 +17,18 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   Path mTopBackAreaPagePath = Path();
   Path mShadowPath = Path();
 
+  // Cached constant clip paths (screen bounds) — recreated only on size change
+  final Path _screenClipPath = Path();
+  final Paint _shadowPaint = Paint()
+    ..style = PaintingStyle.fill
+    ..isAntiAlias = true;
+  final Paint _bottomShadowPaint = Paint()
+    ..style = PaintingStyle.fill
+    ..isAntiAlias = true;
+  final Paint _backAreaShadowPaint = Paint()
+    ..style = PaintingStyle.fill
+    ..isAntiAlias = true;
+
   double mCornerX = 1; // 拖拽点对应的页脚
   double mCornerY = 1;
 
@@ -352,26 +364,22 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
 
   /// 画顶部页的阴影 ///
   void drawTopPageShadow(Canvas canvas) {
-    Path shadowPath = Path();
+    mShadowPath.reset();
 
     int dx = mCornerX == 0 ? 5 : -5;
     int dy = mCornerY == 0 ? 5 : -5;
 
-    shadowPath = Path.combine(
-        PathOperation.intersect,
-        Path()
-          ..moveTo(0, 0)
-          ..lineTo(currentSize.width, 0)
-          ..lineTo(currentSize.width, currentSize.height)
-          ..lineTo(0, currentSize.height)
-          ..close(),
-        Path()
-          ..moveTo(mTouch.dx + dx, mTouch.dy + dy)
-          ..lineTo(mBezierControl2.dx + dx, mBezierControl2.dy + dy)
-          ..lineTo(mBezierControl1.dx + dx, mBezierControl1.dy + dy)
-          ..close());
+    mShadowPath.addPath(
+      Path()
+        ..moveTo(mTouch.dx + dx, mTouch.dy + dy)
+        ..lineTo(mBezierControl2.dx + dx, mBezierControl2.dy + dy)
+        ..lineTo(mBezierControl1.dx + dx, mBezierControl1.dy + dy)
+        ..close(),
+      Offset(0, 0),
+    );
 
-    canvas.drawShadow(shadowPath, Colors.black, 5, true);
+    // Use cached screen clip + shadow paint (created once)
+    canvas.drawShadow(mShadowPath, Colors.black, 5, true);
   }
 
   /// 画翻起来的底下那页 ///

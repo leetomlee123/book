@@ -27,6 +27,8 @@ class CoverPageAnimation extends BaseAnimationPage {
     colors: [Colors.black54, Colors.transparent],
   );
 
+  Rect _shadowRect = Rect.zero;
+
   void _ensureAnimation(AnimationController controller) {
     if (currentAnimation != null) return;
     currentAnimationTween = Tween(begin: Offset.zero, end: Offset.zero);
@@ -124,6 +126,7 @@ class CoverPageAnimation extends BaseAnimationPage {
         if ((!isTurnNext && canTurnPrevious()) || (isTurnNext && canTurnNext())) {
           isDragging = true;
         }
+        _updateShadowRect(); // update cache
         break;
       case TouchEvent.ACTION_UP:
         final dx = mTouch.dx - mStartPoint.dx;
