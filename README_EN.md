@@ -165,7 +165,7 @@ android/              # Declarative Gradle (Kotlin DSL)
 
 ## Star history
 
-[![Star History Chart](https://api.star-history.com/svg?repos=leetomlee123/book&type=Date)](https://star-history.com/#leetomlee123/book&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=leetomlee123/book&type=Date)](https://star-history.dera.page/#leetomlee123/book&Date)
 
 ---
 
