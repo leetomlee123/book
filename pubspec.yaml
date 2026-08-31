@@ -20,7 +20,7 @@ dependencies:
   sqflite: ^2.4.2
   path_provider: ^2.1.6
   shared_preferences: ^2.5.3
-  permission_handler: ^12.0.0+1
+  permission_handler: ^13.0.1
   flutter_cache_manager: ^3.4.1
   scrollable_positioned_list: ^0.3.8
   flex_color_scheme: ^8.2.0
