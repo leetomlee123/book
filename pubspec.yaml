@@ -1,7 +1,7 @@
 name: book
 description: 爱看书 — 开源 Flutter 网络小说阅读器。
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.2+2
 
 environment:
   sdk: ^3.12.0
@@ -45,6 +45,8 @@ dependencies:
   file_picker: ^11.0.2
 
   vector_math: any
+  package_info_plus: ^9.0.1
+  ota_update: ^7.1.0
   firebase_core: ^4.12.1
   firebase_analytics: ^12.4.5
   firebase_crashlytics: ^5.2.6

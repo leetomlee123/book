@@ -229,7 +229,7 @@ class PageTurnCommitter {
     }
     final nextTarget = b.chapterIndex + 1;
     final bookId = b.id;
-    Future.delayed(const Duration(milliseconds: 500), () {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
       if (activeBookId() != bookId) return;
       final cur = bookOf();
       if (cur == null || cur.chapterIndex != nextTarget - 1) return;
@@ -307,7 +307,7 @@ class PageTurnCommitter {
     _deferChapterHousekeeping(chapterAfter: b.chapterIndex);
     final prevTarget = b.chapterIndex - 1;
     final bookId = b.id;
-    Future.delayed(const Duration(milliseconds: 500), () {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
       if (activeBookId() != bookId) return;
       final cur = bookOf();
       if (cur == null || cur.chapterIndex != prevTarget + 1) return;

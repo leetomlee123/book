@@ -139,7 +139,7 @@ class PagePictureResolver {
   void preloadNeighbors() {
     final b = bookOf();
     final current = curPageOf();
-    if (b == null || current == null) return;
+    if (b == null || current == null || current.pages.isEmpty) return;
     final sw = PageTurnPerf.enabled ? (Stopwatch()..start()) : null;
     if (prePageOf() != null || b.pageIndex > 0) {
       paintPrevious();
@@ -147,6 +147,31 @@ class PagePictureResolver {
     if (nextPageOf() != null || b.pageIndex + 1 < current.pageOffsets) {
       paintNext();
     }
+
+    // Multi-page forward lookahead (+2 and +3 ahead) so rapid consecutive turns hit cache
+    for (var offset = 2; offset <= 3; offset++) {
+      final targetPage = b.pageIndex + offset;
+      if (targetPage < current.pageOffsets) {
+        final key = _key(b.id, b.chapterIndex, targetPage);
+        if (!cache.containsKey(key)) {
+          final pic = drawContent(current, targetPage);
+          cache.putIfAbsent(key, () => pic);
+        }
+      } else {
+        final following = nextPageOf();
+        final chOffset = targetPage - current.pageOffsets;
+        if (following != null &&
+            following.pages.isNotEmpty &&
+            chOffset < following.pageOffsets) {
+          final key = _key(b.id, b.chapterIndex + 1, chOffset);
+          if (!cache.containsKey(key)) {
+            final pic = drawContent(following, chOffset);
+            cache.putIfAbsent(key, () => pic);
+          }
+        }
+      }
+    }
+
     if (sw != null) {
       sw.stop();
       PageTurnPerf.log(

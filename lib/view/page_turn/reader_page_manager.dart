@@ -23,8 +23,8 @@ class ReaderPageManager {
   static const int TYPE_ANIMATION_COVER_TURN = 2;
   static const int TYPE_ANIMATION_SLIDE_TURN = 3;
 
-  /// Anti double-submit only — short enough that queued taps drain quickly.
-  static const Duration _cooldown = Duration(milliseconds: 70);
+  /// Anti double-submit only for rapid gestures.
+  static const Duration _cooldown = Duration(milliseconds: 20);
 
   /// Max queued tap directions (prevents runaway multi-page jump).
   static const int _maxQueued = 2;
@@ -61,15 +61,21 @@ class ReaderPageManager {
   bool get isAnimating => currentState == PageTurnState.animating;
 
   /// Busy for starting a *new* turn: animating OR brief post-commit cooldown.
-  bool get isBusy => isAnimating || _inCooldown;
+  /// Static (no animation) mode is never blocked by cooldown.
+  bool get isBusy {
+    if (currentAnimationType == TYPE_ANIMATION_NONE) return false;
+    return isAnimating || _inCooldown;
+  }
 
   bool get _inCooldown {
+    if (currentAnimationType == TYPE_ANIMATION_NONE) return false;
     final t = _lastCommitAt;
     if (t == null) return false;
     return DateTime.now().difference(t) < _cooldown;
   }
 
   Duration get _cooldownRemaining {
+    if (currentAnimationType == TYPE_ANIMATION_NONE) return Duration.zero;
     final t = _lastCommitAt;
     if (t == null) return Duration.zero;
     final left = _cooldown - DateTime.now().difference(t);
@@ -181,8 +187,29 @@ class ReaderPageManager {
     if (direction == 0) return false;
     final dir = direction > 0 ? 1 : -1;
 
-    // While a turn is in flight / cooling down, keep the latest intents so
-    // rapid clicks still advance instead of being dropped.
+    // Static mode: instant direct commit, no animation, no queue delay.
+    if (currentAnimationType == TYPE_ANIMATION_NONE ||
+        animationController == null) {
+      return _startTapTurn(dir);
+    }
+
+    // Fast-forward in-flight animation on rapid same-direction tap for instant responsiveness.
+    if (isAnimating) {
+      if (dir == _pendingDirection && animationController != null) {
+        _log('triggerTapTurn fast-forward dir=$dir');
+        _perf('tap.fastforward', 'dir=$dir');
+        _enqueueTap(dir);
+        final c = animationController!;
+        if (c.isAnimating) {
+          c.stop();
+          c.value = 1.0;
+          _statusListener?.call(AnimationStatus.completed);
+        }
+        return true;
+      }
+      return _enqueueTap(dir);
+    }
+
     if (isBusy) {
       return _enqueueTap(dir);
     }
@@ -548,8 +575,8 @@ class ReaderPageManager {
   }
 
   void setAnimationController(AnimationController controller) {
-    // Slightly snappier default so queued taps feel closer to 跟手.
-    controller.duration ??= const Duration(milliseconds: 220);
+    // Crisp and fluid animation duration.
+    controller.duration ??= const Duration(milliseconds: 180);
     animationController = controller;
     if (_needsController) {
       currentAnimationPage.setAnimationController(controller);

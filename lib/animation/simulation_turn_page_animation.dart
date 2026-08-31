@@ -17,17 +17,6 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   Path mTopBackAreaPagePath = Path();
   Path mShadowPath = Path();
 
-  // Cached constant clip paths (screen bounds) — recreated only on size change
-  final Path _screenClipPath = Path();
-  final Paint _shadowPaint = Paint()
-    ..style = PaintingStyle.fill
-    ..isAntiAlias = true;
-  final Paint _bottomShadowPaint = Paint()
-    ..style = PaintingStyle.fill
-    ..isAntiAlias = true;
-  final Paint _backAreaShadowPaint = Paint()
-    ..style = PaintingStyle.fill
-    ..isAntiAlias = true;
 
   double mCornerX = 1; // 拖拽点对应的页脚
   double mCornerY = 1;
@@ -342,18 +331,8 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         mCornerY == 0 ? currentSize.height : 0);
     mTopPagePath.close();
 
-    /// 去掉PATH圈在屏幕外的区域，减少GPU使用
-    mTopPagePath = Path.combine(
-        PathOperation.intersect,
-        Path()
-          ..moveTo(0, 0)
-          ..lineTo(currentSize.width, 0)
-          ..lineTo(currentSize.width, currentSize.height)
-          ..lineTo(0, currentSize.height)
-          ..close(),
-        mTopPagePath);
-
     canvas.save();
+    canvas.clipRect(Offset.zero & currentSize);
     // Clip so the revealed bottom page stays visible.
     canvas.clipPath(mTopPagePath, doAntiAlias: false);
     final curPic = readerViewModel.paintCurrentPicture();
@@ -405,37 +384,13 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     mBottomPagePath =
         Path.combine(PathOperation.difference, mBottomPagePath, extraRegion);
 
-//    /// 使用fillType来反选填充区域 ///
-//    mBottomPagePath = mTopPagePath
-//      ..addRect(Offset.zero & currentSize)
-//      ..addPath(mTopBackAreaPagePath, Offset(0, 0))
-//      ..fillType = PathFillType.evenOdd;
-
-    /// 去掉PATH圈在屏幕外的区域，减少GPU使用
-    mBottomPagePath = Path.combine(
-        PathOperation.intersect,
-        Path()
-          ..moveTo(0, 0)
-          ..lineTo(currentSize.width, 0)
-          ..lineTo(currentSize.width, currentSize.height)
-          ..lineTo(0, currentSize.height)
-          ..close(),
-        mBottomPagePath);
-
     canvas.save();
+    canvas.clipRect(Offset.zero & currentSize);
     canvas.clipPath(mBottomPagePath, doAntiAlias: false);
-//    canvas.drawPaint(Paint()..color = Color(0xfffff2cc));
-//    canvas.drawImageRect(
-//        isTurnToNext?readerViewModel.getNextPage().pageImage:readerViewModel.getPrePage().pageImage,
-//        Offset.zero & currentSize,
-//        Offset.zero & currentSize,
-//        Paint()
-//          ..isAntiAlias = true
-//          ..blendMode = BlendMode.srcATop);
     final pagePic =
         isTurnToNext ? readerViewModel.paintNextPicture() : readerViewModel.paintPreviousPicture();
     if (pagePic != null) canvas.drawPicture(pagePic);
-//
+
     drawBottomPageShadow(canvas);
 
     canvas.restore();
@@ -505,21 +460,11 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     mTopBackAreaPagePath = Path.combine(
         PathOperation.intersect, tempBackAreaPath, mBottomPagePath);
 
-    // Clip to screen bounds.
-    mTopBackAreaPagePath = Path.combine(
-        PathOperation.intersect,
-        Path()
-          ..moveTo(0, 0)
-          ..lineTo(currentSize.width, 0)
-          ..lineTo(currentSize.width, currentSize.height)
-          ..lineTo(0, currentSize.height)
-          ..close(),
-        mTopBackAreaPagePath);
-
     // Paper color from reader theme (bgPaint defaults to black and looks solid).
     final paper = ReadSetting.paperColor(readerViewModel.paperTheme);
 
     canvas.save();
+    canvas.clipRect(Offset.zero & currentSize);
     canvas.clipPath(mTopBackAreaPagePath);
 
     // 1) Soft paper base so the back is never pure black.
@@ -550,15 +495,9 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
 
       final curPic = readerViewModel.paintCurrentPicture();
       if (curPic != null) {
-        // Slightly faded so it reads as ink showing through thin paper.
-        canvas.saveLayer(
-          Offset.zero & currentSize,
-          Paint()..color = const Color(0xB3FFFFFF), // ~70% opacity
-        );
+        // Direct picture draw + translucent paper wash without saveLayer.
         canvas.drawPicture(curPic);
-        // Warm translucent paper wash over the mirrored ink.
-        canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.35));
-        canvas.restore();
+        canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.65));
       } else {
         canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.85));
       }

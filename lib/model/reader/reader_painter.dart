@@ -24,6 +24,9 @@ class ReaderPainter {
   final TextPainter _labelPainter =
       TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
 
+  static final TextPainter _measurePainter =
+      TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
+
   /// Compute final letterSpacing from justify intent using Flutter metrics.
   static double resolveLetterSpacing({
     required String text,
@@ -41,12 +44,9 @@ class ReaderPainter {
     final n = text.characters.length;
     if (n <= 1) return 0;
 
-    final tp = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout();
-    final measured = tp.width;
+    _measurePainter.text = TextSpan(text: text, style: style);
+    _measurePainter.layout();
+    final measured = _measurePainter.width;
     if (measured <= 0 || measured >= targetWidth) return 0;
     // Only expand when the line is near-full (matches paginator intent).
     if (measured < targetWidth - fontSize) return 0;

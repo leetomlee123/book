@@ -14,6 +14,7 @@ import 'package:fluro/fluro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:book/common/common.dart';
 
@@ -112,9 +113,14 @@ class AppInit {
     Routes.configureRoutes(router);
     Routes.router = router;
     await DirectoryUtil.getInstance();
-    // Version label for「我的」页 (no package_info_plus — keep in sync with pubspec).
-    if (!SpUtil.haveKey(PrefsKeys.version) || SpUtil.getString(PrefsKeys.version).isEmpty) {
-      SpUtil.putString(PrefsKeys.version, '1.0.0');
+    // Version label for「我的」页 (synced dynamically via package_info_plus).
+    try {
+      final pkg = await PackageInfo.fromPlatform();
+      SpUtil.putString(PrefsKeys.version, '${pkg.version}+${pkg.buildNumber}');
+    } catch (_) {
+      if (!SpUtil.haveKey(PrefsKeys.version) || SpUtil.getString(PrefsKeys.version).isEmpty) {
+        SpUtil.putString(PrefsKeys.version, '1.0.0+1');
+      }
     }
     // Default: visible system bars. Only the reader body goes immersive.
     await SystemUiHelper.showSystemBars();

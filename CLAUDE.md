@@ -85,6 +85,10 @@ There is no separate lint script beyond `flutter analyze`. `file_names` is enabl
 | `lib/service/` | Cache manager, tel/SMS helper |
 | `lib/model/reader/` | Reader collaborators: `text_paginator`, `reader_painter`, `reader_input_controller`, `reader_loading_presenter`, `reader_theme_controller`, `reader_scroll_controller`, `reader_source_coordinator`, `reader_content_reloader`, `reader_chrome_controller`, `chapter_content_loader`, `chapter_disk_warm_cache`, `chapter_download_service`, `chapter_window_controller`, `reading_progress_store`, `reading_session_lifecycle`, `reading_session_opener`, `page_picture_cache`, `page_picture_resolver`, `page_turn_committer`, `source_switch_service`, `toc_service` |
 
+### Book-source engine (`lib/source/`)
+
+The app's **local book sources** feature (backed by `sources` table in `reader.db`). `BookSourceEngine` (`lib/source/engine/book_source_engine.dart`) is the core pipeline: search / explore / detail / TOC / content, each following Legado-style rules (HTTP + CSS / regex / JS). Rules are parsed by `parse`-style helpers in `lib/source/rule/analyze_rule.dart` (`BookSource`, `ruleSearch`, `ruleExplore`, etc.); network fetch + templating (`{{page}}`) lives in `lib/source/net/`; extracted book roots/ids normalize via `lib/source/util/`; data models are `lib/source/model/` (`BookSource`, `SearchBook`). Source catalog import (yckceo JSON lists) lives in `lib/source/repo/yckceo_repo.dart`, parsing in `lib/source/import/source_importer.dart`. Read/Search `ReadModel`'s source switching ties in here via `ReaderSourceCoordinator`.
+
 ### Networking
 
 - Singleton `HttpUtil` (`lib/common/http.dart`): Dio 5 + `AuthInterceptor` (adds `auth` header from SpUtil + UA) + `ErrorInterceptor` (`DioException` → BotToast).

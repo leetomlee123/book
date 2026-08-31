@@ -51,7 +51,7 @@ class _PageContentReaderState extends ConsumerState<PageContentReader>
 
     animationController = AnimationControllerWithListenerNumber(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 180),
     );
 
     pageManager = ReaderPageManager()..onTurnSettled = _onTurnSettled;

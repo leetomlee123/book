@@ -4,12 +4,12 @@ import 'package:book/common/local_account.dart';
 import 'package:book/common/local_store.dart';
 import 'package:book/main.dart';
 import 'package:book/route/routes.dart';
+import 'package:book/service/app_update_service.dart';
 import 'package:book/service/tel_and_sms_service.dart';
 import 'package:book/store/providers.dart';
 import 'package:book/view/person/info_page.dart';
 import 'package:book/view/person/skin_page.dart';
 import 'package:book/view/person/yckceo_source_page.dart';
-import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -133,11 +133,8 @@ class Me extends ConsumerWidget {
                       context: context,
                       icon: Icons.system_update_alt,
                       title: '应用更新',
-                      onTap: () async {
-                        BotToast.showText(
-                          text:
-                              '已移除云端更新检查功能，请前往 GitHub 或应用商店下载最新版本。',
-                        );
+                      onTap: () {
+                        AppUpdateService.instance.checkUpdate(context);
                       },
                     ),
                     _tile(
