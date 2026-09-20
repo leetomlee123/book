@@ -155,9 +155,21 @@ class _SourceManagePageState extends ConsumerState<SourceManagePage> {
                   tooltip: '导出',
                   icon: const Icon(Icons.upload_file),
                   onPressed: () async {
-                    final json = model.exportAll();
-                    await Clipboard.setData(ClipboardData(text: json));
-                    BotToast.showText(text: '已复制全部书源 JSON 到剪贴板');
+                    try {
+                      final json = await model.exportAll();
+                      // Very large payloads OOM the clipboard MethodChannel.
+                      if (json.length > 8 * 1024 * 1024) {
+                        BotToast.showText(
+                          text: '书源过大（${(json.length / (1024 * 1024)).toStringAsFixed(1)}MB），'
+                              '无法复制到剪贴板，请分批导出或从源文件备份',
+                        );
+                        return;
+                      }
+                      await Clipboard.setData(ClipboardData(text: json));
+                      BotToast.showText(text: '已复制全部书源 JSON 到剪贴板');
+                    } catch (e) {
+                      BotToast.showText(text: '导出失败：$e');
+                    }
                   },
                 ),
                 IconButton(

@@ -36,7 +36,8 @@ class ExploreModel with ChangeNotifier {
     noMore = false;
     notifyListeners();
     try {
-      final all = await SourceModel().enabledSources();
+      final model = SourceModel();
+      final all = await model.enabledSources();
       exploreSources = all.where((s) => s.canExplore).toList()
         ..sort((a, b) => a.customOrder.compareTo(b.customOrder));
 
@@ -49,12 +50,13 @@ class ExploreModel with ChangeNotifier {
         return;
       }
 
-      // Keep previous selection if still present.
+      // Keep previous selection if still present; hydrate rules for engine.
       final prevUrl = activeSource?.bookSourceUrl;
-      activeSource = exploreSources.firstWhere(
+      final meta = exploreSources.firstWhere(
         (s) => s.bookSourceUrl == prevUrl,
         orElse: () => exploreSources.first,
       );
+      activeSource = await model.findByUrl(meta.bookSourceUrl) ?? meta;
       _applyKinds();
       bootstrapped = true;
       await loadBooks(refresh: true);
@@ -86,7 +88,8 @@ class ExploreModel with ChangeNotifier {
 
   Future<void> selectSource(BookSource source) async {
     if (activeSource?.bookSourceUrl == source.bookSourceUrl) return;
-    activeSource = source;
+    activeSource =
+        await SourceModel().findByUrl(source.bookSourceUrl) ?? source;
     _applyKinds();
     await loadBooks(refresh: true);
   }

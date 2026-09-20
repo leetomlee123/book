@@ -76,8 +76,9 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
       return;
     }
 
-    final sources = await ref.read(sourceModelProvider).enabledSources();
-    if (sources.isEmpty) {
+    final model = ref.read(sourceModelProvider);
+    final meta = await model.enabledSources();
+    if (meta.isEmpty) {
       if (!mounted) return;
       setState(() {
         loading = false;
@@ -89,9 +90,11 @@ class _SourceSwitchSheetState extends ConsumerState<SourceSwitchSheet> {
     final list = <_Candidate>[];
     const pool = 5;
     final author = cleanAuthor(book.author);
-    for (var i = 0; i < sources.length; i += pool) {
+    for (var i = 0; i < meta.length; i += pool) {
       if (!mounted) return;
-      final chunk = sources.skip(i).take(pool);
+      final chunkMeta = meta.skip(i).take(pool).toList();
+      final chunk = await model.hydrateSources(chunkMeta);
+      if (!mounted) return;
       final futures = chunk.map((s) async {
         try {
           final hits = await _engine
