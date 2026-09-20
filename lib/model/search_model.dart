@@ -2,7 +2,6 @@ import 'package:book/data/repositories/source_repository.dart';
 import 'package:book/entity/book_info.dart';
 import 'package:book/entity/search_item.dart';
 import 'package:book/source/engine/book_source_engine.dart';
-import 'package:book/source/model/book_source.dart';
 import 'package:book/source/model/search_book.dart';
 import 'package:book/source/util/book_id.dart';
 import 'package:book/common/local_store.dart';
@@ -53,19 +52,18 @@ class SearchModel with ChangeNotifier {
     _searchGen++;
   }
 
-  Future<List<BookSource>> _enabled() => _sources.getEnabled();
-
   Future<void> getSearchData(int gen) async {
     //收起键盘
     if (context != null) {
       FocusScope.of(context!).requestFocus(FocusNode());
     }
 
-    final sources = await _enabled();
+    // Meta only — hydrate rules per pool chunk to avoid MethodChannel OOM.
+    final meta = await _sources.getEnabled();
     if (gen != _searchGen) return;
 
     final searchable =
-        sources.where((s) => s.searchUrl.isNotEmpty && s.enabled).toList();
+        meta.where((s) => s.searchUrl.isNotEmpty && s.enabled).toList();
     if (searchable.isEmpty) {
       if (gen != _searchGen) return;
       noMore = true;
@@ -82,7 +80,11 @@ class SearchModel with ChangeNotifier {
       var pageHits = 0;
       for (var i = 0; i < searchable.length; i += poolSize) {
         if (gen != _searchGen) return;
-        final chunk = searchable.skip(i).take(poolSize).toList();
+        final chunkMeta = searchable.skip(i).take(poolSize).toList();
+        final chunk = await _sources.getByUrls(
+          chunkMeta.map((e) => e.bookSourceUrl).toList(),
+        );
+        if (gen != _searchGen) return;
         final futures = chunk.map((s) async {
           try {
             return await _engine
@@ -96,7 +98,7 @@ class SearchModel with ChangeNotifier {
         if (gen != _searchGen) return;
 
         searchedSources =
-            (i + chunk.length).clamp(0, searchable.length);
+            (i + chunkMeta.length).clamp(0, searchable.length);
         for (final list in lists) {
           pageHits += list.length;
           for (final h in list) {
