@@ -5,7 +5,6 @@ import 'package:book/common/page_turn_perf.dart';
 import 'package:book/common/read_setting.dart';
 import 'package:book/view/page_turn/touch_event.dart';
 import 'package:flutter/material.dart';
-import 'package:vector_math/vector_math_64.dart' as v;
 
 /// 仿真翻页动画 ///
 class SimulationTurnPageAnimation extends BaseAnimationPage {
@@ -44,6 +43,32 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
   double mMaxLength = 0;
 
   TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+  /// ---- Per-frame allocation caches (reused during drag/animation) ----
+  /// Shadow gradients depend only on direction — hoist to static consts.
+  static const LinearGradient _kShadowDarkFirst = LinearGradient(
+    colors: [Color(0xAA000000), Colors.transparent],
+  );
+  static const LinearGradient _kShadowDarkLast = LinearGradient(
+    colors: [Colors.transparent, Color(0xAA000000)],
+  );
+
+  /// Reused paints — only shader/color are rebound per frame.
+  final Paint _bottomShadowPaint = Paint()
+    ..isAntiAlias = false
+    ..style = PaintingStyle.fill;
+  final Paint _flapShadowPaint = Paint()
+    ..isAntiAlias = true
+    ..style = PaintingStyle.fill;
+  final Paint _washPaint = Paint();
+
+  /// Reused scratch paths (reset before each use).
+  final Path _shadowSubPath = Path();
+  final Path _extraRegionPath = Path();
+  final Path _tempBackAreaPath = Path();
+
+  /// Reused fold-reflection matrix (Householder), rebuilt per frame.
+  final Matrix4 _foldMatrix = Matrix4.identity();
 
   bool isTurnToNext = false;
   bool isConfirmAnimation = false;
@@ -348,14 +373,13 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     int dx = mCornerX == 0 ? 5 : -5;
     int dy = mCornerY == 0 ? 5 : -5;
 
-    mShadowPath.addPath(
-      Path()
-        ..moveTo(mTouch.dx + dx, mTouch.dy + dy)
-        ..lineTo(mBezierControl2.dx + dx, mBezierControl2.dy + dy)
-        ..lineTo(mBezierControl1.dx + dx, mBezierControl1.dy + dy)
-        ..close(),
-      Offset(0, 0),
-    );
+    _shadowSubPath
+      ..reset()
+      ..moveTo(mTouch.dx + dx, mTouch.dy + dy)
+      ..lineTo(mBezierControl2.dx + dx, mBezierControl2.dy + dy)
+      ..lineTo(mBezierControl1.dx + dx, mBezierControl1.dy + dy)
+      ..close();
+    mShadowPath.addPath(_shadowSubPath, Offset(0, 0));
 
     // Use cached screen clip + shadow paint (created once)
     canvas.drawShadow(mShadowPath, Colors.black, 5, true);
@@ -373,16 +397,18 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         mBezierStart2.dx, mBezierStart2.dy);
     mBottomPagePath.close();
 
-    Path extraRegion = Path();
+    _extraRegionPath
+      ..reset()
+      ..moveTo(mTouch.dx, mTouch.dy)
+      ..lineTo(mBezierVertex1.dx, mBezierVertex1.dy)
+      ..lineTo(mBezierVertex2.dx, mBezierVertex2.dy)
+      ..close();
 
-    extraRegion.reset();
-    extraRegion.moveTo(mTouch.dx, mTouch.dy);
-    extraRegion.lineTo(mBezierVertex1.dx, mBezierVertex1.dy);
-    extraRegion.lineTo(mBezierVertex2.dx, mBezierVertex2.dy);
-    extraRegion.close();
-
-    mBottomPagePath =
-        Path.combine(PathOperation.difference, mBottomPagePath, extraRegion);
+    mBottomPagePath = Path.combine(
+      PathOperation.difference,
+      mBottomPagePath,
+      _extraRegionPath,
+    );
 
     canvas.save();
     canvas.clipRect(Offset.zero & currentSize);
@@ -407,35 +433,26 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       left = 0;
       right = mTouchToCornerDis / 4;
 
-      shadowGradient = LinearGradient(
-        colors: [
-          Color(0xAA000000),
-          Colors.transparent,
-        ],
-      );
+      shadowGradient = _kShadowDarkFirst;
     } else {
       left = -mTouchToCornerDis / 4;
       right = 0;
 
-      shadowGradient = LinearGradient(
-        colors: [
-          Colors.transparent,
-          Color(0xAA000000),
-        ],
-      );
+      shadowGradient = _kShadowDarkLast;
     }
 
     canvas.translate(mBezierStart1.dx, mBezierStart1.dy);
     canvas.rotate(math.atan2(
         mBezierControl1.dx - mCornerX, mBezierControl2.dy - mCornerY));
 
-    var shadowPaint = Paint()
-      ..isAntiAlias = false
-      ..style = PaintingStyle.fill //填充
-      ..shader = shadowGradient
-          .createShader(Rect.fromLTRB(left, 0, right, mMaxLength));
+    // Reused paint — only the shader rect changes with the drag position.
+    _bottomShadowPaint.shader =
+        shadowGradient.createShader(Rect.fromLTRB(left, 0, right, mMaxLength));
 
-    canvas.drawRect(Rect.fromLTRB(left, 0, right, mMaxLength), shadowPaint);
+    canvas.drawRect(
+      Rect.fromLTRB(left, 0, right, mMaxLength),
+      _bottomShadowPaint,
+    );
   }
 
   /// 翻起页背面：镜像绘制当前页正文（半透明）+ 纸色蒙层，呈现透光纸效果。
@@ -451,14 +468,15 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
         mBezierStart2.dx, mBezierStart2.dy);
     mBottomPagePath.close();
 
-    final tempBackAreaPath = Path()
+    _tempBackAreaPath
+      ..reset()
       ..moveTo(mBezierVertex1.dx, mBezierVertex1.dy)
       ..lineTo(mBezierVertex2.dx, mBezierVertex2.dy)
       ..lineTo(mTouch.dx, mTouch.dy)
       ..close();
 
     mTopBackAreaPagePath = Path.combine(
-        PathOperation.intersect, tempBackAreaPath, mBottomPagePath);
+        PathOperation.intersect, _tempBackAreaPath, mBottomPagePath);
 
     // Paper color from reader theme (bgPaint defaults to black and looks solid).
     final paper = ReadSetting.paperColor(readerViewModel.paperTheme);
@@ -468,7 +486,8 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     canvas.clipPath(mTopBackAreaPagePath);
 
     // 1) Soft paper base so the back is never pure black.
-    canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.92));
+    _washPaint.color = paper.withValues(alpha: 0.92);
+    canvas.drawPaint(_washPaint);
 
     // 2) Mirrored current page content (see-through text).
     canvas.save();
@@ -481,25 +500,29 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
       final cosAngle = (mBezierControl2.dy - mCornerY) / dis;
 
       // Householder reflection matrix (page fold).
-      final matrix4 = Matrix4.columns(
-        v.Vector4(
-            -(1 - 2 * sinAngle * sinAngle), 2 * sinAngle * cosAngle, 0, 0),
-        v.Vector4(
-            2 * sinAngle * cosAngle, (1 - 2 * sinAngle * sinAngle), 0, 0),
-        v.Vector4(0, 0, 1, 0),
-        v.Vector4(0, 0, 0, 1),
-      );
-      matrix4.translateByDouble(
+      // Householder reflection rebuilt in the reused matrix (no per-frame
+      // Vector4/Matrix4 allocations). The 2x2 block is symmetric, so setEntry
+      // matches the old Matrix4.columns construction exactly.
+      final s2 = sinAngle * sinAngle;
+      _foldMatrix
+        ..setIdentity()
+        ..setEntry(0, 0, -(1 - 2 * s2))
+        ..setEntry(0, 1, 2 * sinAngle * cosAngle)
+        ..setEntry(1, 0, 2 * sinAngle * cosAngle)
+        ..setEntry(1, 1, 1 - 2 * s2);
+      _foldMatrix.translateByDouble(
           -mBezierControl1.dx, -mBezierControl1.dy, 0, 1);
-      canvas.transform(matrix4.storage);
+      canvas.transform(_foldMatrix.storage);
 
       final curPic = readerViewModel.paintCurrentPicture();
       if (curPic != null) {
         // Direct picture draw + translucent paper wash without saveLayer.
         canvas.drawPicture(curPic);
-        canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.65));
+        _washPaint.color = paper.withValues(alpha: 0.65);
+        canvas.drawPaint(_washPaint);
       } else {
-        canvas.drawPaint(Paint()..color = paper.withValues(alpha: 0.85));
+        _washPaint.color = paper.withValues(alpha: 0.85);
+        canvas.drawPaint(_washPaint);
       }
     }
 
@@ -535,20 +558,14 @@ class SimulationTurnPageAnimation extends BaseAnimationPage {
     canvas.rotate(math.atan2(
         mBezierControl1.dx - mCornerX, mBezierControl2.dy - mCornerY));
 
-    Gradient shadowGradient = LinearGradient(
-      colors: [
-        Colors.transparent,
-        Color(0xAA000000),
-      ],
+    // Reused gradient + paint — only the shader rect changes per frame.
+    _flapShadowPaint.shader =
+        _kShadowDarkLast.createShader(Rect.fromLTRB(0, 0, width, mMaxLength));
+
+    canvas.drawRect(
+      Rect.fromLTRB(0, 0, width, mMaxLength),
+      _flapShadowPaint,
     );
-
-    var shadowPaint = Paint()
-      ..isAntiAlias = true
-      ..style = PaintingStyle.fill //填充
-      ..shader =
-      shadowGradient.createShader(Rect.fromLTRB(0, 0, width, mMaxLength));
-
-    canvas.drawRect(Rect.fromLTRB(0, 0, width, mMaxLength), shadowPaint);
   }
 
   @override
