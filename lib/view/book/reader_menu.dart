@@ -362,7 +362,7 @@ class _MenuState extends ConsumerState<ReaderMenu> {
           const SizedBox(height: 10),
           _settingTile(
             icon: Icons.format_line_spacing,
-            title: '行距 · 段距 · 边距',
+            title: '行距 · 段距 · 缩进 · 边距',
             onTap: () => setState(() => type = Type.LAYOUT),
           ),
           const SizedBox(height: 10),
@@ -482,6 +482,21 @@ class _MenuState extends ConsumerState<ReaderMenu> {
                   color: _fg,
                 ),
               ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  ReadSetting.resetLayout();
+                  _readModel.relayoutPages();
+                  setState(() {});
+                },
+                child: Text(
+                  '重置',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.accentOf(context),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -529,6 +544,31 @@ class _MenuState extends ConsumerState<ReaderMenu> {
               max: 2.0,
               onChanged: (v) {
                 ReadSetting.setParagraph(v);
+                _readModel.relayoutPages();
+                setState(() {});
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+          _stepperRow(
+            label: '缩进',
+            valueText: '${ReadSetting.getIndent()}',
+            onMinus: () {
+              ReadSetting.setIndent(ReadSetting.getIndent() - 1);
+              _readModel.relayoutPages();
+              setState(() {});
+            },
+            onPlus: () {
+              ReadSetting.setIndent(ReadSetting.getIndent() + 1);
+              _readModel.relayoutPages();
+              setState(() {});
+            },
+            child: _buildSlider(
+              value: ReadSetting.getIndent().toDouble(),
+              min: ReadSetting.indentMin.toDouble(),
+              max: ReadSetting.indentMax.toDouble(),
+              onChanged: (v) {
+                ReadSetting.setIndent(v.round());
                 _readModel.relayoutPages();
                 setState(() {});
               },

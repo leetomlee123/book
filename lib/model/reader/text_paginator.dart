@@ -97,6 +97,7 @@ class TextPaginator {
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
     final fontPath = p['fontPath'] as String? ?? '';
+    final indent = (p['indent'] as num?)?.toDouble() ?? 0;
     final text = readPage.chapterContent;
 
     final canNative = BookPager.isAvailable && fontPath.isNotEmpty;
@@ -150,6 +151,7 @@ class TextPaginator {
         shouldJustifyHeight: shouldJustifyHeight,
         fontPath: fontPath,
         fontFamily: fontFamily,
+        firstLineIndent: indent,
         jobId: jobId,
         firstPageOnly: true,
         startChar: 0,
@@ -181,6 +183,7 @@ class TextPaginator {
           shouldJustifyHeight: shouldJustifyHeight,
           fontPath: fontPath,
           fontFamily: fontFamily,
+          firstLineIndent: indent,
           jobId: jobId,
           firstPageOnly: false,
           startChar: startChar,
@@ -297,8 +300,9 @@ class TextPaginator {
     final justify = layoutParams['shouldJustifyHeight'] == true ? '1' : '0';
     final abi = '${layoutParams['abi'] ?? bookPagerAbiVersion}';
     final align = '${layoutParams['textAlign'] ?? 'justify'}';
+    final indent = n(layoutParams['indent'], decimals: 1);
     return 'abi$abi|$fontSize|$lineHeight|$paragraph|$padH|$boxW|$boxH|'
-        '$fontFamily|$fontPath|$justify|$align|$contentLen|$contentSig';
+        '$fontFamily|$fontPath|$justify|$align|$indent|$contentLen|$contentSig';
   }
 
   /// Cheap content signature so same-length different bodies don't share cache.

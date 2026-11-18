@@ -106,7 +106,7 @@ class ReaderPainter {
       line.letterSpacing = ls;
     }
 
-    painter.paint(canvas, Offset(padLeft, y));
+    painter.paint(canvas, Offset(padLeft + line.indent, y));
   }
 
   static int nChars(String text) => text.characters.length;

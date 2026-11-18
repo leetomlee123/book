@@ -31,6 +31,9 @@ class TextLine {
   /// Content-column width the line should fill when [justify] is true.
   final double targetWidth;
 
+  /// Extra left inset for a paragraph's first visual line (em-based indent).
+  final double indent;
+
   /// Optional paint-time cache. Prefer recomputing from [justify]/[targetWidth].
   double? letterSpacing;
 
@@ -42,6 +45,7 @@ class TextLine {
     this.isLastLine = false,
     this.isParagraphEnd = false,
     this.targetWidth = 0,
+    this.indent = 0,
     this.letterSpacing,
   });
 

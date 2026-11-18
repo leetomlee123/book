@@ -188,6 +188,7 @@ class BookPager {
     bool firstPageOnly = false,
     int startChar = 0,
     int maxPages = 0,
+    double firstLineIndent = 0,
   }) {
     return <String, dynamic>{
       'text': text,
@@ -212,6 +213,7 @@ class BookPager {
       'first_page_only': firstPageOnly,
       'start_char': startChar,
       'max_pages': maxPages,
+      'first_line_indent': firstLineIndent,
     };
   }
 
@@ -232,6 +234,7 @@ class BookPager {
       targetWidth: (lm['target_width'] as num?)?.toDouble() ??
           (lm['targetWidth'] as num?)?.toDouble() ??
           0,
+      indent: (lm['indent'] as num?)?.toDouble() ?? 0,
       // ABI3: prefer paint-time spacing; ignore rust letter_spacing if present.
       letterSpacing: null,
     );
@@ -310,6 +313,7 @@ class BookPager {
     int startChar = 0,
     int maxPages = 0,
     bool useRange = false,
+    double firstLineIndent = 0,
   }) {
     _ensureInit();
     final paginateFn = useRange ? (_paginateRange ?? _paginate) : _paginate;
@@ -340,6 +344,7 @@ class BookPager {
       firstPageOnly: firstPageOnly,
       startChar: startChar,
       maxPages: maxPages,
+      firstLineIndent: firstLineIndent,
     );
 
     final inputPtr = jsonEncode(input).toNativeUtf8();
@@ -372,6 +377,7 @@ class BookPager {
     String fontPath = '',
     String fontFamily = 'HarmonyOSSansSC',
     int jobId = 0,
+    double firstLineIndent = 0,
   }) {
     return paginateResult(
       text: text,
@@ -386,6 +392,7 @@ class BookPager {
       fontPath: fontPath,
       fontFamily: fontFamily,
       jobId: jobId,
+      firstLineIndent: firstLineIndent,
     ).pages;
   }
 
@@ -403,6 +410,7 @@ class BookPager {
     String fontPath = '',
     String fontFamily = 'HarmonyOSSansSC',
     int jobId = 0,
+    double firstLineIndent = 0,
   }) {
     if (text.length < 800) {
       return Future.value(paginate(
@@ -418,6 +426,7 @@ class BookPager {
         fontPath: fontPath,
         fontFamily: fontFamily,
         jobId: jobId,
+        firstLineIndent: firstLineIndent,
       ));
     }
 
@@ -434,6 +443,7 @@ class BookPager {
       fontPath: fontPath,
       fontFamily: fontFamily,
       jobId: jobId,
+      firstLineIndent: firstLineIndent,
     );
     return Isolate.run(() => _paginateFromPayload(payload));
   }
@@ -456,6 +466,7 @@ class BookPager {
     bool firstPageOnly = false,
     int startChar = 0,
     int maxPages = 0,
+    double firstLineIndent = 0,
   }) {
     final payload = _inputMap(
       text: text,
@@ -473,6 +484,7 @@ class BookPager {
       firstPageOnly: firstPageOnly,
       startChar: startChar,
       maxPages: maxPages,
+      firstLineIndent: firstLineIndent,
     );
     return Isolate.run(() => _paginateResultFromPayload(payload));
   }
@@ -507,6 +519,7 @@ class BookPager {
       startChar: p['start_char'] as int? ?? 0,
       maxPages: p['max_pages'] as int? ?? 0,
       useRange: true,
+      firstLineIndent: (p['first_line_indent'] as num?)?.toDouble() ?? 0,
     );
   }
 }

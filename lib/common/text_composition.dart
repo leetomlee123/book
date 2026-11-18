@@ -29,6 +29,9 @@ class TextComposition {
   /// 段间距
   final double paragraph;
 
+  /// 段首缩进（像素）。只作用于每段第一行。
+  final double indent;
+
   /// 每一页内容
   List<TextPage> pages;
 
@@ -91,6 +94,7 @@ class TextComposition {
     this.padding,
     this.shouldJustifyHeight = false,
     this.paragraph = 10.0,
+    this.indent = 0,
     this.getForeground,
     this.getBackground,
     this.debug = false,
@@ -167,9 +171,14 @@ class TextComposition {
     final measureOffset = Offset(measureWidth, 1);
 
     for (var p in this.paragraphs) {
+      var lineInParagraph = 0;
       while (true) {
+        final lineIndent = lineInParagraph == 0 ? indent : 0.0;
+        final lineMeasure = (measureWidth - lineIndent).clamp(1.0, measureWidth);
+        final lineWidth = (width - lineIndent).clamp(1.0, width);
+        final lineWidth2 = lineWidth - size;
         tp.text = TextSpan(text: p, style: style);
-        tp.layout(maxWidth: measureWidth);
+        tp.layout(maxWidth: lineMeasure);
         final textCount = tp.getPositionForOffset(measureOffset).offset;
         if (textCount <= 0) {
           final forceEnd = p.isEmpty
@@ -189,9 +198,11 @@ class TextComposition {
             justify: false,
             isLastLine: isEnd,
             isParagraphEnd: isEnd,
-            targetWidth: width,
+            targetWidth: lineWidth,
+            indent: lineIndent,
           ));
           top += lineBoxH;
+          lineInParagraph++;
           if (isEnd) {
             newParagraph();
             break;
@@ -206,7 +217,7 @@ class TextComposition {
         final measured = tp.width;
         final isEnd = p.length == textCount;
         final n = text.characters.length;
-        final nearlyFull = measured > width2 && measured > size * 0.5;
+        final nearlyFull = measured > lineWidth2 && measured > size * 0.5;
         final doJustify = !isEnd && nearlyFull && n > 1;
         final h = tp.height > 0 ? tp.height : lineBoxH;
         lines.add(TextLine(
@@ -216,9 +227,11 @@ class TextComposition {
           justify: doJustify,
           isLastLine: isEnd,
           isParagraphEnd: isEnd,
-          targetWidth: width,
+          targetWidth: lineWidth,
+          indent: lineIndent,
         ));
         top += h;
+        lineInParagraph++;
         if (isEnd) {
           newParagraph();
           break;
@@ -312,6 +325,7 @@ class TextComposition {
       // Bump cache when pager contract changes.
       'abi': bookPagerAbiVersion,
       'textAlign': 'justify',
+      'indent': ReadSetting.getIndent() * fontSize,
     };
   }
 
@@ -335,6 +349,7 @@ class TextComposition {
     final boxH = p['boxH'] as double;
     final fontFamily = p['fontFamily'] as String;
     final fontPath = p['fontPath'] as String? ?? '';
+    final indent = (p['indent'] as num?)?.toDouble() ?? 0;
 
     final nativeOk = BookPager.isAvailable;
     // Always print engine probe so real-device logcat can filter "PagerEngine".
@@ -368,6 +383,7 @@ class TextComposition {
           shouldJustifyHeight: shouldJustifyHeight,
           fontPath: fontPath,
           fontFamily: fontFamily,
+          firstLineIndent: indent,
         );
         final totalLines = pages.fold<int>(0, (n, p) => n + p.lines.length);
         if (!_looksBrokenPagination(
@@ -427,6 +443,7 @@ class TextComposition {
       fontFamily: fontFamily,
       shouldJustifyHeight: shouldJustifyHeight,
       justRender: justRender,
+      indent: indent,
     );
     final dartLines = dartPages.fold<int>(0, (n, p) => n + p.lines.length);
     debugPrint(
@@ -476,6 +493,7 @@ class TextComposition {
     final fontFamily = p['fontFamily'] as String;
     final fontPath = p['fontPath'] as String? ?? '';
     final shouldJustifyHeight = p['shouldJustifyHeight'] as bool? ?? true;
+    final indent = (p['indent'] as num?)?.toDouble() ?? 0;
 
     if (BookPager.isAvailable && fontPath.isNotEmpty) {
       try {
@@ -491,6 +509,7 @@ class TextComposition {
           shouldJustifyHeight: shouldJustifyHeight,
           fontPath: fontPath,
           fontFamily: fontFamily,
+          firstLineIndent: indent,
         );
       } catch (e, st) {
         AppLog.w('Pager', 'BookPager sync failed, Dart fallback', error: e);
@@ -515,6 +534,7 @@ class TextComposition {
       fontFamily: fontFamily,
       shouldJustifyHeight: shouldJustifyHeight,
       justRender: justRender,
+      indent: indent,
     );
   }
 
@@ -532,6 +552,7 @@ class TextComposition {
     required String fontFamily,
     required bool shouldJustifyHeight,
     bool justRender = false,
+    double indent = 0,
   }) {
     final textComposition = TextComposition(
       text: readPage.chapterContent,
@@ -544,6 +565,7 @@ class TextComposition {
           fontSize: fontSize,
           height: lineHeight),
       paragraph: paragraph,
+      indent: indent,
       justRender: justRender,
       boxSize: Size(boxW, boxH),
       padding: EdgeInsets.symmetric(horizontal: padH),

@@ -12,6 +12,7 @@ TextLine _$TextLineFromJson(Map<String, dynamic> json) {
   final targetWidth = (json['targetWidth'] as num?)?.toDouble() ??
       (json['target_width'] as num?)?.toDouble() ??
       0.0;
+  final indent = (json['indent'] as num?)?.toDouble() ?? 0.0;
   return TextLine(
     json['text'] as String? ?? '',
     top: top,
@@ -24,6 +25,7 @@ TextLine _$TextLineFromJson(Map<String, dynamic> json) {
         json['is_paragraph_end'] as bool? ??
         false,
     targetWidth: targetWidth,
+    indent: indent,
     letterSpacing: (json['letterSpacing'] as num?)?.toDouble() ??
         (json['letter_spacing'] as num?)?.toDouble(),
   );
@@ -37,6 +39,7 @@ Map<String, dynamic> _$TextLineToJson(TextLine instance) => <String, dynamic>{
       'isLastLine': instance.isLastLine,
       'isParagraphEnd': instance.isParagraphEnd,
       'targetWidth': instance.targetWidth,
+      if (instance.indent != 0) 'indent': instance.indent,
       if (instance.letterSpacing != null)
         'letterSpacing': instance.letterSpacing,
     };

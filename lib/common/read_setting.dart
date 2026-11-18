@@ -27,6 +27,7 @@ class ReadSetting {
   static String latterSpace = "LATTER_SPACE";
   static String paragraph = "paragraph";
   static String pageDis = "pageDis";
+  static String indentKey = "first_line_indent";
   static String paperKey = "paper_theme";
   static String useSolidPaperKey = "use_solid_paper";
   static String fontMigratedKey = "font_size_migrated_v19";
@@ -278,6 +279,33 @@ class ReadSetting {
 
   static void setParagraph(double v) {
     SpUtil.putDouble(paragraph, v);
+  }
+
+  /// First-line indent in CJK ems (0 = flush, 2 = two character widths).
+  static const int indentMin = 0;
+  static const int indentMax = 4;
+  static const int indentDefault = 2;
+
+  static int getIndent() {
+    // Unset stays flush so books already on the shelf keep their page index.
+    // Reset and new choices use [indentDefault] (two CJK widths).
+    if (!SpUtil.haveKey(indentKey)) return 0;
+    return SpUtil.getInt(indentKey, defValue: indentDefault).clamp(
+      indentMin,
+      indentMax,
+    );
+  }
+
+  static void setIndent(int ems) {
+    SpUtil.putInt(indentKey, ems.clamp(indentMin, indentMax));
+  }
+
+  /// Restore line height, paragraph gap, page margin, and first-line indent.
+  static void resetLayout() {
+    SpUtil.putDouble(latterHeight, 1.7);
+    SpUtil.putDouble(paragraph, 0.8);
+    SpUtil.putInt(pageDis, 20);
+    SpUtil.putInt(indentKey, indentDefault);
   }
 
   static double getLatterLead() {

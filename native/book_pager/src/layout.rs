@@ -77,6 +77,9 @@ pub struct LayoutInput {
     /// 0 = unlimited
     #[serde(default)]
     pub max_pages: u32,
+    /// First visual line of each paragraph is this many pixels narrower.
+    #[serde(default)]
+    pub first_line_indent: f32,
 }
 
 fn default_true() -> bool {
@@ -100,6 +103,8 @@ pub struct TextLineOut {
     pub is_last_line: bool,
     pub is_paragraph_end: bool,
     pub target_width: f32,
+    #[serde(default)]
+    pub indent: f32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -395,6 +400,7 @@ pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
     let height2 = (content_height - line_h).max(1.0);
     let want_justify = input.text_align != "left";
     let paragraph_spacing = input.paragraph_spacing.max(0.0);
+    let first_indent = input.first_line_indent.max(0.0);
 
     // Slice text from start_char (UTF-8 boundary).
     let mut start = input.start_char.min(input.text.len());
@@ -455,6 +461,7 @@ pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
             return Err("cancelled".into());
         }
         let mut remaining = (*para).to_string();
+        let mut line_in_para: u32 = 0;
         let para_abs_start = cursor;
 
         if remaining.is_empty() {
@@ -504,10 +511,13 @@ pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
                 return Err("cancelled".into());
             }
 
+            let line_indent = if line_in_para == 0 { first_indent } else { 0.0 };
+            let line_fit = (fit_width - line_indent).max(1.0);
+            let line_target = (content_width - line_indent).max(1.0);
             let (count, _w, shaped_h) = measure_fit(
                 &mut font_system,
                 &remaining,
-                fit_width,
+                line_fit,
                 size,
                 input.line_height,
                 family,
@@ -534,7 +544,7 @@ pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
             );
             let is_para_end = end >= remaining.len();
             // Nearly full → justify intent (Flutter computes spacing).
-            let nearly_full = measured > content_width - size && measured > size * 0.5;
+            let nearly_full = measured > line_target - size && measured > size * 0.5;
             let char_count = text.chars().count();
             let justify = want_justify
                 && !is_para_end
@@ -582,8 +592,10 @@ pub fn paginate(input: &LayoutInput) -> Result<PaginateResult, String> {
                 justify,
                 is_last_line: is_para_end,
                 is_paragraph_end: is_para_end,
-                target_width: content_width,
+                target_width: line_target,
+                indent: line_indent,
             });
+            line_in_para += 1;
             top += line_height_px;
             cursor += end;
 
@@ -684,6 +696,7 @@ mod tests {
             first_page_only: false,
             start_char: 0,
             max_pages: 0,
+            first_line_indent: 0.0,
         });
         assert!(res.is_err());
     }
