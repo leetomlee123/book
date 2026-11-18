@@ -125,7 +125,6 @@ class TextComposition {
     final tp = TextPainter(textDirection: TextDirection.ltr, maxLines: 1);
     final size = style?.fontSize ?? 14;
     final width = columnWidth;
-    final width2 = width - size;
     final height = this.boxSize.height - (padding?.vertical ?? 0);
     final height2 = height - size * (style?.height ?? 1.0);
     final lineBoxH = size * (style?.height ?? 1.0);
