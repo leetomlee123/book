@@ -25,6 +25,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "14.1.0"
+  android_file_picker:
+    dependency: transitive
+    description:
+      name: android_file_picker
+      sha256: "1f111ed6bb33724ba782cc86357e3fd97f57051d55fc61adf33dcfc5049a1581"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
   args:
     dependency: transitive
     description:
@@ -265,6 +273,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  ffi_leak_tracker:
+    dependency: transitive
+    description:
+      name: ffi_leak_tracker
+      sha256: "4093d4ef9ca06ffe2786e73bfb25e22aa92112b9bb4ec941f11e3e6b61489a97"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.2"
   file:
     dependency: transitive
     description:
@@ -277,10 +293,42 @@ packages:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: "29cc1fdb20613876cc7afc529738c1c0f11a9ca159b010edad0c566ac330847e"
+      sha256: b7acb5d123cb398f6b4a8a38e43777545254f8fc1fabef3ee11cbbb56aece9c8
       url: "https://pub.dev"
     source: hosted
-    version: "11.0.3"
+    version: "12.1.2"
+  file_picker_darwin:
+    dependency: transitive
+    description:
+      name: file_picker_darwin
+      sha256: "6e7cae501d48fd57a27911608db718ebd898e6ccf934bf09e33a8c0d0365bec0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4"
+  file_picker_linux:
+    dependency: transitive
+    description:
+      name: file_picker_linux
+      sha256: f0f01ed42967b7355f6f25c8b121ea531d1948e2a9b4b44f4b4de8489d7b04ae
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
+  file_picker_platform_interface:
+    dependency: transitive
+    description:
+      name: file_picker_platform_interface
+      sha256: "11ef1b5c14d9186b4788cc273dd8d5cb81bca847145060991a28234ff7916fc1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.0"
+  file_picker_web:
+    dependency: transitive
+    description:
+      name: file_picker_web
+      sha256: df472142f63c4557fdfbb375c81454ca1c251491069eefcdc6a866bc12f8750b
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
   firebase_analytics:
     dependency: "direct main"
     description:
@@ -667,18 +715,18 @@ packages:
     dependency: "direct main"
     description:
       name: package_info_plus
-      sha256: "468c26b4254ab01979fa5e4a98cb343ea3631b9acee6f21028997419a80e1a20"
+      sha256: "127e1751e37ffb2ff4658beeaca77bad0c27bf5f932bd3a501c2296926d4b481"
       url: "https://pub.dev"
     source: hosted
-    version: "9.0.1"
+    version: "10.2.1"
   package_info_plus_platform_interface:
     dependency: transitive
     description:
       name: package_info_plus_platform_interface
-      sha256: "202a487f08836a592a6bd4f901ac69b3a8f146af552bbd14407b6b41e1c3f086"
+      sha256: db762cb2f4f25ee60fb6359773861b0f199e00b90d237bd85a76a1e806b46ef4
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.1"
+    version: "4.1.0"
   path:
     dependency: "direct main"
     description:
@@ -1216,10 +1264,18 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: d7cb55e04cd34096cd3a79b3330245f54cb96a370a1c27adb3c84b917de8b08e
+      sha256: a0b93865d5644f11cf6a8c3f6db909f1ec168958b5805f6cc684adea957cd63d
       url: "https://pub.dev"
     source: hosted
-    version: "5.15.0"
+    version: "6.4.0"
+  windows_file_picker:
+    dependency: transitive
+    description:
+      name: windows_file_picker
+      sha256: "225f58e64c15c2d7b34fb8faf3ca188831967f26b5a723d7c3a7969e41c9b5a5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   xdg_directories:
     dependency: transitive
     description:
